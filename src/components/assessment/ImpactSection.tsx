@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Save, Loader2, AlertTriangle, Shield, Clock } from 'lucide-react';
+import { ImpactEvidenceUpload } from './ImpactEvidenceUpload';
 import type { Database } from '@/integrations/supabase/types';
 
 type ImpactScore = Database['public']['Tables']['impact_scores']['Row'];
@@ -144,10 +145,15 @@ export function ImpactSection({
             </div>
 
             <div className="grid gap-4 pl-6">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="had_incident" className="flex-1">
-                  เคยเกิด Cyber Incident ในรอบประเมินนี้
-                </Label>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="had_incident">เคยเกิด Cyber Incident ในรอบประเมินนี้</Label>
+                  <ImpactEvidenceUpload 
+                    impactScoreId={impactScore?.id || null} 
+                    fieldName="had_incident" 
+                    disabled={readOnly} 
+                  />
+                </div>
                 <Switch
                   id="had_incident"
                   checked={formData.had_incident}
@@ -162,15 +168,22 @@ export function ImpactSection({
                     <Clock className="w-4 h-4" />
                     ระยะเวลาฟื้นฟูระบบ (ชั่วโมง)
                   </Label>
-                  <Input
-                    id="incident_recovery_hours"
-                    type="number"
-                    min="0"
-                    value={formData.incident_recovery_hours}
-                    onChange={(e) => setFormData({ ...formData, incident_recovery_hours: parseInt(e.target.value) || 0 })}
-                    disabled={readOnly}
-                    className="w-32"
-                  />
+                  <div className="flex items-center gap-4">
+                    <Input
+                      id="incident_recovery_hours"
+                      type="number"
+                      min="0"
+                      value={formData.incident_recovery_hours}
+                      onChange={(e) => setFormData({ ...formData, incident_recovery_hours: parseInt(e.target.value) || 0 })}
+                      disabled={readOnly}
+                      className="w-32"
+                    />
+                    <ImpactEvidenceUpload 
+                      impactScoreId={impactScore?.id || null} 
+                      fieldName="incident_recovery_hours" 
+                      disabled={readOnly} 
+                    />
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     ≤4 ชม. = -2, ≤24 ชม. = -5, ≤72 ชม. = -8, &gt;72 ชม. = -15
                   </p>
@@ -192,10 +205,15 @@ export function ImpactSection({
             </div>
 
             <div className="grid gap-4 pl-6">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="had_data_breach" className="flex-1">
-                  เคยเกิด Data Breach ในรอบประเมินนี้
-                </Label>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="had_data_breach">เคยเกิด Data Breach ในรอบประเมินนี้</Label>
+                  <ImpactEvidenceUpload 
+                    impactScoreId={impactScore?.id || null} 
+                    fieldName="had_data_breach" 
+                    disabled={readOnly} 
+                  />
+                </div>
                 <Switch
                   id="had_data_breach"
                   checked={formData.had_data_breach}
@@ -207,22 +225,29 @@ export function ImpactSection({
               {formData.had_data_breach && (
                 <div className="space-y-2">
                   <Label htmlFor="breach_severity">ความรุนแรงของ Data Breach</Label>
-                  <Select
-                    value={formData.breach_severity}
-                    onValueChange={(value) => setFormData({ ...formData, breach_severity: value })}
-                    disabled={readOnly}
-                  >
-                    <SelectTrigger className="w-full max-w-xs">
-                      <SelectValue placeholder="เลือกความรุนแรง" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {breachSeverityOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label} (หัก {option.penalty} คะแนน)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-4">
+                    <Select
+                      value={formData.breach_severity}
+                      onValueChange={(value) => setFormData({ ...formData, breach_severity: value })}
+                      disabled={readOnly}
+                    >
+                      <SelectTrigger className="w-full max-w-xs">
+                        <SelectValue placeholder="เลือกความรุนแรง" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {breachSeverityOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label} (หัก {option.penalty} คะแนน)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <ImpactEvidenceUpload 
+                      impactScoreId={impactScore?.id || null} 
+                      fieldName="breach_severity" 
+                      disabled={readOnly} 
+                    />
+                  </div>
                 </div>
               )}
             </div>
