@@ -218,31 +218,6 @@ export function QualitativeSection({
             </div>
 
             <div className="grid gap-4 pl-6">
-              <div className="space-y-2">
-                <Label htmlFor="annual_training_count">
-                  จำนวนครั้งอบรม IT Security ต่อปี
-                </Label>
-                <div className="flex items-center gap-4">
-                  <Input
-                    id="annual_training_count"
-                    type="number"
-                    min="0"
-                    value={formData.annual_training_count}
-                    onChange={(e) => setFormData({ ...formData, annual_training_count: parseInt(e.target.value) || 0 })}
-                    onBlur={(e) => handleFieldChange('annual_training_count', parseInt(e.target.value) || 0)}
-                    disabled={readOnly || saving}
-                    className="w-32"
-                  />
-                  <EvidenceUpload 
-                    qualitativeScoreId={qualitativeScore?.id || null} 
-                    fieldName="annual_training_count" 
-                    disabled={readOnly} 
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  4+ ครั้ง = 5 คะแนน, 2-3 ครั้ง = 3 คะแนน, 1 ครั้ง = 1 คะแนน
-                </p>
-              </div>
 
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
