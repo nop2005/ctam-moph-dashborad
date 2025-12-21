@@ -236,22 +236,6 @@ export function QualitativeSection({
                 />
               </div>
 
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1">
-                  <Label htmlFor="uses_opensource">ใช้ Open Source ในงานสำคัญ</Label>
-                  <EvidenceUpload 
-                    qualitativeScoreId={qualitativeScore?.id || null} 
-                    fieldName="uses_opensource" 
-                    disabled={readOnly} 
-                  />
-                </div>
-                <Switch
-                  id="uses_opensource"
-                  checked={formData.uses_opensource}
-                  onCheckedChange={(checked) => handleFieldChange('uses_opensource', checked)}
-                  disabled={readOnly || saving}
-                />
-              </div>
             </div>
           </div>
 
