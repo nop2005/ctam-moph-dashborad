@@ -217,7 +217,7 @@ export function QualitativeSection({
       {/* Progress Summary & Interpretation Cards - Side by Side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Progress Summary Card */}
-        <Card>
+        <Card className={`border-2 ${qualityLevel.borderColor}`}>
           <CardHeader className="flex flex-row items-start justify-between pb-2">
             <div>
               <CardTitle className="text-base">เชิงคุณภาพ (Qualitative) - 15%</CardTitle>
