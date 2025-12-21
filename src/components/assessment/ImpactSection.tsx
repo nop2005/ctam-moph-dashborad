@@ -184,7 +184,7 @@ export function ImpactSection({
             <div className="grid gap-4 pl-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
-                  <Label htmlFor="had_incident">เคยเกิด Cyber Incident ในรอบประเมินนี้</Label>
+                  <Label htmlFor="had_incident">หน่วยบริการภายในเขตสุขภาพ ได้เกิดเหตุการณ์การโจมตีทางไซเบอร์ของระบบ HIS หรือ Website องค์กร หรือ Facebook องค์กร ในรอบประเมินนี้ จนทำให้ระบบไม่สามารถให้บริการได้</Label>
                   <ImpactEvidenceUpload 
                     impactScoreId={impactScore?.id || null} 
                     fieldName="had_incident" 
