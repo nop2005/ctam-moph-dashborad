@@ -42,26 +42,22 @@ export function QualitativeSection({
     comment: qualitativeScore?.comment ?? '',
   });
 
-  // Calculate scores based on criteria
+  // Calculate scores based on criteria (5 points each, total 15)
   const calculateScores = useCallback((data: typeof formData) => {
     let leadershipScore = 0;
     let sustainableScore = 0;
 
-    if (data.has_ciso) leadershipScore += 3;
-    if (data.has_dpo) leadershipScore += 3;
-    if (data.has_it_security_team) leadershipScore += 4;
+    // Leadership items: 5 points each
+    if (data.has_ciso) leadershipScore += 5;
+    if (data.has_dpo) leadershipScore += 5;
 
-    if (data.annual_training_count >= 4) sustainableScore += 5;
-    else if (data.annual_training_count >= 2) sustainableScore += 3;
-    else if (data.annual_training_count >= 1) sustainableScore += 1;
-
-    if (!data.uses_freeware && !data.uses_opensource) sustainableScore += 5;
-    else if (!data.uses_freeware) sustainableScore += 3;
+    // Sustainable item: 5 points
+    if (data.uses_freeware) sustainableScore += 5;
 
     return {
-      leadership_score: Math.min(leadershipScore, 10),
-      sustainable_score: Math.min(sustainableScore, 10),
-      total_score: Math.min(leadershipScore + sustainableScore, 15),
+      leadership_score: leadershipScore,
+      sustainable_score: sustainableScore,
+      total_score: leadershipScore + sustainableScore,
     };
   }, []);
 
@@ -145,7 +141,7 @@ export function QualitativeSection({
                 </div>
                 <div className="flex items-center gap-2">
                   <GraduationCap className="w-4 h-4 text-primary" />
-                  <span>ความยั่งยืน: {scores.sustainable_score}/10</span>
+                  <span>ความยั่งยืน: {scores.sustainable_score}/5</span>
                 </div>
               </div>
               <span className="font-medium text-lg">{scores.total_score}/15 ({progressPercentage.toFixed(1)}%)</span>
@@ -213,7 +209,7 @@ export function QualitativeSection({
               <GraduationCap className="w-4 h-4 text-primary" />
               <h3 className="font-semibold">ความยั่งยืน (Sustainable)</h3>
               <span className="text-sm text-muted-foreground ml-auto">
-                คะแนน: {scores.sustainable_score}/10
+                คะแนน: {scores.sustainable_score}/5
               </span>
             </div>
 
