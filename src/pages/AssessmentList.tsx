@@ -125,7 +125,7 @@ export default function AssessmentList() {
           hospital_id: selectedHospital,
           fiscal_year: parseInt(selectedYear),
           assessment_period: selectedPeriod,
-          created_by: profile?.user_id,
+          created_by: profile?.id,
           status: 'draft',
         })
         .select()
