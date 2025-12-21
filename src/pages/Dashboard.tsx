@@ -90,8 +90,8 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" disabled>
-              เริ่มประเมิน (เร็วๆ นี้)
+            <Button className="w-full" onClick={() => window.location.href = '/assessments'}>
+              เริ่มประเมิน
             </Button>
           </CardContent>
         </Card>

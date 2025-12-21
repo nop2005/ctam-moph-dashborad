@@ -8,6 +8,8 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import SuperAdmin from "./pages/SuperAdmin";
+import AssessmentList from "./pages/AssessmentList";
+import Assessment from "./pages/Assessment";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 
@@ -29,6 +31,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/assessments" 
+              element={
+                <ProtectedRoute>
+                  <AssessmentList />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/assessment/:id" 
+              element={
+                <ProtectedRoute>
+                  <Assessment />
                 </ProtectedRoute>
               } 
             />
