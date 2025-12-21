@@ -108,16 +108,27 @@ export function QuantitativeSection({
   };
 
   const progress = calculateProgress();
+  
+  // Calculate score converted to 70% weight (out of 7 points)
+  const scoreOut7 = (progress.percentage / 100) * 7;
 
   return (
     <div className="space-y-6">
       {/* Progress Summary */}
       <Card>
-        <CardHeader>
-          <CardTitle>เชิงปริมาณ (Quantitative) - 70%</CardTitle>
-          <CardDescription>
-            ประเมินตามมาตรฐาน CTAM+ 17 หมวด
-          </CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between">
+          <div>
+            <CardTitle>เชิงปริมาณ (Quantitative) - 70%</CardTitle>
+            <CardDescription>
+              ประเมินตามมาตรฐาน CTAM+ 17 หมวด
+            </CardDescription>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-primary">
+              {scoreOut7.toFixed(2)}<span className="text-lg text-muted-foreground">/7</span>
+            </div>
+            <div className="text-sm text-muted-foreground">คะแนน</div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
