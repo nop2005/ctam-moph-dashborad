@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,7 @@ interface ImpactEvidenceUploadProps {
 export function ImpactEvidenceUpload({ impactScoreId, fieldName, disabled }: ImpactEvidenceUploadProps) {
   const { profile } = useAuth();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<EvidenceFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -173,8 +174,9 @@ export function ImpactEvidenceUpload({ impactScoreId, fieldName, disabled }: Imp
       ))}
 
       {!disabled && (
-        <label className="cursor-pointer">
+        <>
           <input
+            ref={fileInputRef}
             type="file"
             className="hidden"
             onChange={handleFileUpload}
@@ -186,18 +188,16 @@ export function ImpactEvidenceUpload({ impactScoreId, fieldName, disabled }: Imp
             size="sm"
             className="h-7 text-xs gap-1"
             disabled={uploading || !impactScoreId}
-            asChild
+            onClick={() => fileInputRef.current?.click()}
           >
-            <span>
-              {uploading ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Paperclip className="w-3 h-3" />
-              )}
-              แนบหลักฐาน
-            </span>
+            {uploading ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Paperclip className="w-3 h-3" />
+            )}
+            แนบหลักฐาน
           </Button>
-        </label>
+        </>
       )}
       
       {!impactScoreId && !disabled && (
