@@ -214,119 +214,122 @@ export function QualitativeSection({
 
   return (
     <div className="space-y-6">
-      {/* Progress Summary Card */}
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between">
-          <div>
-            <CardTitle>เชิงคุณภาพ (Qualitative) - 15%</CardTitle>
-            <CardDescription>
-              ประเมินตาม WHO 6 Building Blocks: ระบบงาน ภาวะผู้นำ และความยั่งยืน
-            </CardDescription>
-          </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold text-primary">
-              {scoreOut1_5.toFixed(2)}<span className="text-lg text-muted-foreground">/1.5</span>
+      {/* Progress Summary & Interpretation Cards - Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Progress Summary Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-start justify-between pb-2">
+            <div>
+              <CardTitle className="text-base">เชิงคุณภาพ (Qualitative) - 15%</CardTitle>
+              <CardDescription className="text-xs">
+                ประเมินตาม WHO 6 Building Blocks
+              </CardDescription>
             </div>
-            <div className="text-sm text-muted-foreground">คะแนน</div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Progress value={progressPercentage} className="h-3" />
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-primary" />
-                  <span>ภาวะผู้นำ: {scores.leadership_score}/5</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4 text-primary" />
-                  <span>ความยั่งยืน: {scores.sustainable_score}/10</span>
-                </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-primary">
+                {scoreOut1_5.toFixed(2)}<span className="text-sm text-muted-foreground">/1.5</span>
               </div>
-              <span className="font-medium text-lg">{scores.total_score}/15 ({progressPercentage.toFixed(1)}%)</span>
+              <div className="text-xs text-muted-foreground">คะแนน</div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quality Level Interpretation Card */}
-      <Card className={`border-2 ${qualityLevel.borderColor}`}>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Award className={`w-5 h-5 ${qualityLevel.color}`} />
-            การแปลผลระดับคุณภาพ
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 ml-1 rounded-full hover:bg-muted">
-                  <Info className="w-4 h-4 text-muted-foreground hover:text-primary" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="text-lg">ตารางการแปลผลระดับคุณภาพและระดับคะแนนการพัฒนา (5 ระดับ)</DialogTitle>
-                </DialogHeader>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium">ระดับคุณภาพ</th>
-                        <th className="text-center py-3 px-4 font-medium">ช่วงคะแนน</th>
-                        <th className="text-left py-3 px-4 font-medium">การแปลผลเชิงคุณภาพ</th>
-                        <th className="text-center py-3 px-4 font-medium">ระดับการพัฒนา</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {qualityLevels.map((level) => (
-                        <tr 
-                          key={level.level} 
-                          className={`border-b ${progressPercentage >= level.minScore && progressPercentage <= level.maxScore ? level.bgColor : ''}`}
-                        >
-                          <td className={`py-3 px-4 font-medium ${level.color}`}>
-                            ระดับ {level.level} = {level.name} ({level.nameEn})
-                          </td>
-                          <td className={`py-3 px-4 text-center ${level.color}`}>
-                            {level.level === 1 ? 'ต่ำกว่าหรือเท่ากับ 40' : `${level.minScore} - ${level.maxScore}`}
-                          </td>
-                          <td className="py-3 px-4 text-muted-foreground">
-                            {level.interpretation}
-                          </td>
-                          <td className={`py-3 px-4 text-center font-medium ${level.color}`}>
-                            {level.developmentLevel}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="space-y-3">
+              <Progress value={progressPercentage} className="h-2" />
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <Shield className="w-3 h-3 text-primary" />
+                    <span>ภาวะผู้นำ: {scores.leadership_score}/5</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <GraduationCap className="w-3 h-3 text-primary" />
+                    <span>ความยั่งยืน: {scores.sustainable_score}/10</span>
+                  </div>
                 </div>
-              </DialogContent>
-            </Dialog>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className={`p-4 rounded-lg ${qualityLevel.bgColor} space-y-3`}>
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className={`px-3 py-1 rounded-full ${qualityLevel.bgColor} border-2 ${qualityLevel.borderColor}`}>
-                  <span className={`font-bold ${qualityLevel.color}`}>
-                    ระดับ {qualityLevel.level} = {qualityLevel.name} ({qualityLevel.nameEn})
+                <span className="font-medium">{scores.total_score}/15 ({progressPercentage.toFixed(1)}%)</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quality Level Interpretation Card */}
+        <Card className={`border-2 ${qualityLevel.borderColor}`}>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Award className={`w-4 h-4 ${qualityLevel.color}`} />
+              การแปลผลระดับคุณภาพ
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 ml-1 rounded-full hover:bg-muted">
+                    <Info className="w-3 h-3 text-muted-foreground hover:text-primary" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-lg">ตารางการแปลผลระดับคุณภาพและระดับคะแนนการพัฒนา (5 ระดับ)</DialogTitle>
+                  </DialogHeader>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-3 px-4 font-medium">ระดับคุณภาพ</th>
+                          <th className="text-center py-3 px-4 font-medium">ช่วงคะแนน</th>
+                          <th className="text-left py-3 px-4 font-medium">การแปลผลเชิงคุณภาพ</th>
+                          <th className="text-center py-3 px-4 font-medium">ระดับการพัฒนา</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {qualityLevels.map((level) => (
+                          <tr 
+                            key={level.level} 
+                            className={`border-b ${progressPercentage >= level.minScore && progressPercentage <= level.maxScore ? level.bgColor : ''}`}
+                          >
+                            <td className={`py-3 px-4 font-medium ${level.color}`}>
+                              ระดับ {level.level} = {level.name} ({level.nameEn})
+                            </td>
+                            <td className={`py-3 px-4 text-center ${level.color}`}>
+                              {level.level === 1 ? 'ต่ำกว่าหรือเท่ากับ 40' : `${level.minScore} - ${level.maxScore}`}
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground">
+                              {level.interpretation}
+                            </td>
+                            <td className={`py-3 px-4 text-center font-medium ${level.color}`}>
+                              {level.developmentLevel}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className={`p-3 rounded-lg ${qualityLevel.bgColor} space-y-2`}>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className={`px-2 py-0.5 rounded-full ${qualityLevel.bgColor} border ${qualityLevel.borderColor}`}>
+                    <span className={`font-bold text-sm ${qualityLevel.color}`}>
+                      ระดับ {qualityLevel.level} = {qualityLevel.name}
+                    </span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {qualityLevel.level === 1 ? '≤40' : `${qualityLevel.minScore}-${qualityLevel.maxScore}`}%
                   </span>
                 </div>
-                <span className="text-sm text-muted-foreground">
-                  ช่วงคะแนน: {qualityLevel.level === 1 ? 'ต่ำกว่าหรือเท่ากับ 40' : `${qualityLevel.minScore} - ${qualityLevel.maxScore}`}%
-                </span>
+                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full border ${qualityLevel.borderColor} ${qualityLevel.bgColor}`}>
+                  <TrendingUp className={`w-3 h-3 ${qualityLevel.color}`} />
+                  <span className={`font-medium text-xs ${qualityLevel.color}`}>{qualityLevel.developmentLevel}</span>
+                </div>
               </div>
-              <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${qualityLevel.borderColor} ${qualityLevel.bgColor}`}>
-                <TrendingUp className={`w-4 h-4 ${qualityLevel.color}`} />
-                <span className={`font-medium ${qualityLevel.color}`}>{qualityLevel.developmentLevel}</span>
-              </div>
+              <p className={`text-xs ${qualityLevel.color}`}>
+                <strong>การแปลผล:</strong> {qualityLevel.interpretation}
+              </p>
             </div>
-            <p className={`text-sm ${qualityLevel.color}`}>
-              <strong>การแปลผล:</strong> {qualityLevel.interpretation}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Details Card */}
       <Card>
