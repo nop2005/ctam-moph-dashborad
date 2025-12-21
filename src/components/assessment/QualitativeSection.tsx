@@ -10,7 +10,8 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Users, Shield, GraduationCap, CheckCircle2, XCircle, Award, TrendingUp } from 'lucide-react';
+import { Loader2, Users, Shield, GraduationCap, CheckCircle2, XCircle, Award, TrendingUp, Info } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { EvidenceUpload } from './EvidenceUpload';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -255,12 +256,57 @@ export function QualitativeSection({
           <CardTitle className="flex items-center gap-2 text-lg">
             <Award className={`w-5 h-5 ${qualityLevel.color}`} />
             การแปลผลระดับคุณภาพ
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 ml-1 rounded-full hover:bg-muted">
+                  <Info className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-lg">ตารางการแปลผลระดับคุณภาพและระดับคะแนนการพัฒนา (5 ระดับ)</DialogTitle>
+                </DialogHeader>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium">ระดับคุณภาพ</th>
+                        <th className="text-center py-3 px-4 font-medium">ช่วงคะแนน</th>
+                        <th className="text-left py-3 px-4 font-medium">การแปลผลเชิงคุณภาพ</th>
+                        <th className="text-center py-3 px-4 font-medium">ระดับการพัฒนา</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {qualityLevels.map((level) => (
+                        <tr 
+                          key={level.level} 
+                          className={`border-b ${progressPercentage >= level.minScore && progressPercentage <= level.maxScore ? level.bgColor : ''}`}
+                        >
+                          <td className={`py-3 px-4 font-medium ${level.color}`}>
+                            ระดับ {level.level} = {level.name} ({level.nameEn})
+                          </td>
+                          <td className={`py-3 px-4 text-center ${level.color}`}>
+                            {level.level === 1 ? 'ต่ำกว่าหรือเท่ากับ 40' : `${level.minScore} - ${level.maxScore}`}
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            {level.interpretation}
+                          </td>
+                          <td className={`py-3 px-4 text-center font-medium ${level.color}`}>
+                            {level.developmentLevel}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </DialogContent>
+            </Dialog>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className={`p-4 rounded-lg ${qualityLevel.bgColor} space-y-3`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-3 flex-wrap">
                 <div className={`px-3 py-1 rounded-full ${qualityLevel.bgColor} border-2 ${qualityLevel.borderColor}`}>
                   <span className={`font-bold ${qualityLevel.color}`}>
                     ระดับ {qualityLevel.level} = {qualityLevel.name} ({qualityLevel.nameEn})
@@ -278,48 +324,6 @@ export function QualitativeSection({
             <p className={`text-sm ${qualityLevel.color}`}>
               <strong>การแปลผล:</strong> {qualityLevel.interpretation}
             </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quality Level Reference Table */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">ตารางการแปลผลระดับคุณภาพและระดับคะแนนการพัฒนา (5 ระดับ)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium">ระดับคุณภาพ</th>
-                  <th className="text-center py-3 px-4 font-medium">ช่วงคะแนน</th>
-                  <th className="text-left py-3 px-4 font-medium">การแปลผลเชิงคุณภาพ</th>
-                  <th className="text-center py-3 px-4 font-medium">ระดับการพัฒนา</th>
-                </tr>
-              </thead>
-              <tbody>
-                {qualityLevels.map((level) => (
-                  <tr 
-                    key={level.level} 
-                    className={`border-b ${progressPercentage >= level.minScore && progressPercentage <= level.maxScore ? level.bgColor : ''}`}
-                  >
-                    <td className={`py-3 px-4 font-medium ${level.color}`}>
-                      ระดับ {level.level} = {level.name} ({level.nameEn})
-                    </td>
-                    <td className={`py-3 px-4 text-center ${level.color}`}>
-                      {level.level === 1 ? 'ต่ำกว่าหรือเท่ากับ 40' : `${level.minScore} - ${level.maxScore}`}
-                    </td>
-                    <td className="py-3 px-4 text-muted-foreground">
-                      {level.interpretation}
-                    </td>
-                    <td className={`py-3 px-4 text-center font-medium ${level.color}`}>
-                      {level.developmentLevel}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </CardContent>
       </Card>
