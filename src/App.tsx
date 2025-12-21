@@ -40,6 +40,14 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/admin/*" 
+              element={
+                <ProtectedRoute allowedRoles={['central_admin']}>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
