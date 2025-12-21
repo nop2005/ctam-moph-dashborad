@@ -24,8 +24,6 @@ import {
   Building2,
   Settings,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
 
 const menuItems = [
@@ -37,7 +35,7 @@ const menuItems = [
   },
   { 
     title: 'แบบประเมิน CTAM+', 
-    url: '/assessment', 
+    url: '/assessments', 
     icon: FileText,
     roles: ['hospital_it', 'provincial', 'regional', 'central_admin']
   },
@@ -91,30 +89,35 @@ export function AppSidebar() {
   };
 
   const filterByRole = (items: typeof menuItems) => {
-    if (!profile) return [];
+    if (!profile?.role) return items; // Show all if role not loaded yet
     return items.filter(item => item.roles.includes(profile.role));
   };
 
+  const isCentralAdmin = profile?.role === 'central_admin';
+
   return (
-    <Sidebar collapsible="icon" className="border-r">
-      <SidebarHeader className="border-b p-4">
+    <Sidebar 
+      collapsible="icon" 
+      className="border-r bg-primary text-primary-foreground"
+    >
+      <SidebarHeader className="border-b border-primary-foreground/20 p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Shield className="w-6 h-6 text-primary" />
+          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Shield className="w-6 h-6 text-white" />
           </div>
           {!collapsed && (
             <div className="overflow-hidden">
-              <h1 className="font-bold text-lg leading-tight">CTAM+</h1>
-              <p className="text-xs text-muted-foreground truncate">Cybersecurity Assessment</p>
+              <h1 className="font-bold text-lg leading-tight text-white">CTAM+</h1>
+              <p className="text-xs text-white/70 truncate">Cybersecurity Assessment</p>
             </div>
           )}
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2">
+      <SidebarContent className="px-2 py-2">
         {/* Main Menu */}
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? 'sr-only' : ''}>
+          <SidebarGroupLabel className={`text-white/60 ${collapsed ? 'sr-only' : ''}`}>
             เมนูหลัก
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -125,6 +128,10 @@ export function AppSidebar() {
                     onClick={() => navigate(item.url)}
                     isActive={isActive(item.url)}
                     tooltip={item.title}
+                    className={`
+                      text-white/80 hover:bg-white/10 hover:text-white
+                      data-[active=true]:bg-white data-[active=true]:text-primary data-[active=true]:font-medium
+                    `}
                   >
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
@@ -135,20 +142,24 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Admin Menu */}
-        {profile?.role === 'central_admin' && (
+        {/* Admin Menu - Show for central_admin */}
+        {isCentralAdmin && (
           <SidebarGroup>
-            <SidebarGroupLabel className={collapsed ? 'sr-only' : ''}>
+            <SidebarGroupLabel className={`text-white/60 ${collapsed ? 'sr-only' : ''}`}>
               จัดการระบบ
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {filterByRole(adminItems).map((item) => (
+                {adminItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton 
                       onClick={() => navigate(item.url)}
                       isActive={isActive(item.url)}
                       tooltip={item.title}
+                      className={`
+                        text-white/80 hover:bg-white/10 hover:text-white
+                        data-[active=true]:bg-white data-[active=true]:text-primary data-[active=true]:font-medium
+                      `}
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -161,11 +172,11 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-4">
+      <SidebarFooter className="border-t border-primary-foreground/20 p-4">
         {!collapsed && profile && (
           <div className="mb-3">
-            <p className="font-medium text-sm truncate">{profile.full_name || profile.email}</p>
-            <Badge variant="secondary" className="mt-1">
+            <p className="font-medium text-sm truncate text-white">{profile.full_name || profile.email}</p>
+            <Badge className="mt-1 bg-white/20 text-white hover:bg-white/30">
               {getRoleLabel(profile.role)}
             </Badge>
           </div>
@@ -174,7 +185,7 @@ export function AppSidebar() {
           variant="outline" 
           size={collapsed ? 'icon' : 'default'}
           onClick={signOut}
-          className="w-full"
+          className="w-full border-white/30 text-white hover:bg-white/10 hover:text-white"
         >
           <LogOut className="h-4 w-4" />
           {!collapsed && <span className="ml-2">ออกจากระบบ</span>}
