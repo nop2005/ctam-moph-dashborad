@@ -148,7 +148,7 @@ export function QuantitativeSection({
                   <span>ไม่ผ่าน: {progress.fail}</span>
                 </div>
               </div>
-              <span className="font-medium">{progress.percentage.toFixed(1)}%</span>
+              <span className="font-medium">{progress.pass}/{categories.length} ({progress.percentage.toFixed(1)}%)</span>
             </div>
           </div>
         </CardContent>
