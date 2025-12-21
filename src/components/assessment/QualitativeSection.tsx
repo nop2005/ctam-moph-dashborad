@@ -246,7 +246,7 @@ export function QualitativeSection({
 
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
-                  <Label htmlFor="uses_freeware">ใช้ Freeware ในงานสำคัญ</Label>
+                  <Label htmlFor="uses_freeware">มีการใช้งานซอฟต์แวร์ Open Source หรือ Freeware ใน CTAM+ อย่างน้อย 2 ระบบ</Label>
                   <EvidenceUpload 
                     qualitativeScoreId={qualitativeScore?.id || null} 
                     fieldName="uses_freeware" 
