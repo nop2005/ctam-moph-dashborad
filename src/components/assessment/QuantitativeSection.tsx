@@ -114,7 +114,7 @@ export function QuantitativeSection({
       {/* Progress Summary */}
       <Card>
         <CardHeader>
-          <CardTitle>เชิงปริมาณ (Quantitative) - 70%</CardTitle>
+          <CardTitle>เชิงปริมาณ (Quantitative) 70%</CardTitle>
           <CardDescription>
             ประเมินตามมาตรฐาน CTAM+ 17 หมวด
           </CardDescription>
