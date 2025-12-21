@@ -1,16 +1,15 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Save, Loader2, AlertTriangle, Shield, Clock } from 'lucide-react';
+import { Loader2, AlertTriangle, Shield, Clock } from 'lucide-react';
 import { ImpactEvidenceUpload } from './ImpactEvidenceUpload';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -49,42 +48,43 @@ export function ImpactSection({
   });
 
   // Calculate scores based on criteria
-  const calculateScores = () => {
+  const calculateScores = useCallback((data: typeof formData) => {
     let incidentScore = 0;
     let breachScore = 0;
 
-    // Incident score (based on recovery time)
-    if (formData.had_incident) {
-      if (formData.incident_recovery_hours <= 4) incidentScore = -2;
-      else if (formData.incident_recovery_hours <= 24) incidentScore = -5;
-      else if (formData.incident_recovery_hours <= 72) incidentScore = -8;
+    if (data.had_incident) {
+      if (data.incident_recovery_hours <= 4) incidentScore = -2;
+      else if (data.incident_recovery_hours <= 24) incidentScore = -5;
+      else if (data.incident_recovery_hours <= 72) incidentScore = -8;
       else incidentScore = -15;
     }
 
-    // Breach score (based on severity)
-    if (formData.had_data_breach) {
-      const severity = breachSeverityOptions.find(s => s.value === formData.breach_severity);
+    if (data.had_data_breach) {
+      const severity = breachSeverityOptions.find(s => s.value === data.breach_severity);
       breachScore = -(severity?.penalty ?? 0);
     }
 
     return {
       incident_score: incidentScore,
       breach_score: breachScore,
-      breach_penalty_level: breachSeverityOptions.findIndex(s => s.value === formData.breach_severity),
+      breach_penalty_level: breachSeverityOptions.findIndex(s => s.value === data.breach_severity),
       total_score: Math.max(0, 15 + incidentScore + breachScore),
     };
-  };
+  }, []);
 
-  const handleSave = async () => {
+  // Auto-save function
+  const autoSave = useCallback(async (newFormData: typeof formData) => {
+    if (readOnly || !profile) return;
+    
     try {
       setSaving(true);
-      const scores = calculateScores();
+      const scores = calculateScores(newFormData);
 
       const data = {
         assessment_id: assessmentId,
-        ...formData,
+        ...newFormData,
         ...scores,
-        evaluated_by: profile?.user_id,
+        evaluated_by: profile.id,
         evaluated_at: new Date().toISOString(),
       };
 
@@ -109,17 +109,22 @@ export function ImpactSection({
       }
 
       onScoreChange(result);
-      toast({ title: 'บันทึกสำเร็จ' });
-
     } catch (error: any) {
-      console.error('Error saving impact score:', error);
-      toast({ title: 'เกิดข้อผิดพลาด', description: error.message, variant: 'destructive' });
+      console.error('Error auto-saving:', error);
+      toast({ title: 'บันทึกไม่สำเร็จ', description: error.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
-  };
+  }, [assessmentId, impactScore, profile, readOnly, calculateScores, onScoreChange, toast]);
 
-  const scores = calculateScores();
+  // Handle field change with auto-save
+  const handleFieldChange = useCallback((field: keyof typeof formData, value: boolean | number | string) => {
+    const newFormData = { ...formData, [field]: value };
+    setFormData(newFormData);
+    autoSave(newFormData);
+  }, [formData, autoSave]);
+
+  const scores = calculateScores(formData);
 
   return (
     <div className="space-y-6">
@@ -157,8 +162,8 @@ export function ImpactSection({
                 <Switch
                   id="had_incident"
                   checked={formData.had_incident}
-                  onCheckedChange={(checked) => setFormData({ ...formData, had_incident: checked })}
-                  disabled={readOnly}
+                  onCheckedChange={(checked) => handleFieldChange('had_incident', checked)}
+                  disabled={readOnly || saving}
                 />
               </div>
 
@@ -175,7 +180,8 @@ export function ImpactSection({
                       min="0"
                       value={formData.incident_recovery_hours}
                       onChange={(e) => setFormData({ ...formData, incident_recovery_hours: parseInt(e.target.value) || 0 })}
-                      disabled={readOnly}
+                      onBlur={(e) => handleFieldChange('incident_recovery_hours', parseInt(e.target.value) || 0)}
+                      disabled={readOnly || saving}
                       className="w-32"
                     />
                     <ImpactEvidenceUpload 
@@ -217,8 +223,8 @@ export function ImpactSection({
                 <Switch
                   id="had_data_breach"
                   checked={formData.had_data_breach}
-                  onCheckedChange={(checked) => setFormData({ ...formData, had_data_breach: checked })}
-                  disabled={readOnly}
+                  onCheckedChange={(checked) => handleFieldChange('had_data_breach', checked)}
+                  disabled={readOnly || saving}
                 />
               </div>
 
@@ -228,8 +234,8 @@ export function ImpactSection({
                   <div className="flex items-center gap-4">
                     <Select
                       value={formData.breach_severity}
-                      onValueChange={(value) => setFormData({ ...formData, breach_severity: value })}
-                      disabled={readOnly}
+                      onValueChange={(value) => handleFieldChange('breach_severity', value)}
+                      disabled={readOnly || saving}
                     >
                       <SelectTrigger className="w-full max-w-xs">
                         <SelectValue placeholder="เลือกความรุนแรง" />
@@ -263,7 +269,8 @@ export function ImpactSection({
               placeholder="อธิบายรายละเอียดเหตุการณ์ที่เกิดขึ้น..."
               value={formData.comment}
               onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-              disabled={readOnly}
+              onBlur={(e) => handleFieldChange('comment', e.target.value)}
+              disabled={readOnly || saving}
               className="min-h-[100px]"
             />
           </div>
@@ -274,17 +281,11 @@ export function ImpactSection({
             <span className="text-2xl font-bold text-primary">{scores.total_score}/15</span>
           </div>
 
-          {/* Save Button */}
-          {!readOnly && (
-            <div className="flex justify-end">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
-                บันทึก
-              </Button>
+          {/* Auto-save indicator */}
+          {saving && (
+            <div className="flex items-center justify-end text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              กำลังบันทึก...
             </div>
           )}
         </CardContent>
