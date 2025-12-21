@@ -115,18 +115,17 @@ export function AssessmentSummary({
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center gap-6">
-            <div className="relative">
-              <div className="w-40 h-40 rounded-full border-8 border-primary/20 flex items-center justify-center">
-                <div className="text-center">
-                  <span className={`text-5xl font-bold ${gradeInfo.color}`}>{totalScore.toFixed(1)}</span>
-                  <span className="text-xl text-muted-foreground">/100</span>
-                </div>
+            <div className="w-40 h-40 rounded-full border-8 border-primary/20 flex items-center justify-center">
+              <div className="text-center">
+                <span className={`text-5xl font-bold ${gradeInfo.color}`}>{totalScore.toFixed(1)}</span>
+                <span className="text-xl text-muted-foreground">/100</span>
               </div>
-              <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-background border-2 ${gradeInfo.borderColor}`}>
-                <span className={`font-bold ${gradeInfo.color}`}>
-                  ระดับ {gradeInfo.level}: {gradeInfo.label}
-                </span>
-              </div>
+            </div>
+            
+            <div className={`px-4 py-2 rounded-full bg-background border-2 ${gradeInfo.borderColor}`}>
+              <span className={`font-bold ${gradeInfo.color}`}>
+                ระดับ {gradeInfo.level}: {gradeInfo.label}
+              </span>
             </div>
             
             {/* Interpretation Description */}
