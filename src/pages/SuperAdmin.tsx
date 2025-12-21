@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { 
   Users, 
@@ -17,7 +18,13 @@ import {
   MapPin,
   Edit,
   Search,
-  RefreshCw
+  RefreshCw,
+  UserCheck,
+  UserX,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Phone
 } from 'lucide-react';
 
 interface Profile {
@@ -25,11 +32,13 @@ interface Profile {
   user_id: string;
   email: string;
   full_name: string | null;
+  phone: string | null;
   role: 'hospital_it' | 'provincial' | 'regional' | 'central_admin';
   hospital_id: string | null;
   province_id: string | null;
   health_region_id: string | null;
   is_active: boolean;
+  created_at: string;
 }
 
 interface Province {
@@ -61,9 +70,11 @@ export default function SuperAdmin() {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('pending');
   
   // Dialog states
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [editRole, setEditRole] = useState<string>('');
   const [editProvinceId, setEditProvinceId] = useState<string>('');
@@ -146,6 +157,76 @@ export default function SuperAdmin() {
     setIsEditDialogOpen(true);
   };
 
+  const handleApproveClick = (profileToApprove: Profile) => {
+    setSelectedProfile(profileToApprove);
+    setEditRole('provincial'); // Default to provincial
+    setEditProvinceId('');
+    setEditRegionId('');
+    setEditHospitalId('');
+    setEditFullName(profileToApprove.full_name || '');
+    setIsApproveDialogOpen(true);
+  };
+
+  const handleApproveUser = async () => {
+    if (!selectedProfile) return;
+    
+    setIsSaving(true);
+    try {
+      const updateData: Partial<Profile> = {
+        role: editRole as Profile['role'],
+        full_name: editFullName || null,
+        province_id: editProvinceId || null,
+        health_region_id: editRegionId || null,
+        hospital_id: editHospitalId || null,
+        is_active: true,
+      };
+
+      // Clear irrelevant fields based on role
+      if (editRole === 'central_admin') {
+        updateData.province_id = null;
+        updateData.health_region_id = null;
+        updateData.hospital_id = null;
+      } else if (editRole === 'regional') {
+        updateData.province_id = null;
+        updateData.hospital_id = null;
+      } else if (editRole === 'provincial') {
+        updateData.hospital_id = null;
+        updateData.health_region_id = null;
+      } else if (editRole === 'hospital_it') {
+        updateData.health_region_id = null;
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', selectedProfile.id);
+
+      if (error) throw error;
+
+      toast.success('อนุมัติผู้ใช้สำเร็จ');
+      setIsApproveDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      console.error('Error approving user:', error);
+      toast.error('ไม่สามารถอนุมัติผู้ใช้ได้');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRejectUser = async (profileToReject: Profile) => {
+    if (!confirm('คุณต้องการปฏิเสธผู้ใช้นี้หรือไม่?')) return;
+    
+    try {
+      // We can't delete auth users, so we just keep is_active = false
+      // Optionally mark them as rejected somehow
+      toast.info('ผู้ใช้ถูกปฏิเสธ (ยังคงอยู่ในระบบแต่ไม่สามารถใช้งานได้)');
+    } catch (error) {
+      console.error('Error rejecting user:', error);
+      toast.error('ไม่สามารถปฏิเสธผู้ใช้ได้');
+    }
+  };
+
   const handleSaveProfile = async () => {
     if (!selectedProfile) return;
     
@@ -192,7 +273,15 @@ export default function SuperAdmin() {
     }
   };
 
-  const filteredProfiles = profiles.filter(p => 
+  const pendingProfiles = profiles.filter(p => !p.is_active);
+  const activeProfiles = profiles.filter(p => p.is_active);
+
+  const filteredPendingProfiles = pendingProfiles.filter(p => 
+    p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+  );
+
+  const filteredActiveProfiles = activeProfiles.filter(p => 
     p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (p.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
@@ -204,10 +293,21 @@ export default function SuperAdmin() {
   // Stats
   const stats = {
     total: profiles.length,
-    centralAdmin: profiles.filter(p => p.role === 'central_admin').length,
-    regional: profiles.filter(p => p.role === 'regional').length,
-    provincial: profiles.filter(p => p.role === 'provincial').length,
-    hospitalIt: profiles.filter(p => p.role === 'hospital_it').length,
+    pending: pendingProfiles.length,
+    active: activeProfiles.length,
+    centralAdmin: profiles.filter(p => p.role === 'central_admin' && p.is_active).length,
+    regional: profiles.filter(p => p.role === 'regional' && p.is_active).length,
+    provincial: profiles.filter(p => p.role === 'provincial' && p.is_active).length,
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('th-TH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   return (
@@ -216,16 +316,28 @@ export default function SuperAdmin() {
       <div className="mb-8">
         <h2 className="text-2xl font-bold mb-2">จัดการผู้ใช้งาน</h2>
         <p className="text-muted-foreground">
-          จัดการสิทธิ์และข้อมูลผู้ใช้งานทั้งหมดในระบบ
+          อนุมัติผู้ใช้ใหม่และจัดการสิทธิ์ผู้ใช้งานทั้งหมดในระบบ
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold">{stats.total}</div>
-            <div className="text-sm text-muted-foreground">ผู้ใช้ทั้งหมด</div>
+            <div className="text-sm text-muted-foreground">ทั้งหมด</div>
+          </CardContent>
+        </Card>
+        <Card className={stats.pending > 0 ? 'border-warning' : ''}>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-warning">{stats.pending}</div>
+            <div className="text-sm text-muted-foreground">รอการอนุมัติ</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-success">{stats.active}</div>
+            <div className="text-sm text-muted-foreground">ใช้งาน</div>
           </CardContent>
         </Card>
         <Card>
@@ -246,122 +358,325 @@ export default function SuperAdmin() {
             <div className="text-sm text-muted-foreground">สสจ.</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-muted-foreground">{stats.hospitalIt}</div>
-            <div className="text-sm text-muted-foreground">IT รพ.</div>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Users Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <TabsList>
+            <TabsTrigger value="pending" className="gap-2">
+              <Clock className="h-4 w-4" />
+              รอการอนุมัติ
+              {stats.pending > 0 && (
+                <Badge variant="destructive" className="ml-1">
+                  {stats.pending}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="active" className="gap-2">
+              <UserCheck className="h-4 w-4" />
+              ผู้ใช้งาน ({stats.active})
+            </TabsTrigger>
+          </TabsList>
+
+          <div className="flex gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="ค้นหาผู้ใช้..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 w-[200px]"
+              />
+            </div>
+            <Button variant="outline" size="icon" onClick={fetchData}>
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+        </div>
+
+        {/* Pending Users Tab */}
+        <TabsContent value="pending">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-warning" />
+                ผู้ใช้รอการอนุมัติ
+              </CardTitle>
+              <CardDescription>
+                ตรวจสอบและอนุมัติผู้ใช้ใหม่ พร้อมกำหนดบทบาทและหน่วยงาน
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="text-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                </div>
+              ) : filteredPendingProfiles.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <UserCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>ไม่มีผู้ใช้รอการอนุมัติ</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredPendingProfiles.map((p) => (
+                    <Card key={p.id} className="border-warning/30">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="space-y-1">
+                            <div className="font-medium">{p.full_name || 'ไม่ระบุชื่อ'}</div>
+                            <div className="text-sm text-muted-foreground">{p.email}</div>
+                            {p.phone && (
+                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <Phone className="h-3 w-3" />
+                                {p.phone}
+                              </div>
+                            )}
+                            <div className="text-xs text-muted-foreground">
+                              สมัครเมื่อ: {formatDate(p.created_at)}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleApproveClick(p)}
+                              className="gap-1"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                              อนุมัติ
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRejectUser(p)}
+                              className="gap-1 text-destructive hover:text-destructive"
+                            >
+                              <XCircle className="h-4 w-4" />
+                              ปฏิเสธ
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Active Users Tab */}
+        <TabsContent value="active">
+          <Card>
+            <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
                 รายชื่อผู้ใช้งาน
               </CardTitle>
-              <CardDescription>คลิกที่ปุ่มแก้ไขเพื่อเปลี่ยนสิทธิ์ผู้ใช้</CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="ค้นหาผู้ใช้..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 w-[200px]"
-                />
-              </div>
-              <Button variant="outline" size="icon" onClick={fetchData}>
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>อีเมล</TableHead>
-                  <TableHead>ชื่อ-นามสกุล</TableHead>
-                  <TableHead>บทบาท</TableHead>
-                  <TableHead>หน่วยงาน</TableHead>
-                  <TableHead>สถานะ</TableHead>
-                  <TableHead className="text-right">จัดการ</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-                    </TableCell>
-                  </TableRow>
-                ) : filteredProfiles.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      ไม่พบข้อมูลผู้ใช้
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredProfiles.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium">{p.email}</TableCell>
-                      <TableCell>{p.full_name || '-'}</TableCell>
-                      <TableCell>
-                        <Badge variant={getRoleBadgeVariant(p.role)}>
-                          {getRoleLabel(p.role)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {p.role === 'hospital_it' && (
-                          <div className="flex items-center gap-1 text-sm">
-                            <Building2 className="h-3 w-3" />
-                            {getHospitalName(p.hospital_id)}
-                          </div>
-                        )}
-                        {p.role === 'provincial' && (
-                          <div className="flex items-center gap-1 text-sm">
-                            <MapPin className="h-3 w-3" />
-                            {getProvinceName(p.province_id)}
-                          </div>
-                        )}
-                        {p.role === 'regional' && (
-                          <div className="flex items-center gap-1 text-sm">
-                            <MapPin className="h-3 w-3" />
-                            {getRegionName(p.health_region_id)}
-                          </div>
-                        )}
-                        {p.role === 'central_admin' && (
-                          <span className="text-sm text-muted-foreground">ส่วนกลาง</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={p.is_active ? 'default' : 'secondary'}>
-                          {p.is_active ? 'ใช้งาน' : 'ปิดใช้งาน'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditProfile(p)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+              <CardDescription>ผู้ใช้ที่ได้รับการอนุมัติแล้ว</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>อีเมล</TableHead>
+                      <TableHead>ชื่อ-นามสกุล</TableHead>
+                      <TableHead>เบอร์โทร</TableHead>
+                      <TableHead>บทบาท</TableHead>
+                      <TableHead>หน่วยงาน</TableHead>
+                      <TableHead className="text-right">จัดการ</TableHead>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8">
+                          <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredActiveProfiles.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          ไม่พบข้อมูลผู้ใช้
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredActiveProfiles.map((p) => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-medium">{p.email}</TableCell>
+                          <TableCell>{p.full_name || '-'}</TableCell>
+                          <TableCell>{p.phone || '-'}</TableCell>
+                          <TableCell>
+                            <Badge variant={getRoleBadgeVariant(p.role)}>
+                              {getRoleLabel(p.role)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {p.role === 'hospital_it' && (
+                              <div className="flex items-center gap-1 text-sm">
+                                <Building2 className="h-3 w-3" />
+                                {getHospitalName(p.hospital_id)}
+                              </div>
+                            )}
+                            {p.role === 'provincial' && (
+                              <div className="flex items-center gap-1 text-sm">
+                                <MapPin className="h-3 w-3" />
+                                {getProvinceName(p.province_id)}
+                              </div>
+                            )}
+                            {p.role === 'regional' && (
+                              <div className="flex items-center gap-1 text-sm">
+                                <MapPin className="h-3 w-3" />
+                                {getRegionName(p.health_region_id)}
+                              </div>
+                            )}
+                            {p.role === 'central_admin' && (
+                              <span className="text-sm text-muted-foreground">ส่วนกลาง</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditProfile(p)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Approve Dialog */}
+      <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>อนุมัติผู้ใช้</DialogTitle>
+            <DialogDescription>
+              กำหนดบทบาทและหน่วยงานสำหรับ {selectedProfile?.email}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>ชื่อ-นามสกุล</Label>
+              <Input
+                value={editFullName}
+                onChange={(e) => setEditFullName(e.target.value)}
+                placeholder="ระบุชื่อ-นามสกุล"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>บทบาท</Label>
+              <Select value={editRole} onValueChange={setEditRole}>
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกบทบาท" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hospital_it">IT โรงพยาบาล</SelectItem>
+                  <SelectItem value="provincial">ผู้ประเมินระดับจังหวัด (สสจ.)</SelectItem>
+                  <SelectItem value="regional">ผู้ประเมินระดับเขตสุขภาพ</SelectItem>
+                  <SelectItem value="central_admin">ส่วนกลาง (Super Admin)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {editRole === 'regional' && (
+              <div className="space-y-2">
+                <Label>เขตสุขภาพ</Label>
+                <Select value={editRegionId} onValueChange={setEditRegionId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกเขตสุขภาพ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {healthRegions.map((region) => (
+                      <SelectItem key={region.id} value={region.id}>
+                        เขตสุขภาพที่ {region.region_number}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {editRole === 'provincial' && (
+              <div className="space-y-2">
+                <Label>จังหวัด</Label>
+                <Select value={editProvinceId} onValueChange={setEditProvinceId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกจังหวัด" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {provinces.map((province) => (
+                      <SelectItem key={province.id} value={province.id}>
+                        {province.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {editRole === 'hospital_it' && (
+              <>
+                <div className="space-y-2">
+                  <Label>จังหวัด</Label>
+                  <Select value={editProvinceId} onValueChange={(v) => {
+                    setEditProvinceId(v);
+                    setEditHospitalId('');
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกจังหวัด" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {provinces.map((province) => (
+                        <SelectItem key={province.id} value={province.id}>
+                          {province.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>โรงพยาบาล</Label>
+                  <Select value={editHospitalId} onValueChange={setEditHospitalId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกโรงพยาบาล" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredHospitals.map((hospital) => (
+                        <SelectItem key={hospital.id} value={hospital.id}>
+                          {hospital.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
           </div>
-        </CardContent>
-      </Card>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsApproveDialogOpen(false)}>
+              ยกเลิก
+            </Button>
+            <Button onClick={handleApproveUser} disabled={isSaving}>
+              {isSaving ? 'กำลังอนุมัติ...' : 'อนุมัติ'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
