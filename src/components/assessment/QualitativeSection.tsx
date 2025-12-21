@@ -202,22 +202,6 @@ export function QualitativeSection({
                 />
               </div>
 
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1">
-                  <Label htmlFor="has_it_security_team">มีทีม IT Security</Label>
-                  <EvidenceUpload 
-                    qualitativeScoreId={qualitativeScore?.id || null} 
-                    fieldName="has_it_security_team" 
-                    disabled={readOnly} 
-                  />
-                </div>
-                <Switch
-                  id="has_it_security_team"
-                  checked={formData.has_it_security_team}
-                  onCheckedChange={(checked) => handleFieldChange('has_it_security_team', checked)}
-                  disabled={readOnly || saving}
-                />
-              </div>
             </div>
           </div>
 
