@@ -135,7 +135,7 @@ export function ImpactSection({
       {/* Progress Summary Card */}
       <Card>
         <CardHeader>
-          <CardTitle>ผลกระทบ (Impact) - 15%</CardTitle>
+          <CardTitle>ผลกระทบ (Impact) = 15%</CardTitle>
           <CardDescription>
             ประเมินผลกระทบจาก Cyber Incident และ Data Breach
           </CardDescription>

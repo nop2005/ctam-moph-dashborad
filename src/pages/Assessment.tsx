@@ -132,9 +132,9 @@ export default function Assessment() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid grid-cols-4 w-full max-w-2xl">
-            <TabsTrigger value="quantitative">เชิงปริมาณ (70%)</TabsTrigger>
-            <TabsTrigger value="qualitative">เชิงคุณภาพ (15%)</TabsTrigger>
-            <TabsTrigger value="impact">ผลกระทบ (15%)</TabsTrigger>
+            <TabsTrigger value="quantitative">เชิงปริมาณ = 70%</TabsTrigger>
+            <TabsTrigger value="qualitative">เชิงคุณภาพ = 15%</TabsTrigger>
+            <TabsTrigger value="impact">ผลกระทบ = 15%</TabsTrigger>
             <TabsTrigger value="summary">สรุปผล</TabsTrigger>
           </TabsList>
 
