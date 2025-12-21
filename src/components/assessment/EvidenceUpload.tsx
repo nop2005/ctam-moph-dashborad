@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Paperclip, X, FileText, Loader2, Upload } from 'lucide-react';
+import { Paperclip, X, FileText, Loader2 } from 'lucide-react';
 
 interface EvidenceFile {
   id: string;
@@ -22,6 +22,7 @@ interface EvidenceUploadProps {
 export function EvidenceUpload({ qualitativeScoreId, fieldName, disabled }: EvidenceUploadProps) {
   const { profile } = useAuth();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<EvidenceFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -180,8 +181,9 @@ export function EvidenceUpload({ qualitativeScoreId, fieldName, disabled }: Evid
 
       {/* Upload button */}
       {!disabled && (
-        <label className="cursor-pointer">
+        <>
           <input
+            ref={fileInputRef}
             type="file"
             className="hidden"
             onChange={handleFileUpload}
@@ -193,18 +195,16 @@ export function EvidenceUpload({ qualitativeScoreId, fieldName, disabled }: Evid
             size="sm"
             className="h-7 text-xs gap-1"
             disabled={uploading || !qualitativeScoreId}
-            asChild
+            onClick={() => fileInputRef.current?.click()}
           >
-            <span>
-              {uploading ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Paperclip className="w-3 h-3" />
-              )}
-              แนบหลักฐาน
-            </span>
+            {uploading ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Paperclip className="w-3 h-3" />
+            )}
+            แนบหลักฐาน
           </Button>
-        </label>
+        </>
       )}
       
       {!qualitativeScoreId && !disabled && (
