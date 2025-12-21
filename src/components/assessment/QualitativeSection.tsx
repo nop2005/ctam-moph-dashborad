@@ -187,7 +187,7 @@ export function QualitativeSection({
 
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
-                  <Label htmlFor="has_dpo">คณะกรรมการ CISO จังหวัดอย่างน้อย 1 ท่าน ต้องผ่านการสอบหรืออบรมตามหลักสูตรที่ ศทส.สป.สธ.</Label>
+                  <Label htmlFor="has_dpo">คณะกรรมการ CISO จังหวัดอย่างน้อย 1 ท่าน ต้องผ่านการสอบหรืออบรมตามหลักสูตรที่ ศทส.สป.สธ. กำหนด</Label>
                   <EvidenceUpload 
                     qualitativeScoreId={qualitativeScore?.id || null} 
                     fieldName="has_dpo" 
