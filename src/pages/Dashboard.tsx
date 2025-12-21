@@ -88,6 +88,19 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Admin Menu - Only for central_admin */}
+            {profile?.role === 'central_admin' && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/super-admin')}
+                className="hidden sm:flex items-center gap-2"
+              >
+                <Users className="h-4 w-4" />
+                จัดการผู้ใช้
+              </Button>
+            )}
+            
             <div className="text-right hidden sm:block">
               <p className="font-medium text-sm">{profile?.full_name || user?.email}</p>
               <Badge variant={getRoleBadgeVariant(profile?.role || '')}>
