@@ -130,15 +130,26 @@ export function ImpactSection({
   const progressPercentage = (scores.total_score / 15) * 100;
   const hasIssues = formData.had_incident || formData.had_data_breach;
 
+  // Calculate score converted to 15% weight (out of 1.5 points)
+  const scoreOut1_5 = (scores.total_score / 15) * 1.5;
+
   return (
     <div className="space-y-6">
       {/* Progress Summary Card */}
       <Card>
-        <CardHeader>
-          <CardTitle>ผลกระทบ (Impact) - 15%</CardTitle>
-          <CardDescription>
-            ประเมินผลกระทบจาก Cyber Incident และ Data Breach
-          </CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between">
+          <div>
+            <CardTitle>ผลกระทบ (Impact) - 15%</CardTitle>
+            <CardDescription>
+              ประเมินผลกระทบจาก Cyber Incident และ Data Breach
+            </CardDescription>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-primary">
+              {scoreOut1_5.toFixed(2)}<span className="text-lg text-muted-foreground">/1.5</span>
+            </div>
+            <div className="text-sm text-muted-foreground">คะแนน</div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
