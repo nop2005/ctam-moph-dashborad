@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,7 @@ import {
 
 export default function Dashboard() {
   const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
@@ -181,8 +183,8 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full" disabled>
-                  เข้าสู่หน้าจัดการ (เร็วๆ นี้)
+                <Button variant="outline" className="w-full" onClick={() => navigate('/super-admin')}>
+                  เข้าสู่หน้าจัดการ
                 </Button>
               </CardContent>
             </Card>
