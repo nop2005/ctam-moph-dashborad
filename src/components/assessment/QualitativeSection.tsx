@@ -1,0 +1,271 @@
+import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+import { Save, Loader2, Users, Shield, GraduationCap, Building2 } from 'lucide-react';
+import type { Database } from '@/integrations/supabase/types';
+
+type QualitativeScore = Database['public']['Tables']['qualitative_scores']['Row'];
+
+interface QualitativeSectionProps {
+  assessmentId: string;
+  qualitativeScore: QualitativeScore | null;
+  onScoreChange: (score: QualitativeScore | null) => void;
+  readOnly: boolean;
+}
+
+export function QualitativeSection({
+  assessmentId,
+  qualitativeScore,
+  onScoreChange,
+  readOnly,
+}: QualitativeSectionProps) {
+  const { profile } = useAuth();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    has_ciso: qualitativeScore?.has_ciso ?? false,
+    has_dpo: qualitativeScore?.has_dpo ?? false,
+    has_it_security_team: qualitativeScore?.has_it_security_team ?? false,
+    annual_training_count: qualitativeScore?.annual_training_count ?? 0,
+    uses_opensource: qualitativeScore?.uses_opensource ?? false,
+    uses_freeware: qualitativeScore?.uses_freeware ?? false,
+    comment: qualitativeScore?.comment ?? '',
+  });
+
+  // Calculate scores based on criteria
+  const calculateScores = () => {
+    let leadershipScore = 0;
+    let sustainableScore = 0;
+
+    // Leadership score (based on roles)
+    if (formData.has_ciso) leadershipScore += 3;
+    if (formData.has_dpo) leadershipScore += 3;
+    if (formData.has_it_security_team) leadershipScore += 4;
+
+    // Sustainable score (based on training and software)
+    if (formData.annual_training_count >= 4) sustainableScore += 5;
+    else if (formData.annual_training_count >= 2) sustainableScore += 3;
+    else if (formData.annual_training_count >= 1) sustainableScore += 1;
+
+    if (!formData.uses_freeware && !formData.uses_opensource) sustainableScore += 5;
+    else if (!formData.uses_freeware) sustainableScore += 3;
+
+    return {
+      leadership_score: Math.min(leadershipScore, 10),
+      sustainable_score: Math.min(sustainableScore, 10),
+      total_score: Math.min(leadershipScore + sustainableScore, 15),
+    };
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const scores = calculateScores();
+
+      const data = {
+        assessment_id: assessmentId,
+        ...formData,
+        ...scores,
+        evaluated_by: profile?.user_id,
+        evaluated_at: new Date().toISOString(),
+      };
+
+      let result;
+      if (qualitativeScore) {
+        const { data: updated, error } = await supabase
+          .from('qualitative_scores')
+          .update(data)
+          .eq('id', qualitativeScore.id)
+          .select()
+          .single();
+        if (error) throw error;
+        result = updated;
+      } else {
+        const { data: created, error } = await supabase
+          .from('qualitative_scores')
+          .insert(data)
+          .select()
+          .single();
+        if (error) throw error;
+        result = created;
+      }
+
+      onScoreChange(result);
+      toast({ title: 'บันทึกสำเร็จ' });
+
+    } catch (error: any) {
+      console.error('Error saving qualitative score:', error);
+      toast({ title: 'เกิดข้อผิดพลาด', description: error.message, variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const scores = calculateScores();
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="w-5 h-5" />
+            เชิงคุณภาพ (Qualitative) - 15%
+          </CardTitle>
+          <CardDescription>
+            ประเมินตาม WHO 6 Building Blocks: ระบบงาน ภาวะผู้นำ และความยั่งยืน
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Leadership Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-primary" />
+              <h3 className="font-semibold">ภาวะผู้นำและธรรมาภิบาล (Leadership)</h3>
+              <span className="text-sm text-muted-foreground ml-auto">
+                คะแนน: {scores.leadership_score}/10
+              </span>
+            </div>
+
+            <div className="grid gap-4 pl-6">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="has_ciso" className="flex-1">
+                  มี CISO (Chief Information Security Officer)
+                </Label>
+                <Switch
+                  id="has_ciso"
+                  checked={formData.has_ciso}
+                  onCheckedChange={(checked) => setFormData({ ...formData, has_ciso: checked })}
+                  disabled={readOnly}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="has_dpo" className="flex-1">
+                  มี DPO (Data Protection Officer)
+                </Label>
+                <Switch
+                  id="has_dpo"
+                  checked={formData.has_dpo}
+                  onCheckedChange={(checked) => setFormData({ ...formData, has_dpo: checked })}
+                  disabled={readOnly}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="has_it_security_team" className="flex-1">
+                  มีทีม IT Security
+                </Label>
+                <Switch
+                  id="has_it_security_team"
+                  checked={formData.has_it_security_team}
+                  onCheckedChange={(checked) => setFormData({ ...formData, has_it_security_team: checked })}
+                  disabled={readOnly}
+                />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Sustainable Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="w-4 h-4 text-primary" />
+              <h3 className="font-semibold">ความยั่งยืน (Sustainable)</h3>
+              <span className="text-sm text-muted-foreground ml-auto">
+                คะแนน: {scores.sustainable_score}/10
+              </span>
+            </div>
+
+            <div className="grid gap-4 pl-6">
+              <div className="space-y-2">
+                <Label htmlFor="annual_training_count">
+                  จำนวนครั้งอบรม IT Security ต่อปี
+                </Label>
+                <Input
+                  id="annual_training_count"
+                  type="number"
+                  min="0"
+                  value={formData.annual_training_count}
+                  onChange={(e) => setFormData({ ...formData, annual_training_count: parseInt(e.target.value) || 0 })}
+                  disabled={readOnly}
+                  className="w-32"
+                />
+                <p className="text-xs text-muted-foreground">
+                  4+ ครั้ง = 5 คะแนน, 2-3 ครั้ง = 3 คะแนน, 1 ครั้ง = 1 คะแนน
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="uses_freeware" className="flex-1">
+                  ใช้ Freeware ในงานสำคัญ
+                </Label>
+                <Switch
+                  id="uses_freeware"
+                  checked={formData.uses_freeware}
+                  onCheckedChange={(checked) => setFormData({ ...formData, uses_freeware: checked })}
+                  disabled={readOnly}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="uses_opensource" className="flex-1">
+                  ใช้ Open Source ในงานสำคัญ
+                </Label>
+                <Switch
+                  id="uses_opensource"
+                  checked={formData.uses_opensource}
+                  onCheckedChange={(checked) => setFormData({ ...formData, uses_opensource: checked })}
+                  disabled={readOnly}
+                />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Comments */}
+          <div className="space-y-2">
+            <Label htmlFor="comment">ความคิดเห็นเพิ่มเติม</Label>
+            <Textarea
+              id="comment"
+              placeholder="หมายเหตุหรือข้อสังเกตเพิ่มเติม..."
+              value={formData.comment}
+              onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
+              disabled={readOnly}
+              className="min-h-[100px]"
+            />
+          </div>
+
+          {/* Total Score */}
+          <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg">
+            <span className="font-semibold">คะแนนเชิงคุณภาพรวม</span>
+            <span className="text-2xl font-bold text-primary">{scores.total_score}/15</span>
+          </div>
+
+          {/* Save Button */}
+          {!readOnly && (
+            <div className="flex justify-end">
+              <Button onClick={handleSave} disabled={saving}>
+                {saving ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
+                )}
+                บันทึก
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
