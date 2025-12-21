@@ -245,7 +245,7 @@ export function ImpactSection({
             <div className="grid gap-4 pl-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
-                  <Label htmlFor="had_data_breach">เคยเกิด Data Breach ในรอบประเมินนี้</Label>
+                  <Label htmlFor="had_data_breach">ในรอบการประเมินนี้ มีเหตุการณ์รั่วไหลของฐานข้อมูลของโรงพยาบาล (HIS Data Breach) หรือมีเหตุการณ์ข้อมูลส่วนบุคคลรั่วไหลที่เกี่ยวข้องกับระบบสารสนเทศ จนสคส.วินิจฉัยโทษทางปกครอง</Label>
                   <ImpactEvidenceUpload 
                     impactScoreId={impactScore?.id || null} 
                     fieldName="had_data_breach" 
