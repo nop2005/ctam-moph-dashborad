@@ -132,13 +132,13 @@ export default function Assessment() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid grid-cols-4 w-full max-w-3xl h-auto bg-muted">
-            <TabsTrigger value="quantitative" className="text-lg py-3 transition-all duration-300 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg">เชิงปริมาณ (70%)</TabsTrigger>
-            <TabsTrigger value="qualitative" className="text-lg py-3 transition-all duration-300 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg">เชิงคุณภาพ (15%)</TabsTrigger>
-            <TabsTrigger value="impact" className="text-lg py-3 transition-all duration-300 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg">ผลกระทบ (15%)</TabsTrigger>
-            <TabsTrigger value="summary" className="text-lg py-3 transition-all duration-300 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg">สรุปผล</TabsTrigger>
+            <TabsTrigger value="quantitative" className="text-lg py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">เชิงปริมาณ (70%)</TabsTrigger>
+            <TabsTrigger value="qualitative" className="text-lg py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">เชิงคุณภาพ (15%)</TabsTrigger>
+            <TabsTrigger value="impact" className="text-lg py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">ผลกระทบ (15%)</TabsTrigger>
+            <TabsTrigger value="summary" className="text-lg py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">สรุปผล</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="quantitative" className="animate-fade-in">
+          <TabsContent value="quantitative">
             <QuantitativeSection
               assessmentId={assessment.id}
               categories={categories}
@@ -148,7 +148,7 @@ export default function Assessment() {
             />
           </TabsContent>
 
-          <TabsContent value="qualitative" className="animate-fade-in">
+          <TabsContent value="qualitative">
             <QualitativeSection
               assessmentId={assessment.id}
               qualitativeScore={qualitativeScore}
@@ -157,7 +157,7 @@ export default function Assessment() {
             />
           </TabsContent>
 
-          <TabsContent value="impact" className="animate-fade-in">
+          <TabsContent value="impact">
             <ImpactSection
               assessmentId={assessment.id}
               impactScore={impactScore}
@@ -166,7 +166,7 @@ export default function Assessment() {
             />
           </TabsContent>
 
-          <TabsContent value="summary" className="animate-fade-in">
+          <TabsContent value="summary">
             <AssessmentSummary
               assessment={assessment}
               items={items}
