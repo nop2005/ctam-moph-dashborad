@@ -125,7 +125,7 @@ export function QualitativeSection({
       {/* Progress Summary Card */}
       <Card>
         <CardHeader>
-          <CardTitle>เชิงคุณภาพ (Qualitative) = 70%</CardTitle>
+          <CardTitle>เชิงคุณภาพ (Qualitative) - 15%</CardTitle>
           <CardDescription>
             ประเมินตาม WHO 6 Building Blocks: ระบบงาน ภาวะผู้นำ และความยั่งยืน
           </CardDescription>
