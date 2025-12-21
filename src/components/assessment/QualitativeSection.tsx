@@ -131,6 +131,12 @@ export function QualitativeSection({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Total Score - moved to top */}
+          <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg">
+            <span className="font-semibold">คะแนนเชิงคุณภาพรวม</span>
+            <span className="text-2xl font-bold text-primary">{scores.total_score}/15</span>
+          </div>
+
           {/* Leadership Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -286,11 +292,6 @@ export function QualitativeSection({
             />
           </div>
 
-          {/* Total Score */}
-          <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg">
-            <span className="font-semibold">คะแนนเชิงคุณภาพรวม</span>
-            <span className="text-2xl font-bold text-primary">{scores.total_score}/15</span>
-          </div>
 
           {/* Auto-save indicator */}
           {saving && (
