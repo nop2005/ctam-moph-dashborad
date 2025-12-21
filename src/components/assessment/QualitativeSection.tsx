@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Save, Loader2, Users, Shield, GraduationCap } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Loader2, Users, Shield, GraduationCap, CheckCircle2, XCircle } from 'lucide-react';
 import { EvidenceUpload } from './EvidenceUpload';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -118,25 +119,44 @@ export function QualitativeSection({
 
   const scores = calculateScores(formData);
 
+  const progressPercentage = (scores.total_score / 15) * 100;
+  const leadershipItems = [formData.has_ciso, formData.has_dpo, formData.has_it_security_team];
+  const passCount = leadershipItems.filter(Boolean).length;
+  const failCount = leadershipItems.filter(v => !v).length;
+
   return (
     <div className="space-y-6">
+      {/* Progress Summary Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            เชิงคุณภาพ (Qualitative) - 15%
-          </CardTitle>
+          <CardTitle>เชิงคุณภาพ (Qualitative) - 15%</CardTitle>
           <CardDescription>
             ประเมินตาม WHO 6 Building Blocks: ระบบงาน ภาวะผู้นำ และความยั่งยืน
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Total Score - moved to top */}
-          <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg">
-            <span className="font-semibold">คะแนนเชิงคุณภาพรวม</span>
-            <span className="text-2xl font-bold text-primary">{scores.total_score}/15</span>
+        <CardContent>
+          <div className="space-y-4">
+            <Progress value={progressPercentage} className="h-3" />
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-primary" />
+                  <span>ภาวะผู้นำ: {scores.leadership_score}/10</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-primary" />
+                  <span>ความยั่งยืน: {scores.sustainable_score}/10</span>
+                </div>
+              </div>
+              <span className="font-medium text-lg">{scores.total_score}/15 ({progressPercentage.toFixed(1)}%)</span>
+            </div>
           </div>
+        </CardContent>
+      </Card>
 
+      {/* Details Card */}
+      <Card>
+        <CardContent className="pt-6 space-y-6">
           {/* Leadership Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
