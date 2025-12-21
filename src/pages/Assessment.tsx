@@ -153,7 +153,7 @@ export default function Assessment() {
               assessmentId={assessment.id}
               qualitativeScore={qualitativeScore}
               onScoreChange={setQualitativeScore}
-              readOnly={!canReview && !canApprove}
+              readOnly={!canEdit && !canReview && !canApprove}
             />
           </TabsContent>
 
@@ -162,7 +162,7 @@ export default function Assessment() {
               assessmentId={assessment.id}
               impactScore={impactScore}
               onScoreChange={setImpactScore}
-              readOnly={!canReview && !canApprove}
+              readOnly={!canEdit && !canReview && !canApprove}
             />
           </TabsContent>
 
