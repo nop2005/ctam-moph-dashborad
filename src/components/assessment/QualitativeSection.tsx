@@ -10,11 +10,96 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Users, Shield, GraduationCap, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader2, Users, Shield, GraduationCap, CheckCircle2, XCircle, Award, TrendingUp } from 'lucide-react';
 import { EvidenceUpload } from './EvidenceUpload';
 import type { Database } from '@/integrations/supabase/types';
 
 type QualitativeScore = Database['public']['Tables']['qualitative_scores']['Row'];
+
+interface QualityLevel {
+  level: number;
+  name: string;
+  nameEn: string;
+  minScore: number;
+  maxScore: number;
+  interpretation: string;
+  developmentLevel: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+}
+
+const qualityLevels: QualityLevel[] = [
+  {
+    level: 5,
+    name: 'ดีเยี่ยม',
+    nameEn: 'Excellent',
+    minScore: 86,
+    maxScore: 100,
+    interpretation: 'ระบบบริการสุขภาพดีเยี่ยม เป็นแบบอย่างที่ดี ปรับปรุงต่อเนื่องอย่างเป็นระบบ',
+    developmentLevel: 'ยั่งยืนและเป็นต้นแบบ',
+    color: 'text-emerald-600',
+    bgColor: 'bg-emerald-50',
+    borderColor: 'border-emerald-500',
+  },
+  {
+    level: 4,
+    name: 'ดี',
+    nameEn: 'Good',
+    minScore: 71,
+    maxScore: 85,
+    interpretation: 'ระบบบริการสุขภาพมีความมั่นคง ครอบคลุม และมีการพัฒนาต่อเนื่อง',
+    developmentLevel: 'พัฒนาอย่างมั่นคง',
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-500',
+  },
+  {
+    level: 3,
+    name: 'พอใช้',
+    nameEn: 'Fair',
+    minScore: 56,
+    maxScore: 70,
+    interpretation: 'ระบบบริการสุขภาพดำเนินการได้ตามมาตรฐานพื้นฐาน มีบางส่วนต้องปรับปรุง',
+    developmentLevel: 'กำลังพัฒนา',
+    color: 'text-yellow-600',
+    bgColor: 'bg-yellow-50',
+    borderColor: 'border-yellow-500',
+  },
+  {
+    level: 2,
+    name: 'ต้องพัฒนา',
+    nameEn: 'Developing',
+    minScore: 41,
+    maxScore: 55,
+    interpretation: 'ระบบบริการสุขภาพไม่มั่นคง ต้องเร่งปรับปรุงในหลายองค์ประกอบ',
+    developmentLevel: 'ต้องการการสนับสนุน',
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-50',
+    borderColor: 'border-orange-500',
+  },
+  {
+    level: 1,
+    name: 'ต้องเร่งแก้ไข',
+    nameEn: 'Critical',
+    minScore: 0,
+    maxScore: 40,
+    interpretation: 'ระบบบริการสุขภาพมีจุดอ่อนสำคัญ ต้องดำเนินการแก้ไขเร่งด่วน',
+    developmentLevel: 'ต้องการฟื้นฟูระบบ',
+    color: 'text-red-600',
+    bgColor: 'bg-red-50',
+    borderColor: 'border-red-500',
+  },
+];
+
+const getQualityLevel = (percentScore: number): QualityLevel => {
+  for (const level of qualityLevels) {
+    if (percentScore >= level.minScore && percentScore <= level.maxScore) {
+      return level;
+    }
+  }
+  return qualityLevels[qualityLevels.length - 1];
+};
 
 interface QualitativeSectionProps {
   assessmentId: string;
@@ -123,6 +208,9 @@ export function QualitativeSection({
   // Calculate score converted to 15% weight (out of 1.5 points)
   const scoreOut1_5 = (scores.total_score / 15) * 1.5;
 
+  // Get quality level based on percentage
+  const qualityLevel = getQualityLevel(progressPercentage);
+
   return (
     <div className="space-y-6">
       {/* Progress Summary Card */}
@@ -157,6 +245,81 @@ export function QualitativeSection({
               </div>
               <span className="font-medium text-lg">{scores.total_score}/15 ({progressPercentage.toFixed(1)}%)</span>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quality Level Interpretation Card */}
+      <Card className={`border-2 ${qualityLevel.borderColor}`}>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Award className={`w-5 h-5 ${qualityLevel.color}`} />
+            การแปลผลระดับคุณภาพ
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className={`p-4 rounded-lg ${qualityLevel.bgColor} space-y-3`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`px-3 py-1 rounded-full ${qualityLevel.bgColor} border-2 ${qualityLevel.borderColor}`}>
+                  <span className={`font-bold ${qualityLevel.color}`}>
+                    ระดับ {qualityLevel.level} = {qualityLevel.name} ({qualityLevel.nameEn})
+                  </span>
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  ช่วงคะแนน: {qualityLevel.level === 1 ? 'ต่ำกว่าหรือเท่ากับ 40' : `${qualityLevel.minScore} - ${qualityLevel.maxScore}`}%
+                </span>
+              </div>
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${qualityLevel.borderColor} ${qualityLevel.bgColor}`}>
+                <TrendingUp className={`w-4 h-4 ${qualityLevel.color}`} />
+                <span className={`font-medium ${qualityLevel.color}`}>{qualityLevel.developmentLevel}</span>
+              </div>
+            </div>
+            <p className={`text-sm ${qualityLevel.color}`}>
+              <strong>การแปลผล:</strong> {qualityLevel.interpretation}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quality Level Reference Table */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">ตารางการแปลผลระดับคุณภาพและระดับคะแนนการพัฒนา (5 ระดับ)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-3 px-4 font-medium">ระดับคุณภาพ</th>
+                  <th className="text-center py-3 px-4 font-medium">ช่วงคะแนน</th>
+                  <th className="text-left py-3 px-4 font-medium">การแปลผลเชิงคุณภาพ</th>
+                  <th className="text-center py-3 px-4 font-medium">ระดับการพัฒนา</th>
+                </tr>
+              </thead>
+              <tbody>
+                {qualityLevels.map((level) => (
+                  <tr 
+                    key={level.level} 
+                    className={`border-b ${progressPercentage >= level.minScore && progressPercentage <= level.maxScore ? level.bgColor : ''}`}
+                  >
+                    <td className={`py-3 px-4 font-medium ${level.color}`}>
+                      ระดับ {level.level} = {level.name} ({level.nameEn})
+                    </td>
+                    <td className={`py-3 px-4 text-center ${level.color}`}>
+                      {level.level === 1 ? 'ต่ำกว่าหรือเท่ากับ 40' : `${level.minScore} - ${level.maxScore}`}
+                    </td>
+                    <td className="py-3 px-4 text-muted-foreground">
+                      {level.interpretation}
+                    </td>
+                    <td className={`py-3 px-4 text-center font-medium ${level.color}`}>
+                      {level.developmentLevel}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>
