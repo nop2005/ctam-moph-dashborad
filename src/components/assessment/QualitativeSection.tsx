@@ -124,7 +124,7 @@ export function QualitativeSection({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
-            เชิงคุณภาพ (Qualitative) - 15%
+            เชิงคุณภาพ (Qualitative) 15%
           </CardTitle>
           <CardDescription>
             ประเมินตาม WHO 6 Building Blocks: ระบบงาน ภาวะผู้นำ และความยั่งยืน
