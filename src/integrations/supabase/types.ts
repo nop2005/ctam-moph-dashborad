@@ -532,6 +532,50 @@ export type Database = {
           },
         ]
       }
+      qualitative_evidence_files: {
+        Row: {
+          created_at: string
+          field_name: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          qualitative_score_id: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          field_name: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          qualitative_score_id?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          field_name?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          qualitative_score_id?: string | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qualitative_evidence_files_qualitative_score_id_fkey"
+            columns: ["qualitative_score_id"]
+            isOneToOne: false
+            referencedRelation: "qualitative_scores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       qualitative_scores: {
         Row: {
           annual_training_count: number | null
