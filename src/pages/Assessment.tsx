@@ -132,10 +132,10 @@ export default function Assessment() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid grid-cols-4 w-full max-w-3xl h-auto bg-muted">
-            <TabsTrigger value="quantitative" className="text-lg py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">เชิงปริมาณ (70%)</TabsTrigger>
-            <TabsTrigger value="qualitative" className="text-lg py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">เชิงคุณภาพ (15%)</TabsTrigger>
-            <TabsTrigger value="impact" className="text-lg py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">ผลกระทบ (15%)</TabsTrigger>
-            <TabsTrigger value="summary" className="text-lg py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">สรุปผล</TabsTrigger>
+            <TabsTrigger value="quantitative" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">เชิงปริมาณ (70%)</TabsTrigger>
+            <TabsTrigger value="qualitative" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">เชิงคุณภาพ (15%)</TabsTrigger>
+            <TabsTrigger value="impact" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">ผลกระทบ (15%)</TabsTrigger>
+            <TabsTrigger value="summary" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">สรุปผล</TabsTrigger>
           </TabsList>
 
           <TabsContent value="quantitative">
