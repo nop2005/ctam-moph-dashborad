@@ -120,15 +120,26 @@ export function QualitativeSection({
   const passCount = leadershipItems.filter(Boolean).length;
   const failCount = leadershipItems.filter(v => !v).length;
 
+  // Calculate score converted to 15% weight (out of 1.5 points)
+  const scoreOut1_5 = (scores.total_score / 15) * 1.5;
+
   return (
     <div className="space-y-6">
       {/* Progress Summary Card */}
       <Card>
-        <CardHeader>
-          <CardTitle>เชิงคุณภาพ (Qualitative) - 15%</CardTitle>
-          <CardDescription>
-            ประเมินตาม WHO 6 Building Blocks: ระบบงาน ภาวะผู้นำ และความยั่งยืน
-          </CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between">
+          <div>
+            <CardTitle>เชิงคุณภาพ (Qualitative) - 15%</CardTitle>
+            <CardDescription>
+              ประเมินตาม WHO 6 Building Blocks: ระบบงาน ภาวะผู้นำ และความยั่งยืน
+            </CardDescription>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-primary">
+              {scoreOut1_5.toFixed(2)}<span className="text-lg text-muted-foreground">/1.5</span>
+            </div>
+            <div className="text-sm text-muted-foreground">คะแนน</div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
