@@ -170,7 +170,7 @@ export function QualitativeSection({
             <div className="grid gap-4 pl-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
-                  <Label htmlFor="has_ciso">มี CISO (Chief Information Security Officer)</Label>
+                  <Label htmlFor="has_ciso">แต่งตั้งคณะทำงานด้านไซเบอร์ โดยมี CISO และ เจ้าหน้าที่ประสานงาน DPO ในหน่วยงาน</Label>
                   <EvidenceUpload 
                     qualitativeScoreId={qualitativeScore?.id || null} 
                     fieldName="has_ciso" 
