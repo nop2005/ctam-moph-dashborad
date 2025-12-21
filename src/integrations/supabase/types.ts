@@ -361,6 +361,50 @@ export type Database = {
           },
         ]
       }
+      impact_evidence_files: {
+        Row: {
+          created_at: string
+          field_name: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          impact_score_id: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          field_name: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          impact_score_id?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          field_name?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          impact_score_id?: string | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impact_evidence_files_impact_score_id_fkey"
+            columns: ["impact_score_id"]
+            isOneToOne: false
+            referencedRelation: "impact_scores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       impact_scores: {
         Row: {
           assessment_id: string
