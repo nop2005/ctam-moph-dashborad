@@ -32,7 +32,8 @@ export function AssessmentSummary({
     if (total === 0) return 0;
     
     const passCount = items.filter(i => i.status === 'pass').length;
-    const score = (passCount / total) * 70;
+    const partialCount = items.filter(i => i.status === 'partial').length;
+    const score = ((passCount + partialCount * 0.5) / total) * 70;
     return score;
   };
 
