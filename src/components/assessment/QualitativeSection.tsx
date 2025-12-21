@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Save, Loader2, Users, Shield, GraduationCap, Building2 } from 'lucide-react';
+import { Save, Loader2, Users, Shield, GraduationCap } from 'lucide-react';
+import { EvidenceUpload } from './EvidenceUpload';
 import type { Database } from '@/integrations/supabase/types';
 
 type QualitativeScore = Database['public']['Tables']['qualitative_scores']['Row'];
@@ -135,10 +136,15 @@ export function QualitativeSection({
             </div>
 
             <div className="grid gap-4 pl-6">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="has_ciso" className="flex-1">
-                  มี CISO (Chief Information Security Officer)
-                </Label>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="has_ciso">มี CISO (Chief Information Security Officer)</Label>
+                  <EvidenceUpload 
+                    qualitativeScoreId={qualitativeScore?.id || null} 
+                    fieldName="has_ciso" 
+                    disabled={readOnly} 
+                  />
+                </div>
                 <Switch
                   id="has_ciso"
                   checked={formData.has_ciso}
@@ -147,10 +153,15 @@ export function QualitativeSection({
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <Label htmlFor="has_dpo" className="flex-1">
-                  มี DPO (Data Protection Officer)
-                </Label>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="has_dpo">มี DPO (Data Protection Officer)</Label>
+                  <EvidenceUpload 
+                    qualitativeScoreId={qualitativeScore?.id || null} 
+                    fieldName="has_dpo" 
+                    disabled={readOnly} 
+                  />
+                </div>
                 <Switch
                   id="has_dpo"
                   checked={formData.has_dpo}
@@ -159,10 +170,15 @@ export function QualitativeSection({
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <Label htmlFor="has_it_security_team" className="flex-1">
-                  มีทีม IT Security
-                </Label>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="has_it_security_team">มีทีม IT Security</Label>
+                  <EvidenceUpload 
+                    qualitativeScoreId={qualitativeScore?.id || null} 
+                    fieldName="has_it_security_team" 
+                    disabled={readOnly} 
+                  />
+                </div>
                 <Switch
                   id="has_it_security_team"
                   checked={formData.has_it_security_team}
@@ -190,24 +206,36 @@ export function QualitativeSection({
                 <Label htmlFor="annual_training_count">
                   จำนวนครั้งอบรม IT Security ต่อปี
                 </Label>
-                <Input
-                  id="annual_training_count"
-                  type="number"
-                  min="0"
-                  value={formData.annual_training_count}
-                  onChange={(e) => setFormData({ ...formData, annual_training_count: parseInt(e.target.value) || 0 })}
-                  disabled={readOnly}
-                  className="w-32"
-                />
+                <div className="flex items-center gap-4">
+                  <Input
+                    id="annual_training_count"
+                    type="number"
+                    min="0"
+                    value={formData.annual_training_count}
+                    onChange={(e) => setFormData({ ...formData, annual_training_count: parseInt(e.target.value) || 0 })}
+                    disabled={readOnly}
+                    className="w-32"
+                  />
+                  <EvidenceUpload 
+                    qualitativeScoreId={qualitativeScore?.id || null} 
+                    fieldName="annual_training_count" 
+                    disabled={readOnly} 
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground">
                   4+ ครั้ง = 5 คะแนน, 2-3 ครั้ง = 3 คะแนน, 1 ครั้ง = 1 คะแนน
                 </p>
               </div>
 
-              <div className="flex items-center justify-between">
-                <Label htmlFor="uses_freeware" className="flex-1">
-                  ใช้ Freeware ในงานสำคัญ
-                </Label>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="uses_freeware">ใช้ Freeware ในงานสำคัญ</Label>
+                  <EvidenceUpload 
+                    qualitativeScoreId={qualitativeScore?.id || null} 
+                    fieldName="uses_freeware" 
+                    disabled={readOnly} 
+                  />
+                </div>
                 <Switch
                   id="uses_freeware"
                   checked={formData.uses_freeware}
@@ -216,10 +244,15 @@ export function QualitativeSection({
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <Label htmlFor="uses_opensource" className="flex-1">
-                  ใช้ Open Source ในงานสำคัญ
-                </Label>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="uses_opensource">ใช้ Open Source ในงานสำคัญ</Label>
+                  <EvidenceUpload 
+                    qualitativeScoreId={qualitativeScore?.id || null} 
+                    fieldName="uses_opensource" 
+                    disabled={readOnly} 
+                  />
+                </div>
                 <Switch
                   id="uses_opensource"
                   checked={formData.uses_opensource}
