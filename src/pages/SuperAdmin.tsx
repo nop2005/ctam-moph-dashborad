@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,22 +9,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { 
-  Shield, 
-  LogOut, 
   Users, 
-  UserPlus,
   Building2,
   MapPin,
   Edit,
-  Trash2,
-  ArrowLeft,
   Search,
   RefreshCw
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 interface Profile {
   id: string;
@@ -58,8 +53,7 @@ interface Hospital {
 }
 
 export default function SuperAdmin() {
-  const { user, profile, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { profile: currentUserProfile } = useAuth();
   
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [provinces, setProvinces] = useState<Province[]>([]);
@@ -207,10 +201,6 @@ export default function SuperAdmin() {
     ? hospitals.filter(h => h.province_id === editProvinceId)
     : hospitals;
 
-  const filteredProvinces = editRegionId
-    ? provinces.filter(p => p.health_region_id === editRegionId)
-    : provinces;
-
   // Stats
   const stats = {
     total: profiles.length,
@@ -221,180 +211,157 @@ export default function SuperAdmin() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="w-10 h-10 bg-destructive/10 rounded-xl flex items-center justify-center">
-              <Shield className="w-6 h-6 text-destructive" />
-            </div>
-            <div>
-              <h1 className="font-bold text-lg">Super Admin</h1>
-              <p className="text-xs text-muted-foreground">จัดการผู้ใช้งานระบบ</p>
-            </div>
-          </div>
+    <DashboardLayout>
+      {/* Page Header */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold mb-2">จัดการผู้ใช้งาน</h2>
+        <p className="text-muted-foreground">
+          จัดการสิทธิ์และข้อมูลผู้ใช้งานทั้งหมดในระบบ
+        </p>
+      </div>
 
-          <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <p className="font-medium text-sm">{profile?.full_name || user?.email}</p>
-              <Badge variant="destructive">Super Admin</Badge>
-            </div>
-            <Button variant="outline" size="icon" onClick={signOut}>
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <div className="text-sm text-muted-foreground">ผู้ใช้ทั้งหมด</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-destructive">{stats.centralAdmin}</div>
-              <div className="text-sm text-muted-foreground">Super Admin</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-primary">{stats.regional}</div>
-              <div className="text-sm text-muted-foreground">เขตสุขภาพ</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-accent">{stats.provincial}</div>
-              <div className="text-sm text-muted-foreground">สสจ.</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-muted-foreground">{stats.hospitalIt}</div>
-              <div className="text-sm text-muted-foreground">IT รพ.</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Users Table */}
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  รายชื่อผู้ใช้งาน
-                </CardTitle>
-                <CardDescription>จัดการสิทธิ์และข้อมูลผู้ใช้งานทั้งหมด</CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="ค้นหาผู้ใช้..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 w-[200px]"
-                  />
-                </div>
-                <Button variant="outline" size="icon" onClick={fetchData}>
-                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>อีเมล</TableHead>
-                    <TableHead>ชื่อ-นามสกุล</TableHead>
-                    <TableHead>บทบาท</TableHead>
-                    <TableHead>หน่วยงาน</TableHead>
-                    <TableHead>สถานะ</TableHead>
-                    <TableHead className="text-right">จัดการ</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
-                        <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredProfiles.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        ไม่พบข้อมูลผู้ใช้
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredProfiles.map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell className="font-medium">{p.email}</TableCell>
-                        <TableCell>{p.full_name || '-'}</TableCell>
-                        <TableCell>
-                          <Badge variant={getRoleBadgeVariant(p.role)}>
-                            {getRoleLabel(p.role)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {p.role === 'hospital_it' && (
-                            <div className="flex items-center gap-1 text-sm">
-                              <Building2 className="h-3 w-3" />
-                              {getHospitalName(p.hospital_id)}
-                            </div>
-                          )}
-                          {p.role === 'provincial' && (
-                            <div className="flex items-center gap-1 text-sm">
-                              <MapPin className="h-3 w-3" />
-                              {getProvinceName(p.province_id)}
-                            </div>
-                          )}
-                          {p.role === 'regional' && (
-                            <div className="flex items-center gap-1 text-sm">
-                              <MapPin className="h-3 w-3" />
-                              {getRegionName(p.health_region_id)}
-                            </div>
-                          )}
-                          {p.role === 'central_admin' && (
-                            <span className="text-sm text-muted-foreground">ส่วนกลาง</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={p.is_active ? 'default' : 'secondary'}>
-                            {p.is_active ? 'ใช้งาน' : 'ปิดใช้งาน'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditProfile(p)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">{stats.total}</div>
+            <div className="text-sm text-muted-foreground">ผู้ใช้ทั้งหมด</div>
           </CardContent>
         </Card>
-      </main>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-destructive">{stats.centralAdmin}</div>
+            <div className="text-sm text-muted-foreground">Super Admin</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-primary">{stats.regional}</div>
+            <div className="text-sm text-muted-foreground">เขตสุขภาพ</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-accent">{stats.provincial}</div>
+            <div className="text-sm text-muted-foreground">สสจ.</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-muted-foreground">{stats.hospitalIt}</div>
+            <div className="text-sm text-muted-foreground">IT รพ.</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Users Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                รายชื่อผู้ใช้งาน
+              </CardTitle>
+              <CardDescription>คลิกที่ปุ่มแก้ไขเพื่อเปลี่ยนสิทธิ์ผู้ใช้</CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="ค้นหาผู้ใช้..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 w-[200px]"
+                />
+              </div>
+              <Button variant="outline" size="icon" onClick={fetchData}>
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>อีเมล</TableHead>
+                  <TableHead>ชื่อ-นามสกุล</TableHead>
+                  <TableHead>บทบาท</TableHead>
+                  <TableHead>หน่วยงาน</TableHead>
+                  <TableHead>สถานะ</TableHead>
+                  <TableHead className="text-right">จัดการ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                    </TableCell>
+                  </TableRow>
+                ) : filteredProfiles.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      ไม่พบข้อมูลผู้ใช้
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredProfiles.map((p) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-medium">{p.email}</TableCell>
+                      <TableCell>{p.full_name || '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant={getRoleBadgeVariant(p.role)}>
+                          {getRoleLabel(p.role)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {p.role === 'hospital_it' && (
+                          <div className="flex items-center gap-1 text-sm">
+                            <Building2 className="h-3 w-3" />
+                            {getHospitalName(p.hospital_id)}
+                          </div>
+                        )}
+                        {p.role === 'provincial' && (
+                          <div className="flex items-center gap-1 text-sm">
+                            <MapPin className="h-3 w-3" />
+                            {getProvinceName(p.province_id)}
+                          </div>
+                        )}
+                        {p.role === 'regional' && (
+                          <div className="flex items-center gap-1 text-sm">
+                            <MapPin className="h-3 w-3" />
+                            {getRegionName(p.health_region_id)}
+                          </div>
+                        )}
+                        {p.role === 'central_admin' && (
+                          <span className="text-sm text-muted-foreground">ส่วนกลาง</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={p.is_active ? 'default' : 'secondary'}>
+                          {p.is_active ? 'ใช้งาน' : 'ปิดใช้งาน'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditProfile(p)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -517,6 +484,6 @@ export default function SuperAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </DashboardLayout>
   );
 }
