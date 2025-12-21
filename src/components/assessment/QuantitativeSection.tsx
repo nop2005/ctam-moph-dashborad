@@ -53,7 +53,7 @@ export function QuantitativeSection({
       pass: passCount,
       partial: partialCount,
       fail: total - passCount - partialCount,
-      percentage: total > 0 ? ((passCount + partialCount * 0.5) / total) * 100 : 0,
+      percentage: total > 0 ? (passCount / total) * 100 : 0,
     };
   };
 
