@@ -172,20 +172,20 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-primary-foreground/20 p-4">
+      <SidebarFooter className="border-t border-white/20 p-4 bg-primary">
         {!collapsed && profile && (
           <div className="mb-3">
             <p className="font-medium text-sm truncate text-white">{profile.full_name || profile.email}</p>
-            <Badge className="mt-1 bg-white/20 text-white hover:bg-white/30">
+            <Badge className="mt-1 bg-white/20 text-white hover:bg-white/30 border-0">
               {getRoleLabel(profile.role)}
             </Badge>
           </div>
         )}
         <Button 
-          variant="outline" 
+          variant="ghost" 
           size={collapsed ? 'icon' : 'default'}
           onClick={signOut}
-          className="w-full border-white/30 text-white hover:bg-white/10 hover:text-white"
+          className="w-full bg-white/10 border-0 text-white hover:bg-white/20 hover:text-white"
         >
           <LogOut className="h-4 w-4" />
           {!collapsed && <span className="ml-2">ออกจากระบบ</span>}
