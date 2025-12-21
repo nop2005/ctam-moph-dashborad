@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -42,40 +42,41 @@ export function QualitativeSection({
   });
 
   // Calculate scores based on criteria
-  const calculateScores = () => {
+  const calculateScores = useCallback((data: typeof formData) => {
     let leadershipScore = 0;
     let sustainableScore = 0;
 
-    // Leadership score (based on roles)
-    if (formData.has_ciso) leadershipScore += 3;
-    if (formData.has_dpo) leadershipScore += 3;
-    if (formData.has_it_security_team) leadershipScore += 4;
+    if (data.has_ciso) leadershipScore += 3;
+    if (data.has_dpo) leadershipScore += 3;
+    if (data.has_it_security_team) leadershipScore += 4;
 
-    // Sustainable score (based on training and software)
-    if (formData.annual_training_count >= 4) sustainableScore += 5;
-    else if (formData.annual_training_count >= 2) sustainableScore += 3;
-    else if (formData.annual_training_count >= 1) sustainableScore += 1;
+    if (data.annual_training_count >= 4) sustainableScore += 5;
+    else if (data.annual_training_count >= 2) sustainableScore += 3;
+    else if (data.annual_training_count >= 1) sustainableScore += 1;
 
-    if (!formData.uses_freeware && !formData.uses_opensource) sustainableScore += 5;
-    else if (!formData.uses_freeware) sustainableScore += 3;
+    if (!data.uses_freeware && !data.uses_opensource) sustainableScore += 5;
+    else if (!data.uses_freeware) sustainableScore += 3;
 
     return {
       leadership_score: Math.min(leadershipScore, 10),
       sustainable_score: Math.min(sustainableScore, 10),
       total_score: Math.min(leadershipScore + sustainableScore, 15),
     };
-  };
+  }, []);
 
-  const handleSave = async () => {
+  // Auto-save function
+  const autoSave = useCallback(async (newFormData: typeof formData) => {
+    if (readOnly || !profile) return;
+    
     try {
       setSaving(true);
-      const scores = calculateScores();
+      const scores = calculateScores(newFormData);
 
       const data = {
         assessment_id: assessmentId,
-        ...formData,
+        ...newFormData,
         ...scores,
-        evaluated_by: profile?.user_id,
+        evaluated_by: profile.id,
         evaluated_at: new Date().toISOString(),
       };
 
@@ -100,17 +101,22 @@ export function QualitativeSection({
       }
 
       onScoreChange(result);
-      toast({ title: 'บันทึกสำเร็จ' });
-
     } catch (error: any) {
-      console.error('Error saving qualitative score:', error);
-      toast({ title: 'เกิดข้อผิดพลาด', description: error.message, variant: 'destructive' });
+      console.error('Error auto-saving:', error);
+      toast({ title: 'บันทึกไม่สำเร็จ', description: error.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
-  };
+  }, [assessmentId, qualitativeScore, profile, readOnly, calculateScores, onScoreChange, toast]);
 
-  const scores = calculateScores();
+  // Handle field change with auto-save
+  const handleFieldChange = useCallback((field: keyof typeof formData, value: boolean | number | string) => {
+    const newFormData = { ...formData, [field]: value };
+    setFormData(newFormData);
+    autoSave(newFormData);
+  }, [formData, autoSave]);
+
+  const scores = calculateScores(formData);
 
   return (
     <div className="space-y-6">
@@ -148,8 +154,8 @@ export function QualitativeSection({
                 <Switch
                   id="has_ciso"
                   checked={formData.has_ciso}
-                  onCheckedChange={(checked) => setFormData({ ...formData, has_ciso: checked })}
-                  disabled={readOnly}
+                  onCheckedChange={(checked) => handleFieldChange('has_ciso', checked)}
+                  disabled={readOnly || saving}
                 />
               </div>
 
@@ -165,8 +171,8 @@ export function QualitativeSection({
                 <Switch
                   id="has_dpo"
                   checked={formData.has_dpo}
-                  onCheckedChange={(checked) => setFormData({ ...formData, has_dpo: checked })}
-                  disabled={readOnly}
+                  onCheckedChange={(checked) => handleFieldChange('has_dpo', checked)}
+                  disabled={readOnly || saving}
                 />
               </div>
 
@@ -182,8 +188,8 @@ export function QualitativeSection({
                 <Switch
                   id="has_it_security_team"
                   checked={formData.has_it_security_team}
-                  onCheckedChange={(checked) => setFormData({ ...formData, has_it_security_team: checked })}
-                  disabled={readOnly}
+                  onCheckedChange={(checked) => handleFieldChange('has_it_security_team', checked)}
+                  disabled={readOnly || saving}
                 />
               </div>
             </div>
@@ -213,7 +219,8 @@ export function QualitativeSection({
                     min="0"
                     value={formData.annual_training_count}
                     onChange={(e) => setFormData({ ...formData, annual_training_count: parseInt(e.target.value) || 0 })}
-                    disabled={readOnly}
+                    onBlur={(e) => handleFieldChange('annual_training_count', parseInt(e.target.value) || 0)}
+                    disabled={readOnly || saving}
                     className="w-32"
                   />
                   <EvidenceUpload 
@@ -239,8 +246,8 @@ export function QualitativeSection({
                 <Switch
                   id="uses_freeware"
                   checked={formData.uses_freeware}
-                  onCheckedChange={(checked) => setFormData({ ...formData, uses_freeware: checked })}
-                  disabled={readOnly}
+                  onCheckedChange={(checked) => handleFieldChange('uses_freeware', checked)}
+                  disabled={readOnly || saving}
                 />
               </div>
 
@@ -256,8 +263,8 @@ export function QualitativeSection({
                 <Switch
                   id="uses_opensource"
                   checked={formData.uses_opensource}
-                  onCheckedChange={(checked) => setFormData({ ...formData, uses_opensource: checked })}
-                  disabled={readOnly}
+                  onCheckedChange={(checked) => handleFieldChange('uses_opensource', checked)}
+                  disabled={readOnly || saving}
                 />
               </div>
             </div>
@@ -273,7 +280,8 @@ export function QualitativeSection({
               placeholder="หมายเหตุหรือข้อสังเกตเพิ่มเติม..."
               value={formData.comment}
               onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-              disabled={readOnly}
+              onBlur={(e) => handleFieldChange('comment', e.target.value)}
+              disabled={readOnly || saving}
               className="min-h-[100px]"
             />
           </div>
@@ -284,17 +292,11 @@ export function QualitativeSection({
             <span className="text-2xl font-bold text-primary">{scores.total_score}/15</span>
           </div>
 
-          {/* Save Button */}
-          {!readOnly && (
-            <div className="flex justify-end">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
-                บันทึก
-              </Button>
+          {/* Auto-save indicator */}
+          {saving && (
+            <div className="flex items-center justify-end text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              กำลังบันทึก...
             </div>
           )}
         </CardContent>
