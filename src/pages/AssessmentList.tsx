@@ -47,8 +47,10 @@ export default function AssessmentList() {
   const periods = ['Q1', 'Q2', 'Q3', 'Q4'];
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (profile) {
+      loadData();
+    }
+  }, [profile]);
 
   const loadData = async () => {
     try {

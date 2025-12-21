@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Sidebar,
   SidebarContent,
@@ -74,8 +76,26 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
+  const [hospitalName, setHospitalName] = useState<string | null>(null);
   
   const currentPath = location.pathname;
+
+  // Fetch hospital name for hospital_it users
+  useEffect(() => {
+    const fetchHospitalName = async () => {
+      if (profile?.hospital_id) {
+        const { data } = await supabase
+          .from('hospitals')
+          .select('name')
+          .eq('id', profile.hospital_id)
+          .maybeSingle();
+        if (data) {
+          setHospitalName(data.name);
+        }
+      }
+    };
+    fetchHospitalName();
+  }, [profile?.hospital_id]);
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + '/');
 
   const getRoleLabel = (role: string) => {
@@ -176,6 +196,9 @@ export function AppSidebar() {
         {!collapsed && profile && (
           <div className="mb-3">
             <p className="font-medium text-sm truncate text-white">{profile.full_name || profile.email}</p>
+            {hospitalName && (
+              <p className="text-xs text-white/70 truncate">{hospitalName}</p>
+            )}
             <Badge className="mt-1 bg-white/20 text-white hover:bg-white/30 border-0">
               {getRoleLabel(profile.role)}
             </Badge>
