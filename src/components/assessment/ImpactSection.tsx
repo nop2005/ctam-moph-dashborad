@@ -5,12 +5,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, AlertTriangle, Shield, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Loader2, AlertTriangle, Shield, Clock, CheckCircle2, XCircle, Award, Info, TrendingUp } from 'lucide-react';
 import { ImpactEvidenceUpload } from './ImpactEvidenceUpload';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -22,6 +24,85 @@ interface ImpactSectionProps {
   onScoreChange: (score: ImpactScore | null) => void;
   readOnly: boolean;
 }
+
+interface QualityLevel {
+  level: number;
+  name: string;
+  nameEn: string;
+  minScore: number;
+  maxScore: number;
+  interpretation: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+}
+
+const qualityLevels: QualityLevel[] = [
+  {
+    level: 5,
+    name: 'ดีเยี่ยม',
+    nameEn: 'Excellent',
+    minScore: 86,
+    maxScore: 100,
+    interpretation: 'ผลลัพธ์โดดเด่น สร้างผลกระทบเชิงบวกต่อประชาชนและระบบบริการสาธารณสุขอย่างยั่งยืน',
+    color: 'text-emerald-600',
+    bgColor: 'bg-emerald-50',
+    borderColor: 'border-emerald-500',
+  },
+  {
+    level: 4,
+    name: 'ดี',
+    nameEn: 'Good',
+    minScore: 71,
+    maxScore: 85,
+    interpretation: 'ผลลัพธ์บรรลุเป้าหมายชัดเจน สร้างผลกระทบเชิงบวกต่อประชาชน แต่ควรพัฒนาระบบบริการสุขภาพอย่างต่อเนื่อง',
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-500',
+  },
+  {
+    level: 3,
+    name: 'พอใช้',
+    nameEn: 'Fair',
+    minScore: 56,
+    maxScore: 70,
+    interpretation: 'ผลลัพธ์อยู่ในระดับมาตรฐาน มีระบบบริการสุขภาพบางส่วนต้องปรับปรุง',
+    color: 'text-yellow-600',
+    bgColor: 'bg-yellow-50',
+    borderColor: 'border-yellow-500',
+  },
+  {
+    level: 2,
+    name: 'ต้องพัฒนา',
+    nameEn: 'Developing',
+    minScore: 41,
+    maxScore: 55,
+    interpretation: 'ผลลัพธ์ยังไม่บรรลุเป้าหมาย ต้องปรับกลยุทธ์หรือระบบสนับสนุน',
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-50',
+    borderColor: 'border-orange-500',
+  },
+  {
+    level: 1,
+    name: 'ต้องเร่งแก้ไข',
+    nameEn: 'Critical',
+    minScore: 0,
+    maxScore: 40,
+    interpretation: 'ผลลัพธ์ไม่เป็นไปตามเป้าหมาย หรือเกิดผลกระทบในทางลบต่อประชาชนและระบบบริการสุขภาพ ต้องแก้ไขเร่งด่วน',
+    color: 'text-red-600',
+    bgColor: 'bg-red-50',
+    borderColor: 'border-red-500',
+  },
+];
+
+const getQualityLevel = (percentScore: number): QualityLevel => {
+  for (const level of qualityLevels) {
+    if (percentScore >= level.minScore && percentScore <= level.maxScore) {
+      return level;
+    }
+  }
+  return qualityLevels[qualityLevels.length - 1];
+};
 
 const breachSeverityOptions = [
   { value: 'none', label: 'ไม่มี', penalty: 0 },
@@ -133,51 +214,127 @@ export function ImpactSection({
   // Calculate score converted to 15% weight (out of 1.5 points)
   const scoreOut1_5 = (scores.total_score / 15) * 1.5;
 
+  // Get quality level based on percentage
+  const qualityLevel = getQualityLevel(progressPercentage);
+
   return (
     <div className="space-y-6">
-      {/* Progress Summary Card */}
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between">
-          <div>
-            <CardTitle>ผลกระทบ (Impact) - 15%</CardTitle>
-            <CardDescription>
-              ประเมินผลกระทบจาก Cyber Incident และ Data Breach
-            </CardDescription>
-          </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold text-primary">
-              {scoreOut1_5.toFixed(2)}<span className="text-lg text-muted-foreground">/1.5</span>
+      {/* Progress Summary & Interpretation Cards - Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Progress Summary Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-start justify-between pb-2">
+            <div>
+              <CardTitle className="text-base">ผลกระทบ (Impact) - 15%</CardTitle>
+              <CardDescription className="text-xs">
+                ประเมินผลกระทบจาก Cyber Incident และ Data Breach
+              </CardDescription>
             </div>
-            <div className="text-sm text-muted-foreground">คะแนน</div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Progress value={progressPercentage} className="h-3" />
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  {formData.had_incident ? (
-                    <XCircle className="w-4 h-4 text-destructive" />
-                  ) : (
-                    <CheckCircle2 className="w-4 h-4 text-success" />
-                  )}
-                  <span>Cyber Incident: {formData.had_incident ? `หัก ${Math.abs(scores.incident_score)}` : 'ไม่มี'}</span>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-primary">
+                {scoreOut1_5.toFixed(2)}<span className="text-sm text-muted-foreground">/1.5</span>
+              </div>
+              <div className="text-xs text-muted-foreground">คะแนน</div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="space-y-3">
+              <Progress value={progressPercentage} className="h-2" />
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    {formData.had_incident ? (
+                      <XCircle className="w-3 h-3 text-destructive" />
+                    ) : (
+                      <CheckCircle2 className="w-3 h-3 text-success" />
+                    )}
+                    <span>Incident: {formData.had_incident ? `หัก ${Math.abs(scores.incident_score)}` : 'ไม่มี'}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {formData.had_data_breach ? (
+                      <XCircle className="w-3 h-3 text-destructive" />
+                    ) : (
+                      <CheckCircle2 className="w-3 h-3 text-success" />
+                    )}
+                    <span>Breach: {formData.had_data_breach ? `หัก ${Math.abs(scores.breach_score)}` : 'ไม่มี'}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {formData.had_data_breach ? (
-                    <XCircle className="w-4 h-4 text-destructive" />
-                  ) : (
-                    <CheckCircle2 className="w-4 h-4 text-success" />
-                  )}
-                  <span>Data Breach: {formData.had_data_breach ? `หัก ${Math.abs(scores.breach_score)}` : 'ไม่มี'}</span>
+                <span className="font-medium">{scores.total_score}/15 ({progressPercentage.toFixed(1)}%)</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quality Level Interpretation Card */}
+        <Card className={`border-2 ${qualityLevel.borderColor}`}>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Award className={`w-4 h-4 ${qualityLevel.color}`} />
+              การแปลผลระดับผลกระทบ
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 ml-1 rounded-full hover:bg-muted">
+                    <Info className="w-3 h-3 text-muted-foreground hover:text-primary" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-lg">ตารางที่ 7 การแปลผลคะแนนเพื่อสะท้อนระดับคุณภาพและระดับคะแนนของผลกระทบ</DialogTitle>
+                  </DialogHeader>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-3 px-4 font-medium">ระดับคุณภาพ</th>
+                          <th className="text-center py-3 px-4 font-medium">ช่วงคะแนน</th>
+                          <th className="text-left py-3 px-4 font-medium">ความหมายโดยสรุป</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {qualityLevels.map((level) => (
+                          <tr 
+                            key={level.level} 
+                            className={`border-b ${progressPercentage >= level.minScore && progressPercentage <= level.maxScore ? level.bgColor : ''}`}
+                          >
+                            <td className={`py-3 px-4 font-medium ${level.color}`}>
+                              ระดับ {level.level} = {level.name} ({level.nameEn})
+                            </td>
+                            <td className={`py-3 px-4 text-center ${level.color}`}>
+                              {level.level === 1 ? 'ต่ำกว่าหรือเท่ากับ 40' : `${level.minScore} - ${level.maxScore}`}
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground">
+                              {level.interpretation}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className={`p-3 rounded-lg ${qualityLevel.bgColor} space-y-2`}>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className={`px-2 py-0.5 rounded-full ${qualityLevel.bgColor} border ${qualityLevel.borderColor}`}>
+                    <span className={`font-bold text-sm ${qualityLevel.color}`}>
+                      ระดับ {qualityLevel.level} = {qualityLevel.name}
+                    </span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {qualityLevel.level === 1 ? '≤40' : `${qualityLevel.minScore}-${qualityLevel.maxScore}`}%
+                  </span>
                 </div>
               </div>
-              <span className="font-medium text-lg">{scores.total_score}/15 ({progressPercentage.toFixed(1)}%)</span>
+              <p className={`text-xs ${qualityLevel.color}`}>
+                <strong>การแปลผล:</strong> {qualityLevel.interpretation}
+              </p>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Details Card */}
       <Card>
