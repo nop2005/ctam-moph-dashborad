@@ -59,46 +59,11 @@ export function AssessmentSummary({
   const failCount = items.filter(i => i.status === 'fail').length;
 
   const getGrade = (score: number) => {
-    if (score >= 86) return { 
-      level: 5, 
-      label: 'ดีเยี่ยม (Excellent)', 
-      color: 'text-success',
-      bgColor: 'bg-success/10',
-      borderColor: 'border-success',
-      description: 'ผลลัพธ์โดดเด่น สร้างผลกระทบเชิงบวกต่อประชาชนและระบบบริการสาธารณสุขอย่างยั่งยืน'
-    };
-    if (score >= 71) return { 
-      level: 4, 
-      label: 'ดี (Good)', 
-      color: 'text-info',
-      bgColor: 'bg-info/10',
-      borderColor: 'border-info',
-      description: 'ผลลัพธ์บรรลุเป้าหมายชัดเจน สร้างผลกระทบเชิงบวกต่อประชาชน แต่ควรพัฒนาระบบบริการสุขภาพอย่างต่อเนื่อง'
-    };
-    if (score >= 56) return { 
-      level: 3, 
-      label: 'พอใช้ (Fair)', 
-      color: 'text-warning',
-      bgColor: 'bg-warning/10',
-      borderColor: 'border-warning',
-      description: 'ผลลัพธ์อยู่ในระดับมาตรฐาน มีระบบบริการสุขภาพบางส่วนต้องปรับปรุง'
-    };
-    if (score >= 41) return { 
-      level: 2, 
-      label: 'ต้องพัฒนา (Developing)', 
-      color: 'text-orange-500',
-      bgColor: 'bg-orange-500/10',
-      borderColor: 'border-orange-500',
-      description: 'ผลลัพธ์ยังไม่บรรลุเป้าหมาย ต้องปรับกลยุทธ์หรือระบบสนับสนุน'
-    };
-    return { 
-      level: 1, 
-      label: 'ต้องเร่งแก้ไข (Critical)', 
-      color: 'text-destructive',
-      bgColor: 'bg-destructive/10',
-      borderColor: 'border-destructive',
-      description: 'ผลลัพธ์ไม่เป็นไปตามเป้าหมาย หรือเกิดผลกระทบในทางลบต่อประชาชนและระบบบริการสุขภาพ ต้องแก้ไขเร่งด่วน'
-    };
+    if (score >= 90) return { grade: 'A', color: 'text-success', label: 'ดีเยี่ยม' };
+    if (score >= 80) return { grade: 'B', color: 'text-info', label: 'ดี' };
+    if (score >= 70) return { grade: 'C', color: 'text-warning', label: 'พอใช้' };
+    if (score >= 60) return { grade: 'D', color: 'text-orange-500', label: 'ควรปรับปรุง' };
+    return { grade: 'F', color: 'text-destructive', label: 'ไม่ผ่าน' };
   };
 
   const gradeInfo = getGrade(totalScore);
@@ -114,51 +79,18 @@ export function AssessmentSummary({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center gap-6">
-            <div className="w-40 h-40 rounded-full border-8 border-primary/20 flex items-center justify-center">
-              <div className="text-center">
-                <span className={`text-5xl font-bold ${gradeInfo.color}`}>{totalScore.toFixed(1)}</span>
-                <span className="text-xl text-muted-foreground">/100</span>
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="w-40 h-40 rounded-full border-8 border-primary/20 flex items-center justify-center">
+                <div className="text-center">
+                  <span className={`text-5xl font-bold ${gradeInfo.color}`}>{totalScore.toFixed(1)}</span>
+                  <span className="text-xl text-muted-foreground">/100</span>
+                </div>
               </div>
-            </div>
-            
-            <div className={`px-4 py-2 rounded-full bg-background border-2 ${gradeInfo.borderColor}`}>
-              <span className={`font-bold ${gradeInfo.color}`}>
-                ระดับ {gradeInfo.level}: {gradeInfo.label}
-              </span>
-            </div>
-            
-            {/* Interpretation Description */}
-            <div className={`w-full max-w-lg p-4 rounded-lg ${gradeInfo.bgColor} border ${gradeInfo.borderColor}`}>
-              <p className={`text-sm text-center ${gradeInfo.color}`}>
-                <strong>การแปลผล:</strong> {gradeInfo.description}
-              </p>
-            </div>
-            
-            {/* Score Range Table */}
-            <div className="w-full max-w-lg">
-              <p className="text-sm font-medium text-center mb-3 text-muted-foreground">เกณฑ์การแปลผลคะแนน</p>
-              <div className="grid gap-1 text-xs">
-                <div className="flex items-center gap-2 p-2 rounded bg-success/10 border border-success/30">
-                  <span className="font-semibold text-success w-28">ระดับ 5: ดีเยี่ยม</span>
-                  <span className="text-muted-foreground">86 - 100 คะแนน</span>
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded bg-info/10 border border-info/30">
-                  <span className="font-semibold text-info w-28">ระดับ 4: ดี</span>
-                  <span className="text-muted-foreground">71 - 85 คะแนน</span>
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded bg-warning/10 border border-warning/30">
-                  <span className="font-semibold text-warning w-28">ระดับ 3: พอใช้</span>
-                  <span className="text-muted-foreground">56 - 70 คะแนน</span>
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded bg-orange-500/10 border border-orange-500/30">
-                  <span className="font-semibold text-orange-500 w-28">ระดับ 2: ต้องพัฒนา</span>
-                  <span className="text-muted-foreground">41 - 55 คะแนน</span>
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded bg-destructive/10 border border-destructive/30">
-                  <span className="font-semibold text-destructive w-28">ระดับ 1: ต้องเร่งแก้ไข</span>
-                  <span className="text-muted-foreground">≤ 40 คะแนน</span>
-                </div>
+              <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-background border-2 ${gradeInfo.color.replace('text-', 'border-')}`}>
+                <span className={`font-bold ${gradeInfo.color}`}>
+                  เกรด {gradeInfo.grade}: {gradeInfo.label}
+                </span>
               </div>
             </div>
           </div>

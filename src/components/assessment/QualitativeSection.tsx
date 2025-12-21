@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Save, Loader2, Users, Shield, GraduationCap } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Loader2, Users, Shield, GraduationCap, CheckCircle2, XCircle } from 'lucide-react';
 import { EvidenceUpload } from './EvidenceUpload';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -41,26 +42,22 @@ export function QualitativeSection({
     comment: qualitativeScore?.comment ?? '',
   });
 
-  // Calculate scores based on criteria
+  // Calculate scores based on criteria (3 + 2 + 10 = 15)
   const calculateScores = useCallback((data: typeof formData) => {
     let leadershipScore = 0;
     let sustainableScore = 0;
 
+    // Leadership items: 3 + 2 = 5 points
     if (data.has_ciso) leadershipScore += 3;
-    if (data.has_dpo) leadershipScore += 3;
-    if (data.has_it_security_team) leadershipScore += 4;
+    if (data.has_dpo) leadershipScore += 2;
 
-    if (data.annual_training_count >= 4) sustainableScore += 5;
-    else if (data.annual_training_count >= 2) sustainableScore += 3;
-    else if (data.annual_training_count >= 1) sustainableScore += 1;
-
-    if (!data.uses_freeware && !data.uses_opensource) sustainableScore += 5;
-    else if (!data.uses_freeware) sustainableScore += 3;
+    // Sustainable item: 10 points
+    if (data.uses_freeware) sustainableScore += 10;
 
     return {
-      leadership_score: Math.min(leadershipScore, 10),
-      sustainable_score: Math.min(sustainableScore, 10),
-      total_score: Math.min(leadershipScore + sustainableScore, 15),
+      leadership_score: leadershipScore,
+      sustainable_score: sustainableScore,
+      total_score: leadershipScore + sustainableScore,
     };
   }, []);
 
@@ -118,33 +115,58 @@ export function QualitativeSection({
 
   const scores = calculateScores(formData);
 
+  const progressPercentage = (scores.total_score / 15) * 100;
+  const leadershipItems = [formData.has_ciso, formData.has_dpo, formData.has_it_security_team];
+  const passCount = leadershipItems.filter(Boolean).length;
+  const failCount = leadershipItems.filter(v => !v).length;
+
   return (
     <div className="space-y-6">
+      {/* Progress Summary Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            เชิงคุณภาพ (Qualitative) 15%
-          </CardTitle>
+          <CardTitle>เชิงคุณภาพ (Qualitative) - 15%</CardTitle>
           <CardDescription>
             ประเมินตาม WHO 6 Building Blocks: ระบบงาน ภาวะผู้นำ และความยั่งยืน
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent>
+          <div className="space-y-4">
+            <Progress value={progressPercentage} className="h-3" />
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-primary" />
+                  <span>ภาวะผู้นำ: {scores.leadership_score}/5</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-primary" />
+                  <span>ความยั่งยืน: {scores.sustainable_score}/10</span>
+                </div>
+              </div>
+              <span className="font-medium text-lg">{scores.total_score}/15 ({progressPercentage.toFixed(1)}%)</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Details Card */}
+      <Card>
+        <CardContent className="pt-6 space-y-6">
           {/* Leadership Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-primary" />
               <h3 className="font-semibold">ภาวะผู้นำและธรรมาภิบาล (Leadership)</h3>
               <span className="text-sm text-muted-foreground ml-auto">
-                คะแนน: {scores.leadership_score}/10
+                คะแนน: {scores.leadership_score}/5
               </span>
             </div>
 
             <div className="grid gap-4 pl-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
-                  <Label htmlFor="has_ciso">มี CISO (Chief Information Security Officer)</Label>
+                  <Label htmlFor="has_ciso">แต่งตั้งคณะทำงานด้านไซเบอร์ โดยมี CISO และ เจ้าหน้าที่ประสานงาน DPO ในหน่วยงาน</Label>
                   <EvidenceUpload 
                     qualitativeScoreId={qualitativeScore?.id || null} 
                     fieldName="has_ciso" 
@@ -161,7 +183,7 @@ export function QualitativeSection({
 
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
-                  <Label htmlFor="has_dpo">มี DPO (Data Protection Officer)</Label>
+                  <Label htmlFor="has_dpo">คณะกรรมการ CISO จังหวัดอย่างน้อย 1 ท่าน ต้องผ่านการสอบหรืออบรมตามหลักสูตรที่ ศทส.สป.สธ. กำหนด</Label>
                   <EvidenceUpload 
                     qualitativeScoreId={qualitativeScore?.id || null} 
                     fieldName="has_dpo" 
@@ -176,22 +198,6 @@ export function QualitativeSection({
                 />
               </div>
 
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1">
-                  <Label htmlFor="has_it_security_team">มีทีม IT Security</Label>
-                  <EvidenceUpload 
-                    qualitativeScoreId={qualitativeScore?.id || null} 
-                    fieldName="has_it_security_team" 
-                    disabled={readOnly} 
-                  />
-                </div>
-                <Switch
-                  id="has_it_security_team"
-                  checked={formData.has_it_security_team}
-                  onCheckedChange={(checked) => handleFieldChange('has_it_security_team', checked)}
-                  disabled={readOnly || saving}
-                />
-              </div>
             </div>
           </div>
 
@@ -208,35 +214,10 @@ export function QualitativeSection({
             </div>
 
             <div className="grid gap-4 pl-6">
-              <div className="space-y-2">
-                <Label htmlFor="annual_training_count">
-                  จำนวนครั้งอบรม IT Security ต่อปี
-                </Label>
-                <div className="flex items-center gap-4">
-                  <Input
-                    id="annual_training_count"
-                    type="number"
-                    min="0"
-                    value={formData.annual_training_count}
-                    onChange={(e) => setFormData({ ...formData, annual_training_count: parseInt(e.target.value) || 0 })}
-                    onBlur={(e) => handleFieldChange('annual_training_count', parseInt(e.target.value) || 0)}
-                    disabled={readOnly || saving}
-                    className="w-32"
-                  />
-                  <EvidenceUpload 
-                    qualitativeScoreId={qualitativeScore?.id || null} 
-                    fieldName="annual_training_count" 
-                    disabled={readOnly} 
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  4+ ครั้ง = 5 คะแนน, 2-3 ครั้ง = 3 คะแนน, 1 ครั้ง = 1 คะแนน
-                </p>
-              </div>
 
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
-                  <Label htmlFor="uses_freeware">ใช้ Freeware ในงานสำคัญ</Label>
+                  <Label htmlFor="uses_freeware">มีการใช้งานซอฟต์แวร์ Open Source หรือ Freeware ใน CTAM+ อย่างน้อย 2 ระบบ</Label>
                   <EvidenceUpload 
                     qualitativeScoreId={qualitativeScore?.id || null} 
                     fieldName="uses_freeware" 
@@ -251,22 +232,6 @@ export function QualitativeSection({
                 />
               </div>
 
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1">
-                  <Label htmlFor="uses_opensource">ใช้ Open Source ในงานสำคัญ</Label>
-                  <EvidenceUpload 
-                    qualitativeScoreId={qualitativeScore?.id || null} 
-                    fieldName="uses_opensource" 
-                    disabled={readOnly} 
-                  />
-                </div>
-                <Switch
-                  id="uses_opensource"
-                  checked={formData.uses_opensource}
-                  onCheckedChange={(checked) => handleFieldChange('uses_opensource', checked)}
-                  disabled={readOnly || saving}
-                />
-              </div>
             </div>
           </div>
 
@@ -286,11 +251,6 @@ export function QualitativeSection({
             />
           </div>
 
-          {/* Total Score */}
-          <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg">
-            <span className="font-semibold">คะแนนเชิงคุณภาพรวม</span>
-            <span className="text-2xl font-bold text-primary">{scores.total_score}/15</span>
-          </div>
 
           {/* Auto-save indicator */}
           {saving && (

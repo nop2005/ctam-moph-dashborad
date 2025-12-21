@@ -9,7 +9,8 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, AlertTriangle, Shield, Clock } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Loader2, AlertTriangle, Shield, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { ImpactEvidenceUpload } from './ImpactEvidenceUpload';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -126,19 +127,50 @@ export function ImpactSection({
 
   const scores = calculateScores(formData);
 
+  const progressPercentage = (scores.total_score / 15) * 100;
+  const hasIssues = formData.had_incident || formData.had_data_breach;
+
   return (
     <div className="space-y-6">
+      {/* Progress Summary Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5" />
-            ผลกระทบ (Impact) 15%
-          </CardTitle>
+          <CardTitle>ผลกระทบ (Impact) - 15%</CardTitle>
           <CardDescription>
             ประเมินผลกระทบจาก Cyber Incident และ Data Breach
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent>
+          <div className="space-y-4">
+            <Progress value={progressPercentage} className="h-3" />
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  {formData.had_incident ? (
+                    <XCircle className="w-4 h-4 text-destructive" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 text-success" />
+                  )}
+                  <span>Cyber Incident: {formData.had_incident ? `หัก ${Math.abs(scores.incident_score)}` : 'ไม่มี'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {formData.had_data_breach ? (
+                    <XCircle className="w-4 h-4 text-destructive" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 text-success" />
+                  )}
+                  <span>Data Breach: {formData.had_data_breach ? `หัก ${Math.abs(scores.breach_score)}` : 'ไม่มี'}</span>
+                </div>
+              </div>
+              <span className="font-medium text-lg">{scores.total_score}/15 ({progressPercentage.toFixed(1)}%)</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Details Card */}
+      <Card>
+        <CardContent className="pt-6 space-y-6">
           {/* Cyber Incident Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -152,7 +184,7 @@ export function ImpactSection({
             <div className="grid gap-4 pl-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
-                  <Label htmlFor="had_incident">เคยเกิด Cyber Incident ในรอบประเมินนี้</Label>
+                  <Label htmlFor="had_incident">หน่วยบริการได้เกิดเหตุการณ์การโจมตีทางไซเบอร์ของระบบ HIS หรือ Website องค์กร หรือ Facebook องค์กร ในรอบประเมินนี้ จนทำให้ระบบไม่สามารถให้บริการได้</Label>
                   <ImpactEvidenceUpload 
                     impactScoreId={impactScore?.id || null} 
                     fieldName="had_incident" 
@@ -213,7 +245,7 @@ export function ImpactSection({
             <div className="grid gap-4 pl-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
-                  <Label htmlFor="had_data_breach">เคยเกิด Data Breach ในรอบประเมินนี้</Label>
+                  <Label htmlFor="had_data_breach">ในรอบการประเมินนี้ มีเหตุการณ์รั่วไหลของฐานข้อมูลของโรงพยาบาล (HIS Data Breach) หรือมีเหตุการณ์ข้อมูลส่วนบุคคลรั่วไหลที่เกี่ยวข้องกับระบบสารสนเทศ จนสคส.วินิจฉัยโทษทางปกครอง</Label>
                   <ImpactEvidenceUpload 
                     impactScoreId={impactScore?.id || null} 
                     fieldName="had_data_breach" 
@@ -273,12 +305,6 @@ export function ImpactSection({
               disabled={readOnly || saving}
               className="min-h-[100px]"
             />
-          </div>
-
-          {/* Total Score */}
-          <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg">
-            <span className="font-semibold">คะแนนผลกระทบรวม</span>
-            <span className="text-2xl font-bold text-primary">{scores.total_score}/15</span>
           </div>
 
           {/* Auto-save indicator */}
