@@ -35,8 +35,8 @@ const qualityLevels: QualityLevel[] = [
     level: 5,
     name: 'ดีเยี่ยม',
     nameEn: 'Excellent',
-    minScore: 86,
-    maxScore: 100,
+    minScore: 8.6,
+    maxScore: 10,
     description: 'ผลลัพธ์โดดเด่น สร้างผลกระทบเชิงบวกต่อประชาชนและระบบบริการสาธารณสุขอย่างยั่งยืน',
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-50',
@@ -46,8 +46,8 @@ const qualityLevels: QualityLevel[] = [
     level: 4,
     name: 'ดี',
     nameEn: 'Good',
-    minScore: 71,
-    maxScore: 85,
+    minScore: 7.1,
+    maxScore: 8.5,
     description: 'ผลลัพธ์บรรลุเป้าหมายชัดเจน สร้างผลกระทบเชิงบวกต่อประชาชน แต่ควรพัฒนาระบบบริการสุขภาพอย่างต่อเนื่อง',
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
@@ -57,8 +57,8 @@ const qualityLevels: QualityLevel[] = [
     level: 3,
     name: 'พอใช้',
     nameEn: 'Fair',
-    minScore: 56,
-    maxScore: 70,
+    minScore: 5.6,
+    maxScore: 7.0,
     description: 'ผลลัพธ์อยู่ในระดับมาตรฐาน มีระบบบริการสุขภาพบางส่วนต้องปรับปรุง',
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-50',
@@ -68,8 +68,8 @@ const qualityLevels: QualityLevel[] = [
     level: 2,
     name: 'ต้องพัฒนา',
     nameEn: 'Developing',
-    minScore: 41,
-    maxScore: 55,
+    minScore: 4.1,
+    maxScore: 5.5,
     description: 'ผลลัพธ์ยังไม่บรรลุเป้าหมาย ต้องปรับกลยุทธ์หรือระบบสนับสนุน',
     color: 'text-orange-600',
     bgColor: 'bg-orange-50',
@@ -80,7 +80,7 @@ const qualityLevels: QualityLevel[] = [
     name: 'ต้องเร่งแก้ไข',
     nameEn: 'Critical',
     minScore: 0,
-    maxScore: 40,
+    maxScore: 4.0,
     description: 'ผลลัพธ์ไม่เป็นไปตามเป้าหมาย หรือเกิดผลกระทบในทางลบต่อประชาชนและระบบบริการสุขภาพ ต้องแก้ไขเร่งด่วน',
     color: 'text-red-600',
     bgColor: 'bg-red-50',
@@ -104,26 +104,30 @@ export function AssessmentSummary({
   qualitativeScore,
   impactScore,
 }: AssessmentSummaryProps) {
-  // Calculate quantitative score (70%) - only count passed items
+  // Calculate quantitative score (7 points max) - only count passed items
   const calculateQuantitativeScore = () => {
     const total = categories.length;
     if (total === 0) return 0;
     
     const passCount = items.filter(i => i.status === 'pass').length;
-    const score = (passCount / total) * 70;
+    const score = (passCount / total) * 7;
     return score;
   };
 
-  // Get qualitative score (15%)
+  // Get qualitative score (1.5 points max)
   const getQualitativeScoreValue = () => {
     if (!qualitativeScore) return 0;
-    return Number(qualitativeScore.total_score) || 0;
+    // Convert from 15-scale to 1.5-scale
+    const originalScore = Number(qualitativeScore.total_score) || 0;
+    return originalScore / 10;
   };
 
-  // Get impact score (15%)
+  // Get impact score (1.5 points max)
   const getImpactScoreValue = () => {
-    if (!impactScore) return 15;
-    return Number(impactScore.total_score) || 15;
+    if (!impactScore) return 1.5;
+    // Convert from 15-scale to 1.5-scale
+    const originalScore = Number(impactScore.total_score) || 15;
+    return originalScore / 10;
   };
 
   const quantitativeScoreValue = calculateQuantitativeScore();
@@ -153,8 +157,8 @@ export function AssessmentSummary({
             <div className="relative">
               <div className={`w-48 h-48 rounded-full border-8 ${qualityLevel.borderColor} flex items-center justify-center ${qualityLevel.bgColor}`}>
                 <div className="text-center">
-                  <span className={`text-6xl font-bold ${qualityLevel.color}`}>{totalScore.toFixed(1)}</span>
-                  <span className="text-xl text-muted-foreground">/100</span>
+                  <span className={`text-6xl font-bold ${qualityLevel.color}`}>{totalScore.toFixed(2)}</span>
+                  <span className="text-xl text-muted-foreground">/10</span>
                 </div>
               </div>
             </div>
@@ -195,10 +199,10 @@ export function AssessmentSummary({
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold">{quantitativeScoreValue.toFixed(1)}</span>
-                <span className="text-muted-foreground">/70 คะแนน</span>
+                <span className="text-3xl font-bold">{quantitativeScoreValue.toFixed(2)}</span>
+                <span className="text-muted-foreground">/7 คะแนน</span>
               </div>
-              <Progress value={(quantitativeScoreValue / 70) * 100} className="h-2" />
+              <Progress value={(quantitativeScoreValue / 7) * 100} className="h-2" />
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-1 text-success">
                   <CheckCircle2 className="w-3 h-3" />
@@ -231,14 +235,14 @@ export function AssessmentSummary({
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold">{qualScore.toFixed(1)}</span>
-                <span className="text-muted-foreground">/15 คะแนน</span>
+                <span className="text-3xl font-bold">{qualScore.toFixed(2)}</span>
+                <span className="text-muted-foreground">/1.5 คะแนน</span>
               </div>
-              <Progress value={(qualScore / 15) * 100} className="h-2" />
+              <Progress value={(qualScore / 1.5) * 100} className="h-2" />
               {qualitativeScore ? (
                 <div className="text-sm text-muted-foreground">
-                  <div>ภาวะผู้นำ: {Number(qualitativeScore.leadership_score) || 0}/5</div>
-                  <div>ความยั่งยืน: {Number(qualitativeScore.sustainable_score) || 0}/10</div>
+                  <div>ภาวะผู้นำ: {((Number(qualitativeScore.leadership_score) || 0) / 10).toFixed(2)}/0.5</div>
+                  <div>ความยั่งยืน: {((Number(qualitativeScore.sustainable_score) || 0) / 10).toFixed(2)}/1</div>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">ยังไม่ได้ประเมิน</p>
@@ -258,19 +262,19 @@ export function AssessmentSummary({
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold">{impScore.toFixed(1)}</span>
-                <span className="text-muted-foreground">/15 คะแนน</span>
+                <span className="text-3xl font-bold">{impScore.toFixed(2)}</span>
+                <span className="text-muted-foreground">/1.5 คะแนน</span>
               </div>
-              <Progress value={(impScore / 15) * 100} className="h-2" />
+              <Progress value={(impScore / 1.5) * 100} className="h-2" />
               {impactScore ? (
                 <div className="text-sm text-muted-foreground">
                   {impactScore.had_incident ? (
-                    <div className="text-destructive">• เกิด Incident (หัก {Math.abs(Number(impactScore.incident_score) || 0)})</div>
+                    <div className="text-destructive">• เกิด Incident (หัก {(Math.abs(Number(impactScore.incident_score) || 0) / 10).toFixed(2)})</div>
                   ) : (
                     <div className="text-success">• ไม่เกิด Incident</div>
                   )}
                   {impactScore.had_data_breach ? (
-                    <div className="text-destructive">• เกิด Data Breach (หัก {Math.abs(Number(impactScore.breach_score) || 0)})</div>
+                    <div className="text-destructive">• เกิด Data Breach (หัก {(Math.abs(Number(impactScore.breach_score) || 0) / 10).toFixed(2)})</div>
                   ) : (
                     <div className="text-success">• ไม่เกิด Data Breach</div>
                   )}
@@ -311,7 +315,7 @@ export function AssessmentSummary({
                       ระดับ {level.level} = {level.name} ({level.nameEn})
                     </td>
                     <td className={`py-3 px-4 text-center ${level.color}`}>
-                      {level.level === 1 ? 'ต่ำกว่าหรือเท่ากับ 40' : `${level.minScore} - ${level.maxScore}`}
+                      {level.level === 1 ? 'ต่ำกว่าหรือเท่ากับ 4.0' : `${level.minScore} - ${level.maxScore}`}
                     </td>
                     <td className="py-3 px-4 text-muted-foreground">
                       {level.description}
