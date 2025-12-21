@@ -42,17 +42,17 @@ export function QualitativeSection({
     comment: qualitativeScore?.comment ?? '',
   });
 
-  // Calculate scores based on criteria (5 points each, total 15)
+  // Calculate scores based on criteria (3 + 2 + 10 = 15)
   const calculateScores = useCallback((data: typeof formData) => {
     let leadershipScore = 0;
     let sustainableScore = 0;
 
-    // Leadership items: 5 points each
-    if (data.has_ciso) leadershipScore += 5;
-    if (data.has_dpo) leadershipScore += 5;
+    // Leadership items: 3 + 2 = 5 points
+    if (data.has_ciso) leadershipScore += 3;
+    if (data.has_dpo) leadershipScore += 2;
 
-    // Sustainable item: 5 points
-    if (data.uses_freeware) sustainableScore += 5;
+    // Sustainable item: 10 points
+    if (data.uses_freeware) sustainableScore += 10;
 
     return {
       leadership_score: leadershipScore,
@@ -137,11 +137,11 @@ export function QualitativeSection({
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <Shield className="w-4 h-4 text-primary" />
-                  <span>ภาวะผู้นำ: {scores.leadership_score}/10</span>
+                  <span>ภาวะผู้นำ: {scores.leadership_score}/5</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <GraduationCap className="w-4 h-4 text-primary" />
-                  <span>ความยั่งยืน: {scores.sustainable_score}/5</span>
+                  <span>ความยั่งยืน: {scores.sustainable_score}/10</span>
                 </div>
               </div>
               <span className="font-medium text-lg">{scores.total_score}/15 ({progressPercentage.toFixed(1)}%)</span>
@@ -159,7 +159,7 @@ export function QualitativeSection({
               <Shield className="w-4 h-4 text-primary" />
               <h3 className="font-semibold">ภาวะผู้นำและธรรมาภิบาล (Leadership)</h3>
               <span className="text-sm text-muted-foreground ml-auto">
-                คะแนน: {scores.leadership_score}/10
+                คะแนน: {scores.leadership_score}/5
               </span>
             </div>
 
@@ -209,7 +209,7 @@ export function QualitativeSection({
               <GraduationCap className="w-4 h-4 text-primary" />
               <h3 className="font-semibold">ความยั่งยืน (Sustainable)</h3>
               <span className="text-sm text-muted-foreground ml-auto">
-                คะแนน: {scores.sustainable_score}/5
+                คะแนน: {scores.sustainable_score}/10
               </span>
             </div>
 
