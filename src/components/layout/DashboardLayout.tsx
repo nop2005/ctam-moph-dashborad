@@ -78,20 +78,24 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* User Menu - Top Right */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <UserCircle className="h-5 w-5" />
-                  <span className="hidden sm:inline-block">
-                    {profile?.full_name || profile?.email}
-                  </span>
+                <Button variant="ghost" size="sm" className="gap-2 h-auto py-1.5">
+                  <UserCircle className="h-5 w-5 flex-shrink-0" />
+                  <div className="hidden sm:flex flex-col items-start text-left">
+                    <span className="text-sm font-medium leading-tight">
+                      {profile?.full_name || profile?.email}
+                    </span>
+                    {organizationName && (
+                      <span className="text-xs text-muted-foreground leading-tight">
+                        {organizationName}
+                      </span>
+                    )}
+                  </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>
                   <div className="flex flex-col gap-1">
                     <span className="font-medium">{profile?.full_name || 'ผู้ใช้งาน'}</span>
-                    {organizationName && (
-                      <span className="text-xs text-muted-foreground">{organizationName}</span>
-                    )}
                     <span className="text-xs text-muted-foreground">{profile?.email}</span>
                     <span className="text-xs text-primary font-medium">{getRoleLabel(profile?.role || '')}</span>
                   </div>
