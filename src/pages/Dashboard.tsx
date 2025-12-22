@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 
 interface AssessmentStats {
+  total: number;
   draft: number;
   waitingProvincial: number;
   waitingRegional: number;
@@ -23,6 +24,7 @@ interface AssessmentStats {
 export default function Dashboard() {
   const { user, profile } = useAuth();
   const [stats, setStats] = useState<AssessmentStats>({
+    total: 0,
     draft: 0,
     waitingProvincial: 0,
     waitingRegional: 0,
@@ -47,6 +49,7 @@ export default function Dashboard() {
         }
 
         if (assessments) {
+          const total = assessments.length;
           const draft = assessments.filter(a => 
             a.status === 'draft'
           ).length;
@@ -63,7 +66,7 @@ export default function Dashboard() {
             a.status === 'returned'
           ).length;
 
-          setStats({ draft, waitingProvincial, waitingRegional, approved, returned });
+          setStats({ total, draft, waitingProvincial, waitingRegional, approved, returned });
         }
       } catch (error) {
         console.error('Error:', error);
@@ -76,6 +79,14 @@ export default function Dashboard() {
   }, [profile]);
 
   const statsDisplay = [
+    { 
+      label: 'แบบประเมินทั้งหมด', 
+      value: loading ? '-' : stats.total.toString(), 
+      icon: FileText, 
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
+      href: '/assessments'
+    },
     { 
       label: 'ร่าง', 
       value: loading ? '-' : stats.draft.toString(), 
@@ -131,7 +142,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         {statsDisplay.map((stat, index) => (
           <Card 
             key={index} 
