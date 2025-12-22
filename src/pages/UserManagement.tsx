@@ -85,6 +85,7 @@ export default function UserManagement() {
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'all'>('all');
 
   const isProvincialAdmin = currentUserProfile?.role === 'provincial';
   const isRegionalAdmin = currentUserProfile?.role === 'regional';
@@ -280,9 +281,12 @@ export default function UserManagement() {
         </p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Clickable */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${activeTab === 'all' ? 'ring-2 ring-primary' : ''}`}
+          onClick={() => setActiveTab('all')}
+        >
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-primary/10">
@@ -295,7 +299,10 @@ export default function UserManagement() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${activeTab === 'pending' ? 'ring-2 ring-warning' : ''}`}
+          onClick={() => setActiveTab('pending')}
+        >
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-warning/10">
@@ -308,7 +315,10 @@ export default function UserManagement() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${activeTab === 'active' ? 'ring-2 ring-success' : ''}`}
+          onClick={() => setActiveTab('active')}
+        >
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-success/10">
@@ -338,33 +348,35 @@ export default function UserManagement() {
         </CardContent>
       </Card>
 
-      {/* Tabs */}
-      <Tabs defaultValue="pending" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="pending" className="gap-2">
-            <Clock className="h-4 w-4" />
-            รอการอนุมัติ ({pendingProfiles.length})
-          </TabsTrigger>
-          <TabsTrigger value="active" className="gap-2">
-            <CheckCircle2 className="h-4 w-4" />
-            อนุมัติแล้ว ({activeProfiles.length})
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Pending Tab */}
-        <TabsContent value="pending">
-          {pendingProfiles.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">ไม่มีผู้ใช้รอการอนุมัติ</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {pendingProfiles.map((profile) => (
-                <Card key={profile.id}>
-                  <CardContent className="p-6">
+      {/* User List */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">
+            {activeTab === 'all' ? 'ผู้ใช้ทั้งหมด' : activeTab === 'pending' ? 'รอการอนุมัติ' : 'อนุมัติแล้ว'}
+            <span className="text-muted-foreground font-normal ml-2">
+              ({activeTab === 'all' ? filteredProfiles.length : activeTab === 'pending' ? pendingProfiles.length : activeProfiles.length} คน)
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(() => {
+            const displayProfiles = activeTab === 'all' ? filteredProfiles : activeTab === 'pending' ? pendingProfiles : activeProfiles;
+            
+            if (displayProfiles.length === 0) {
+              return (
+                <div className="p-12 text-center">
+                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    {activeTab === 'pending' ? 'ไม่มีผู้ใช้รอการอนุมัติ' : 'ไม่พบผู้ใช้'}
+                  </p>
+                </div>
+              );
+            }
+            
+            return (
+              <div className="grid gap-4">
+                {displayProfiles.map((profile) => (
+                  <div key={profile.id} className="border rounded-lg p-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
@@ -372,6 +384,11 @@ export default function UserManagement() {
                             {profile.full_name || 'ไม่ระบุชื่อ'}
                           </h3>
                           <Badge variant="outline">{getRoleLabel(profile.role)}</Badge>
+                          {profile.is_active ? (
+                            <Badge variant="default" className="bg-success">ใช้งานได้</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="bg-warning/20 text-warning">รออนุมัติ</Badge>
+                          )}
                         </div>
                         <p className="text-sm text-muted-foreground">{profile.email}</p>
                         {profile.phone && (
@@ -395,83 +412,34 @@ export default function UserManagement() {
                           ลงทะเบียนเมื่อ: {formatDate(profile.created_at)}
                         </p>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRejectClick(profile)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <XCircle className="h-4 w-4 mr-1" />
-                          ปฏิเสธ
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleApproveClick(profile)}
-                        >
-                          <CheckCircle2 className="h-4 w-4 mr-1" />
-                          อนุมัติ
-                        </Button>
-                      </div>
+                      {!profile.is_active && (
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRejectClick(profile)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            ปฏิเสธ
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleApproveClick(profile)}
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                            อนุมัติ
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Active Tab */}
-        <TabsContent value="active">
-          {activeProfiles.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">ไม่พบผู้ใช้ที่อนุมัติแล้ว</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ชื่อ-นามสกุล</TableHead>
-                    <TableHead>อีเมล</TableHead>
-                    <TableHead>ตำแหน่ง</TableHead>
-                    <TableHead>สังกัด</TableHead>
-                    <TableHead>สถานะ</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {activeProfiles.map((profile) => (
-                    <TableRow key={profile.id}>
-                      <TableCell className="font-medium">
-                        {profile.full_name || '-'}
-                      </TableCell>
-                      <TableCell>{profile.email}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{getRoleLabel(profile.role)}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {profile.hospital_id 
-                          ? getHospitalName(profile.hospital_id)
-                          : profile.province_id 
-                            ? getProvinceName(profile.province_id)
-                            : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="default" className="bg-success">
-                          ใช้งานได้
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
 
       {/* Approve Dialog */}
       <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
