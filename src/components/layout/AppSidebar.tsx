@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -17,11 +16,6 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import {
   Shield,
   LayoutDashboard,
   FileText,
@@ -29,7 +23,6 @@ import {
   Users,
   Building2,
   Settings,
-  ChevronDown,
   PieChart,
   TrendingUp,
   Target,
@@ -97,8 +90,6 @@ export function AppSidebar() {
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + '/');
   const isReportsActive = currentPath.startsWith('/reports');
 
-  const [reportsOpen, setReportsOpen] = useState(isReportsActive);
-
   const filterByRole = (items: typeof menuItems) => {
     if (!profile?.role) return items;
     return items.filter(item => item.roles.includes(profile.role));
@@ -153,48 +144,37 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
 
-              {/* Reports with Submenu */}
-              <Collapsible
-                open={reportsOpen}
-                onOpenChange={setReportsOpen}
-                className="group/collapsible"
-              >
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton 
-                      tooltip="รายงานและสถิติ"
-                      isActive={isReportsActive}
-                      className={`
-                        text-white/80 hover:bg-white/10 hover:text-white
-                        data-[active=true]:bg-white data-[active=true]:text-primary data-[active=true]:font-medium
-                      `}
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      <span>รายงานและสถิติ</span>
-                      <ChevronDown className={`ml-auto h-4 w-4 transition-transform duration-200 ${reportsOpen ? 'rotate-180' : ''}`} />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub className="border-white/20">
-                      {reportSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton
-                            onClick={() => navigate(subItem.url)}
-                            isActive={currentPath === subItem.url}
-                            className={`
-                              text-white/70 hover:bg-white/10 hover:text-white cursor-pointer
-                              data-[active=true]:bg-white/20 data-[active=true]:text-white data-[active=true]:font-medium
-                            `}
-                          >
-                            <subItem.icon className="h-3 w-3" />
-                            <span>{subItem.title}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
+              {/* Reports with Submenu - Always visible */}
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  tooltip="รายงานและสถิติ"
+                  isActive={isReportsActive}
+                  className={`
+                    text-white/80 hover:bg-white/10 hover:text-white
+                    data-[active=true]:bg-white data-[active=true]:text-primary data-[active=true]:font-medium
+                  `}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  <span>รายงานและสถิติ</span>
+                </SidebarMenuButton>
+                <SidebarMenuSub className="border-white/20">
+                  {reportSubItems.map((subItem) => (
+                    <SidebarMenuSubItem key={subItem.title}>
+                      <SidebarMenuSubButton
+                        onClick={() => navigate(subItem.url)}
+                        isActive={currentPath === subItem.url}
+                        className={`
+                          text-white/70 hover:bg-white/10 hover:text-white cursor-pointer
+                          data-[active=true]:bg-white/20 data-[active=true]:text-white data-[active=true]:font-medium
+                        `}
+                      >
+                        <subItem.icon className="h-3 w-3" />
+                        <span>{subItem.title}</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  ))}
+                </SidebarMenuSub>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
