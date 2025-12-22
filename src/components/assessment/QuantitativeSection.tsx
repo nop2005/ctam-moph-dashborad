@@ -112,9 +112,8 @@ const getQualityLevel = (percentScore: number): QualityLevel => {
 };
 
 const statusOptions: { value: ItemStatus; label: string; icon: React.ReactNode; color: string }[] = [
-  { value: 'pass', label: 'ผ่าน (Yes)', icon: <CheckCircle2 className="w-4 h-4" />, color: 'text-success' },
-  { value: 'partial', label: 'บางส่วน (Partial)', icon: <AlertCircle className="w-4 h-4" />, color: 'text-warning' },
-  { value: 'fail', label: 'ไม่ผ่าน (No)', icon: <XCircle className="w-4 h-4" />, color: 'text-destructive' },
+  { value: 'pass', label: 'มี (Yes)', icon: <CheckCircle2 className="w-4 h-4" />, color: 'text-success' },
+  { value: 'fail', label: 'ไม่มี (No)', icon: <XCircle className="w-4 h-4" />, color: 'text-destructive' },
 ];
 
 export function QuantitativeSection({
@@ -133,12 +132,10 @@ export function QuantitativeSection({
 
   const calculateProgress = () => {
     const passCount = items.filter(i => i.status === 'pass').length;
-    const partialCount = items.filter(i => i.status === 'partial').length;
     const total = categories.length;
     return {
       pass: passCount,
-      partial: partialCount,
-      fail: total - passCount - partialCount,
+      fail: total - passCount,
       percentage: total > 0 ? (passCount / total) * 100 : 0,
     };
   };
@@ -150,7 +147,7 @@ export function QuantitativeSection({
     try {
       setSavingId(item.id);
       
-      const score = newStatus === 'pass' ? 1 : newStatus === 'partial' ? 0.5 : 0;
+      const score = newStatus === 'pass' ? 1 : 0;
       
       const { error } = await supabase
         .from('assessment_items')
@@ -228,15 +225,11 @@ export function QuantitativeSection({
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3 text-success" />
-                    <span>ผ่าน: {progress.pass}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3 text-warning" />
-                    <span>บางส่วน: {progress.partial}</span>
+                    <span>มี: {progress.pass}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <XCircle className="w-3 h-3 text-destructive" />
-                    <span>ไม่ผ่าน: {progress.fail}</span>
+                    <span>ไม่มี: {progress.fail}</span>
                   </div>
                 </div>
                 <span className="font-medium">{progress.pass}/{categories.length} ({progress.percentage.toFixed(1)}%)</span>
