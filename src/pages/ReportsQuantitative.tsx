@@ -456,7 +456,7 @@ export default function ReportsQuantitative() {
               
               return (
                 <div className="flex flex-col md:flex-row items-start gap-8">
-                  <div className="w-full md:w-auto h-[280px] min-w-[380px]">
+                  <div className="w-full md:w-auto h-[280px] min-w-[480px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
