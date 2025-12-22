@@ -29,14 +29,16 @@ interface Assessment {
   total_score: number | null;
 }
 
+export type DrillLevel = 'region' | 'province' | 'hospital';
+
 interface ScoreChartProps {
   healthRegions: HealthRegion[];
   provinces: Province[];
   hospitals: Hospital[];
   assessments: Assessment[];
+  onDrillChange?: (level: DrillLevel, regionId: string | null, provinceId: string | null) => void;
 }
 
-type DrillLevel = 'region' | 'province' | 'hospital';
 
 interface ChartData {
   id: string;
@@ -61,7 +63,7 @@ const COLORS = [
   '#F59E0B', // amber
 ];
 
-export function ScoreChart({ healthRegions, provinces, hospitals, assessments }: ScoreChartProps) {
+export function ScoreChart({ healthRegions, provinces, hospitals, assessments, onDrillChange }: ScoreChartProps) {
   const [drillLevel, setDrillLevel] = useState<DrillLevel>('region');
   const [selectedRegion, setSelectedRegion] = useState<HealthRegion | null>(null);
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
@@ -137,12 +139,14 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments }:
       if (region) {
         setSelectedRegion(region);
         setDrillLevel('province');
+        onDrillChange?.('province', region.id, null);
       }
     } else if (drillLevel === 'province') {
       const province = provinces.find(p => p.id === data.id);
       if (province) {
         setSelectedProvince(province);
         setDrillLevel('hospital');
+        onDrillChange?.('hospital', selectedRegion?.id || null, province.id);
       }
     }
   };
@@ -151,9 +155,11 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments }:
     if (drillLevel === 'hospital') {
       setSelectedProvince(null);
       setDrillLevel('province');
+      onDrillChange?.('province', selectedRegion?.id || null, null);
     } else if (drillLevel === 'province') {
       setSelectedRegion(null);
       setDrillLevel('region');
+      onDrillChange?.('region', null, null);
     }
   };
 
