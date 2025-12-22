@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -9,9 +10,17 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarHeader,
   useSidebar,
 } from '@/components/ui/sidebar';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
   Shield,
   LayoutDashboard,
@@ -20,6 +29,11 @@ import {
   Users,
   Building2,
   Settings,
+  ChevronDown,
+  PieChart,
+  TrendingUp,
+  Target,
+  AlertTriangle,
 } from 'lucide-react';
 
 const menuItems = [
@@ -35,12 +49,13 @@ const menuItems = [
     icon: FileText,
     roles: ['hospital_it', 'provincial', 'regional', 'central_admin']
   },
-  { 
-    title: 'รายงานและสถิติ', 
-    url: '/reports', 
-    icon: BarChart3,
-    roles: ['hospital_it', 'provincial', 'regional', 'central_admin']
-  },
+];
+
+const reportSubItems = [
+  { title: 'รายงานภาพรวม', url: '/reports', icon: PieChart },
+  { title: 'เชิงปริมาณ', url: '/reports/quantitative', icon: TrendingUp },
+  { title: 'เชิงคุณภาพ', url: '/reports/qualitative', icon: Target },
+  { title: 'เชิงผลกระทบ', url: '/reports/impact', icon: AlertTriangle },
 ];
 
 const adminItems = [
@@ -80,6 +95,9 @@ export function AppSidebar() {
   const currentPath = location.pathname;
 
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + '/');
+  const isReportsActive = currentPath.startsWith('/reports');
+
+  const [reportsOpen, setReportsOpen] = useState(isReportsActive);
 
   const filterByRole = (items: typeof menuItems) => {
     if (!profile?.role) return items;
@@ -134,6 +152,49 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* Reports with Submenu */}
+              <Collapsible
+                open={reportsOpen}
+                onOpenChange={setReportsOpen}
+                className="group/collapsible"
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton 
+                      tooltip="รายงานและสถิติ"
+                      isActive={isReportsActive}
+                      className={`
+                        text-white/80 hover:bg-white/10 hover:text-white
+                        data-[active=true]:bg-white data-[active=true]:text-primary data-[active=true]:font-medium
+                      `}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      <span>รายงานและสถิติ</span>
+                      <ChevronDown className={`ml-auto h-4 w-4 transition-transform duration-200 ${reportsOpen ? 'rotate-180' : ''}`} />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub className="border-white/20">
+                      {reportSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton
+                            onClick={() => navigate(subItem.url)}
+                            isActive={currentPath === subItem.url}
+                            className={`
+                              text-white/70 hover:bg-white/10 hover:text-white cursor-pointer
+                              data-[active=true]:bg-white/20 data-[active=true]:text-white data-[active=true]:font-medium
+                            `}
+                          >
+                            <subItem.icon className="h-3 w-3" />
+                            <span>{subItem.title}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
