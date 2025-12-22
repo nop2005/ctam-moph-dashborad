@@ -67,6 +67,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     return labels[role] || role;
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login', { replace: true });
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -106,7 +111,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   ตั้งค่าโปรไฟล์
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   ออกจากระบบ
                 </DropdownMenuItem>
