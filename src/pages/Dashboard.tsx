@@ -8,24 +8,22 @@ import {
   FileText, 
   CheckCircle2, 
   Clock, 
-  AlertTriangle,
   BarChart3,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface AssessmentStats {
-  total: number;
-  pending: number;
-  approved: number;
-  returned: number;
+  draft: number;
+  waitingProvincial: number;
+  waitingRegional: number;
 }
 
 export default function Dashboard() {
   const { user, profile } = useAuth();
   const [stats, setStats] = useState<AssessmentStats>({
-    total: 0,
-    pending: 0,
-    approved: 0,
-    returned: 0,
+    draft: 0,
+    waitingProvincial: 0,
+    waitingRegional: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -45,20 +43,17 @@ export default function Dashboard() {
         }
 
         if (assessments) {
-          const total = assessments.length;
-          const pending = assessments.filter(a => 
-            a.status === 'submitted' || 
+          const draft = assessments.filter(a => 
+            a.status === 'draft' || a.status === 'returned'
+          ).length;
+          const waitingProvincial = assessments.filter(a => 
+            a.status === 'submitted'
+          ).length;
+          const waitingRegional = assessments.filter(a => 
             a.status === 'approved_provincial'
           ).length;
-          const approved = assessments.filter(a => 
-            a.status === 'approved_regional' || 
-            a.status === 'completed'
-          ).length;
-          const returned = assessments.filter(a => 
-            a.status === 'returned'
-          ).length;
 
-          setStats({ total, pending, approved, returned });
+          setStats({ draft, waitingProvincial, waitingRegional });
         }
       } catch (error) {
         console.error('Error:', error);
@@ -72,35 +67,27 @@ export default function Dashboard() {
 
   const statsDisplay = [
     { 
-      label: 'แบบประเมินทั้งหมด', 
-      value: loading ? '-' : stats.total.toString(), 
+      label: 'ร่าง', 
+      value: loading ? '-' : stats.draft.toString(), 
       icon: FileText, 
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
+      color: 'text-muted-foreground',
+      bgColor: 'bg-muted',
       href: '/assessments'
     },
     { 
-      label: 'รอตรวจสอบ', 
-      value: loading ? '-' : stats.pending.toString(), 
+      label: 'รอ สสจ. ตรวจสอบ', 
+      value: loading ? '-' : stats.waitingProvincial.toString(), 
       icon: Clock, 
       color: 'text-warning',
       bgColor: 'bg-warning/10',
       href: '/assessments'
     },
     { 
-      label: 'ผ่านการประเมิน', 
-      value: loading ? '-' : stats.approved.toString(), 
+      label: 'รอ เขตสุขภาพ ตรวจสอบ', 
+      value: loading ? '-' : stats.waitingRegional.toString(), 
       icon: CheckCircle2, 
-      color: 'text-success',
-      bgColor: 'bg-success/10',
-      href: '/assessments'
-    },
-    { 
-      label: 'ต้องแก้ไข', 
-      value: loading ? '-' : stats.returned.toString(), 
-      icon: AlertTriangle, 
-      color: 'text-destructive',
-      bgColor: 'bg-destructive/10',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
       href: '/assessments'
     },
   ];
@@ -118,7 +105,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {statsDisplay.map((stat, index) => (
           <Card 
             key={index} 
