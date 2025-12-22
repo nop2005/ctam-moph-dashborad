@@ -664,7 +664,7 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>
                         )}
-                        <TableHead className={`text-center min-w-[80px] ${selectedProvince === 'all' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-primary/10'}`}>
+                        <TableHead className="text-center min-w-[80px] bg-primary/10">
                           {selectedProvince !== 'all' ? (
                             // Hospital level - show "ร้อยละข้อที่ผ่าน"
                             <div className="flex flex-col items-center">
@@ -748,13 +748,13 @@ export default function ReportsQuantitative() {
                                 {'hospitalsPassedAll17' in row ? row.hospitalsPassedAll17 : 0}
                               </TableCell>
                             )}
-                            <TableCell className={`text-center font-bold ${selectedProvince === 'all' ? 'bg-green-50 dark:bg-green-900/20' : 'bg-primary/5'}`}>
+                            <TableCell className={`text-center bg-primary/5 font-bold`}>
                               {(row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row ? (
                                 <span className={(row.hospitalsPassedAll17 as number) > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
                                   {row.hospitalCount > 0 ? (((row.hospitalsPassedAll17 as number) / row.hospitalCount) * 100).toFixed(2) : 0}%
                                 </span>
                               ) : passedPercentage !== null ? `${passedPercentage.toFixed(0)}%` : '-'}</TableCell>
-                            <TableCell className={`text-center ${selectedProvince === 'all' ? 'bg-green-50 dark:bg-green-900/20' : ''}`}>
+                            <TableCell className="text-center">
                               {(() => {
                                 // For province and region, use hospitalsPassedAll17 percentage
                                 if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
