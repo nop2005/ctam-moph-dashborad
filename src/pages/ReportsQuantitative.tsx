@@ -17,7 +17,7 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { TrendingUp, Filter, Building2, MapPin } from 'lucide-react';
+import { TrendingUp, Filter, Building2, MapPin, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
@@ -615,7 +615,27 @@ export default function ReportsQuantitative() {
         {/* Data Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">{getTitle()}</CardTitle>
+            <div className="flex items-center gap-3">
+              {/* Back button - show when drilling down */}
+              {(selectedRegion !== 'all' || selectedProvince !== 'all') && !isProvincialAdmin && (
+                <button
+                  onClick={() => {
+                    if (selectedProvince !== 'all') {
+                      // Go back to province list
+                      setSelectedProvince('all');
+                    } else if (selectedRegion !== 'all') {
+                      // Go back to region list
+                      setSelectedRegion('all');
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  ย้อนกลับ
+                </button>
+              )}
+              <CardTitle className="text-lg">{getTitle()}</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
