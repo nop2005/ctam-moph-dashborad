@@ -307,9 +307,9 @@ export default function ReportsQuantitative() {
       if (catAvg.average === 1) return 'ผ่าน';
       return 'ไม่ผ่าน';
     }
-    // For province level, show "passed/total (percentage%)"
-    if (type === 'province' && catAvg.passedCount !== undefined && catAvg.totalCount !== undefined) {
-      return `${catAvg.passedCount}/${catAvg.totalCount} (${catAvg.average.toFixed(2)}%)`;
+    // For province level, show "passedCount (percentage%)" - no /total
+    if (type === 'province' && catAvg.passedCount !== undefined) {
+      return `${catAvg.passedCount} (${catAvg.average?.toFixed(2)}%)`;
     }
     // For region level, show as decimal average
     return catAvg.average.toFixed(2);
@@ -584,6 +584,10 @@ export default function ReportsQuantitative() {
                         <TableHead className="sticky left-0 bg-muted/50 z-10 min-w-[180px]">
                           {selectedProvince !== 'all' ? 'โรงพยาบาล' : selectedRegion !== 'all' ? 'จังหวัด' : 'เขตสุขภาพ'}
                         </TableHead>
+                        {/* Show hospital count column only at province level */}
+                        {selectedRegion !== 'all' && selectedProvince === 'all' && (
+                          <TableHead className="text-center min-w-[80px] bg-muted/50">จำนวน รพ.</TableHead>
+                        )}
                         <TableHead className="text-center min-w-[80px] bg-primary/10">ร้อยละข้อที่ผ่าน</TableHead>
                         <TableHead className="text-center min-w-[60px] bg-primary/10">ระดับ</TableHead>
                         {categories.map((cat, index) => (
@@ -621,6 +625,10 @@ export default function ReportsQuantitative() {
                                 )}
                               </div>
                             </TableCell>
+                            {/* Show hospital count column only at province level */}
+                            {selectedRegion !== 'all' && selectedProvince === 'all' && (
+                              <TableCell className="text-center font-medium">{row.hospitalCount}</TableCell>
+                            )}
                             <TableCell className={`text-center bg-primary/5 font-bold ${getScoreColorClass(overallAvg)}`}>
                               {passedPercentage !== null ? `${passedPercentage.toFixed(0)}%` : '-'}
                             </TableCell>
