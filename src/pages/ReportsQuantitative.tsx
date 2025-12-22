@@ -186,19 +186,21 @@ export default function ReportsQuantitative() {
 
   // Calculate pass percentage per category for a set of hospital IDs
   // For province level: returns percentage of hospitals that passed (score = 1) each category
+  // totalCount = ALL hospitals in province (including those without assessments)
   // For hospital level: returns the actual score (1 = pass, 0 = fail)
   const calculateCategoryAverages = (hospitalIds: string[], isProvinceLevel: boolean = false) => {
     const relevantAssessments = assessments.filter(a => hospitalIds.includes(a.hospital_id));
+    const totalHospitalsInScope = hospitalIds.length; // Total hospitals in province
     
     return categories.map(cat => {
       if (isProvinceLevel) {
         // For province level: calculate percentage of hospitals that passed this category
+        // Denominator is ALL hospitals in province (not just those with assessments)
         let passedCount = 0;
-        let totalHospitalsWithData = 0;
         
         hospitalIds.forEach(hospitalId => {
           const hospitalAssessments = relevantAssessments.filter(a => a.hospital_id === hospitalId);
-          if (hospitalAssessments.length === 0) return;
+          if (hospitalAssessments.length === 0) return; // Hospital not assessed - counts as not passed
           
           const assessmentIds = hospitalAssessments.map(a => a.id);
           const catItems = assessmentItems.filter(
@@ -206,16 +208,15 @@ export default function ReportsQuantitative() {
           );
           
           if (catItems.length > 0) {
-            totalHospitalsWithData++;
             // Check if any assessment has score = 1 (pass)
             const hasPassed = catItems.some(item => Number(item.score) === 1);
             if (hasPassed) passedCount++;
           }
         });
         
-        if (totalHospitalsWithData === 0) return { categoryId: cat.id, average: null, passedCount: 0, totalCount: 0 };
-        const percentage = (passedCount / totalHospitalsWithData) * 100;
-        return { categoryId: cat.id, average: percentage, passedCount, totalCount: totalHospitalsWithData };
+        if (totalHospitalsInScope === 0) return { categoryId: cat.id, average: null, passedCount: 0, totalCount: 0 };
+        const percentage = (passedCount / totalHospitalsInScope) * 100;
+        return { categoryId: cat.id, average: percentage, passedCount, totalCount: totalHospitalsInScope };
       } else {
         // For hospital level or region level: use original average calculation
         const assessmentIds = relevantAssessments.map(a => a.id);
