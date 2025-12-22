@@ -296,19 +296,22 @@ export default function ReportsQuantitative() {
   };
 
   // Format score display - show "ผ่าน" for 1, "ไม่ผ่าน" for 0 or other values
-  const formatScore = (score: number | null, type: 'hospital' | 'province' | 'region' = 'region') => {
-    if (score === null) return '-';
+  const formatScore = (
+    catAvg: { average: number | null; passedCount?: number; totalCount?: number }, 
+    type: 'hospital' | 'province' | 'region' = 'region'
+  ) => {
+    if (catAvg.average === null) return '-';
     // For hospital level, show ผ่าน/ไม่ผ่าน
     if (type === 'hospital') {
-      if (score === 1) return 'ผ่าน';
+      if (catAvg.average === 1) return 'ผ่าน';
       return 'ไม่ผ่าน';
     }
-    // For province level, show percentage (already calculated as percentage)
-    if (type === 'province') {
-      return score.toFixed(2);
+    // For province level, show "passed/total (percentage%)"
+    if (type === 'province' && catAvg.passedCount !== undefined && catAvg.totalCount !== undefined) {
+      return `${catAvg.passedCount}/${catAvg.totalCount} (${catAvg.average.toFixed(2)}%)`;
     }
     // For region level, show as decimal average
-    return score.toFixed(2);
+    return catAvg.average.toFixed(2);
   };
 
   // Get score color class - adjusted for province level (percentage 0-100)
@@ -638,7 +641,7 @@ export default function ReportsQuantitative() {
                                 key={catAvg.categoryId} 
                                 className={`text-center ${getScoreColorClass(catAvg.average, row.type)}`}
                               >
-                                {formatScore(catAvg.average, row.type)}
+                                {formatScore(catAvg, row.type)}
                               </TableCell>
                             ))}
                           </TableRow>
