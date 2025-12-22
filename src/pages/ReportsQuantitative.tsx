@@ -680,9 +680,32 @@ export default function ReportsQuantitative() {
                           <TableRow key={row.id} className="hover:bg-muted/30">
                             <TableCell className="sticky left-0 bg-background z-10 font-medium">
                               <div className="flex flex-col">
-                                <span>{row.name}</span>
-                                {row.type === 'hospital' && 'code' in row && (
-                                  <span className="text-xs text-muted-foreground font-mono">{row.code}</span>
+                                {/* Clickable region name - drills down to provinces */}
+                                {row.type === 'region' && (
+                                  <button
+                                    onClick={() => setSelectedRegion(row.id)}
+                                    className="text-left text-primary hover:text-primary/80 hover:underline cursor-pointer font-medium"
+                                  >
+                                    {row.name}
+                                  </button>
+                                )}
+                                {/* Clickable province name - drills down to hospitals */}
+                                {row.type === 'province' && (
+                                  <button
+                                    onClick={() => setSelectedProvince(row.id)}
+                                    className="text-left text-primary hover:text-primary/80 hover:underline cursor-pointer font-medium"
+                                  >
+                                    {row.name}
+                                  </button>
+                                )}
+                                {/* Hospital name - not clickable */}
+                                {row.type === 'hospital' && (
+                                  <>
+                                    <span>{row.name}</span>
+                                    {'code' in row && (
+                                      <span className="text-xs text-muted-foreground font-mono">{row.code}</span>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             </TableCell>
