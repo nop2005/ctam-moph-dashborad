@@ -232,20 +232,41 @@ export default function ReportsQuantitative() {
   // Determine what to display based on filters
   const tableData = useMemo(() => {
     if (selectedRegion === 'all') {
-      // Show all regions with averages
+      // Show all regions with averages - same format as province level
       return healthRegions.map(region => {
         const regionProvinces = provinces.filter(p => p.health_region_id === region.id);
         const regionHospitals = hospitals.filter(h => 
           regionProvinces.some(p => p.id === h.province_id)
         );
         const hospitalIds = regionHospitals.map(h => h.id);
-        const categoryAverages = calculateCategoryAverages(hospitalIds);
+        const categoryAverages = calculateCategoryAverages(hospitalIds, true); // Use same calculation as province level
+        
+        // Calculate hospitals that passed all 17 items (green)
+        let hospitalsPassedAll17 = 0;
+        hospitalIds.forEach(hospitalId => {
+          const hospitalAssessments = assessments.filter(a => a.hospital_id === hospitalId);
+          if (hospitalAssessments.length === 0) return;
+          
+          const assessmentIds = hospitalAssessments.map(a => a.id);
+          let passedAllCategories = true;
+          
+          categories.forEach(cat => {
+            const catItems = assessmentItems.filter(
+              item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
+            );
+            const hasPassed = catItems.some(item => Number(item.score) === 1);
+            if (!hasPassed) passedAllCategories = false;
+          });
+          
+          if (passedAllCategories) hospitalsPassedAll17++;
+        });
 
         return {
           id: region.id,
           name: `เขตสุขภาพที่ ${region.region_number}`,
           type: 'region' as const,
           hospitalCount: regionHospitals.length,
+          hospitalsPassedAll17,
           categoryAverages,
         };
       });
@@ -328,8 +349,8 @@ export default function ReportsQuantitative() {
       if (catAvg.average === 1) return 'ผ่าน';
       return 'ไม่ผ่าน';
     }
-    // For province level, show passedCount on first line, (percentage%) on second line
-    if (type === 'province' && catAvg.passedCount !== undefined) {
+    // For province and region level, show passedCount on first line, (percentage%) on second line
+    if ((type === 'province' || type === 'region') && catAvg.passedCount !== undefined) {
       return (
         <div className="flex flex-col items-center">
           <span>{catAvg.passedCount}</span>
@@ -337,22 +358,22 @@ export default function ReportsQuantitative() {
         </div>
       );
     }
-    // For region level, show as decimal average
+    // Fallback
     return catAvg.average.toFixed(2);
   };
 
-  // Get score color class - adjusted for province level (percentage 0-100)
+  // Get score color class - adjusted for province/region level (percentage 0-100)
   const getScoreColorClass = (score: number | null, type: 'hospital' | 'province' | 'region' = 'region') => {
     if (score === null) return 'text-muted-foreground';
     
-    if (type === 'province') {
-      // Province level uses percentage (0-100)
+    if (type === 'province' || type === 'region') {
+      // Province and Region level uses percentage (0-100)
       if (score >= 80) return 'text-green-600 dark:text-green-400 font-medium';
       if (score >= 50) return 'text-yellow-600 dark:text-yellow-400';
       return 'text-red-600 dark:text-red-400';
     }
     
-    // Hospital/Region level uses 0-1 scale
+    // Hospital level uses 0-1 scale
     if (score >= 0.8) return 'text-green-600 dark:text-green-400 font-medium';
     if (score >= 0.5) return 'text-yellow-600 dark:text-yellow-400';
     return 'text-red-600 dark:text-red-400';
@@ -610,12 +631,12 @@ export default function ReportsQuantitative() {
                         <TableHead className="sticky left-0 bg-muted/50 z-10 min-w-[180px]">
                           {selectedProvince !== 'all' ? 'โรงพยาบาล' : selectedRegion !== 'all' ? 'จังหวัด' : 'เขตสุขภาพ'}
                         </TableHead>
-                        {/* Show hospital count column only at province level */}
-                        {selectedRegion !== 'all' && selectedProvince === 'all' && (
+                        {/* Show hospital count column at region and province level */}
+                        {selectedProvince === 'all' && (
                           <TableHead className="text-center min-w-[80px] bg-muted/50">จำนวน รพ.</TableHead>
                         )}
-                        {/* Show hospitals passed all 17 column only at province level */}
-                        {selectedRegion !== 'all' && selectedProvince === 'all' && (
+                        {/* Show hospitals passed all 17 column at region and province level */}
+                        {selectedProvince === 'all' && (
                           <TableHead className="text-center min-w-[100px] bg-green-100 dark:bg-green-900/30">
                             <div className="flex flex-col items-center">
                               <span>รพ.ผ่านครบ</span>
@@ -665,34 +686,54 @@ export default function ReportsQuantitative() {
                                 )}
                               </div>
                             </TableCell>
-                            {/* Show hospital count column only at province level */}
-                            {selectedRegion !== 'all' && selectedProvince === 'all' && (
+                            {/* Show hospital count column at region and province level */}
+                            {selectedProvince === 'all' && (
                               <TableCell className="text-center font-medium">{row.hospitalCount}</TableCell>
                             )}
-                            {/* Show hospitals passed all 17 column only at province level */}
-                            {selectedRegion !== 'all' && selectedProvince === 'all' && (
+                            {/* Show hospitals passed all 17 column at region and province level */}
+                            {selectedProvince === 'all' && (
                               <TableCell className="text-center font-medium bg-green-50 dark:bg-green-900/20">
                                 {'hospitalsPassedAll17' in row ? row.hospitalsPassedAll17 : 0}
                               </TableCell>
                             )}
                             <TableCell className={`text-center bg-primary/5 font-bold`}>
-                              {row.type === 'province' && 'hospitalsPassedAll17' in row ? (
-                                <span className={row.hospitalsPassedAll17 > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                                  {((row.hospitalsPassedAll17 / row.hospitalCount) * 100).toFixed(2)}%
+                              {(row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row ? (
+                                <span className={(row.hospitalsPassedAll17 as number) > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                                  {row.hospitalCount > 0 ? (((row.hospitalsPassedAll17 as number) / row.hospitalCount) * 100).toFixed(2) : 0}%
                                 </span>
                               ) : passedPercentage !== null ? `${passedPercentage.toFixed(0)}%` : '-'}</TableCell>
                             <TableCell className="text-center">
-                              {passedPercentage !== null ? (
-                                <div 
-                                  className={`w-6 h-6 rounded-full mx-auto ${
-                                    passedPercentage === 100 
-                                      ? 'bg-green-500' 
-                                      : passedPercentage >= 50 
-                                        ? 'bg-yellow-500' 
-                                        : 'bg-red-500'
-                                  }`}
-                                />
-                              ) : '-'}
+                              {(() => {
+                                // For province and region, use hospitalsPassedAll17 percentage
+                                if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
+                                  const greenPercentage = row.hospitalCount > 0 
+                                    ? ((row.hospitalsPassedAll17 as number) / row.hospitalCount) * 100 
+                                    : 0;
+                                  return (
+                                    <div 
+                                      className={`w-6 h-6 rounded-full mx-auto ${
+                                        greenPercentage === 100 
+                                          ? 'bg-green-500' 
+                                          : greenPercentage >= 50 
+                                            ? 'bg-yellow-500' 
+                                            : 'bg-red-500'
+                                      }`}
+                                    />
+                                  );
+                                }
+                                // For hospital level
+                                return passedPercentage !== null ? (
+                                  <div 
+                                    className={`w-6 h-6 rounded-full mx-auto ${
+                                      passedPercentage === 100 
+                                        ? 'bg-green-500' 
+                                        : passedPercentage >= 50 
+                                          ? 'bg-yellow-500' 
+                                          : 'bg-red-500'
+                                    }`}
+                                  />
+                                ) : '-';
+                              })()}
                             </TableCell>
                             {row.categoryAverages.map((catAvg) => (
                               <TableCell 
