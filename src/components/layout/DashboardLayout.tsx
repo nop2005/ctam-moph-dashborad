@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -20,6 +22,40 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
+  const [organizationName, setOrganizationName] = useState<string | null>(null);
+
+  // Fetch organization name based on role
+  useEffect(() => {
+    const fetchOrganizationName = async () => {
+      if (!profile) return;
+
+      if (profile.hospital_id) {
+        const { data } = await supabase
+          .from('hospitals')
+          .select('name')
+          .eq('id', profile.hospital_id)
+          .maybeSingle();
+        if (data) setOrganizationName(data.name);
+      } else if (profile.province_id) {
+        const { data } = await supabase
+          .from('provinces')
+          .select('name')
+          .eq('id', profile.province_id)
+          .maybeSingle();
+        if (data) setOrganizationName(`สสจ.${data.name}`);
+      } else if (profile.health_region_id) {
+        const { data } = await supabase
+          .from('health_regions')
+          .select('region_number')
+          .eq('id', profile.health_region_id)
+          .maybeSingle();
+        if (data) setOrganizationName(`เขตสุขภาพที่ ${data.region_number}`);
+      } else if (profile.role === 'central_admin') {
+        setOrganizationName('กระทรวงสาธารณสุข');
+      }
+    };
+    fetchOrganizationName();
+  }, [profile]);
 
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
@@ -53,8 +89,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <DropdownMenuLabel>
                   <div className="flex flex-col gap-1">
                     <span className="font-medium">{profile?.full_name || 'ผู้ใช้งาน'}</span>
+                    {organizationName && (
+                      <span className="text-xs text-muted-foreground">{organizationName}</span>
+                    )}
                     <span className="text-xs text-muted-foreground">{profile?.email}</span>
-                    <span className="text-xs text-muted-foreground">{getRoleLabel(profile?.role || '')}</span>
+                    <span className="text-xs text-primary font-medium">{getRoleLabel(profile?.role || '')}</span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />

@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import {
   Sidebar,
   SidebarContent,
@@ -12,10 +10,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
-  SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Badge } from '@/components/ui/badge';
 import {
   Shield,
   LayoutDashboard,
@@ -79,41 +75,14 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile, signOut } = useAuth();
-  const [hospitalName, setHospitalName] = useState<string | null>(null);
+  const { profile } = useAuth();
   
   const currentPath = location.pathname;
 
-  // Fetch hospital name for hospital_it users
-  useEffect(() => {
-    const fetchHospitalName = async () => {
-      if (profile?.hospital_id) {
-        const { data } = await supabase
-          .from('hospitals')
-          .select('name')
-          .eq('id', profile.hospital_id)
-          .maybeSingle();
-        if (data) {
-          setHospitalName(data.name);
-        }
-      }
-    };
-    fetchHospitalName();
-  }, [profile?.hospital_id]);
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + '/');
 
-  const getRoleLabel = (role: string) => {
-    const labels: Record<string, string> = {
-      hospital_it: 'IT รพ.',
-      provincial: 'สสจ.',
-      regional: 'เขตสุขภาพ',
-      central_admin: 'Super Admin',
-    };
-    return labels[role] || role;
-  };
-
   const filterByRole = (items: typeof menuItems) => {
-    if (!profile?.role) return items; // Show all if role not loaded yet
+    if (!profile?.role) return items;
     return items.filter(item => item.roles.includes(profile.role));
   };
 
@@ -200,20 +169,6 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
-
-      <SidebarFooter className="border-t border-white/20 p-3 bg-primary">
-        {!collapsed && profile && (
-          <div className="text-center">
-            <p className="font-medium text-sm truncate text-white">{profile.full_name || profile.email}</p>
-            {hospitalName && (
-              <p className="text-xs text-white/70 truncate">{hospitalName}</p>
-            )}
-            <Badge className="mt-1 bg-white/20 text-white hover:bg-white/30 border-0">
-              {getRoleLabel(profile.role)}
-            </Badge>
-          </div>
-        )}
-      </SidebarFooter>
     </Sidebar>
   );
 }
