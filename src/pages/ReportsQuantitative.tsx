@@ -648,7 +648,7 @@ export default function ReportsQuantitative() {
                 <div className="flex-shrink-0">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-muted/50">
+                      <TableRow className="bg-muted/50 h-[52px]">
                         <TableHead className="bg-muted/50 min-w-[180px]">
                           {selectedProvince !== 'all' ? 'โรงพยาบาล' : selectedRegion !== 'all' ? 'จังหวัด' : 'เขตสุขภาพ'}
                         </TableHead>
@@ -686,7 +686,7 @@ export default function ReportsQuantitative() {
                         const passedPercentage = totalCount > 0 ? (passedCount / totalCount) * 100 : null;
 
                         return (
-                          <TableRow key={row.id} className="hover:bg-muted/30">
+                          <TableRow key={row.id} className="hover:bg-muted/30 h-[53px]">
                             <TableCell className="bg-background font-medium">
                               <div className="flex flex-col">
                                 {row.type === 'region' && (
@@ -773,7 +773,7 @@ export default function ReportsQuantitative() {
                   <div className="pb-4">
                     <Table>
                       <TableHeader>
-                        <TableRow className="bg-muted/50">
+                        <TableRow className="bg-muted/50 h-[52px]">
                           {categories.map((cat, index) => (
                             <TableHead 
                               key={cat.id} 
@@ -790,7 +790,7 @@ export default function ReportsQuantitative() {
                       </TableHeader>
                       <TableBody>
                         {tableData.map((row) => (
-                          <TableRow key={row.id} className="hover:bg-muted/30">
+                          <TableRow key={row.id} className="hover:bg-muted/30 h-[53px]">
                             {row.categoryAverages.map((catAvg) => (
                               <TableCell 
                                 key={catAvg.categoryId} 
