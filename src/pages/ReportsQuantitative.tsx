@@ -643,8 +643,8 @@ export default function ReportsQuantitative() {
             ) : tableData.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">ไม่พบข้อมูล</div>
             ) : (
-              <ScrollArea className="w-full">
-                <div className="min-w-[1200px]">
+              <ScrollArea className="w-full" type="always">
+                <div className="min-w-[1200px] pb-4">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
@@ -801,7 +801,7 @@ export default function ReportsQuantitative() {
                     </TableBody>
                   </Table>
                 </div>
-                <ScrollBar orientation="horizontal" />
+                <ScrollBar orientation="horizontal" className="h-3 bg-muted/50" />
               </ScrollArea>
             )}
           </CardContent>
