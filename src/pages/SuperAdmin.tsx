@@ -25,7 +25,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Phone
+  Phone,
+  UserPlus
 } from 'lucide-react';
 
 interface Profile {
@@ -83,6 +84,12 @@ export default function SuperAdmin() {
   const [editHospitalId, setEditHospitalId] = useState<string>('');
   const [editFullName, setEditFullName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Bulk create dialog
+  const [isBulkCreateDialogOpen, setIsBulkCreateDialogOpen] = useState(false);
+  const [bulkCreateProvinceId, setBulkCreateProvinceId] = useState('');
+  const [isBulkCreating, setIsBulkCreating] = useState(false);
+  const [bulkCreateResults, setBulkCreateResults] = useState<any[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -228,6 +235,54 @@ export default function SuperAdmin() {
     }
   };
 
+  const handleBulkCreateUsers = async () => {
+    if (!bulkCreateProvinceId) {
+      toast.error('กรุณาเลือกจังหวัด');
+      return;
+    }
+
+    setIsBulkCreating(true);
+    setBulkCreateResults([]);
+
+    try {
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('กรุณาเข้าสู่ระบบใหม่');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-hospital-users`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ province_id: bulkCreateProvinceId }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setBulkCreateResults(data.results);
+        const successCount = data.results.filter((r: any) => r.status === 'success').length;
+        const skippedCount = data.results.filter((r: any) => r.status === 'skipped').length;
+        toast.success(`สร้างผู้ใช้สำเร็จ ${successCount} ราย, ข้าม ${skippedCount} ราย`);
+        fetchData();
+      } else {
+        toast.error(data.error || 'เกิดข้อผิดพลาด');
+      }
+    } catch (error) {
+      console.error('Error creating bulk users:', error);
+      toast.error('ไม่สามารถสร้างผู้ใช้ได้');
+    } finally {
+      setIsBulkCreating(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     if (!selectedProfile) return;
     
@@ -314,11 +369,17 @@ export default function SuperAdmin() {
   return (
     <DashboardLayout>
       {/* Page Header */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-2">จัดการผู้ใช้งาน</h2>
-        <p className="text-muted-foreground">
-          อนุมัติผู้ใช้ใหม่และจัดการสิทธิ์ผู้ใช้งานทั้งหมดในระบบ
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <h2 className="text-2xl font-bold mb-2">จัดการผู้ใช้งาน</h2>
+          <p className="text-muted-foreground">
+            อนุมัติผู้ใช้ใหม่และจัดการสิทธิ์ผู้ใช้งานทั้งหมดในระบบ
+          </p>
+        </div>
+        <Button onClick={() => setIsBulkCreateDialogOpen(true)} className="gap-2">
+          <UserPlus className="h-4 w-4" />
+          สร้างผู้ใช้ รพ. แบบ Bulk
+        </Button>
       </div>
 
       {/* Stats */}
@@ -774,6 +835,74 @@ export default function SuperAdmin() {
             </Button>
             <Button onClick={handleSaveProfile} disabled={isSaving}>
               {isSaving ? 'กำลังบันทึก...' : 'บันทึก'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Create Dialog */}
+      <Dialog open={isBulkCreateDialogOpen} onOpenChange={setIsBulkCreateDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>สร้างผู้ใช้ IT รพ. แบบ Bulk</DialogTitle>
+            <DialogDescription>
+              สร้างผู้ใช้สำหรับโรงพยาบาลทั้งหมดในจังหวัดที่เลือก
+              <br />
+              <span className="text-primary font-medium">Email: รหัสรพ@ctam.moph | Password: รหัสรพ</span>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>เลือกจังหวัด</Label>
+              <SearchableSelect
+                options={provinces.map(p => ({ value: p.id, label: p.name }))}
+                value={bulkCreateProvinceId}
+                onValueChange={setBulkCreateProvinceId}
+                placeholder="เลือกจังหวัด"
+                searchPlaceholder="พิมพ์ชื่อจังหวัด..."
+                emptyMessage="ไม่พบจังหวัด"
+              />
+            </div>
+
+            {bulkCreateResults.length > 0 && (
+              <div className="space-y-2">
+                <Label>ผลลัพธ์การสร้างผู้ใช้</Label>
+                <div className="max-h-60 overflow-y-auto border rounded-md p-2 space-y-1">
+                  {bulkCreateResults.map((result, index) => (
+                    <div 
+                      key={index} 
+                      className={`text-sm p-2 rounded ${
+                        result.status === 'success' 
+                          ? 'bg-success/10 text-success' 
+                          : result.status === 'skipped' 
+                          ? 'bg-warning/10 text-warning' 
+                          : 'bg-destructive/10 text-destructive'
+                      }`}
+                    >
+                      <span className="font-medium">{result.hospital_code}</span> - {result.hospital_name}
+                      <br />
+                      <span className="text-xs">{result.message}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsBulkCreateDialogOpen(false);
+              setBulkCreateResults([]);
+              setBulkCreateProvinceId('');
+            }}>
+              ปิด
+            </Button>
+            <Button 
+              onClick={handleBulkCreateUsers} 
+              disabled={isBulkCreating || !bulkCreateProvinceId}
+            >
+              {isBulkCreating ? 'กำลังสร้าง...' : 'สร้างผู้ใช้'}
             </Button>
           </DialogFooter>
         </DialogContent>
