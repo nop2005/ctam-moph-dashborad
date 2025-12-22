@@ -90,6 +90,10 @@ export default function SuperAdmin() {
   const [bulkCreateProvinceId, setBulkCreateProvinceId] = useState('');
   const [isBulkCreating, setIsBulkCreating] = useState(false);
   const [bulkCreateResults, setBulkCreateResults] = useState<any[]>([]);
+  
+  // Card filter state
+  type CardFilter = 'all' | 'pending' | 'active' | 'central_admin' | 'regional' | 'provincial';
+  const [cardFilter, setCardFilter] = useState<CardFilter>('all');
 
   useEffect(() => {
     fetchData();
@@ -332,14 +336,36 @@ export default function SuperAdmin() {
   const pendingProfiles = profiles.filter(p => !p.is_active);
   const activeProfiles = profiles.filter(p => p.is_active);
 
-  const filteredPendingProfiles = pendingProfiles.filter(p => 
-    p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+  // Apply card filter
+  const getFilteredByCard = (profileList: Profile[]) => {
+    switch (cardFilter) {
+      case 'pending':
+        return profileList.filter(p => !p.is_active);
+      case 'active':
+        return profileList.filter(p => p.is_active);
+      case 'central_admin':
+        return profileList.filter(p => p.role === 'central_admin' && p.is_active);
+      case 'regional':
+        return profileList.filter(p => p.role === 'regional' && p.is_active);
+      case 'provincial':
+        return profileList.filter(p => p.role === 'provincial' && p.is_active);
+      default:
+        return profileList;
+    }
+  };
+
+  const cardFilteredProfiles = getFilteredByCard(profiles);
+  
+  const filteredPendingProfiles = cardFilteredProfiles.filter(p => 
+    !p.is_active &&
+    (p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()))
   );
 
-  const filteredActiveProfiles = activeProfiles.filter(p => 
-    p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+  const filteredActiveProfiles = cardFilteredProfiles.filter(p => 
+    p.is_active &&
+    (p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()))
   );
 
   const filteredHospitals = editProvinceId 
@@ -354,6 +380,16 @@ export default function SuperAdmin() {
     centralAdmin: profiles.filter(p => p.role === 'central_admin' && p.is_active).length,
     regional: profiles.filter(p => p.role === 'regional' && p.is_active).length,
     provincial: profiles.filter(p => p.role === 'provincial' && p.is_active).length,
+  };
+
+  const handleCardClick = (filter: CardFilter) => {
+    setCardFilter(filter);
+    // Auto switch to appropriate tab
+    if (filter === 'pending') {
+      setActiveTab('pending');
+    } else if (['active', 'central_admin', 'regional', 'provincial'].includes(filter)) {
+      setActiveTab('active');
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -384,37 +420,55 @@ export default function SuperAdmin() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'all' ? 'ring-2 ring-primary' : ''}`}
+          onClick={() => handleCardClick('all')}
+        >
           <CardContent className="p-4">
             <div className="text-2xl font-bold">{stats.total}</div>
             <div className="text-sm text-muted-foreground">ทั้งหมด</div>
           </CardContent>
         </Card>
-        <Card className={stats.pending > 0 ? 'border-warning' : ''}>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'pending' ? 'ring-2 ring-warning' : ''} ${stats.pending > 0 ? 'border-warning' : ''}`}
+          onClick={() => handleCardClick('pending')}
+        >
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-warning">{stats.pending}</div>
             <div className="text-sm text-muted-foreground">รอการอนุมัติ</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'active' ? 'ring-2 ring-success' : ''}`}
+          onClick={() => handleCardClick('active')}
+        >
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-success">{stats.active}</div>
             <div className="text-sm text-muted-foreground">ใช้งาน</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'central_admin' ? 'ring-2 ring-destructive' : ''}`}
+          onClick={() => handleCardClick('central_admin')}
+        >
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-destructive">{stats.centralAdmin}</div>
             <div className="text-sm text-muted-foreground">Super Admin</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'regional' ? 'ring-2 ring-primary' : ''}`}
+          onClick={() => handleCardClick('regional')}
+        >
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-primary">{stats.regional}</div>
             <div className="text-sm text-muted-foreground">เขตสุขภาพ</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'provincial' ? 'ring-2 ring-accent' : ''}`}
+          onClick={() => handleCardClick('provincial')}
+        >
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-accent">{stats.provincial}</div>
             <div className="text-sm text-muted-foreground">สสจ.</div>
