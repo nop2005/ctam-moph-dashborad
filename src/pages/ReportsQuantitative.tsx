@@ -469,60 +469,102 @@ export default function ReportsQuantitative() {
           </CardContent>
         </Card>
 
-        {/* Safety Level Pie Chart */}
+        {/* Safety Level Donut Chart */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">สัดส่วนระดับความปลอดภัยไซเบอร์ของโรงพยาบาล</CardTitle>
           </CardHeader>
           <CardContent>
             {(() => {
+              // Get all hospitals in selected province (if selected), otherwise all hospitals
+              let allHospitalsInScope: Hospital[] = [];
+              if (selectedProvince !== 'all') {
+                allHospitalsInScope = hospitals.filter(h => h.province_id === selectedProvince);
+              } else if (selectedRegion !== 'all') {
+                const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
+                allHospitalsInScope = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id));
+              } else {
+                allHospitalsInScope = hospitals;
+              }
+              
               // Calculate safety level distribution from all hospitals
               const hospitalRows = tableData.filter(row => row.type === 'hospital');
               let greenCount = 0;
               let yellowCount = 0;
               let redCount = 0;
+              let grayCount = 0;
               
+              // Assessed hospitals
+              const assessedHospitalIds = new Set<string>();
               hospitalRows.forEach(row => {
                 const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
                 const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
                 const passedPercentage = totalCount > 0 ? (passedCount / totalCount) * 100 : null;
                 
                 if (passedPercentage !== null) {
+                  assessedHospitalIds.add(row.id);
                   if (passedPercentage === 100) greenCount++;
                   else if (passedPercentage >= 50) yellowCount++;
                   else redCount++;
                 }
               });
               
-              const total = greenCount + yellowCount + redCount;
+              // Count unassessed hospitals
+              grayCount = allHospitalsInScope.filter(h => !assessedHospitalIds.has(h.id)).length;
+              
+              const total = greenCount + yellowCount + redCount + grayCount;
               
               if (total === 0) {
                 return <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูลโรงพยาบาล (กรุณาเลือกจังหวัดเพื่อดูข้อมูล)</div>;
               }
               
               const pieData = [
-                { name: 'ปลอดภัยไซเบอร์สูง (100%)', value: greenCount, color: '#22c55e', percentage: ((greenCount / total) * 100).toFixed(1) },
-                { name: 'ปลอดภัยต่ำ (50-99.99%)', value: yellowCount, color: '#eab308', percentage: ((yellowCount / total) * 100).toFixed(1) },
-                { name: 'ไม่ปลอดภัย (<50%)', value: redCount, color: '#ef4444', percentage: ((redCount / total) * 100).toFixed(1) },
+                { name: 'ปลอดภัยไซเบอร์สูง', shortName: '100%', value: greenCount, color: '#22c55e', percentage: ((greenCount / total) * 100).toFixed(1) },
+                { name: 'ปลอดภัยต่ำ', shortName: '50-99%', value: yellowCount, color: '#eab308', percentage: ((yellowCount / total) * 100).toFixed(1) },
+                { name: 'ไม่ปลอดภัย', shortName: '<50%', value: redCount, color: '#ef4444', percentage: ((redCount / total) * 100).toFixed(1) },
+                { name: 'ยังไม่ประเมิน', shortName: '-', value: grayCount, color: '#9ca3af', percentage: ((grayCount / total) * 100).toFixed(1) },
               ].filter(d => d.value > 0);
+              
+              // Custom label renderer for outside labels
+              const renderCustomLabel = ({ cx, cy, midAngle, outerRadius, name, shortName, value, percentage }: any) => {
+                const RADIAN = Math.PI / 180;
+                const radius = outerRadius + 30;
+                const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                
+                return (
+                  <text
+                    x={x}
+                    y={y}
+                    fill="currentColor"
+                    textAnchor={x > cx ? 'start' : 'end'}
+                    dominantBaseline="central"
+                    className="text-xs fill-foreground"
+                  >
+                    {`${shortName} ${value} รพ. (${percentage}%)`}
+                  </text>
+                );
+              };
               
               return (
                 <div className="flex flex-col lg:flex-row items-center gap-6">
-                  <div className="w-full lg:w-1/2 h-[300px]">
+                  <div className="w-full lg:w-1/2 h-[350px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={pieData}
                           cx="50%"
                           cy="50%"
-                          labelLine={false}
-                          label={({ name, percentage }) => `${percentage}%`}
+                          labelLine={true}
+                          label={renderCustomLabel}
+                          innerRadius={60}
                           outerRadius={100}
                           fill="#8884d8"
                           dataKey="value"
+                          paddingAngle={2}
                         >
                           {pieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
+                            <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.color} />
                           ))}
                         </Pie>
                         <Tooltip 
@@ -570,6 +612,17 @@ export default function ReportsQuantitative() {
                           <span className="text-muted-foreground ml-2">({((redCount / total) * 100).toFixed(1)}%)</span>
                         </div>
                       </div>
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-950/30">
+                        <div className="w-4 h-4 rounded-full bg-gray-400" />
+                        <div className="flex-1">
+                          <span className="font-semibold text-gray-700 dark:text-gray-400">ยังไม่ประเมิน</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-bold text-lg">{grayCount}</span>
+                          <span className="text-muted-foreground ml-1">รพ.</span>
+                          <span className="text-muted-foreground ml-2">({((grayCount / total) * 100).toFixed(1)}%)</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -596,6 +649,10 @@ export default function ReportsQuantitative() {
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-red-500" />
                 <span className="text-sm">น้อยกว่า 50% = <span className="font-semibold text-red-600">ไม่ปลอดภัย</span></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-gray-400" />
+                <span className="text-sm">ยังไม่ประเมิน = <span className="font-semibold text-gray-600">รอการประเมิน</span></span>
               </div>
             </div>
           </CardContent>
