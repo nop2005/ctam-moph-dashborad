@@ -110,7 +110,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-2">
+      <SidebarContent className="px-3 py-2">
         {/* Main Menu */}
         <SidebarGroup>
           <SidebarGroupLabel className={`text-white/60 ${collapsed ? 'sr-only' : ''}`}>
