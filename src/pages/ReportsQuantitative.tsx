@@ -132,7 +132,8 @@ export default function ReportsQuantitative() {
     return categories.map(cat => {
       const catItems = relevantItems.filter(item => item.category_id === cat.id);
       if (catItems.length === 0) return { categoryId: cat.id, average: null };
-      const avg = catItems.reduce((sum, item) => sum + item.score, 0) / catItems.length;
+      // Parse score to number (Supabase returns numeric as string)
+      const avg = catItems.reduce((sum, item) => sum + Number(item.score), 0) / catItems.length;
       return { categoryId: cat.id, average: avg };
     });
   };
