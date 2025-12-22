@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+
 import { ScoreChart, DrillLevel } from '@/components/reports/ScoreChart';
 import { 
   Table, 
@@ -15,7 +15,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { BarChart3, FileText, Building2, MapPin } from 'lucide-react';
+import { BarChart3, FileText, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface HealthRegion {
@@ -72,10 +72,6 @@ export default function Reports() {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   
-  const [selectedRegion, setSelectedRegion] = useState<string>('all');
-  const [selectedProvince, setSelectedProvince] = useState<string>('all');
-  const [selectedHospital, setSelectedHospital] = useState<string>('all');
-  const [reports, setReports] = useState<HospitalReport[]>([]);
   
   // Chart drill state for syncing table
   const [chartDrillLevel, setChartDrillLevel] = useState<DrillLevel>('region');
@@ -109,16 +105,6 @@ export default function Reports() {
         setHospitals(hospitalsRes.data || []);
         setAssessments(assessmentsRes.data || []);
 
-        // Set default filter based on user role
-        if (profile?.role === 'regional' && profile.health_region_id) {
-          setSelectedRegion(profile.health_region_id);
-        } else if (profile?.role === 'provincial' && profile.province_id) {
-          const province = provincesRes.data?.find(p => p.id === profile.province_id);
-          if (province) {
-            setSelectedRegion(province.health_region_id);
-            setSelectedProvince(province.id);
-          }
-        }
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
@@ -130,76 +116,44 @@ export default function Reports() {
     fetchData();
   }, [profile]);
 
-  // Filter and generate reports
-  useEffect(() => {
-    let filteredHospitals = [...hospitals];
-    let filteredProvinces = [...provinces];
 
-    // Filter by region
-    if (selectedRegion !== 'all') {
-      filteredProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
+  // Calculate statistics based on drill level
+  const drillStats = (() => {
+    let filteredHospitals: Hospital[] = [];
+    let filteredAssessments: Assessment[] = [];
+
+    if (chartDrillLevel === 'region') {
+      // All hospitals
+      filteredHospitals = hospitals;
+      filteredAssessments = assessments;
+    } else if (chartDrillLevel === 'province' && chartRegionId) {
+      // Hospitals in selected region
+      const regionProvinces = provinces.filter(p => p.health_region_id === chartRegionId);
       filteredHospitals = hospitals.filter(h => 
-        filteredProvinces.some(p => p.id === h.province_id)
+        regionProvinces.some(p => p.id === h.province_id)
+      );
+      filteredAssessments = assessments.filter(a =>
+        filteredHospitals.some(h => h.id === a.hospital_id)
+      );
+    } else if (chartDrillLevel === 'hospital' && chartProvinceId) {
+      // Hospitals in selected province
+      filteredHospitals = hospitals.filter(h => h.province_id === chartProvinceId);
+      filteredAssessments = assessments.filter(a =>
+        filteredHospitals.some(h => h.id === a.hospital_id)
       );
     }
 
-    // Filter by province
-    if (selectedProvince !== 'all') {
-      filteredHospitals = filteredHospitals.filter(h => h.province_id === selectedProvince);
-    }
-
-    // Filter by hospital
-    if (selectedHospital !== 'all') {
-      filteredHospitals = filteredHospitals.filter(h => h.id === selectedHospital);
-    }
-
-    // Generate reports
-    const hospitalReports: HospitalReport[] = filteredHospitals.map(hospital => {
-      const province = provinces.find(p => p.id === hospital.province_id);
-      const assessment = assessments.find(a => a.hospital_id === hospital.id);
-      
-      return {
-        hospital,
-        province: province!,
-        assessment: assessment || null,
-      };
-    });
-
-    setReports(hospitalReports);
-  }, [hospitals, provinces, assessments, selectedRegion, selectedProvince, selectedHospital]);
-
-  // Get filtered provinces for dropdown
-  const filteredProvinces = selectedRegion === 'all' 
-    ? provinces 
-    : provinces.filter(p => p.health_region_id === selectedRegion);
-
-  // Calculate statistics
-  const stats = {
-    totalHospitals: reports.length,
-    withAssessment: reports.filter(r => r.assessment).length,
-    completed: reports.filter(r => r.assessment?.status === 'approved_regional' || r.assessment?.status === 'completed').length,
-    pending: reports.filter(r => r.assessment?.status === 'submitted' || r.assessment?.status === 'approved_provincial').length,
-  };
-
-  const regionOptions = [
-    { value: 'all', label: 'ทุกเขตสุขภาพ' },
-    ...healthRegions.map(r => ({ value: r.id, label: `เขตสุขภาพที่ ${r.region_number}` }))
-  ];
-
-  const provinceOptions = [
-    { value: 'all', label: 'ทุกจังหวัด' },
-    ...filteredProvinces.map(p => ({ value: p.id, label: p.name }))
-  ];
-
-  // Get filtered hospitals for dropdown
-  const filteredHospitalsForDropdown = selectedProvince === 'all'
-    ? hospitals.filter(h => filteredProvinces.some(p => p.id === h.province_id))
-    : hospitals.filter(h => h.province_id === selectedProvince);
-
-  const hospitalOptions = [
-    { value: 'all', label: 'ทุกโรงพยาบาล' },
-    ...filteredHospitalsForDropdown.map(h => ({ value: h.id, label: h.name }))
-  ];
+    return {
+      totalHospitals: filteredHospitals.length,
+      withAssessment: filteredAssessments.length,
+      completed: filteredAssessments.filter(a => 
+        a.status === 'approved_regional' || a.status === 'completed'
+      ).length,
+      pending: filteredAssessments.filter(a => 
+        a.status === 'submitted' || a.status === 'approved_provincial'
+      ).length,
+    };
+  })();
 
   return (
     <DashboardLayout>
@@ -212,61 +166,13 @@ export default function Reports() {
           </div>
         </div>
 
-        {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              ตัวกรอง
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">เขตสุขภาพ</label>
-                <SearchableSelect
-                  options={regionOptions}
-                  value={selectedRegion}
-                  onValueChange={(value) => {
-                    setSelectedRegion(value);
-                    setSelectedProvince('all');
-                    setSelectedHospital('all');
-                  }}
-                  placeholder="เลือกเขตสุขภาพ"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">จังหวัด</label>
-                <SearchableSelect
-                  options={provinceOptions}
-                  value={selectedProvince}
-                  onValueChange={(value) => {
-                    setSelectedProvince(value);
-                    setSelectedHospital('all');
-                  }}
-                  placeholder="เลือกจังหวัด"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">โรงพยาบาล</label>
-                <SearchableSelect
-                  options={hospitalOptions}
-                  value={selectedHospital}
-                  onValueChange={setSelectedHospital}
-                  placeholder="เลือกโรงพยาบาล"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Statistics */}
+        {/* Statistics - based on drill level */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold">{stats.totalHospitals}</p>
+                  <p className="text-2xl font-bold">{drillStats.totalHospitals}</p>
                   <p className="text-sm text-muted-foreground">โรงพยาบาลทั้งหมด</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -279,7 +185,7 @@ export default function Reports() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold">{stats.withAssessment}</p>
+                  <p className="text-2xl font-bold">{drillStats.withAssessment}</p>
                   <p className="text-sm text-muted-foreground">มีแบบประเมิน</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
@@ -292,7 +198,7 @@ export default function Reports() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold">{stats.completed}</p>
+                  <p className="text-2xl font-bold">{drillStats.completed}</p>
                   <p className="text-sm text-muted-foreground">ผ่านการประเมิน</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center">
@@ -305,7 +211,7 @@ export default function Reports() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold">{stats.pending}</p>
+                  <p className="text-2xl font-bold">{drillStats.pending}</p>
                   <p className="text-sm text-muted-foreground">รอตรวจสอบ</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center">
