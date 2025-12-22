@@ -481,7 +481,7 @@ export default function ReportsQuantitative() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="flex-1 space-y-3 min-w-[380px]">
+                  <div className="space-y-3 w-fit ml-auto">
                     <div>
                       <span className="text-xl font-bold">{total}</span>
                       <span className="text-muted-foreground ml-2 text-sm">โรงพยาบาลทั้งหมด</span>
