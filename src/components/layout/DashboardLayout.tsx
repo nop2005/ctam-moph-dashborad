@@ -118,7 +118,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           </header>
-          <main className="flex-1 p-6 pl-8">
+          <main className="flex-1 p-6 pl-12">
             {children}
           </main>
         </SidebarInset>
