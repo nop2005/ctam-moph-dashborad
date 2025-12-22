@@ -103,17 +103,17 @@ export function AppSidebar() {
   return (
     <Sidebar 
       collapsible="icon" 
-      className="border-r bg-primary text-primary-foreground"
+      className="border-r bg-sidebar text-sidebar-foreground"
     >
-      <SidebarHeader className="border-b border-primary-foreground/20 p-4">
+      <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Shield className="w-6 h-6 text-white" />
+          <div className="w-10 h-10 bg-sidebar-primary rounded-xl flex items-center justify-center flex-shrink-0">
+            <Shield className="w-6 h-6 text-sidebar-primary-foreground" />
           </div>
           {!collapsed && (
             <div className="overflow-hidden">
-              <h1 className="font-bold text-lg leading-tight text-white">CTAM+</h1>
-              <p className="text-xs text-white/70 truncate">Cybersecurity Assessment</p>
+              <h1 className="font-bold text-lg leading-tight text-sidebar-primary">CTAM+</h1>
+              <p className="text-xs text-sidebar-foreground/70 truncate">Cybersecurity Assessment</p>
             </div>
           )}
         </div>
@@ -122,7 +122,7 @@ export function AppSidebar() {
       <SidebarContent className="px-3 py-2">
         {/* Main Menu */}
         <SidebarGroup>
-          <SidebarGroupLabel className={`text-white/60 ${collapsed ? 'sr-only' : ''}`}>
+          <SidebarGroupLabel className={`text-sidebar-foreground/60 ${collapsed ? 'sr-only' : ''}`}>
             เมนูหลัก
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -134,8 +134,8 @@ export function AppSidebar() {
                     isActive={isActive(item.url)}
                     tooltip={item.title}
                     className={`
-                      text-white/80 hover:bg-white/10 hover:text-white
-                      data-[active=true]:bg-white data-[active=true]:text-primary data-[active=true]:font-medium
+                      text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                      data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
                     `}
                   >
                     <item.icon className="h-4 w-4" />
@@ -150,22 +150,22 @@ export function AppSidebar() {
                   tooltip="รายงานและสถิติ"
                   isActive={isReportsActive}
                   className={`
-                    text-white/80 hover:bg-white/10 hover:text-white
-                    data-[active=true]:bg-white data-[active=true]:text-primary data-[active=true]:font-medium
+                    text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                    data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
                   `}
                 >
                   <BarChart3 className="h-4 w-4" />
                   <span>รายงานและสถิติ</span>
                 </SidebarMenuButton>
-                <SidebarMenuSub className="border-white/20">
+                <SidebarMenuSub className="border-sidebar-border">
                   {reportSubItems.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton
                         onClick={() => navigate(subItem.url)}
                         isActive={currentPath === subItem.url}
                         className={`
-                          text-white/70 hover:bg-white/10 hover:text-white cursor-pointer
-                          data-[active=true]:bg-white/20 data-[active=true]:text-white data-[active=true]:font-medium
+                          text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
+                          data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
                         `}
                       >
                         <subItem.icon className="h-3 w-3" />
@@ -182,7 +182,7 @@ export function AppSidebar() {
         {/* Admin Menu - Show for provincial, regional, and central_admin */}
         {hasAdminMenu && (
           <SidebarGroup>
-            <SidebarGroupLabel className={`text-white/60 ${collapsed ? 'sr-only' : ''}`}>
+            <SidebarGroupLabel className={`text-sidebar-foreground/60 ${collapsed ? 'sr-only' : ''}`}>
               จัดการระบบ
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -196,8 +196,8 @@ export function AppSidebar() {
                         isActive={isActive(item.url)}
                         tooltip={item.title}
                         className={`
-                          text-white/80 hover:bg-white/10 hover:text-white
-                          data-[active=true]:bg-white data-[active=true]:text-primary data-[active=true]:font-medium
+                          text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                          data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
                         `}
                       >
                         <item.icon className="h-4 w-4" />
