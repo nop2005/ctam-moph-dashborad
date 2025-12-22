@@ -377,98 +377,6 @@ export default function ReportsQuantitative() {
           </CardContent>
         </Card>
 
-        {/* Data Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{getTitle()}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-12 text-muted-foreground">กำลังโหลดข้อมูล...</div>
-            ) : tableData.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">ไม่พบข้อมูล</div>
-            ) : (
-              <ScrollArea className="w-full">
-                <div className="min-w-[1200px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="sticky left-0 bg-muted/50 z-10 min-w-[180px]">
-                          {selectedProvince !== 'all' ? 'โรงพยาบาล' : selectedRegion !== 'all' ? 'จังหวัด' : 'เขตสุขภาพ'}
-                        </TableHead>
-                        <TableHead className="text-center min-w-[80px] bg-primary/10">ร้อยละข้อที่ผ่าน</TableHead>
-                        <TableHead className="text-center min-w-[60px] bg-primary/10">ระดับ</TableHead>
-                        {categories.map((cat, index) => (
-                          <TableHead 
-                            key={cat.id} 
-                            className="text-center min-w-[80px] text-xs"
-                            title={cat.name_th}
-                          >
-                            <div className="flex flex-col items-center">
-                              <span className="font-bold">ข้อ {index + 1}</span>
-                              <span className="text-muted-foreground truncate max-w-[70px]">{cat.code}</span>
-                            </div>
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {tableData.map((row) => {
-                        const totalAvg = row.categoryAverages.filter(c => c.average !== null);
-                        const overallAvg = totalAvg.length > 0 
-                          ? totalAvg.reduce((sum, c) => sum + (c.average || 0), 0) / totalAvg.length
-                          : null;
-                        // Calculate percentage of passed items
-                        const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
-                        const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
-                        const passedPercentage = totalCount > 0 ? (passedCount / totalCount) * 100 : null;
-
-                        return (
-                          <TableRow key={row.id} className="hover:bg-muted/30">
-                            <TableCell className="sticky left-0 bg-background z-10 font-medium">
-                              <div className="flex flex-col">
-                                <span>{row.name}</span>
-                                {row.type === 'hospital' && 'code' in row && (
-                                  <span className="text-xs text-muted-foreground font-mono">{row.code}</span>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className={`text-center bg-primary/5 font-bold ${getScoreColorClass(overallAvg)}`}>
-                              {passedPercentage !== null ? `${passedPercentage.toFixed(0)}%` : '-'}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {passedPercentage !== null ? (
-                                <div 
-                                  className={`w-6 h-6 rounded-full mx-auto ${
-                                    passedPercentage === 100 
-                                      ? 'bg-green-500' 
-                                      : passedPercentage >= 50 
-                                        ? 'bg-yellow-500' 
-                                        : 'bg-red-500'
-                                  }`}
-                                />
-                              ) : '-'}
-                            </TableCell>
-                            {row.categoryAverages.map((catAvg) => (
-                              <TableCell 
-                                key={catAvg.categoryId} 
-                                className={`text-center ${getScoreColorClass(catAvg.average)}`}
-                              >
-                                {formatScore(catAvg.average, row.type === 'hospital')}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-                <ScrollBar orientation="horizontal" />
-              </ScrollArea>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Safety Level Donut Chart */}
         <Card>
           <CardHeader>
@@ -628,6 +536,98 @@ export default function ReportsQuantitative() {
                 </div>
               );
             })()}
+          </CardContent>
+        </Card>
+
+        {/* Data Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{getTitle()}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-12 text-muted-foreground">กำลังโหลดข้อมูล...</div>
+            ) : tableData.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">ไม่พบข้อมูล</div>
+            ) : (
+              <ScrollArea className="w-full">
+                <div className="min-w-[1200px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="sticky left-0 bg-muted/50 z-10 min-w-[180px]">
+                          {selectedProvince !== 'all' ? 'โรงพยาบาล' : selectedRegion !== 'all' ? 'จังหวัด' : 'เขตสุขภาพ'}
+                        </TableHead>
+                        <TableHead className="text-center min-w-[80px] bg-primary/10">ร้อยละข้อที่ผ่าน</TableHead>
+                        <TableHead className="text-center min-w-[60px] bg-primary/10">ระดับ</TableHead>
+                        {categories.map((cat, index) => (
+                          <TableHead 
+                            key={cat.id} 
+                            className="text-center min-w-[80px] text-xs"
+                            title={cat.name_th}
+                          >
+                            <div className="flex flex-col items-center">
+                              <span className="font-bold">ข้อ {index + 1}</span>
+                              <span className="text-muted-foreground truncate max-w-[70px]">{cat.code}</span>
+                            </div>
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tableData.map((row) => {
+                        const totalAvg = row.categoryAverages.filter(c => c.average !== null);
+                        const overallAvg = totalAvg.length > 0 
+                          ? totalAvg.reduce((sum, c) => sum + (c.average || 0), 0) / totalAvg.length
+                          : null;
+                        // Calculate percentage of passed items
+                        const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
+                        const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
+                        const passedPercentage = totalCount > 0 ? (passedCount / totalCount) * 100 : null;
+
+                        return (
+                          <TableRow key={row.id} className="hover:bg-muted/30">
+                            <TableCell className="sticky left-0 bg-background z-10 font-medium">
+                              <div className="flex flex-col">
+                                <span>{row.name}</span>
+                                {row.type === 'hospital' && 'code' in row && (
+                                  <span className="text-xs text-muted-foreground font-mono">{row.code}</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className={`text-center bg-primary/5 font-bold ${getScoreColorClass(overallAvg)}`}>
+                              {passedPercentage !== null ? `${passedPercentage.toFixed(0)}%` : '-'}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {passedPercentage !== null ? (
+                                <div 
+                                  className={`w-6 h-6 rounded-full mx-auto ${
+                                    passedPercentage === 100 
+                                      ? 'bg-green-500' 
+                                      : passedPercentage >= 50 
+                                        ? 'bg-yellow-500' 
+                                        : 'bg-red-500'
+                                  }`}
+                                />
+                              ) : '-'}
+                            </TableCell>
+                            {row.categoryAverages.map((catAvg) => (
+                              <TableCell 
+                                key={catAvg.categoryId} 
+                                className={`text-center ${getScoreColorClass(catAvg.average)}`}
+                              >
+                                {formatScore(catAvg.average, row.type === 'hospital')}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            )}
           </CardContent>
         </Card>
 
