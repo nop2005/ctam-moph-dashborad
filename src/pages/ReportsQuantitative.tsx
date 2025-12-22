@@ -631,33 +631,6 @@ export default function ReportsQuantitative() {
           </CardContent>
         </Card>
 
-        {/* Safety Level Legend */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">ความหมายระดับความปลอดภัยไซเบอร์</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-6">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-green-500" />
-                <span className="text-sm">100% = <span className="font-semibold text-green-600">ปลอดภัยไซเบอร์สูง</span></span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-yellow-500" />
-                <span className="text-sm">50-99.99% = <span className="font-semibold text-yellow-600">ปลอดภัยต่ำ</span></span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-red-500" />
-                <span className="text-sm">น้อยกว่า 50% = <span className="font-semibold text-red-600">ไม่ปลอดภัย</span></span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-gray-400" />
-                <span className="text-sm">ยังไม่ประเมิน = <span className="font-semibold text-gray-600">รอการประเมิน</span></span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Category Legend */}
         <Card>
           <CardHeader>
