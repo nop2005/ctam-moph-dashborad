@@ -52,14 +52,15 @@ interface AssessmentItem {
   id: string;
   assessment_id: string;
   category_id: string;
-  score: number;
+  // numeric columns can come back as string
+  score: number | string | null;
 }
 
 interface Assessment {
   id: string;
   hospital_id: string;
   status: string;
-  quantitative_score: number | null;
+  quantitative_score: number | string | null;
 }
 
 export default function ReportsQuantitative() {
@@ -77,30 +78,63 @@ export default function ReportsQuantitative() {
 
   // Fetch data
   useEffect(() => {
+    const fetchAll = async <T,>(
+      query: ReturnType<typeof supabase.from> extends (table: any) => infer R ? R : any
+    ): Promise<T[]> => {
+      const pageSize = 1000;
+      let from = 0;
+      const all: T[] = [];
+
+      // NOTE: Supabase has a default 1000-row limit per request; we page until exhausted.
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        
+        const { data, error } = await query.range(from, from + pageSize - 1);
+        if (error) throw error;
+        const chunk = (data || []) as T[];
+        all.push(...chunk);
+        if (chunk.length < pageSize) break;
+        from += pageSize;
+      }
+
+      return all;
+    };
+
     const fetchData = async () => {
       try {
-        const [regionsRes, provincesRes, hospitalsRes, categoriesRes, assessmentsRes, itemsRes] = await Promise.all([
+        const [regionsRes, provincesRes, hospitalsRes, categoriesRes] = await Promise.all([
           supabase.from('health_regions').select('*').order('region_number'),
           supabase.from('provinces').select('*').order('name'),
           supabase.from('hospitals').select('*').order('name'),
           supabase.from('ctam_categories').select('*').order('order_number'),
-          supabase.from('assessments').select('id, hospital_id, status, quantitative_score'),
-          supabase.from('assessment_items').select('id, assessment_id, category_id, score'),
         ]);
 
         if (regionsRes.error) throw regionsRes.error;
         if (provincesRes.error) throw provincesRes.error;
         if (hospitalsRes.error) throw hospitalsRes.error;
         if (categoriesRes.error) throw categoriesRes.error;
-        if (assessmentsRes.error) throw assessmentsRes.error;
-        if (itemsRes.error) throw itemsRes.error;
 
         setHealthRegions(regionsRes.data || []);
         setProvinces(provincesRes.data || []);
         setHospitals(hospitalsRes.data || []);
         setCategories(categoriesRes.data || []);
-        setAssessments(assessmentsRes.data || []);
-        setAssessmentItems(itemsRes.data || []);
+
+        const assessmentsAll = await fetchAll<Assessment>(
+          supabase
+            .from('assessments')
+            .select('id, hospital_id, status, quantitative_score, created_at')
+            .order('created_at', { ascending: true })
+        );
+
+        const itemsAll = await fetchAll<AssessmentItem>(
+          supabase
+            .from('assessment_items')
+            .select('id, assessment_id, category_id, score, created_at')
+            .order('created_at', { ascending: true })
+        );
+
+        setAssessments(assessmentsAll);
+        setAssessmentItems(itemsAll);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
