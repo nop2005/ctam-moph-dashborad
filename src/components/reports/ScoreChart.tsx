@@ -216,6 +216,11 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments }:
               <BarChart
                 data={chartData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                onClick={(state) => {
+                  if (state && state.activePayload && state.activePayload.length > 0 && drillLevel !== 'hospital') {
+                    handleBarClick(state.activePayload[0].payload);
+                  }
+                }}
               >
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis 
@@ -224,8 +229,12 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments }:
                   textAnchor="end"
                   height={80}
                   interval={0}
-                  tick={{ fontSize: 12 }}
-                  className="fill-foreground"
+                  tick={{ 
+                    fontSize: 12,
+                    cursor: drillLevel !== 'hospital' ? 'pointer' : 'default',
+                    fill: 'hsl(var(--primary))',
+                    textDecoration: drillLevel !== 'hospital' ? 'underline' : 'none',
+                  }}
                 />
                 <YAxis 
                   domain={[0, 10]} 
@@ -243,7 +252,6 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments }:
                   dataKey="score" 
                   radius={[4, 4, 0, 0]}
                   cursor={drillLevel !== 'hospital' ? 'pointer' : 'default'}
-                  onClick={(data) => drillLevel !== 'hospital' && handleBarClick(data)}
                 >
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
