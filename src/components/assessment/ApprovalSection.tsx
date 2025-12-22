@@ -102,11 +102,11 @@ export function ApprovalSection({ assessment, onRefresh }: ApprovalSectionProps)
       };
 
       if (profile?.role === 'provincial') {
-        updateData.provincial_approved_by = profile.user_id;
+        updateData.provincial_approved_by = profile.id;
         updateData.provincial_approved_at = new Date().toISOString();
         updateData.provincial_comment = comment || null;
       } else if (profile?.role === 'regional') {
-        updateData.regional_approved_by = profile.user_id;
+        updateData.regional_approved_by = profile.id;
         updateData.regional_approved_at = new Date().toISOString();
         updateData.regional_comment = comment || null;
       }
@@ -126,7 +126,7 @@ export function ApprovalSection({ assessment, onRefresh }: ApprovalSectionProps)
           from_status: assessment.status,
           to_status: nextStatus,
           action: 'approve',
-          performed_by: profile?.user_id!,
+          performed_by: profile?.id!,
           comment: comment || null,
         });
 
@@ -169,7 +169,7 @@ export function ApprovalSection({ assessment, onRefresh }: ApprovalSectionProps)
           from_status: assessment.status,
           to_status: 'returned',
           action: 'return',
-          performed_by: profile?.user_id!,
+          performed_by: profile?.id!,
           comment: comment,
         });
 

@@ -54,7 +54,7 @@ export function AssessmentHeader({ assessment, onRefresh, canEdit }: AssessmentH
         .from('assessments')
         .update({
           status: 'submitted',
-          submitted_by: profile?.user_id,
+          submitted_by: profile?.id,
           submitted_at: new Date().toISOString(),
         })
         .eq('id', assessment.id);
@@ -69,7 +69,7 @@ export function AssessmentHeader({ assessment, onRefresh, canEdit }: AssessmentH
           from_status: assessment.status,
           to_status: 'submitted',
           action: 'submit',
-          performed_by: profile?.user_id!,
+          performed_by: profile?.id!,
         });
 
       if (historyError) throw historyError;
