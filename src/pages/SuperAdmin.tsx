@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -612,18 +613,14 @@ export default function SuperAdmin() {
             {editRole === 'provincial' && (
               <div className="space-y-2">
                 <Label>จังหวัด</Label>
-                <Select value={editProvinceId} onValueChange={setEditProvinceId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="เลือกจังหวัด" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {provinces.map((province) => (
-                      <SelectItem key={province.id} value={province.id}>
-                        {province.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  options={provinces.map(p => ({ value: p.id, label: p.name }))}
+                  value={editProvinceId}
+                  onValueChange={setEditProvinceId}
+                  placeholder="เลือกจังหวัด"
+                  searchPlaceholder="พิมพ์ชื่อจังหวัด..."
+                  emptyMessage="ไม่พบจังหวัด"
+                />
               </div>
             )}
 
@@ -631,37 +628,30 @@ export default function SuperAdmin() {
               <>
                 <div className="space-y-2">
                   <Label>จังหวัด</Label>
-                  <Select value={editProvinceId} onValueChange={(v) => {
-                    setEditProvinceId(v);
-                    setEditHospitalId('');
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="เลือกจังหวัด" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {provinces.map((province) => (
-                        <SelectItem key={province.id} value={province.id}>
-                          {province.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={provinces.map(p => ({ value: p.id, label: p.name }))}
+                    value={editProvinceId}
+                    onValueChange={(v) => {
+                      setEditProvinceId(v);
+                      setEditHospitalId('');
+                    }}
+                    placeholder="เลือกจังหวัด"
+                    searchPlaceholder="พิมพ์ชื่อจังหวัด..."
+                    emptyMessage="ไม่พบจังหวัด"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label>โรงพยาบาล</Label>
-                  <Select value={editHospitalId} onValueChange={setEditHospitalId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="เลือกโรงพยาบาล" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredHospitals.map((hospital) => (
-                        <SelectItem key={hospital.id} value={hospital.id}>
-                          {hospital.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={filteredHospitals.map(h => ({ value: h.id, label: h.name }))}
+                    value={editHospitalId}
+                    onValueChange={setEditHospitalId}
+                    placeholder="เลือกโรงพยาบาล"
+                    searchPlaceholder="พิมพ์ชื่อโรงพยาบาล..."
+                    emptyMessage="ไม่พบโรงพยาบาล"
+                    disabled={!editProvinceId}
+                  />
                 </div>
               </>
             )}
@@ -734,18 +724,14 @@ export default function SuperAdmin() {
             {editRole === 'provincial' && (
               <div className="space-y-2">
                 <Label>จังหวัด</Label>
-                <Select value={editProvinceId} onValueChange={setEditProvinceId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="เลือกจังหวัด" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {provinces.map((province) => (
-                      <SelectItem key={province.id} value={province.id}>
-                        {province.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  options={provinces.map(p => ({ value: p.id, label: p.name }))}
+                  value={editProvinceId}
+                  onValueChange={setEditProvinceId}
+                  placeholder="เลือกจังหวัด"
+                  searchPlaceholder="พิมพ์ชื่อจังหวัด..."
+                  emptyMessage="ไม่พบจังหวัด"
+                />
               </div>
             )}
 
@@ -753,37 +739,30 @@ export default function SuperAdmin() {
               <>
                 <div className="space-y-2">
                   <Label>จังหวัด</Label>
-                  <Select value={editProvinceId} onValueChange={(v) => {
-                    setEditProvinceId(v);
-                    setEditHospitalId('');
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="เลือกจังหวัด" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {provinces.map((province) => (
-                        <SelectItem key={province.id} value={province.id}>
-                          {province.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={provinces.map(p => ({ value: p.id, label: p.name }))}
+                    value={editProvinceId}
+                    onValueChange={(v) => {
+                      setEditProvinceId(v);
+                      setEditHospitalId('');
+                    }}
+                    placeholder="เลือกจังหวัด"
+                    searchPlaceholder="พิมพ์ชื่อจังหวัด..."
+                    emptyMessage="ไม่พบจังหวัด"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label>โรงพยาบาล</Label>
-                  <Select value={editHospitalId} onValueChange={setEditHospitalId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="เลือกโรงพยาบาล" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredHospitals.map((hospital) => (
-                        <SelectItem key={hospital.id} value={hospital.id}>
-                          {hospital.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={filteredHospitals.map(h => ({ value: h.id, label: h.name }))}
+                    value={editHospitalId}
+                    onValueChange={setEditHospitalId}
+                    placeholder="เลือกโรงพยาบาล"
+                    searchPlaceholder="พิมพ์ชื่อโรงพยาบาล..."
+                    emptyMessage="ไม่พบโรงพยาบาล"
+                    disabled={!editProvinceId}
+                  />
                 </div>
               </>
             )}
