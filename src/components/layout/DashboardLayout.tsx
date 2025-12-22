@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UserCircle, Settings, LogOut } from 'lucide-react';
+import { UserCircle, Settings, LogOut, ChevronDown } from 'lucide-react';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -95,6 +95,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       </span>
                     )}
                   </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
