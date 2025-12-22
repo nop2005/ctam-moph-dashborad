@@ -801,7 +801,7 @@ export default function ReportsQuantitative() {
                     </TableBody>
                   </Table>
                 </div>
-                <ScrollBar orientation="horizontal" className="h-3 bg-muted/50" />
+                <ScrollBar orientation="horizontal" forceMount className="h-3 bg-muted" />
               </ScrollArea>
             )}
           </CardContent>
