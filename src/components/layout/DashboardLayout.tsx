@@ -81,43 +81,50 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <SidebarTrigger />
             
             {/* User Menu - Top Right */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2 h-auto py-1.5">
-                  <UserCircle className="h-5 w-5 flex-shrink-0" />
-                  <div className="hidden sm:flex flex-col items-start text-left">
-                    <span className="text-sm font-medium leading-tight">
-                      {profile?.full_name || profile?.email}
-                    </span>
-                    {organizationName && (
-                      <span className="text-xs text-muted-foreground leading-tight">
-                        {organizationName}
+            {profile ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2 h-auto py-1.5">
+                    <UserCircle className="h-5 w-5 flex-shrink-0" />
+                    <div className="flex flex-col items-start text-left">
+                      <span className="text-sm font-medium leading-tight">
+                        {profile.full_name || profile.email}
                       </span>
-                    )}
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium">{profile?.full_name || 'ผู้ใช้งาน'}</span>
-                    <span className="text-xs text-muted-foreground">{profile?.email}</span>
-                    <span className="text-xs text-primary font-medium">{getRoleLabel(profile?.role || '')}</span>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/profile')}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  ตั้งค่าโปรไฟล์
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  ออกจากระบบ
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                      {organizationName && (
+                        <span className="text-xs text-muted-foreground leading-tight">
+                          {organizationName}
+                        </span>
+                      )}
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium">{profile.full_name || 'ผู้ใช้งาน'}</span>
+                      <span className="text-xs text-muted-foreground">{profile.email}</span>
+                      <span className="text-xs text-primary font-medium">{getRoleLabel(profile.role || '')}</span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    ตั้งค่าโปรไฟล์
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    ออกจากระบบ
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <UserCircle className="h-5 w-5" />
+                <span>กำลังโหลด...</span>
+              </div>
+            )}
           </header>
           <main className="flex-1 p-6 pl-12">
             {children}
