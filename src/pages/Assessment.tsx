@@ -10,6 +10,7 @@ import { QualitativeSection } from '@/components/assessment/QualitativeSection';
 import { ImpactSection } from '@/components/assessment/ImpactSection';
 import { AssessmentSummary } from '@/components/assessment/AssessmentSummary';
 import { ApprovalSection } from '@/components/assessment/ApprovalSection';
+import { ApprovalWorkflow } from '@/components/assessment/ApprovalWorkflow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
@@ -129,6 +130,9 @@ export default function Assessment() {
           onRefresh={loadAssessmentData}
           canEdit={canEdit}
         />
+
+        {/* Approval Workflow Stepper */}
+        <ApprovalWorkflow status={assessment.status} />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid grid-cols-4 w-full max-w-3xl h-auto bg-muted">
