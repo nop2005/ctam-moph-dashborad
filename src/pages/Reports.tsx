@@ -73,6 +73,7 @@ export default function Reports() {
   
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
+  const [selectedHospital, setSelectedHospital] = useState<string>('all');
   const [reports, setReports] = useState<HospitalReport[]>([]);
 
   // Fetch initial data
@@ -135,6 +136,11 @@ export default function Reports() {
       filteredHospitals = filteredHospitals.filter(h => h.province_id === selectedProvince);
     }
 
+    // Filter by hospital
+    if (selectedHospital !== 'all') {
+      filteredHospitals = filteredHospitals.filter(h => h.id === selectedHospital);
+    }
+
     // Generate reports
     const hospitalReports: HospitalReport[] = filteredHospitals.map(hospital => {
       const province = provinces.find(p => p.id === hospital.province_id);
@@ -148,7 +154,7 @@ export default function Reports() {
     });
 
     setReports(hospitalReports);
-  }, [hospitals, provinces, assessments, selectedRegion, selectedProvince]);
+  }, [hospitals, provinces, assessments, selectedRegion, selectedProvince, selectedHospital]);
 
   // Get filtered provinces for dropdown
   const filteredProvinces = selectedRegion === 'all' 
@@ -173,6 +179,16 @@ export default function Reports() {
     ...filteredProvinces.map(p => ({ value: p.id, label: p.name }))
   ];
 
+  // Get filtered hospitals for dropdown
+  const filteredHospitalsForDropdown = selectedProvince === 'all'
+    ? hospitals.filter(h => filteredProvinces.some(p => p.id === h.province_id))
+    : hospitals.filter(h => h.province_id === selectedProvince);
+
+  const hospitalOptions = [
+    { value: 'all', label: 'ทุกโรงพยาบาล' },
+    ...filteredHospitalsForDropdown.map(h => ({ value: h.id, label: h.name }))
+  ];
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -193,7 +209,7 @@ export default function Reports() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">เขตสุขภาพ</label>
                 <SearchableSelect
@@ -202,6 +218,7 @@ export default function Reports() {
                   onValueChange={(value) => {
                     setSelectedRegion(value);
                     setSelectedProvince('all');
+                    setSelectedHospital('all');
                   }}
                   placeholder="เลือกเขตสุขภาพ"
                 />
@@ -211,8 +228,20 @@ export default function Reports() {
                 <SearchableSelect
                   options={provinceOptions}
                   value={selectedProvince}
-                  onValueChange={setSelectedProvince}
+                  onValueChange={(value) => {
+                    setSelectedProvince(value);
+                    setSelectedHospital('all');
+                  }}
                   placeholder="เลือกจังหวัด"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">โรงพยาบาล</label>
+                <SearchableSelect
+                  options={hospitalOptions}
+                  value={selectedHospital}
+                  onValueChange={setSelectedHospital}
+                  placeholder="เลือกโรงพยาบาล"
                 />
               </div>
             </div>
