@@ -54,13 +54,15 @@ const workflowSteps: WorkflowStep[] = [
   },
 ];
 
-const getStepStatus = (step: WorkflowStep, currentStatus: AssessmentStatus): 'completed' | 'current' | 'pending' => {
+const getStepStatus = (step: WorkflowStep, currentStatus: AssessmentStatus): 'completed' | 'current' | 'waiting' | 'pending' => {
   // Get current step index
   const currentStepIndex = workflowSteps.findIndex(s => s.statusMatch.includes(currentStatus));
   const stepIndex = workflowSteps.indexOf(step);
 
   if (stepIndex < currentStepIndex) return 'completed';
   if (stepIndex === currentStepIndex) return 'current';
+  // Next step after current should be "waiting" (pulsing)
+  if (stepIndex === currentStepIndex + 1) return 'waiting';
   return 'pending';
 };
 
@@ -86,7 +88,9 @@ export function ApprovalWorkflow({ status }: ApprovalWorkflowProps) {
                     stepStatus === 'completed'
                       ? 'bg-success text-success-foreground border-success'
                       : stepStatus === 'current'
-                      ? 'bg-primary text-primary-foreground border-primary animate-pulse'
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : stepStatus === 'waiting'
+                      ? 'bg-primary/20 text-primary border-primary animate-pulse'
                       : 'bg-muted text-muted-foreground border-muted'
                   }`}
                 >
@@ -105,6 +109,8 @@ export function ApprovalWorkflow({ status }: ApprovalWorkflowProps) {
                         ? 'text-success'
                         : stepStatus === 'current'
                         ? 'text-primary'
+                        : stepStatus === 'waiting'
+                        ? 'text-primary animate-pulse'
                         : 'text-muted-foreground'
                     }`}
                   >
