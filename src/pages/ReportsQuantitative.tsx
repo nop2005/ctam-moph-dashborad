@@ -256,12 +256,33 @@ export default function ReportsQuantitative() {
         const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
         const hospitalIds = provinceHospitals.map(h => h.id);
         const categoryAverages = calculateCategoryAverages(hospitalIds, true); // Use province level calculation
+        
+        // Calculate hospitals that passed all 17 items (green)
+        let hospitalsPassedAll17 = 0;
+        hospitalIds.forEach(hospitalId => {
+          const hospitalAssessments = assessments.filter(a => a.hospital_id === hospitalId);
+          if (hospitalAssessments.length === 0) return;
+          
+          const assessmentIds = hospitalAssessments.map(a => a.id);
+          let passedAllCategories = true;
+          
+          categories.forEach(cat => {
+            const catItems = assessmentItems.filter(
+              item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
+            );
+            const hasPassed = catItems.some(item => Number(item.score) === 1);
+            if (!hasPassed) passedAllCategories = false;
+          });
+          
+          if (passedAllCategories) hospitalsPassedAll17++;
+        });
 
         return {
           id: province.id,
           name: province.name,
           type: 'province' as const,
           hospitalCount: provinceHospitals.length,
+          hospitalsPassedAll17,
           categoryAverages,
         };
       });
@@ -593,7 +614,21 @@ export default function ReportsQuantitative() {
                         {selectedRegion !== 'all' && selectedProvince === 'all' && (
                           <TableHead className="text-center min-w-[80px] bg-muted/50">จำนวน รพ.</TableHead>
                         )}
-                        <TableHead className="text-center min-w-[80px] bg-primary/10">ร้อยละข้อที่ผ่าน</TableHead>
+                        {/* Show hospitals passed all 17 column only at province level */}
+                        {selectedRegion !== 'all' && selectedProvince === 'all' && (
+                          <TableHead className="text-center min-w-[100px] bg-green-100 dark:bg-green-900/30">
+                            <div className="flex flex-col items-center">
+                              <span>รพ.ผ่านครบ</span>
+                              <span>17 ข้อ</span>
+                            </div>
+                          </TableHead>
+                        )}
+                        <TableHead className="text-center min-w-[80px] bg-primary/10">
+                          <div className="flex flex-col items-center">
+                            <span>ร้อยละรพ.</span>
+                            <span>ที่ผ่าน (เขียว)</span>
+                          </div>
+                        </TableHead>
                         <TableHead className="text-center min-w-[60px] bg-primary/10">ระดับ</TableHead>
                         {categories.map((cat, index) => (
                           <TableHead 
@@ -634,9 +669,18 @@ export default function ReportsQuantitative() {
                             {selectedRegion !== 'all' && selectedProvince === 'all' && (
                               <TableCell className="text-center font-medium">{row.hospitalCount}</TableCell>
                             )}
-                            <TableCell className={`text-center bg-primary/5 font-bold ${getScoreColorClass(overallAvg)}`}>
-                              {passedPercentage !== null ? `${passedPercentage.toFixed(0)}%` : '-'}
-                            </TableCell>
+                            {/* Show hospitals passed all 17 column only at province level */}
+                            {selectedRegion !== 'all' && selectedProvince === 'all' && (
+                              <TableCell className="text-center font-medium bg-green-50 dark:bg-green-900/20">
+                                {'hospitalsPassedAll17' in row ? row.hospitalsPassedAll17 : 0}
+                              </TableCell>
+                            )}
+                            <TableCell className={`text-center bg-primary/5 font-bold`}>
+                              {row.type === 'province' && 'hospitalsPassedAll17' in row ? (
+                                <span className={row.hospitalsPassedAll17 > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                                  {((row.hospitalsPassedAll17 / row.hospitalCount) * 100).toFixed(2)}%
+                                </span>
+                              ) : passedPercentage !== null ? `${passedPercentage.toFixed(0)}%` : '-'}</TableCell>
                             <TableCell className="text-center">
                               {passedPercentage !== null ? (
                                 <div 
