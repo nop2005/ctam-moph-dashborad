@@ -378,8 +378,8 @@ export default function ReportsQuantitative() {
         </Card>
 
         {/* Safety Level Donut Chart */}
-        <Card>
-          <CardHeader>
+        <Card className="max-w-3xl">
+          <CardHeader className="pb-2">
             <CardTitle className="text-base">สัดส่วนระดับความปลอดภัยไซเบอร์ของโรงพยาบาล</CardTitle>
           </CardHeader>
           <CardContent>
@@ -436,7 +436,7 @@ export default function ReportsQuantitative() {
               // Custom label renderer for outside labels
               const renderCustomLabel = ({ cx, cy, midAngle, outerRadius, name, shortName, value, percentage }: any) => {
                 const RADIAN = Math.PI / 180;
-                const radius = outerRadius + 30;
+                const radius = outerRadius + 25;
                 const x = cx + radius * Math.cos(-midAngle * RADIAN);
                 const y = cy + radius * Math.sin(-midAngle * RADIAN);
                 
@@ -455,8 +455,8 @@ export default function ReportsQuantitative() {
               };
               
               return (
-                <div className="flex flex-col lg:flex-row items-center gap-6">
-                  <div className="w-full lg:w-1/2 h-[350px]">
+                <div className="flex flex-col md:flex-row items-start gap-6">
+                  <div className="w-full md:w-auto h-[280px] min-w-[280px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -465,8 +465,8 @@ export default function ReportsQuantitative() {
                           cy="50%"
                           labelLine={true}
                           label={renderCustomLabel}
-                          innerRadius={60}
-                          outerRadius={100}
+                          innerRadius={50}
+                          outerRadius={80}
                           fill="#8884d8"
                           dataKey="value"
                           paddingAngle={2}
@@ -481,55 +481,35 @@ export default function ReportsQuantitative() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="w-full lg:w-1/2 space-y-4">
-                    <div className="text-center lg:text-left">
-                      <span className="text-2xl font-bold">{total}</span>
-                      <span className="text-muted-foreground ml-2">โรงพยาบาลทั้งหมด</span>
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <span className="text-xl font-bold">{total}</span>
+                      <span className="text-muted-foreground ml-2 text-sm">โรงพยาบาลทั้งหมด</span>
                     </div>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
-                        <div className="w-4 h-4 rounded-full bg-green-500" />
-                        <div className="flex-1">
-                          <span className="font-semibold text-green-700 dark:text-green-400">ปลอดภัยไซเบอร์สูง (100%)</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-bold text-lg">{greenCount}</span>
-                          <span className="text-muted-foreground ml-1">รพ.</span>
-                          <span className="text-muted-foreground ml-2">({((greenCount / total) * 100).toFixed(1)}%)</span>
-                        </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-green-50 dark:bg-green-950/30">
+                        <div className="w-3 h-3 rounded-full bg-green-500" />
+                        <span className="text-sm font-medium text-green-700 dark:text-green-400">ปลอดภัยไซเบอร์สูง (100%)</span>
+                        <span className="ml-auto text-sm font-bold">{greenCount}</span>
+                        <span className="text-xs text-muted-foreground">({((greenCount / total) * 100).toFixed(1)}%)</span>
                       </div>
-                      <div className="flex items-center gap-3 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950/30">
-                        <div className="w-4 h-4 rounded-full bg-yellow-500" />
-                        <div className="flex-1">
-                          <span className="font-semibold text-yellow-700 dark:text-yellow-400">ปลอดภัยต่ำ (50-99.99%)</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-bold text-lg">{yellowCount}</span>
-                          <span className="text-muted-foreground ml-1">รพ.</span>
-                          <span className="text-muted-foreground ml-2">({((yellowCount / total) * 100).toFixed(1)}%)</span>
-                        </div>
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-50 dark:bg-yellow-950/30">
+                        <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                        <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">ปลอดภัยต่ำ (50-99.99%)</span>
+                        <span className="ml-auto text-sm font-bold">{yellowCount}</span>
+                        <span className="text-xs text-muted-foreground">({((yellowCount / total) * 100).toFixed(1)}%)</span>
                       </div>
-                      <div className="flex items-center gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-950/30">
-                        <div className="w-4 h-4 rounded-full bg-red-500" />
-                        <div className="flex-1">
-                          <span className="font-semibold text-red-700 dark:text-red-400">ไม่ปลอดภัย (&lt;50%)</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-bold text-lg">{redCount}</span>
-                          <span className="text-muted-foreground ml-1">รพ.</span>
-                          <span className="text-muted-foreground ml-2">({((redCount / total) * 100).toFixed(1)}%)</span>
-                        </div>
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-red-50 dark:bg-red-950/30">
+                        <div className="w-3 h-3 rounded-full bg-red-500" />
+                        <span className="text-sm font-medium text-red-700 dark:text-red-400">ไม่ปลอดภัย (&lt;50%)</span>
+                        <span className="ml-auto text-sm font-bold">{redCount}</span>
+                        <span className="text-xs text-muted-foreground">({((redCount / total) * 100).toFixed(1)}%)</span>
                       </div>
-                      <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-950/30">
-                        <div className="w-4 h-4 rounded-full bg-gray-400" />
-                        <div className="flex-1">
-                          <span className="font-semibold text-gray-700 dark:text-gray-400">ยังไม่ประเมิน</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-bold text-lg">{grayCount}</span>
-                          <span className="text-muted-foreground ml-1">รพ.</span>
-                          <span className="text-muted-foreground ml-2">({((grayCount / total) * 100).toFixed(1)}%)</span>
-                        </div>
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-950/30">
+                        <div className="w-3 h-3 rounded-full bg-gray-400" />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-400">ยังไม่ประเมิน</span>
+                        <span className="ml-auto text-sm font-bold">{grayCount}</span>
+                        <span className="text-xs text-muted-foreground">({((grayCount / total) * 100).toFixed(1)}%)</span>
                       </div>
                     </div>
                   </div>
