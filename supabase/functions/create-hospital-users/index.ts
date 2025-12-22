@@ -15,7 +15,14 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    
+    // Create service role client for admin operations
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
     
     // Verify the request is from an authenticated user with central_admin role
     const authHeader = req.headers.get("Authorization");
@@ -28,40 +35,33 @@ Deno.serve(async (req) => {
     
     const token = authHeader.replace("Bearer ", "");
     
-    // Create client with user's token to verify their role
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } }
-    });
-    
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
-    if (authError || !user) {
+    // Verify user with service role client
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      console.error("Auth error:", userError);
       return new Response(
         JSON.stringify({ success: false, error: "Invalid token" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
       );
     }
     
-    // Verify user is central_admin
-    const { data: profile } = await userClient
+    console.log("Authenticated user:", user.id, user.email);
+    
+    // Verify user is central_admin using service role
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
       .eq("user_id", user.id)
       .single();
     
-    if (profile?.role !== "central_admin") {
+    console.log("Profile lookup:", profile, profileError);
+    
+    if (profileError || profile?.role !== "central_admin") {
       return new Response(
         JSON.stringify({ success: false, error: "Unauthorized: central_admin role required" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 }
       );
     }
-    
-    // Use service role for admin operations
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
 
     const { province_id } = await req.json();
 
