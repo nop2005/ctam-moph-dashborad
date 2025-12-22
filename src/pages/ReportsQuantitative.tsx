@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/table';
 import { TrendingUp, Filter, Building2, MapPin, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
@@ -638,32 +637,74 @@ export default function ReportsQuantitative() {
             </div>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="text-center py-12 text-muted-foreground">กำลังโหลดข้อมูล...</div>
-            ) : tableData.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">ไม่พบข้อมูล</div>
-            ) : (
-              <div className="flex w-full">
-                {/* Sticky columns section */}
-                <div className="flex-shrink-0">
-                  <Table>
+            {(() => {
+              const showSummaryCols = selectedProvince === 'all';
+              const sticky = {
+                name: 180,
+                hospitalCount: 80,
+                passedAll17: 100,
+                percentGreen: 80,
+                level: 60,
+              } as const;
+
+              const left = {
+                name: 0,
+                hospitalCount: sticky.name,
+                passedAll17: sticky.name + sticky.hospitalCount,
+                percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.passedAll17 : 0),
+                level:
+                  sticky.name +
+                  (showSummaryCols ? sticky.hospitalCount + sticky.passedAll17 + sticky.percentGreen : sticky.percentGreen),
+              } as const;
+
+              const stickyHeaderBase = "sticky z-30 border-r border-border/60";
+              const stickyCellBase = "sticky z-20 border-r border-border/60 bg-background";
+
+              if (loading) {
+                return <div className="text-center py-12 text-muted-foreground">กำลังโหลดข้อมูล...</div>;
+              }
+
+              if (tableData.length === 0) {
+                return <div className="text-center py-12 text-muted-foreground">ไม่พบข้อมูล</div>;
+              }
+
+              return (
+                <div className="w-full overflow-x-auto">
+                  <Table className="min-w-max">
                     <TableHeader>
-                      <TableRow className="bg-muted/50 h-[52px]">
-                        <TableHead className="bg-muted/50 min-w-[180px]">
+                      <TableRow className="bg-muted/50">
+                        <TableHead
+                          className={`${stickyHeaderBase} bg-muted/50 min-w-[180px]`}
+                          style={{ left: left.name }}
+                        >
                           {selectedProvince !== 'all' ? 'โรงพยาบาล' : selectedRegion !== 'all' ? 'จังหวัด' : 'เขตสุขภาพ'}
                         </TableHead>
-                        {selectedProvince === 'all' && (
-                          <TableHead className="text-center min-w-[80px] bg-muted/50">จำนวน รพ.</TableHead>
+
+                        {showSummaryCols && (
+                          <TableHead
+                            className={`${stickyHeaderBase} bg-muted/50 text-center min-w-[80px]`}
+                            style={{ left: left.hospitalCount }}
+                          >
+                            จำนวน รพ.
+                          </TableHead>
                         )}
-                        {selectedProvince === 'all' && (
-                          <TableHead className="text-center min-w-[100px] bg-green-100 dark:bg-green-900/30">
+
+                        {showSummaryCols && (
+                          <TableHead
+                            className={`${stickyHeaderBase} text-center min-w-[100px] bg-green-100 dark:bg-green-900/30`}
+                            style={{ left: left.passedAll17 }}
+                          >
                             <div className="flex flex-col items-center">
                               <span>รพ.ผ่านครบ</span>
                               <span>17 ข้อ</span>
                             </div>
                           </TableHead>
                         )}
-                        <TableHead className="text-center min-w-[80px] bg-primary/10">
+
+                        <TableHead
+                          className={`${stickyHeaderBase} text-center min-w-[80px] bg-primary/10`}
+                          style={{ left: left.percentGreen }}
+                        >
                           {selectedProvince !== 'all' ? (
                             <div className="flex flex-col items-center">
                               <span>ร้อยละ</span>
@@ -676,18 +717,43 @@ export default function ReportsQuantitative() {
                             </div>
                           )}
                         </TableHead>
-                        <TableHead className={`text-center min-w-[60px] ${selectedProvince === 'all' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-primary/10'}`}>ระดับ</TableHead>
+
+                        <TableHead
+                          className={`${stickyHeaderBase} text-center min-w-[60px] ${
+                            showSummaryCols ? 'bg-green-100 dark:bg-green-900/30' : 'bg-primary/10'
+                          }`}
+                          style={{ left: left.level }}
+                        >
+                          ระดับ
+                        </TableHead>
+
+                        {categories.map((cat, index) => (
+                          <TableHead
+                            key={cat.id}
+                            className="text-center min-w-[80px] text-xs"
+                            title={cat.name_th}
+                          >
+                            <div className="flex flex-col items-center">
+                              <span className="font-bold">ข้อ {index + 1}</span>
+                              <span className="text-muted-foreground truncate max-w-[70px]">{cat.code}</span>
+                            </div>
+                          </TableHead>
+                        ))}
                       </TableRow>
                     </TableHeader>
+
                     <TableBody>
                       {tableData.map((row) => {
-                        const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
-                        const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
+                        const passedCount = row.categoryAverages.filter((c) => c.average === 1).length;
+                        const totalCount = row.categoryAverages.filter((c) => c.average !== null).length;
                         const passedPercentage = totalCount > 0 ? (passedCount / totalCount) * 100 : null;
 
                         return (
-                          <TableRow key={row.id} className="hover:bg-muted/30 h-[53px]">
-                            <TableCell className="bg-background font-medium">
+                          <TableRow key={row.id} className="hover:bg-muted/30">
+                            <TableCell
+                              className={`${stickyCellBase} font-medium`}
+                              style={{ left: left.name, minWidth: sticky.name }}
+                            >
                               <div className="flex flex-col">
                                 {row.type === 'region' && (
                                   <button
@@ -715,96 +781,105 @@ export default function ReportsQuantitative() {
                                 )}
                               </div>
                             </TableCell>
-                            {selectedProvince === 'all' && (
-                              <TableCell className="text-center font-medium">{row.hospitalCount}</TableCell>
+
+                            {showSummaryCols && (
+                              <TableCell
+                                className={`${stickyCellBase} text-center font-medium`}
+                                style={{ left: left.hospitalCount, minWidth: sticky.hospitalCount }}
+                              >
+                                {row.hospitalCount}
+                              </TableCell>
                             )}
-                            {selectedProvince === 'all' && (
-                              <TableCell className="text-center font-medium bg-green-50 dark:bg-green-900/20">
+
+                            {showSummaryCols && (
+                              <TableCell
+                                className={`${stickyCellBase} text-center font-medium bg-green-50 dark:bg-green-900/20`}
+                                style={{ left: left.passedAll17, minWidth: sticky.passedAll17 }}
+                              >
                                 {'hospitalsPassedAll17' in row ? row.hospitalsPassedAll17 : 0}
                               </TableCell>
                             )}
-                            <TableCell className="text-center bg-primary/5 font-bold">
+
+                            <TableCell
+                              className={`${stickyCellBase} text-center bg-primary/5 font-bold`}
+                              style={{ left: left.percentGreen, minWidth: sticky.percentGreen }}
+                            >
                               {(row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row ? (
-                                <span className={(row.hospitalsPassedAll17 as number) > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                                  {row.hospitalCount > 0 ? (((row.hospitalsPassedAll17 as number) / row.hospitalCount) * 100).toFixed(2) : 0}%
+                                <span
+                                  className={
+                                    (row.hospitalsPassedAll17 as number) > 0
+                                      ? 'text-green-600 dark:text-green-400'
+                                      : 'text-red-600 dark:text-red-400'
+                                  }
+                                >
+                                  {row.hospitalCount > 0
+                                    ? (((row.hospitalsPassedAll17 as number) / row.hospitalCount) * 100).toFixed(2)
+                                    : 0}
+                                  %
                                 </span>
-                              ) : passedPercentage !== null ? `${passedPercentage.toFixed(0)}%` : '-'}
+                              ) : passedPercentage !== null ? (
+                                `${passedPercentage.toFixed(0)}%`
+                              ) : (
+                                '-'
+                              )}
                             </TableCell>
-                            <TableCell className={`text-center ${selectedProvince === 'all' ? 'bg-green-50 dark:bg-green-900/20' : ''}`}>
+
+                            <TableCell
+                              className={`${stickyCellBase} text-center ${
+                                showSummaryCols ? 'bg-green-50 dark:bg-green-900/20' : ''
+                              }`}
+                              style={{ left: left.level, minWidth: sticky.level }}
+                            >
                               {(() => {
                                 if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
-                                  const greenPercentage = row.hospitalCount > 0 
-                                    ? ((row.hospitalsPassedAll17 as number) / row.hospitalCount) * 100 
-                                    : 0;
+                                  const greenPercentage =
+                                    row.hospitalCount > 0
+                                      ? ((row.hospitalsPassedAll17 as number) / row.hospitalCount) * 100
+                                      : 0;
                                   return (
-                                    <div 
+                                    <div
                                       className={`w-6 h-6 rounded-full mx-auto ${
-                                        greenPercentage === 100 
-                                          ? 'bg-green-500' 
-                                          : greenPercentage >= 50 
-                                            ? 'bg-yellow-500' 
+                                        greenPercentage === 100
+                                          ? 'bg-green-500'
+                                          : greenPercentage >= 50
+                                            ? 'bg-yellow-500'
                                             : 'bg-red-500'
                                       }`}
                                     />
                                   );
                                 }
                                 return passedPercentage !== null ? (
-                                  <div 
+                                  <div
                                     className={`w-6 h-6 rounded-full mx-auto ${
-                                      passedPercentage === 100 
-                                        ? 'bg-green-500' 
-                                        : passedPercentage >= 50 
-                                          ? 'bg-yellow-500' 
+                                      passedPercentage === 100
+                                        ? 'bg-green-500'
+                                        : passedPercentage >= 50
+                                          ? 'bg-yellow-500'
                                           : 'bg-red-500'
                                     }`}
                                   />
-                                ) : '-';
+                                ) : (
+                                  '-'
+                                );
                               })()}
                             </TableCell>
+
+                            {row.categoryAverages.map((catAvg) => (
+                              <TableCell
+                                key={catAvg.categoryId}
+                                className={`text-center ${getScoreColorClass(catAvg.average, row.type)}`}
+                              >
+                                {formatScore(catAvg, row.type)}
+                              </TableCell>
+                            ))}
                           </TableRow>
                         );
                       })}
                     </TableBody>
                   </Table>
                 </div>
-
-                {/* Scrollable category columns section */}
-                <div className="flex-1 overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50 h-[52px]">
-                        {categories.map((cat, index) => (
-                          <TableHead 
-                            key={cat.id} 
-                            className="text-center min-w-[80px] text-xs"
-                            title={cat.name_th}
-                          >
-                            <div className="flex flex-col items-center">
-                              <span className="font-bold">ข้อ {index + 1}</span>
-                              <span className="text-muted-foreground truncate max-w-[70px]">{cat.code}</span>
-                            </div>
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {tableData.map((row) => (
-                        <TableRow key={row.id} className="hover:bg-muted/30 h-[53px]">
-                          {row.categoryAverages.map((catAvg) => (
-                            <TableCell 
-                              key={catAvg.categoryId} 
-                              className={`text-center ${getScoreColorClass(catAvg.average, row.type)}`}
-                            >
-                              {formatScore(catAvg, row.type)}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </CardContent>
         </Card>
 
