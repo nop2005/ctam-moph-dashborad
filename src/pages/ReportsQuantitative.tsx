@@ -277,47 +277,47 @@ export default function ReportsQuantitative() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <label className="text-sm font-medium mb-2 block">เขตสุขภาพ</label>
+              <div className="w-full sm:w-48">
+                <label className="text-sm font-medium mb-1.5 block">เขตสุขภาพ</label>
                 <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="เลือกเขตสุขภาพ" />
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="เลือกเขต" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
+                  <SelectContent className="bg-background z-50">
+                    <SelectItem value="all" className="text-sm">
                       <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
+                        <MapPin className="w-3.5 h-3.5" />
                         ทุกเขตสุขภาพ
                       </div>
                     </SelectItem>
                     {healthRegions.map((region) => (
-                      <SelectItem key={region.id} value={region.id}>
-                        เขตสุขภาพที่ {region.region_number}
+                      <SelectItem key={region.id} value={region.id} className="text-sm">
+                        เขต {region.region_number}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="flex-1">
-                <label className="text-sm font-medium mb-2 block">จังหวัด</label>
+              <div className="w-full sm:w-48">
+                <label className="text-sm font-medium mb-1.5 block">จังหวัด</label>
                 <Select 
                   value={selectedProvince} 
                   onValueChange={setSelectedProvince}
                   disabled={selectedRegion === 'all'}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm">
                     <SelectValue placeholder={selectedRegion === 'all' ? 'เลือกเขตก่อน' : 'เลือกจังหวัด'} />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
+                  <SelectContent className="bg-background z-50">
+                    <SelectItem value="all" className="text-sm">
                       <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4" />
+                        <Building2 className="w-3.5 h-3.5" />
                         ทุกจังหวัด
                       </div>
                     </SelectItem>
                     {filteredProvinces.map((province) => (
-                      <SelectItem key={province.id} value={province.id}>
+                      <SelectItem key={province.id} value={province.id} className="text-sm">
                         {province.name}
                       </SelectItem>
                     ))}
