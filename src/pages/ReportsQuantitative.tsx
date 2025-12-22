@@ -754,7 +754,7 @@ export default function ReportsQuantitative() {
                                   {row.hospitalCount > 0 ? (((row.hospitalsPassedAll17 as number) / row.hospitalCount) * 100).toFixed(2) : 0}%
                                 </span>
                               ) : passedPercentage !== null ? `${passedPercentage.toFixed(0)}%` : '-'}</TableCell>
-                            <TableCell className="text-center">
+                            <TableCell className={`text-center ${selectedProvince === 'all' ? 'bg-green-50 dark:bg-green-900/20' : ''}`}>
                               {(() => {
                                 // For province and region, use hospitalsPassedAll17 percentage
                                 if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
