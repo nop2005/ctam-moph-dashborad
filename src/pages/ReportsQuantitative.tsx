@@ -184,18 +184,47 @@ export default function ReportsQuantitative() {
     }
   }, [selectedRegion, isProvincialAdmin]);
 
-  // Calculate average scores per category for a set of hospital IDs
-  const calculateCategoryAverages = (hospitalIds: string[]) => {
+  // Calculate pass percentage per category for a set of hospital IDs
+  // For province level: returns percentage of hospitals that passed (score = 1) each category
+  // For hospital level: returns the actual score (1 = pass, 0 = fail)
+  const calculateCategoryAverages = (hospitalIds: string[], isProvinceLevel: boolean = false) => {
     const relevantAssessments = assessments.filter(a => hospitalIds.includes(a.hospital_id));
-    const assessmentIds = relevantAssessments.map(a => a.id);
-    const relevantItems = assessmentItems.filter(item => assessmentIds.includes(item.assessment_id));
-
+    
     return categories.map(cat => {
-      const catItems = relevantItems.filter(item => item.category_id === cat.id);
-      if (catItems.length === 0) return { categoryId: cat.id, average: null };
-      // Parse score to number (Supabase returns numeric as string)
-      const avg = catItems.reduce((sum, item) => sum + Number(item.score), 0) / catItems.length;
-      return { categoryId: cat.id, average: avg };
+      if (isProvinceLevel) {
+        // For province level: calculate percentage of hospitals that passed this category
+        let passedCount = 0;
+        let totalHospitalsWithData = 0;
+        
+        hospitalIds.forEach(hospitalId => {
+          const hospitalAssessments = relevantAssessments.filter(a => a.hospital_id === hospitalId);
+          if (hospitalAssessments.length === 0) return;
+          
+          const assessmentIds = hospitalAssessments.map(a => a.id);
+          const catItems = assessmentItems.filter(
+            item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
+          );
+          
+          if (catItems.length > 0) {
+            totalHospitalsWithData++;
+            // Check if any assessment has score = 1 (pass)
+            const hasPassed = catItems.some(item => Number(item.score) === 1);
+            if (hasPassed) passedCount++;
+          }
+        });
+        
+        if (totalHospitalsWithData === 0) return { categoryId: cat.id, average: null, passedCount: 0, totalCount: 0 };
+        const percentage = (passedCount / totalHospitalsWithData) * 100;
+        return { categoryId: cat.id, average: percentage, passedCount, totalCount: totalHospitalsWithData };
+      } else {
+        // For hospital level or region level: use original average calculation
+        const assessmentIds = relevantAssessments.map(a => a.id);
+        const relevantItems = assessmentItems.filter(item => assessmentIds.includes(item.assessment_id));
+        const catItems = relevantItems.filter(item => item.category_id === cat.id);
+        if (catItems.length === 0) return { categoryId: cat.id, average: null };
+        const avg = catItems.reduce((sum, item) => sum + Number(item.score), 0) / catItems.length;
+        return { categoryId: cat.id, average: avg };
+      }
     });
   };
 
@@ -220,12 +249,12 @@ export default function ReportsQuantitative() {
         };
       });
     } else if (selectedProvince === 'all') {
-      // Show provinces in selected region
+      // Show provinces in selected region - use percentage of hospitals that passed
       const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
       return regionProvinces.map(province => {
         const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
         const hospitalIds = provinceHospitals.map(h => h.id);
-        const categoryAverages = calculateCategoryAverages(hospitalIds);
+        const categoryAverages = calculateCategoryAverages(hospitalIds, true); // Use province level calculation
 
         return {
           id: province.id,
@@ -267,20 +296,33 @@ export default function ReportsQuantitative() {
   };
 
   // Format score display - show "ผ่าน" for 1, "ไม่ผ่าน" for 0 or other values
-  const formatScore = (score: number | null, isHospitalLevel: boolean = false) => {
+  const formatScore = (score: number | null, type: 'hospital' | 'province' | 'region' = 'region') => {
     if (score === null) return '-';
     // For hospital level, show ผ่าน/ไม่ผ่าน
-    if (isHospitalLevel) {
+    if (type === 'hospital') {
       if (score === 1) return 'ผ่าน';
       return 'ไม่ผ่าน';
     }
-    // For aggregated levels (region/province), show percentage or average
+    // For province level, show percentage (already calculated as percentage)
+    if (type === 'province') {
+      return score.toFixed(2);
+    }
+    // For region level, show as decimal average
     return score.toFixed(2);
   };
 
-  // Get score color class
-  const getScoreColorClass = (score: number | null) => {
+  // Get score color class - adjusted for province level (percentage 0-100)
+  const getScoreColorClass = (score: number | null, type: 'hospital' | 'province' | 'region' = 'region') => {
     if (score === null) return 'text-muted-foreground';
+    
+    if (type === 'province') {
+      // Province level uses percentage (0-100)
+      if (score >= 80) return 'text-green-600 dark:text-green-400 font-medium';
+      if (score >= 50) return 'text-yellow-600 dark:text-yellow-400';
+      return 'text-red-600 dark:text-red-400';
+    }
+    
+    // Hospital/Region level uses 0-1 scale
     if (score >= 0.8) return 'text-green-600 dark:text-green-400 font-medium';
     if (score >= 0.5) return 'text-yellow-600 dark:text-yellow-400';
     return 'text-red-600 dark:text-red-400';
@@ -594,9 +636,9 @@ export default function ReportsQuantitative() {
                             {row.categoryAverages.map((catAvg) => (
                               <TableCell 
                                 key={catAvg.categoryId} 
-                                className={`text-center ${getScoreColorClass(catAvg.average)}`}
+                                className={`text-center ${getScoreColorClass(catAvg.average, row.type)}`}
                               >
-                                {formatScore(catAvg.average, row.type === 'hospital')}
+                                {formatScore(catAvg.average, row.type)}
                               </TableCell>
                             ))}
                           </TableRow>
