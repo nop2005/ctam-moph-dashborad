@@ -455,8 +455,8 @@ export default function ReportsQuantitative() {
               };
               
               return (
-                <div className="flex flex-col md:flex-row items-start gap-8">
-                  <div className="w-full md:w-auto h-[280px] min-w-[480px]">
+                <div className="flex flex-col md:flex-row items-start gap-4">
+                  <div className="w-full md:w-auto h-[280px] min-w-[480px] flex-shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -481,7 +481,7 @@ export default function ReportsQuantitative() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="space-y-3 w-fit ml-auto">
+                  <div className="space-y-3 w-fit">
                     <div>
                       <span className="text-xl font-bold">{total}</span>
                       <span className="text-muted-foreground ml-2 text-sm">โรงพยาบาลทั้งหมด</span>
