@@ -196,8 +196,8 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="secondary" className="w-full" disabled>
-              ดูรายงาน (เร็วๆ นี้)
+            <Button variant="secondary" className="w-full" onClick={() => window.location.href = '/reports'}>
+              ดูรายงาน
             </Button>
           </CardContent>
         </Card>
