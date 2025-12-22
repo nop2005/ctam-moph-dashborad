@@ -395,7 +395,7 @@ export default function ReportsQuantitative() {
                         <TableHead className="sticky left-0 bg-muted/50 z-10 min-w-[180px]">
                           {selectedProvince !== 'all' ? 'โรงพยาบาล' : selectedRegion !== 'all' ? 'จังหวัด' : 'เขตสุขภาพ'}
                         </TableHead>
-                        <TableHead className="text-center min-w-[60px]">จำนวน รพ.</TableHead>
+                        <TableHead className="text-center min-w-[80px] bg-primary/10">ร้อยละข้อที่ผ่าน</TableHead>
                         {categories.map((cat, index) => (
                           <TableHead 
                             key={cat.id} 
@@ -408,7 +408,6 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>
                         ))}
-                        <TableHead className="text-center min-w-[80px] bg-primary/10">เฉลี่ยรวม</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -417,6 +416,10 @@ export default function ReportsQuantitative() {
                         const overallAvg = totalAvg.length > 0 
                           ? totalAvg.reduce((sum, c) => sum + (c.average || 0), 0) / totalAvg.length
                           : null;
+                        // Calculate percentage of passed items
+                        const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
+                        const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
+                        const passedPercentage = totalCount > 0 ? (passedCount / totalCount) * 100 : null;
 
                         return (
                           <TableRow key={row.id} className="hover:bg-muted/30">
@@ -428,7 +431,9 @@ export default function ReportsQuantitative() {
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="text-center">{row.hospitalCount}</TableCell>
+                            <TableCell className={`text-center bg-primary/5 font-bold ${getScoreColorClass(overallAvg)}`}>
+                              {passedPercentage !== null ? `${passedPercentage.toFixed(0)}%` : '-'}
+                            </TableCell>
                             {row.categoryAverages.map((catAvg) => (
                               <TableCell 
                                 key={catAvg.categoryId} 
@@ -437,9 +442,6 @@ export default function ReportsQuantitative() {
                                 {formatScore(catAvg.average, row.type === 'hospital')}
                               </TableCell>
                             ))}
-                            <TableCell className={`text-center bg-primary/5 font-bold ${getScoreColorClass(overallAvg)}`}>
-                              {formatScore(overallAvg, false)}
-                            </TableCell>
                           </TableRow>
                         );
                       })}
