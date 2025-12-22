@@ -172,6 +172,37 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments }:
 
   const chartData = getChartData();
 
+  // Custom tick component for clickable X-axis labels
+  const CustomXAxisTick = ({ x, y, payload }: any) => {
+    const dataItem = chartData.find(d => d.name === payload.value);
+    const isClickable = drillLevel !== 'hospital';
+    
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text
+          x={0}
+          y={0}
+          dy={16}
+          textAnchor="end"
+          fill="hsl(var(--primary))"
+          fontSize={12}
+          transform="rotate(-45)"
+          style={{ 
+            cursor: isClickable ? 'pointer' : 'default',
+            textDecoration: isClickable ? 'underline' : 'none',
+          }}
+          onClick={() => {
+            if (isClickable && dataItem) {
+              handleBarClick(dataItem);
+            }
+          }}
+        >
+          {payload.value}
+        </text>
+      </g>
+    );
+  };
+
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -225,16 +256,9 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments }:
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis 
                   dataKey="name" 
-                  angle={-45}
-                  textAnchor="end"
                   height={80}
                   interval={0}
-                  tick={{ 
-                    fontSize: 12,
-                    cursor: drillLevel !== 'hospital' ? 'pointer' : 'default',
-                    fill: 'hsl(var(--primary))',
-                    textDecoration: drillLevel !== 'hospital' ? 'underline' : 'none',
-                  }}
+                  tick={<CustomXAxisTick />}
                 />
                 <YAxis 
                   domain={[0, 10]} 
