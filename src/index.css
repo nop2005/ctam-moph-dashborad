@@ -59,13 +59,13 @@
     --radius: 0.75rem;
 
     /* Sidebar */
-    --sidebar-background: 217 91% 92%;
-    --sidebar-foreground: 217 91% 20%;
-    --sidebar-primary: 217 91% 40%;
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 91% 85%;
-    --sidebar-accent-foreground: 217 91% 20%;
-    --sidebar-border: 217 50% 80%;
+    --sidebar-accent: 220 32% 18%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 220 20% 25%;
     --sidebar-ring: 217 91% 60%;
 
     /* CTAM+ Status Colors */
@@ -133,13 +133,13 @@
     --input: 220 20% 20%;
     --ring: 217 91% 60%;
 
-    --sidebar-background: 217 91% 92%;
-    --sidebar-foreground: 217 91% 20%;
-    --sidebar-primary: 217 91% 40%;
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 91% 85%;
-    --sidebar-accent-foreground: 217 91% 20%;
-    --sidebar-border: 217 50% 80%;
+    --sidebar-accent: 220 32% 18%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 220 20% 25%;
     --sidebar-ring: 217 91% 60%;
 
     --shadow-glow: 0 0 30px hsl(217 91% 60% / 0.2);
