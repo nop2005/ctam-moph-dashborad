@@ -378,7 +378,7 @@ export default function ReportsQuantitative() {
         </Card>
 
         {/* Safety Level Donut Chart */}
-        <Card className="max-w-3xl">
+        <Card className="max-w-4xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">สัดส่วนระดับความปลอดภัยไซเบอร์ของโรงพยาบาล</CardTitle>
           </CardHeader>
@@ -455,8 +455,8 @@ export default function ReportsQuantitative() {
               };
               
               return (
-                <div className="flex flex-col md:flex-row items-start gap-6">
-                  <div className="w-full md:w-auto h-[280px] min-w-[280px]">
+                <div className="flex flex-col md:flex-row items-start gap-8">
+                  <div className="w-full md:w-auto h-[280px] min-w-[380px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
