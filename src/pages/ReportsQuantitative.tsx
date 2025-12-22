@@ -679,7 +679,7 @@ export default function ReportsQuantitative() {
                             </div>
                           )}
                         </TableHead>
-                        <TableHead className="text-center min-w-[60px] bg-primary/10">ระดับ</TableHead>
+                        <TableHead className={`text-center min-w-[60px] ${selectedProvince === 'all' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-primary/10'}`}>ระดับ</TableHead>
                         {categories.map((cat, index) => (
                           <TableHead 
                             key={cat.id} 
