@@ -21,6 +21,7 @@ import { TrendingUp, Filter, Building2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 interface HealthRegion {
   id: string;
@@ -465,6 +466,115 @@ export default function ReportsQuantitative() {
                 <ScrollBar orientation="horizontal" />
               </ScrollArea>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Safety Level Pie Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">สัดส่วนระดับความปลอดภัยไซเบอร์ของโรงพยาบาล</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              // Calculate safety level distribution from all hospitals
+              const hospitalRows = tableData.filter(row => row.type === 'hospital');
+              let greenCount = 0;
+              let yellowCount = 0;
+              let redCount = 0;
+              
+              hospitalRows.forEach(row => {
+                const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
+                const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
+                const passedPercentage = totalCount > 0 ? (passedCount / totalCount) * 100 : null;
+                
+                if (passedPercentage !== null) {
+                  if (passedPercentage === 100) greenCount++;
+                  else if (passedPercentage >= 50) yellowCount++;
+                  else redCount++;
+                }
+              });
+              
+              const total = greenCount + yellowCount + redCount;
+              
+              if (total === 0) {
+                return <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูลโรงพยาบาล (กรุณาเลือกจังหวัดเพื่อดูข้อมูล)</div>;
+              }
+              
+              const pieData = [
+                { name: 'ปลอดภัยไซเบอร์สูง (100%)', value: greenCount, color: '#22c55e', percentage: ((greenCount / total) * 100).toFixed(1) },
+                { name: 'ปลอดภัยต่ำ (50-99.99%)', value: yellowCount, color: '#eab308', percentage: ((yellowCount / total) * 100).toFixed(1) },
+                { name: 'ไม่ปลอดภัย (<50%)', value: redCount, color: '#ef4444', percentage: ((redCount / total) * 100).toFixed(1) },
+              ].filter(d => d.value > 0);
+              
+              return (
+                <div className="flex flex-col lg:flex-row items-center gap-6">
+                  <div className="w-full lg:w-1/2 h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percentage }) => `${percentage}%`}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {pieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          formatter={(value: number, name: string) => [`${value} รพ.`, name]}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="w-full lg:w-1/2 space-y-4">
+                    <div className="text-center lg:text-left">
+                      <span className="text-2xl font-bold">{total}</span>
+                      <span className="text-muted-foreground ml-2">โรงพยาบาลทั้งหมด</span>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
+                        <div className="w-4 h-4 rounded-full bg-green-500" />
+                        <div className="flex-1">
+                          <span className="font-semibold text-green-700 dark:text-green-400">ปลอดภัยไซเบอร์สูง (100%)</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-bold text-lg">{greenCount}</span>
+                          <span className="text-muted-foreground ml-1">รพ.</span>
+                          <span className="text-muted-foreground ml-2">({((greenCount / total) * 100).toFixed(1)}%)</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950/30">
+                        <div className="w-4 h-4 rounded-full bg-yellow-500" />
+                        <div className="flex-1">
+                          <span className="font-semibold text-yellow-700 dark:text-yellow-400">ปลอดภัยต่ำ (50-99.99%)</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-bold text-lg">{yellowCount}</span>
+                          <span className="text-muted-foreground ml-1">รพ.</span>
+                          <span className="text-muted-foreground ml-2">({((yellowCount / total) * 100).toFixed(1)}%)</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-950/30">
+                        <div className="w-4 h-4 rounded-full bg-red-500" />
+                        <div className="flex-1">
+                          <span className="font-semibold text-red-700 dark:text-red-400">ไม่ปลอดภัย (&lt;50%)</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-bold text-lg">{redCount}</span>
+                          <span className="text-muted-foreground ml-1">รพ.</span>
+                          <span className="text-muted-foreground ml-2">({((redCount / total) * 100).toFixed(1)}%)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
 
