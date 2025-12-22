@@ -265,9 +265,15 @@ export default function ReportsQuantitative() {
     }
   };
 
-  // Format score display
-  const formatScore = (score: number | null) => {
+  // Format score display - show "ผ่าน" for 1, "ไม่ผ่าน" for 0 or other values
+  const formatScore = (score: number | null, isHospitalLevel: boolean = false) => {
     if (score === null) return '-';
+    // For hospital level, show ผ่าน/ไม่ผ่าน
+    if (isHospitalLevel) {
+      if (score === 1) return 'ผ่าน';
+      return 'ไม่ผ่าน';
+    }
+    // For aggregated levels (region/province), show percentage or average
     return score.toFixed(2);
   };
 
@@ -428,11 +434,11 @@ export default function ReportsQuantitative() {
                                 key={catAvg.categoryId} 
                                 className={`text-center ${getScoreColorClass(catAvg.average)}`}
                               >
-                                {formatScore(catAvg.average)}
+                                {formatScore(catAvg.average, row.type === 'hospital')}
                               </TableCell>
                             ))}
                             <TableCell className={`text-center bg-primary/5 font-bold ${getScoreColorClass(overallAvg)}`}>
-                              {formatScore(overallAvg)}
+                              {formatScore(overallAvg, false)}
                             </TableCell>
                           </TableRow>
                         );
