@@ -171,10 +171,21 @@ export default function SuperAdmin() {
 
   const handleApproveClick = (profileToApprove: Profile) => {
     setSelectedProfile(profileToApprove);
-    setEditRole('provincial'); // Default to provincial
-    setEditProvinceId('');
+    
+    // Pre-fill based on existing data (for bulk created users)
+    if (profileToApprove.hospital_id) {
+      // User was created via bulk - pre-fill hospital_it role
+      setEditRole('hospital_it');
+      const hospital = hospitals.find(h => h.id === profileToApprove.hospital_id);
+      setEditHospitalId(profileToApprove.hospital_id);
+      setEditProvinceId(hospital?.province_id || profileToApprove.province_id || '');
+    } else {
+      // Regular user - default to provincial
+      setEditRole('provincial');
+      setEditProvinceId('');
+      setEditHospitalId('');
+    }
     setEditRegionId('');
-    setEditHospitalId('');
     setEditFullName(profileToApprove.full_name || '');
     setIsApproveDialogOpen(true);
   };
