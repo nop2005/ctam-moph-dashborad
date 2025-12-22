@@ -396,6 +396,7 @@ export default function ReportsQuantitative() {
                           {selectedProvince !== 'all' ? 'โรงพยาบาล' : selectedRegion !== 'all' ? 'จังหวัด' : 'เขตสุขภาพ'}
                         </TableHead>
                         <TableHead className="text-center min-w-[80px] bg-primary/10">ร้อยละข้อที่ผ่าน</TableHead>
+                        <TableHead className="text-center min-w-[60px] bg-primary/10">ระดับ</TableHead>
                         {categories.map((cat, index) => (
                           <TableHead 
                             key={cat.id} 
@@ -434,6 +435,19 @@ export default function ReportsQuantitative() {
                             <TableCell className={`text-center bg-primary/5 font-bold ${getScoreColorClass(overallAvg)}`}>
                               {passedPercentage !== null ? `${passedPercentage.toFixed(0)}%` : '-'}
                             </TableCell>
+                            <TableCell className="text-center">
+                              {passedPercentage !== null ? (
+                                <div 
+                                  className={`w-6 h-6 rounded-full mx-auto ${
+                                    passedPercentage === 100 
+                                      ? 'bg-green-500' 
+                                      : passedPercentage >= 50 
+                                        ? 'bg-yellow-500' 
+                                        : 'bg-red-500'
+                                  }`}
+                                />
+                              ) : '-'}
+                            </TableCell>
                             {row.categoryAverages.map((catAvg) => (
                               <TableCell 
                                 key={catAvg.categoryId} 
@@ -451,6 +465,29 @@ export default function ReportsQuantitative() {
                 <ScrollBar orientation="horizontal" />
               </ScrollArea>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Safety Level Legend */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">ความหมายระดับความปลอดภัยไซเบอร์</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-6">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-green-500" />
+                <span className="text-sm">100% = <span className="font-semibold text-green-600">ปลอดภัยไซเบอร์สูง</span></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-yellow-500" />
+                <span className="text-sm">50-99.99% = <span className="font-semibold text-yellow-600">ปลอดภัยต่ำ</span></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-red-500" />
+                <span className="text-sm">น้อยกว่า 50% = <span className="font-semibold text-red-600">ไม่ปลอดภัย</span></span>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
