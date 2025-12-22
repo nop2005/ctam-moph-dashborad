@@ -665,10 +665,19 @@ export default function ReportsQuantitative() {
                           </TableHead>
                         )}
                         <TableHead className="text-center min-w-[80px] bg-primary/10">
-                          <div className="flex flex-col items-center">
-                            <span>ร้อยละรพ.</span>
-                            <span>ที่ผ่าน (เขียว)</span>
-                          </div>
+                          {selectedProvince !== 'all' ? (
+                            // Hospital level - show "ร้อยละข้อที่ผ่าน"
+                            <div className="flex flex-col items-center">
+                              <span>ร้อยละ</span>
+                              <span>ข้อที่ผ่าน</span>
+                            </div>
+                          ) : (
+                            // Region/Province level - show "ร้อยละรพ.ที่ผ่าน (เขียว)"
+                            <div className="flex flex-col items-center">
+                              <span>ร้อยละรพ.</span>
+                              <span>ที่ผ่าน (เขียว)</span>
+                            </div>
+                          )}
                         </TableHead>
                         <TableHead className="text-center min-w-[60px] bg-primary/10">ระดับ</TableHead>
                         {categories.map((cat, index) => (
