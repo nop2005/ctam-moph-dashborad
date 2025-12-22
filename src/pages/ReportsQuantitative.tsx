@@ -769,43 +769,40 @@ export default function ReportsQuantitative() {
                 </div>
 
                 {/* Scrollable category columns section */}
-                <ScrollArea className="flex-1" type="always">
-                  <div className="pb-4">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/50 h-[52px]">
-                          {categories.map((cat, index) => (
-                            <TableHead 
-                              key={cat.id} 
-                              className="text-center min-w-[80px] text-xs"
-                              title={cat.name_th}
+                <div className="flex-1 overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50 h-[52px]">
+                        {categories.map((cat, index) => (
+                          <TableHead 
+                            key={cat.id} 
+                            className="text-center min-w-[80px] text-xs"
+                            title={cat.name_th}
+                          >
+                            <div className="flex flex-col items-center">
+                              <span className="font-bold">ข้อ {index + 1}</span>
+                              <span className="text-muted-foreground truncate max-w-[70px]">{cat.code}</span>
+                            </div>
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tableData.map((row) => (
+                        <TableRow key={row.id} className="hover:bg-muted/30 h-[53px]">
+                          {row.categoryAverages.map((catAvg) => (
+                            <TableCell 
+                              key={catAvg.categoryId} 
+                              className={`text-center ${getScoreColorClass(catAvg.average, row.type)}`}
                             >
-                              <div className="flex flex-col items-center">
-                                <span className="font-bold">ข้อ {index + 1}</span>
-                                <span className="text-muted-foreground truncate max-w-[70px]">{cat.code}</span>
-                              </div>
-                            </TableHead>
+                              {formatScore(catAvg, row.type)}
+                            </TableCell>
                           ))}
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {tableData.map((row) => (
-                          <TableRow key={row.id} className="hover:bg-muted/30 h-[53px]">
-                            {row.categoryAverages.map((catAvg) => (
-                              <TableCell 
-                                key={catAvg.categoryId} 
-                                className={`text-center ${getScoreColorClass(catAvg.average, row.type)}`}
-                              >
-                                {formatScore(catAvg, row.type)}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                  <ScrollBar orientation="horizontal" forceMount className="h-3 bg-muted" />
-                </ScrollArea>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             )}
           </CardContent>
