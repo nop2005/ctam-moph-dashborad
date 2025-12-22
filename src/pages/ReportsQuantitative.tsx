@@ -20,6 +20,7 @@ import {
 import { TrendingUp, Filter, Building2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HealthRegion {
   id: string;
@@ -64,6 +65,7 @@ interface Assessment {
 }
 
 export default function ReportsQuantitative() {
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [healthRegions, setHealthRegions] = useState<HealthRegion[]>([]);
   const [provinces, setProvinces] = useState<Province[]>([]);
@@ -75,6 +77,10 @@ export default function ReportsQuantitative() {
   // Filters
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
+
+  // Check if user is provincial admin
+  const isProvincialAdmin = profile?.role === 'provincial';
+  const userProvinceId = profile?.province_id;
 
   // Fetch data
   useEffect(() => {
@@ -146,16 +152,36 @@ export default function ReportsQuantitative() {
     fetchData();
   }, []);
 
+  // Set initial filters for provincial admin
+  useEffect(() => {
+    if (isProvincialAdmin && userProvinceId && provinces.length > 0) {
+      const userProvince = provinces.find(p => p.id === userProvinceId);
+      if (userProvince) {
+        setSelectedRegion(userProvince.health_region_id);
+        setSelectedProvince(userProvinceId);
+      }
+    }
+  }, [isProvincialAdmin, userProvinceId, provinces]);
+
   // Filter provinces based on selected region
   const filteredProvinces = useMemo(() => {
     if (selectedRegion === 'all') return [];
-    return provinces.filter(p => p.health_region_id === selectedRegion);
-  }, [selectedRegion, provinces]);
+    const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
+    
+    // Provincial admin can only see their own province
+    if (isProvincialAdmin && userProvinceId) {
+      return regionProvinces.filter(p => p.id === userProvinceId);
+    }
+    
+    return regionProvinces;
+  }, [selectedRegion, provinces, isProvincialAdmin, userProvinceId]);
 
-  // Reset province when region changes
+  // Reset province when region changes (only for non-provincial admin)
   useEffect(() => {
-    setSelectedProvince('all');
-  }, [selectedRegion]);
+    if (!isProvincialAdmin) {
+      setSelectedProvince('all');
+    }
+  }, [selectedRegion, isProvincialAdmin]);
 
   // Calculate average scores per category for a set of hospital IDs
   const calculateCategoryAverages = (hospitalIds: string[]) => {
@@ -279,22 +305,36 @@ export default function ReportsQuantitative() {
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="w-full sm:w-48">
                 <label className="text-sm font-medium mb-1.5 block">เขตสุขภาพ</label>
-                <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                <Select 
+                  value={selectedRegion} 
+                  onValueChange={setSelectedRegion}
+                  disabled={isProvincialAdmin}
+                >
                   <SelectTrigger className="h-9 text-sm">
                     <SelectValue placeholder="เลือกเขต" />
                   </SelectTrigger>
                   <SelectContent className="bg-background z-50">
-                    <SelectItem value="all" className="text-sm">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-3.5 h-3.5" />
-                        ทุกเขตสุขภาพ
-                      </div>
-                    </SelectItem>
-                    {healthRegions.map((region) => (
-                      <SelectItem key={region.id} value={region.id} className="text-sm">
-                        เขต {region.region_number}
+                    {!isProvincialAdmin && (
+                      <SelectItem value="all" className="text-sm">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-3.5 h-3.5" />
+                          ทุกเขตสุขภาพ
+                        </div>
                       </SelectItem>
-                    ))}
+                    )}
+                    {healthRegions
+                      .filter(region => {
+                        if (isProvincialAdmin && userProvinceId) {
+                          const userProvince = provinces.find(p => p.id === userProvinceId);
+                          return userProvince?.health_region_id === region.id;
+                        }
+                        return true;
+                      })
+                      .map((region) => (
+                        <SelectItem key={region.id} value={region.id} className="text-sm">
+                          เขต {region.region_number}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -304,18 +344,20 @@ export default function ReportsQuantitative() {
                 <Select 
                   value={selectedProvince} 
                   onValueChange={setSelectedProvince}
-                  disabled={selectedRegion === 'all'}
+                  disabled={selectedRegion === 'all' || isProvincialAdmin}
                 >
                   <SelectTrigger className="h-9 text-sm">
                     <SelectValue placeholder={selectedRegion === 'all' ? 'เลือกเขตก่อน' : 'เลือกจังหวัด'} />
                   </SelectTrigger>
                   <SelectContent className="bg-background z-50">
-                    <SelectItem value="all" className="text-sm">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-3.5 h-3.5" />
-                        ทุกจังหวัด
-                      </div>
-                    </SelectItem>
+                    {!isProvincialAdmin && (
+                      <SelectItem value="all" className="text-sm">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-3.5 h-3.5" />
+                          ทุกจังหวัด
+                        </div>
+                      </SelectItem>
+                    )}
                     {filteredProvinces.map((province) => (
                       <SelectItem key={province.id} value={province.id} className="text-sm">
                         {province.name}
