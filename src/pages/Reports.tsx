@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { ScoreChart } from '@/components/reports/ScoreChart';
 import { 
   Table, 
   TableBody, 
@@ -303,6 +304,14 @@ export default function Reports() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Score Chart */}
+        <ScoreChart
+          healthRegions={healthRegions}
+          provinces={provinces}
+          hospitals={hospitals}
+          assessments={assessments}
+        />
 
         {/* Reports Table */}
         <Card>
