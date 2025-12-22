@@ -12,6 +12,7 @@ import AssessmentList from "./pages/AssessmentList";
 import Assessment from "./pages/Assessment";
 import UserManagement from "./pages/UserManagement";
 import Reports from "./pages/Reports";
+import ProfileSettings from "./pages/ProfileSettings";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 
@@ -73,6 +74,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['central_admin']}>
                   <SuperAdmin />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <ProfileSettings />
                 </ProtectedRoute>
               } 
             />
