@@ -643,19 +643,18 @@ export default function ReportsQuantitative() {
             ) : tableData.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">ไม่พบข้อมูล</div>
             ) : (
-              <ScrollArea className="w-full" type="always">
-                <div className="min-w-[1200px] pb-4">
+              <div className="flex w-full">
+                {/* Sticky columns section */}
+                <div className="flex-shrink-0">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
-                        <TableHead className="sticky left-0 bg-muted/50 z-10 min-w-[180px]">
+                        <TableHead className="bg-muted/50 min-w-[180px]">
                           {selectedProvince !== 'all' ? 'โรงพยาบาล' : selectedRegion !== 'all' ? 'จังหวัด' : 'เขตสุขภาพ'}
                         </TableHead>
-                        {/* Show hospital count column at region and province level */}
                         {selectedProvince === 'all' && (
                           <TableHead className="text-center min-w-[80px] bg-muted/50">จำนวน รพ.</TableHead>
                         )}
-                        {/* Show hospitals passed all 17 column at region and province level */}
                         {selectedProvince === 'all' && (
                           <TableHead className="text-center min-w-[100px] bg-green-100 dark:bg-green-900/30">
                             <div className="flex flex-col items-center">
@@ -666,13 +665,11 @@ export default function ReportsQuantitative() {
                         )}
                         <TableHead className="text-center min-w-[80px] bg-primary/10">
                           {selectedProvince !== 'all' ? (
-                            // Hospital level - show "ร้อยละข้อที่ผ่าน"
                             <div className="flex flex-col items-center">
                               <span>ร้อยละ</span>
                               <span>ข้อที่ผ่าน</span>
                             </div>
                           ) : (
-                            // Region/Province level - show "ร้อยละรพ.ที่ผ่าน (เขียว)"
                             <div className="flex flex-col items-center">
                               <span>ร้อยละรพ.</span>
                               <span>ที่ผ่าน (เขียว)</span>
@@ -680,36 +677,18 @@ export default function ReportsQuantitative() {
                           )}
                         </TableHead>
                         <TableHead className={`text-center min-w-[60px] ${selectedProvince === 'all' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-primary/10'}`}>ระดับ</TableHead>
-                        {categories.map((cat, index) => (
-                          <TableHead 
-                            key={cat.id} 
-                            className="text-center min-w-[80px] text-xs"
-                            title={cat.name_th}
-                          >
-                            <div className="flex flex-col items-center">
-                              <span className="font-bold">ข้อ {index + 1}</span>
-                              <span className="text-muted-foreground truncate max-w-[70px]">{cat.code}</span>
-                            </div>
-                          </TableHead>
-                        ))}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {tableData.map((row) => {
-                        const totalAvg = row.categoryAverages.filter(c => c.average !== null);
-                        const overallAvg = totalAvg.length > 0 
-                          ? totalAvg.reduce((sum, c) => sum + (c.average || 0), 0) / totalAvg.length
-                          : null;
-                        // Calculate percentage of passed items
                         const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
                         const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
                         const passedPercentage = totalCount > 0 ? (passedCount / totalCount) * 100 : null;
 
                         return (
                           <TableRow key={row.id} className="hover:bg-muted/30">
-                            <TableCell className="sticky left-0 bg-background z-10 font-medium">
+                            <TableCell className="bg-background font-medium">
                               <div className="flex flex-col">
-                                {/* Clickable region name - drills down to provinces */}
                                 {row.type === 'region' && (
                                   <button
                                     onClick={() => setSelectedRegion(row.id)}
@@ -718,7 +697,6 @@ export default function ReportsQuantitative() {
                                     {row.name}
                                   </button>
                                 )}
-                                {/* Clickable province name - drills down to hospitals */}
                                 {row.type === 'province' && (
                                   <button
                                     onClick={() => setSelectedProvince(row.id)}
@@ -727,7 +705,6 @@ export default function ReportsQuantitative() {
                                     {row.name}
                                   </button>
                                 )}
-                                {/* Hospital name - not clickable */}
                                 {row.type === 'hospital' && (
                                   <>
                                     <span>{row.name}</span>
@@ -738,25 +715,23 @@ export default function ReportsQuantitative() {
                                 )}
                               </div>
                             </TableCell>
-                            {/* Show hospital count column at region and province level */}
                             {selectedProvince === 'all' && (
                               <TableCell className="text-center font-medium">{row.hospitalCount}</TableCell>
                             )}
-                            {/* Show hospitals passed all 17 column at region and province level */}
                             {selectedProvince === 'all' && (
                               <TableCell className="text-center font-medium bg-green-50 dark:bg-green-900/20">
                                 {'hospitalsPassedAll17' in row ? row.hospitalsPassedAll17 : 0}
                               </TableCell>
                             )}
-                            <TableCell className={`text-center bg-primary/5 font-bold`}>
+                            <TableCell className="text-center bg-primary/5 font-bold">
                               {(row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row ? (
                                 <span className={(row.hospitalsPassedAll17 as number) > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
                                   {row.hospitalCount > 0 ? (((row.hospitalsPassedAll17 as number) / row.hospitalCount) * 100).toFixed(2) : 0}%
                                 </span>
-                              ) : passedPercentage !== null ? `${passedPercentage.toFixed(0)}%` : '-'}</TableCell>
+                              ) : passedPercentage !== null ? `${passedPercentage.toFixed(0)}%` : '-'}
+                            </TableCell>
                             <TableCell className={`text-center ${selectedProvince === 'all' ? 'bg-green-50 dark:bg-green-900/20' : ''}`}>
                               {(() => {
-                                // For province and region, use hospitalsPassedAll17 percentage
                                 if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
                                   const greenPercentage = row.hospitalCount > 0 
                                     ? ((row.hospitalsPassedAll17 as number) / row.hospitalCount) * 100 
@@ -773,7 +748,6 @@ export default function ReportsQuantitative() {
                                     />
                                   );
                                 }
-                                // For hospital level
                                 return passedPercentage !== null ? (
                                   <div 
                                     className={`w-6 h-6 rounded-full mx-auto ${
@@ -787,6 +761,36 @@ export default function ReportsQuantitative() {
                                 ) : '-';
                               })()}
                             </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Scrollable category columns section */}
+                <ScrollArea className="flex-1" type="always">
+                  <div className="pb-4">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50">
+                          {categories.map((cat, index) => (
+                            <TableHead 
+                              key={cat.id} 
+                              className="text-center min-w-[80px] text-xs"
+                              title={cat.name_th}
+                            >
+                              <div className="flex flex-col items-center">
+                                <span className="font-bold">ข้อ {index + 1}</span>
+                                <span className="text-muted-foreground truncate max-w-[70px]">{cat.code}</span>
+                              </div>
+                            </TableHead>
+                          ))}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {tableData.map((row) => (
+                          <TableRow key={row.id} className="hover:bg-muted/30">
                             {row.categoryAverages.map((catAvg) => (
                               <TableCell 
                                 key={catAvg.categoryId} 
@@ -796,13 +800,13 @@ export default function ReportsQuantitative() {
                               </TableCell>
                             ))}
                           </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-                <ScrollBar orientation="horizontal" forceMount className="h-3 bg-muted" />
-              </ScrollArea>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <ScrollBar orientation="horizontal" forceMount className="h-3 bg-muted" />
+                </ScrollArea>
+              </div>
             )}
           </CardContent>
         </Card>
