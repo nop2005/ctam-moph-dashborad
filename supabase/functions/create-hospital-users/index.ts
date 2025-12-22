@@ -116,11 +116,12 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Update profile with hospital_id, role, and is_active = false
+      // Update profile with hospital_id, province_id, role, and is_active = false
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
           hospital_id: hospital.id,
+          province_id: province_id, // Also set province_id for easy approval
           role: "hospital_it",
           is_active: false,
           full_name: `IT ${hospital.name}`,
