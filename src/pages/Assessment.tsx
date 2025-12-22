@@ -9,7 +9,7 @@ import { QuantitativeSection } from '@/components/assessment/QuantitativeSection
 import { QualitativeSection } from '@/components/assessment/QualitativeSection';
 import { ImpactSection } from '@/components/assessment/ImpactSection';
 import { AssessmentSummary } from '@/components/assessment/AssessmentSummary';
-import { ApprovalSection } from '@/components/assessment/ApprovalSection';
+
 import { ApprovalWorkflow } from '@/components/assessment/ApprovalWorkflow';
 import { SectionApproval } from '@/components/assessment/SectionApproval';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -199,13 +199,6 @@ export default function Assessment() {
             />
           </TabsContent>
         </Tabs>
-
-        {(canReview || canApprove) && (
-          <ApprovalSection
-            assessment={assessment}
-            onRefresh={loadAssessmentData}
-          />
-        )}
       </div>
     </DashboardLayout>
   );
