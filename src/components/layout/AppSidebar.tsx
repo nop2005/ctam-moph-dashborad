@@ -15,7 +15,6 @@ import {
   SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Shield,
@@ -25,8 +24,6 @@ import {
   Users,
   Building2,
   Settings,
-  LogOut,
-  UserCircle,
 } from 'lucide-react';
 
 const menuItems = [
@@ -204,9 +201,9 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-white/20 p-4 bg-primary">
+      <SidebarFooter className="border-t border-white/20 p-3 bg-primary">
         {!collapsed && profile && (
-          <div className="mb-3">
+          <div className="text-center">
             <p className="font-medium text-sm truncate text-white">{profile.full_name || profile.email}</p>
             {hospitalName && (
               <p className="text-xs text-white/70 truncate">{hospitalName}</p>
@@ -216,26 +213,6 @@ export function AppSidebar() {
             </Badge>
           </div>
         )}
-        <div className="flex flex-col gap-2">
-          <Button 
-            variant="ghost" 
-            size={collapsed ? 'icon' : 'default'}
-            onClick={() => navigate('/profile')}
-            className="w-full bg-white/10 border-0 text-white hover:bg-white/20 hover:text-white"
-          >
-            <UserCircle className="h-4 w-4" />
-            {!collapsed && <span className="ml-2">ตั้งค่าโปรไฟล์</span>}
-          </Button>
-          <Button 
-            variant="ghost" 
-            size={collapsed ? 'icon' : 'default'}
-            onClick={signOut}
-            className="w-full bg-white/10 border-0 text-white hover:bg-white/20 hover:text-white"
-          >
-            <LogOut className="h-4 w-4" />
-            {!collapsed && <span className="ml-2">ออกจากระบบ</span>}
-          </Button>
-        </div>
       </SidebarFooter>
     </Sidebar>
   );
