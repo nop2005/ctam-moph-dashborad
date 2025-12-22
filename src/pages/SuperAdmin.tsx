@@ -898,12 +898,14 @@ export default function SuperAdmin() {
             }}>
               ปิด
             </Button>
-            <Button 
-              onClick={handleBulkCreateUsers} 
-              disabled={isBulkCreating || !bulkCreateProvinceId}
-            >
-              {isBulkCreating ? 'กำลังสร้าง...' : 'สร้างผู้ใช้'}
-            </Button>
+            {bulkCreateResults.length === 0 && (
+              <Button 
+                onClick={handleBulkCreateUsers} 
+                disabled={isBulkCreating || !bulkCreateProvinceId}
+              >
+                {isBulkCreating ? 'กำลังสร้าง...' : 'สร้างผู้ใช้'}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
