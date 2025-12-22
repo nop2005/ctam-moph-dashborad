@@ -286,7 +286,7 @@ export default function AssessmentList() {
                     <TableHead>โรงพยาบาล</TableHead>
                     <TableHead>ปี/รอบ</TableHead>
                     <TableHead>สถานะ</TableHead>
-                    <TableHead>คะแนนรวม</TableHead>
+                    <TableHead>คะแนนรวม (10)</TableHead>
                     <TableHead>วันที่สร้าง</TableHead>
                     <TableHead className="text-right">การดำเนินการ</TableHead>
                   </TableRow>
@@ -307,7 +307,7 @@ export default function AssessmentList() {
                         </TableCell>
                         <TableCell>
                           {assessment.total_score !== null 
-                            ? `${Number(assessment.total_score).toFixed(1)}%`
+                            ? Number(assessment.total_score).toFixed(1)
                             : '-'}
                         </TableCell>
                         <TableCell>
