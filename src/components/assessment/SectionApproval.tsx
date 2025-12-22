@@ -68,8 +68,8 @@ export function SectionApproval({ assessment, sectionType, onRefresh }: SectionA
   const { approvedBy, approvedAt } = getApprovalInfo();
   const isApproved = !!approvedBy && !!approvedAt;
 
-  // Check if all sections are approved
-  const checkAllSectionsApproved = async () => {
+  // Check if all sections are approved (including the one we just approved)
+  const checkAllSectionsApproved = async (currentSection: SectionType) => {
     const { data, error } = await supabase
       .from('assessments')
       .select('quantitative_approved_by, qualitative_approved_by, impact_approved_by')
@@ -78,7 +78,17 @@ export function SectionApproval({ assessment, sectionType, onRefresh }: SectionA
 
     if (error || !data) return false;
 
-    return !!(data.quantitative_approved_by && data.qualitative_approved_by && data.impact_approved_by);
+    // Create a merged check - current section will be approved by us
+    const sections = {
+      quantitative: data.quantitative_approved_by,
+      qualitative: data.qualitative_approved_by,
+      impact: data.impact_approved_by,
+    };
+    
+    // Mark current section as approved (we're about to save it)
+    sections[currentSection] = profile?.id || 'pending';
+
+    return !!(sections.quantitative && sections.qualitative && sections.impact);
   };
 
   const handleApprove = async () => {
@@ -111,8 +121,8 @@ export function SectionApproval({ assessment, sectionType, onRefresh }: SectionA
           comment: comment || `อนุมัติส่วน${sectionLabels[sectionType]}`,
         }]);
 
-      // Check if all sections are now approved
-      const allApproved = await checkAllSectionsApproved();
+      // Check if all sections are now approved (including this one)
+      const allApproved = await checkAllSectionsApproved(sectionType);
       
       if (allApproved) {
         // Determine next status
