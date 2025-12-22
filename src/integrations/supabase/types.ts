@@ -118,11 +118,17 @@ export type Database = {
           fiscal_year: number
           hospital_id: string
           id: string
+          impact_approved_at: string | null
+          impact_approved_by: string | null
           impact_score: number | null
           provincial_approved_at: string | null
           provincial_approved_by: string | null
           provincial_comment: string | null
+          qualitative_approved_at: string | null
+          qualitative_approved_by: string | null
           qualitative_score: number | null
+          quantitative_approved_at: string | null
+          quantitative_approved_by: string | null
           quantitative_score: number | null
           regional_approved_at: string | null
           regional_approved_by: string | null
@@ -140,11 +146,17 @@ export type Database = {
           fiscal_year: number
           hospital_id: string
           id?: string
+          impact_approved_at?: string | null
+          impact_approved_by?: string | null
           impact_score?: number | null
           provincial_approved_at?: string | null
           provincial_approved_by?: string | null
           provincial_comment?: string | null
+          qualitative_approved_at?: string | null
+          qualitative_approved_by?: string | null
           qualitative_score?: number | null
+          quantitative_approved_at?: string | null
+          quantitative_approved_by?: string | null
           quantitative_score?: number | null
           regional_approved_at?: string | null
           regional_approved_by?: string | null
@@ -162,11 +174,17 @@ export type Database = {
           fiscal_year?: number
           hospital_id?: string
           id?: string
+          impact_approved_at?: string | null
+          impact_approved_by?: string | null
           impact_score?: number | null
           provincial_approved_at?: string | null
           provincial_approved_by?: string | null
           provincial_comment?: string | null
+          qualitative_approved_at?: string | null
+          qualitative_approved_by?: string | null
           qualitative_score?: number | null
+          quantitative_approved_at?: string | null
+          quantitative_approved_by?: string | null
           quantitative_score?: number | null
           regional_approved_at?: string | null
           regional_approved_by?: string | null
@@ -193,8 +211,29 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "assessments_impact_approved_by_fkey"
+            columns: ["impact_approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "assessments_provincial_approved_by_fkey"
             columns: ["provincial_approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessments_qualitative_approved_by_fkey"
+            columns: ["qualitative_approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessments_quantitative_approved_by_fkey"
+            columns: ["quantitative_approved_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

@@ -11,6 +11,7 @@ import { ImpactSection } from '@/components/assessment/ImpactSection';
 import { AssessmentSummary } from '@/components/assessment/AssessmentSummary';
 import { ApprovalSection } from '@/components/assessment/ApprovalSection';
 import { ApprovalWorkflow } from '@/components/assessment/ApprovalWorkflow';
+import { SectionApproval } from '@/components/assessment/SectionApproval';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
@@ -142,7 +143,7 @@ export default function Assessment() {
             <TabsTrigger value="summary" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">สรุปผล</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="quantitative">
+          <TabsContent value="quantitative" className="space-y-4">
             <QuantitativeSection
               assessmentId={assessment.id}
               categories={categories}
@@ -150,23 +151,41 @@ export default function Assessment() {
               onItemsChange={setItems}
               readOnly={!canEdit}
             />
+            {/* Section-level approval for quantitative */}
+            <SectionApproval 
+              assessment={assessment} 
+              sectionType="quantitative" 
+              onRefresh={loadAssessmentData} 
+            />
           </TabsContent>
 
-          <TabsContent value="qualitative">
+          <TabsContent value="qualitative" className="space-y-4">
             <QualitativeSection
               assessmentId={assessment.id}
               qualitativeScore={qualitativeScore}
               onScoreChange={setQualitativeScore}
               readOnly={!canEdit && !canReview && !canApprove}
             />
+            {/* Section-level approval for qualitative */}
+            <SectionApproval 
+              assessment={assessment} 
+              sectionType="qualitative" 
+              onRefresh={loadAssessmentData} 
+            />
           </TabsContent>
 
-          <TabsContent value="impact">
+          <TabsContent value="impact" className="space-y-4">
             <ImpactSection
               assessmentId={assessment.id}
               impactScore={impactScore}
               onScoreChange={setImpactScore}
               readOnly={!canEdit && !canReview && !canApprove}
+            />
+            {/* Section-level approval for impact */}
+            <SectionApproval 
+              assessment={assessment} 
+              sectionType="impact" 
+              onRefresh={loadAssessmentData} 
             />
           </TabsContent>
 
