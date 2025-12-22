@@ -21,6 +21,7 @@ type AssessmentItem = Database['public']['Tables']['assessment_items']['Row'];
 type CTAMCategory = Database['public']['Tables']['ctam_categories']['Row'];
 type QualitativeScore = Database['public']['Tables']['qualitative_scores']['Row'];
 type ImpactScore = Database['public']['Tables']['impact_scores']['Row'];
+type Hospital = Database['public']['Tables']['hospitals']['Row'];
 
 export default function Assessment() {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +35,7 @@ export default function Assessment() {
   const [items, setItems] = useState<AssessmentItem[]>([]);
   const [qualitativeScore, setQualitativeScore] = useState<QualitativeScore | null>(null);
   const [impactScore, setImpactScore] = useState<ImpactScore | null>(null);
+  const [hospital, setHospital] = useState<Hospital | null>(null);
   const [activeTab, setActiveTab] = useState('quantitative');
 
   const isReadOnly = assessment?.status !== 'draft' && assessment?.status !== 'returned';
@@ -75,6 +77,14 @@ export default function Assessment() {
         return;
       }
       setAssessment(assessmentData);
+
+      // Load hospital info
+      const { data: hospitalData } = await supabase
+        .from('hospitals')
+        .select('*')
+        .eq('id', assessmentData.hospital_id)
+        .maybeSingle();
+      setHospital(hospitalData);
 
       // Load assessment items
       const { data: itemsData, error: itemsError } = await supabase
@@ -128,6 +138,7 @@ export default function Assessment() {
       <div className="space-y-6">
         <AssessmentHeader 
           assessment={assessment} 
+          hospital={hospital}
           onRefresh={loadAssessmentData}
           canEdit={canEdit}
         />

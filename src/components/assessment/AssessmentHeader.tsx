@@ -20,6 +20,7 @@ import { ArrowLeft, Send, Loader2 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
 type Assessment = Database['public']['Tables']['assessments']['Row'];
+type Hospital = Database['public']['Tables']['hospitals']['Row'];
 
 const statusLabels: Record<string, { label: string; className: string }> = {
   draft: { label: 'ร่าง', className: 'status-draft' },
@@ -32,11 +33,12 @@ const statusLabels: Record<string, { label: string; className: string }> = {
 
 interface AssessmentHeaderProps {
   assessment: Assessment;
+  hospital?: Hospital | null;
   onRefresh: () => void;
   canEdit: boolean;
 }
 
-export function AssessmentHeader({ assessment, onRefresh, canEdit }: AssessmentHeaderProps) {
+export function AssessmentHeader({ assessment, hospital, onRefresh, canEdit }: AssessmentHeaderProps) {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -99,6 +101,9 @@ export function AssessmentHeader({ assessment, onRefresh, canEdit }: AssessmentH
                 <h1 className="text-xl font-bold">
                   แบบประเมิน CTAM+ ปี {assessment.fiscal_year + 543} / {assessment.assessment_period}
                 </h1>
+                {hospital && (
+                  <p className="text-sm text-muted-foreground mt-0.5">{hospital.name}</p>
+                )}
                 <div className="flex items-center gap-2 mt-1">
                   <Badge className={status.className}>{status.label}</Badge>
                 </div>
