@@ -125,9 +125,10 @@ export function AssessmentSummary({
   // Get impact score (1.5 points max)
   const getImpactScoreValue = () => {
     if (!impactScore) return 1.5;
-    // Convert from 15-scale to 1.5-scale
-    const originalScore = Number(impactScore.total_score) || 15;
-    return originalScore / 10;
+    // total_score in DB is stored as 0-15, convert to 0-1.5 scale
+    const originalScore = Number(impactScore.total_score) ?? 15;
+    // Clamp to max 1.5
+    return Math.min(originalScore / 10, 1.5);
   };
 
   const quantitativeScoreValue = calculateQuantitativeScore();
