@@ -1,7 +1,24 @@
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, AlertCircle, TrendingUp, Shield, Users, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { CheckCircle2, XCircle, AlertCircle, TrendingUp, Shield, Users, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
 
 type Assessment = Database['public']['Tables']['assessments']['Row'];
@@ -16,6 +33,7 @@ interface AssessmentSummaryProps {
   categories: CTAMCategory[];
   qualitativeScore: QualitativeScore | null;
   impactScore: ImpactScore | null;
+  onRefresh?: () => void;
 }
 
 export function AssessmentSummary({
@@ -24,7 +42,75 @@ export function AssessmentSummary({
   categories,
   qualitativeScore,
   impactScore,
+  onRefresh,
 }: AssessmentSummaryProps) {
+  const { profile } = useAuth();
+  const { toast } = useToast();
+  const [processing, setProcessing] = useState(false);
+  const [comment, setComment] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Check if user can do final approval
+  const canFinalApprove = () => {
+    if (profile?.role === 'regional' && assessment.status === 'approved_provincial') return true;
+    if (profile?.role === 'central_admin' && assessment.status === 'approved_regional') return true;
+    return false;
+  };
+
+  const handleFinalApprove = async () => {
+    try {
+      setProcessing(true);
+
+      const nextStatus = profile?.role === 'regional' ? 'approved_regional' : 'completed';
+      
+      const updateData: Record<string, unknown> = {
+        status: nextStatus,
+        quantitative_score: calculateQuantitativeScore(),
+        qualitative_score: getQualitativeScoreValue(),
+        impact_score: getImpactScoreValue(),
+        total_score: calculateQuantitativeScore() + getQualitativeScoreValue() + getImpactScoreValue(),
+      };
+
+      if (profile?.role === 'regional') {
+        updateData.regional_approved_by = profile.id;
+        updateData.regional_approved_at = new Date().toISOString();
+        updateData.regional_comment = comment || null;
+      }
+
+      const { error: updateError } = await supabase
+        .from('assessments')
+        .update(updateData)
+        .eq('id', assessment.id);
+
+      if (updateError) throw updateError;
+
+      // Add history
+      await supabase
+        .from('approval_history')
+        .insert([{
+          assessment_id: assessment.id,
+          from_status: assessment.status,
+          to_status: nextStatus as Database['public']['Enums']['assessment_status'],
+          action: 'approve',
+          performed_by: profile?.id!,
+          comment: comment || 'อนุมัติการประเมินเสร็จสิ้น',
+        }]);
+
+      toast({ 
+        title: 'อนุมัติสำเร็จ', 
+        description: nextStatus === 'approved_regional' ? 'การประเมินผ่านการอนุมัติระดับเขต' : 'การประเมินเสร็จสมบูรณ์'
+      });
+      setDialogOpen(false);
+      setComment('');
+      onRefresh?.();
+
+    } catch (error: any) {
+      console.error('Error approving:', error);
+      toast({ title: 'เกิดข้อผิดพลาด', description: error.message, variant: 'destructive' });
+    } finally {
+      setProcessing(false);
+    }
+  };
   // Calculate quantitative score (7 points max) - only count passed items
   const calculateQuantitativeScore = () => {
     const total = categories.length;
@@ -249,6 +335,56 @@ export function AssessmentSummary({
           </div>
         </CardContent>
       </Card>
+
+      {/* Final Approval Button */}
+      {canFinalApprove() && (
+        <Card className="border-primary">
+          <CardHeader>
+            <CardTitle className="text-lg">อนุมัติการประเมิน</CardTitle>
+            <CardDescription>
+              ตรวจสอบคะแนนและอนุมัติการประเมินทั้งหมด
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>ความคิดเห็น (ถ้ามี)</Label>
+              <Textarea
+                placeholder="เพิ่มความคิดเห็นหรือหมายเหตุ..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="min-h-[80px]"
+              />
+            </div>
+            <Button 
+              size="lg" 
+              className="w-full"
+              onClick={() => setDialogOpen(true)}
+            >
+              <CheckCircle className="w-5 h-5 mr-2" />
+              อนุมัติการประเมินเสร็จสิ้น
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Approval Dialog */}
+      <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันการอนุมัติการประเมิน</AlertDialogTitle>
+            <AlertDialogDescription>
+              คุณต้องการอนุมัติการประเมินนี้หรือไม่? คะแนนรวม: {totalScore.toFixed(2)}/10 คะแนน
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={handleFinalApprove} disabled={processing}>
+              {processing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              ยืนยันอนุมัติ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

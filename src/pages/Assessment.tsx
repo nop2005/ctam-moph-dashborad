@@ -207,6 +207,7 @@ export default function Assessment() {
               categories={categories}
               qualitativeScore={qualitativeScore}
               impactScore={impactScore}
+              onRefresh={loadAssessmentData}
             />
           </TabsContent>
         </Tabs>
