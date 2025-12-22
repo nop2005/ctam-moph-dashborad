@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   FileText, 
   CheckCircle2, 
@@ -10,38 +12,96 @@ import {
   BarChart3,
 } from 'lucide-react';
 
+interface AssessmentStats {
+  total: number;
+  pending: number;
+  approved: number;
+  returned: number;
+}
+
 export default function Dashboard() {
   const { user, profile } = useAuth();
+  const [stats, setStats] = useState<AssessmentStats>({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    returned: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
-  // Placeholder stats
-  const stats = [
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!profile) return;
+      
+      try {
+        // Fetch all assessments the user can see
+        const { data: assessments, error } = await supabase
+          .from('assessments')
+          .select('id, status');
+
+        if (error) {
+          console.error('Error fetching assessments:', error);
+          return;
+        }
+
+        if (assessments) {
+          const total = assessments.length;
+          const pending = assessments.filter(a => 
+            a.status === 'submitted' || 
+            a.status === 'approved_provincial'
+          ).length;
+          const approved = assessments.filter(a => 
+            a.status === 'approved_regional' || 
+            a.status === 'completed'
+          ).length;
+          const returned = assessments.filter(a => 
+            a.status === 'returned'
+          ).length;
+
+          setStats({ total, pending, approved, returned });
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [profile]);
+
+  const statsDisplay = [
     { 
       label: 'แบบประเมินทั้งหมด', 
-      value: '0', 
+      value: loading ? '-' : stats.total.toString(), 
       icon: FileText, 
       color: 'text-primary',
-      bgColor: 'bg-primary/10'
+      bgColor: 'bg-primary/10',
+      href: '/assessments'
     },
     { 
       label: 'รอตรวจสอบ', 
-      value: '0', 
+      value: loading ? '-' : stats.pending.toString(), 
       icon: Clock, 
       color: 'text-warning',
-      bgColor: 'bg-warning/10'
+      bgColor: 'bg-warning/10',
+      href: '/assessments'
     },
     { 
       label: 'ผ่านการประเมิน', 
-      value: '0', 
+      value: loading ? '-' : stats.approved.toString(), 
       icon: CheckCircle2, 
       color: 'text-success',
-      bgColor: 'bg-success/10'
+      bgColor: 'bg-success/10',
+      href: '/assessments'
     },
     { 
       label: 'ต้องแก้ไข', 
-      value: '0', 
+      value: loading ? '-' : stats.returned.toString(), 
       icon: AlertTriangle, 
       color: 'text-destructive',
-      bgColor: 'bg-destructive/10'
+      bgColor: 'bg-destructive/10',
+      href: '/assessments'
     },
   ];
 
@@ -59,8 +119,12 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {stats.map((stat, index) => (
-          <Card key={index} className="card-hover">
+        {statsDisplay.map((stat, index) => (
+          <Card 
+            key={index} 
+            className="card-hover cursor-pointer transition-transform hover:scale-[1.02]"
+            onClick={() => window.location.href = stat.href}
+          >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
