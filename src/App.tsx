@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import SuperAdmin from "./pages/SuperAdmin";
 import AssessmentList from "./pages/AssessmentList";
 import Assessment from "./pages/Assessment";
+import UserManagement from "./pages/UserManagement";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 
@@ -47,6 +48,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Assessment />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/user-management" 
+              element={
+                <ProtectedRoute allowedRoles={['provincial', 'regional']}>
+                  <UserManagement />
                 </ProtectedRoute>
               } 
             />

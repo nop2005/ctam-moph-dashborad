@@ -51,6 +51,12 @@ const menuItems = [
 
 const adminItems = [
   { 
+    title: 'อนุมัติผู้ใช้งาน', 
+    url: '/user-management', 
+    icon: Users,
+    roles: ['provincial', 'regional']
+  },
+  { 
     title: 'จัดการผู้ใช้งาน', 
     url: '/super-admin', 
     icon: Users,
@@ -114,6 +120,9 @@ export function AppSidebar() {
   };
 
   const isCentralAdmin = profile?.role === 'central_admin';
+  const isProvincialAdmin = profile?.role === 'provincial';
+  const isRegionalAdmin = profile?.role === 'regional';
+  const hasAdminMenu = isCentralAdmin || isProvincialAdmin || isRegionalAdmin;
 
   return (
     <Sidebar 
@@ -162,30 +171,32 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Admin Menu - Show for central_admin */}
-        {isCentralAdmin && (
+        {/* Admin Menu - Show for provincial, regional, and central_admin */}
+        {hasAdminMenu && (
           <SidebarGroup>
             <SidebarGroupLabel className={`text-white/60 ${collapsed ? 'sr-only' : ''}`}>
               จัดการระบบ
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {adminItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      onClick={() => navigate(item.url)}
-                      isActive={isActive(item.url)}
-                      tooltip={item.title}
-                      className={`
-                        text-white/80 hover:bg-white/10 hover:text-white
-                        data-[active=true]:bg-white data-[active=true]:text-primary data-[active=true]:font-medium
-                      `}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                {adminItems
+                  .filter(item => profile?.role && item.roles.includes(profile.role))
+                  .map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton 
+                        onClick={() => navigate(item.url)}
+                        isActive={isActive(item.url)}
+                        tooltip={item.title}
+                        className={`
+                          text-white/80 hover:bg-white/10 hover:text-white
+                          data-[active=true]:bg-white data-[active=true]:text-primary data-[active=true]:font-medium
+                        `}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

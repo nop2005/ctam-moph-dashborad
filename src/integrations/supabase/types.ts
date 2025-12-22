@@ -697,7 +697,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_provincial_manage_hospital_user: {
+        Args: { _hospital_id: string }
+        Returns: boolean
+      }
+      can_regional_manage_provincial_user: {
+        Args: { _province_id: string }
+        Returns: boolean
+      }
       is_central_admin: { Args: never; Returns: boolean }
+      is_provincial_admin: { Args: never; Returns: boolean }
+      is_regional_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       assessment_status:
