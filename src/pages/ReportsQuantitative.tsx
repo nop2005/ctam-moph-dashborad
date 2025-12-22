@@ -307,9 +307,14 @@ export default function ReportsQuantitative() {
       if (catAvg.average === 1) return 'ผ่าน';
       return 'ไม่ผ่าน';
     }
-    // For province level, show "passedCount (percentage%)" - no /total
+    // For province level, show passedCount on first line, (percentage%) on second line
     if (type === 'province' && catAvg.passedCount !== undefined) {
-      return `${catAvg.passedCount} (${catAvg.average?.toFixed(2)}%)`;
+      return (
+        <div className="flex flex-col items-center">
+          <span>{catAvg.passedCount}</span>
+          <span className="text-xs">({catAvg.average?.toFixed(2)}%)</span>
+        </div>
+      );
     }
     // For region level, show as decimal average
     return catAvg.average.toFixed(2);
