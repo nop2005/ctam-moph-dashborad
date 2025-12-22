@@ -162,6 +162,8 @@ export function ImpactSection({
   const [formData, setFormData] = useState({
     incident_option: initialIncidentValue,
     breach_option: initialBreachValue,
+    incident_comment: '',
+    breach_comment: '',
     comment: impactScore?.comment ?? '',
   });
 
@@ -421,6 +423,20 @@ export function ImpactSection({
                 fieldName="cyber_incident" 
                 disabled={readOnly} 
               />
+
+              {/* Incident Comment */}
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="incident_comment">รายละเอียดเหตุการณ์ (ถ้ามี)</Label>
+                <Textarea
+                  id="incident_comment"
+                  placeholder="อธิบายรายละเอียดเหตุการณ์ Cyber Incident ที่เกิดขึ้น..."
+                  value={formData.incident_comment}
+                  onChange={(e) => setFormData({ ...formData, incident_comment: e.target.value })}
+                  onBlur={(e) => handleFieldChange('incident_comment', e.target.value)}
+                  disabled={readOnly || saving}
+                  className="min-h-[80px]"
+                />
+              </div>
             </div>
           </div>
 
@@ -470,23 +486,21 @@ export function ImpactSection({
                 fieldName="data_breach" 
                 disabled={readOnly} 
               />
+
+              {/* Breach Comment */}
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="breach_comment">รายละเอียดเหตุการณ์ (ถ้ามี)</Label>
+                <Textarea
+                  id="breach_comment"
+                  placeholder="อธิบายรายละเอียดเหตุการณ์ Data Breach ที่เกิดขึ้น..."
+                  value={formData.breach_comment}
+                  onChange={(e) => setFormData({ ...formData, breach_comment: e.target.value })}
+                  onBlur={(e) => handleFieldChange('breach_comment', e.target.value)}
+                  disabled={readOnly || saving}
+                  className="min-h-[80px]"
+                />
+              </div>
             </div>
-          </div>
-
-          <Separator />
-
-          {/* Comments */}
-          <div className="space-y-2">
-            <Label htmlFor="impact_comment">รายละเอียดเหตุการณ์ (ถ้ามี)</Label>
-            <Textarea
-              id="impact_comment"
-              placeholder="อธิบายรายละเอียดเหตุการณ์ที่เกิดขึ้น..."
-              value={formData.comment}
-              onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-              onBlur={(e) => handleFieldChange('comment', e.target.value)}
-              disabled={readOnly || saving}
-              className="min-h-[100px]"
-            />
           </div>
 
           {/* Auto-save indicator */}
