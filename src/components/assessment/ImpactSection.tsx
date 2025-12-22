@@ -6,13 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Loader2, AlertTriangle, Shield, Clock, CheckCircle2, XCircle, Award, Info, TrendingUp } from 'lucide-react';
+import { Loader2, AlertTriangle, Shield, Award, Info } from 'lucide-react';
 import { ImpactEvidenceUpload } from './ImpactEvidenceUpload';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -104,13 +102,44 @@ const getQualityLevel = (percentScore: number): QualityLevel => {
   return qualityLevels[qualityLevels.length - 1];
 };
 
-const breachSeverityOptions = [
-  { value: 'none', label: 'ไม่มี', penalty: 0 },
-  { value: 'low', label: 'น้อย (1-100 records)', penalty: 2 },
-  { value: 'medium', label: 'ปานกลาง (101-1000 records)', penalty: 5 },
-  { value: 'high', label: 'มาก (1001-10000 records)', penalty: 8 },
-  { value: 'critical', label: 'วิกฤต (>10000 records)', penalty: 15 },
+// ข้อ 1: Cyber Incident options (50% total)
+const cyberIncidentOptions = [
+  { value: 'no_incident', label: 'ระบบให้บริการได้ (ไม่มีเหตุการณ์โจมตีทางไซเบอร์)', score: 50 },
+  { value: 'recovery_under_24', label: 'มีเหตุการณ์ แต่กู้คืนไม่เกิน 24 ชั่วโมง', score: 42.5 },
+  { value: 'recovery_25_48', label: 'มีเหตุการณ์ กู้คืน 25-48 ชั่วโมง', score: 35 },
+  { value: 'recovery_49_72', label: 'มีเหตุการณ์ กู้คืน 49-72 ชั่วโมง', score: 27.5 },
+  { value: 'recovery_73_96', label: 'มีเหตุการณ์ กู้คืน 73-96 ชั่วโมง', score: 20 },
 ];
+
+// ข้อ 2: HIS Data Breach options (50% total)
+const dataBreachOptions = [
+  { value: 'no_breach', label: 'ไม่มีเหตุการณ์รั่วไหลของฐานข้อมูลของโรงพยาบาล (HIS Data Breach) หรือไม่มีเหตุการณ์ข้อมูลส่วนบุคคลรั่วไหลที่เกี่ยวข้องกับระบบสารสนเทศ', score: 50 },
+  { value: 'no_fine_training', label: 'สคส.วินิจฉัยโทษทางปกครองระดับไม่ร้ายแรง และให้อบรมเจ้าหน้าที่เพิ่มเติม', score: 42.5 },
+  { value: 'no_fine_fix', label: 'สคส.วินิจฉัยโทษทางปกครองระดับไม่ร้ายแรง และให้แก้ไขหรือปรับปรุงกระบวนการหรือเอกสารที่เกี่ยวข้อง', score: 35 },
+  { value: 'fine_under_1m', label: 'สคส.วินิจฉัยโทษทางปกครองระดับร้ายแรง ปรับไม่เกิน 1 ล้านบาท', score: 27.5 },
+  { value: 'fine_1m_3m', label: 'สคส.วินิจฉัยโทษทางปกครองระดับร้ายแรง ปรับ 1-3 ล้านบาท', score: 20 },
+];
+
+// Helper to convert old data format to new format
+const getIncidentValueFromOldData = (hadIncident: boolean | null, recoveryHours: number | null): string => {
+  if (!hadIncident) return 'no_incident';
+  if (recoveryHours === null || recoveryHours === 0) return 'no_incident';
+  if (recoveryHours <= 24) return 'recovery_under_24';
+  if (recoveryHours <= 48) return 'recovery_25_48';
+  if (recoveryHours <= 72) return 'recovery_49_72';
+  return 'recovery_73_96';
+};
+
+const getBreachValueFromOldData = (hadBreach: boolean | null, severity: string | null): string => {
+  if (!hadBreach) return 'no_breach';
+  switch (severity) {
+    case 'no_fine_training': return 'no_fine_training';
+    case 'no_fine_fix': return 'no_fine_fix';
+    case 'fine_under_1m': return 'fine_under_1m';
+    case 'fine_1m_3m': return 'fine_1m_3m';
+    default: return 'no_breach';
+  }
+};
 
 export function ImpactSection({
   assessmentId,
@@ -121,36 +150,34 @@ export function ImpactSection({
   const { profile } = useAuth();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  
+  // Initialize from existing data or defaults
+  const initialIncidentValue = impactScore 
+    ? getIncidentValueFromOldData(impactScore.had_incident, impactScore.incident_recovery_hours)
+    : 'no_incident';
+  const initialBreachValue = impactScore 
+    ? getBreachValueFromOldData(impactScore.had_data_breach, impactScore.breach_severity)
+    : 'no_breach';
+    
   const [formData, setFormData] = useState({
-    had_incident: impactScore?.had_incident ?? false,
-    incident_recovery_hours: impactScore?.incident_recovery_hours ?? 0,
-    had_data_breach: impactScore?.had_data_breach ?? false,
-    breach_severity: impactScore?.breach_severity ?? 'none',
+    incident_option: initialIncidentValue,
+    breach_option: initialBreachValue,
     comment: impactScore?.comment ?? '',
   });
 
-  // Calculate scores based on criteria
+  // Calculate scores based on selected options
   const calculateScores = useCallback((data: typeof formData) => {
-    let incidentScore = 0;
-    let breachScore = 0;
-
-    if (data.had_incident) {
-      if (data.incident_recovery_hours <= 4) incidentScore = -2;
-      else if (data.incident_recovery_hours <= 24) incidentScore = -5;
-      else if (data.incident_recovery_hours <= 72) incidentScore = -8;
-      else incidentScore = -15;
-    }
-
-    if (data.had_data_breach) {
-      const severity = breachSeverityOptions.find(s => s.value === data.breach_severity);
-      breachScore = -(severity?.penalty ?? 0);
-    }
-
+    const incidentOption = cyberIncidentOptions.find(o => o.value === data.incident_option);
+    const breachOption = dataBreachOptions.find(o => o.value === data.breach_option);
+    
+    const incidentScore = incidentOption?.score ?? 50;
+    const breachScore = breachOption?.score ?? 50;
+    const totalScore = incidentScore + breachScore; // Max 100
+    
     return {
       incident_score: incidentScore,
       breach_score: breachScore,
-      breach_penalty_level: breachSeverityOptions.findIndex(s => s.value === data.breach_severity),
-      total_score: Math.max(0, 15 + incidentScore + breachScore),
+      total_score: totalScore,
     };
   }, []);
 
@@ -161,11 +188,21 @@ export function ImpactSection({
     try {
       setSaving(true);
       const scores = calculateScores(newFormData);
+      
+      // Map new format to database fields
+      const hadIncident = newFormData.incident_option !== 'no_incident';
+      const hadBreach = newFormData.breach_option !== 'no_breach';
 
       const data = {
         assessment_id: assessmentId,
-        ...newFormData,
-        ...scores,
+        had_incident: hadIncident,
+        incident_recovery_hours: hadIncident ? getRecoveryHoursFromOption(newFormData.incident_option) : null,
+        incident_score: scores.incident_score,
+        had_data_breach: hadBreach,
+        breach_severity: hadBreach ? newFormData.breach_option : null,
+        breach_score: scores.breach_score,
+        total_score: scores.total_score,
+        comment: newFormData.comment,
         evaluated_by: profile.id,
         evaluated_at: new Date().toISOString(),
       };
@@ -199,20 +236,29 @@ export function ImpactSection({
     }
   }, [assessmentId, impactScore, profile, readOnly, calculateScores, onScoreChange, toast]);
 
+  // Helper to get recovery hours from option
+  const getRecoveryHoursFromOption = (option: string): number => {
+    switch (option) {
+      case 'recovery_under_24': return 24;
+      case 'recovery_25_48': return 48;
+      case 'recovery_49_72': return 72;
+      case 'recovery_73_96': return 96;
+      default: return 0;
+    }
+  };
+
   // Handle field change with auto-save
-  const handleFieldChange = useCallback((field: keyof typeof formData, value: boolean | number | string) => {
+  const handleFieldChange = useCallback((field: keyof typeof formData, value: string) => {
     const newFormData = { ...formData, [field]: value };
     setFormData(newFormData);
     autoSave(newFormData);
   }, [formData, autoSave]);
 
   const scores = calculateScores(formData);
-
-  const progressPercentage = (scores.total_score / 15) * 100;
-  const hasIssues = formData.had_incident || formData.had_data_breach;
+  const progressPercentage = scores.total_score;
 
   // Calculate score converted to 15% weight (out of 1.5 points)
-  const scoreOut1_5 = (scores.total_score / 15) * 1.5;
+  const scoreOut1_5 = (scores.total_score / 100) * 1.5;
 
   // Get quality level based on percentage
   const qualityLevel = getQualityLevel(progressPercentage);
@@ -243,23 +289,15 @@ export function ImpactSection({
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1">
-                    {formData.had_incident ? (
-                      <XCircle className="w-3 h-3 text-destructive" />
-                    ) : (
-                      <CheckCircle2 className="w-3 h-3 text-success" />
-                    )}
-                    <span>Incident: {formData.had_incident ? `หัก ${Math.abs(scores.incident_score)}` : 'ไม่มี'}</span>
+                    <Shield className="w-3 h-3 text-primary" />
+                    <span>Incident: {scores.incident_score}%</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    {formData.had_data_breach ? (
-                      <XCircle className="w-3 h-3 text-destructive" />
-                    ) : (
-                      <CheckCircle2 className="w-3 h-3 text-success" />
-                    )}
-                    <span>Breach: {formData.had_data_breach ? `หัก ${Math.abs(scores.breach_score)}` : 'ไม่มี'}</span>
+                    <AlertTriangle className="w-3 h-3 text-primary" />
+                    <span>Breach: {scores.breach_score}%</span>
                   </div>
                 </div>
-                <span className="font-medium">{scores.total_score}/15 ({progressPercentage.toFixed(1)}%)</span>
+                <span className="font-medium">{scores.total_score}/100 ({progressPercentage.toFixed(1)}%)</span>
               </div>
             </div>
           </CardContent>
@@ -339,123 +377,99 @@ export function ImpactSection({
       {/* Details Card */}
       <Card>
         <CardContent className="pt-6 space-y-6">
-          {/* Cyber Incident Section */}
+          {/* ข้อ 1: Cyber Incident Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-bold">
+                1
+              </div>
               <Shield className="w-4 h-4 text-destructive" />
               <h3 className="font-semibold">เหตุ Cyber Incident</h3>
               <span className="text-sm text-muted-foreground ml-auto">
-                คะแนนหัก: {scores.incident_score}
+                คะแนน: {scores.incident_score}%
               </span>
             </div>
 
-            <div className="grid gap-4 pl-6">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1">
-                  <Label htmlFor="had_incident">หน่วยบริการได้เกิดเหตุการณ์การโจมตีทางไซเบอร์ของระบบ HIS หรือ Website องค์กร หรือ Facebook องค์กร ในรอบประเมินนี้ จนทำให้ระบบไม่สามารถให้บริการได้</Label>
-                  <ImpactEvidenceUpload 
-                    impactScoreId={impactScore?.id || null} 
-                    fieldName="had_incident" 
-                    disabled={readOnly} 
-                  />
-                </div>
-                <Switch
-                  id="had_incident"
-                  checked={formData.had_incident}
-                  onCheckedChange={(checked) => handleFieldChange('had_incident', checked)}
-                  disabled={readOnly || saving}
-                />
-              </div>
-
-              {formData.had_incident && (
-                <div className="space-y-2">
-                  <Label htmlFor="incident_recovery_hours" className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    ระยะเวลาฟื้นฟูระบบ (ชั่วโมง)
-                  </Label>
-                  <div className="flex items-center gap-4">
-                    <Input
-                      id="incident_recovery_hours"
-                      type="number"
-                      min="0"
-                      value={formData.incident_recovery_hours}
-                      onChange={(e) => setFormData({ ...formData, incident_recovery_hours: parseInt(e.target.value) || 0 })}
-                      onBlur={(e) => handleFieldChange('incident_recovery_hours', parseInt(e.target.value) || 0)}
-                      disabled={readOnly || saving}
-                      className="w-32"
-                    />
-                    <ImpactEvidenceUpload 
-                      impactScoreId={impactScore?.id || null} 
-                      fieldName="incident_recovery_hours" 
-                      disabled={readOnly} 
-                    />
+            <div className="pl-8 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                หน่วยบริการได้เกิดเหตุการณ์การโจมตีทางไซเบอร์ของระบบ HIS หรือ Website องค์กร หรือ Facebook องค์กร ในรอบประเมินนี้ จนทำให้ระบบไม่สามารถให้บริการได้
+              </p>
+              
+              <RadioGroup
+                value={formData.incident_option}
+                onValueChange={(value) => handleFieldChange('incident_option', value)}
+                disabled={readOnly || saving}
+                className="space-y-2"
+              >
+                {cyberIncidentOptions.map((option) => (
+                  <div key={option.value} className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                    <RadioGroupItem value={option.value} id={`incident_${option.value}`} className="mt-0.5" />
+                    <div className="flex-1">
+                      <Label htmlFor={`incident_${option.value}`} className="cursor-pointer text-sm">
+                        {option.label}
+                      </Label>
+                    </div>
+                    <span className="text-sm font-medium text-primary whitespace-nowrap">
+                      ({option.score}%)
+                    </span>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    ≤4 ชม. = -2, ≤24 ชม. = -5, ≤72 ชม. = -8, &gt;72 ชม. = -15
-                  </p>
-                </div>
-              )}
+                ))}
+              </RadioGroup>
+
+              <ImpactEvidenceUpload 
+                impactScoreId={impactScore?.id || null} 
+                fieldName="cyber_incident" 
+                disabled={readOnly} 
+              />
             </div>
           </div>
 
           <Separator />
 
-          {/* Data Breach Section */}
+          {/* ข้อ 2: Data Breach Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-bold">
+                2
+              </div>
               <AlertTriangle className="w-4 h-4 text-destructive" />
               <h3 className="font-semibold">HIS Data Breach</h3>
               <span className="text-sm text-muted-foreground ml-auto">
-                คะแนนหัก: {scores.breach_score}
+                คะแนน: {scores.breach_score}%
               </span>
             </div>
 
-            <div className="grid gap-4 pl-6">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1">
-                  <Label htmlFor="had_data_breach">ในรอบการประเมินนี้ มีเหตุการณ์รั่วไหลของฐานข้อมูลของโรงพยาบาล (HIS Data Breach) หรือมีเหตุการณ์ข้อมูลส่วนบุคคลรั่วไหลที่เกี่ยวข้องกับระบบสารสนเทศ จนสคส.วินิจฉัยโทษทางปกครอง</Label>
-                  <ImpactEvidenceUpload 
-                    impactScoreId={impactScore?.id || null} 
-                    fieldName="had_data_breach" 
-                    disabled={readOnly} 
-                  />
-                </div>
-                <Switch
-                  id="had_data_breach"
-                  checked={formData.had_data_breach}
-                  onCheckedChange={(checked) => handleFieldChange('had_data_breach', checked)}
-                  disabled={readOnly || saving}
-                />
-              </div>
-
-              {formData.had_data_breach && (
-                <div className="space-y-2">
-                  <Label htmlFor="breach_severity">ความรุนแรงของ Data Breach</Label>
-                  <div className="flex items-center gap-4">
-                    <Select
-                      value={formData.breach_severity}
-                      onValueChange={(value) => handleFieldChange('breach_severity', value)}
-                      disabled={readOnly || saving}
-                    >
-                      <SelectTrigger className="w-full max-w-xs">
-                        <SelectValue placeholder="เลือกความรุนแรง" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {breachSeverityOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label} (หัก {option.penalty} คะแนน)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <ImpactEvidenceUpload 
-                      impactScoreId={impactScore?.id || null} 
-                      fieldName="breach_severity" 
-                      disabled={readOnly} 
-                    />
+            <div className="pl-8 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                ในรอบการประเมินนี้ มีเหตุการณ์รั่วไหลของฐานข้อมูลของโรงพยาบาล (HIS Data Breach) หรือมีเหตุการณ์ข้อมูลส่วนบุคคลรั่วไหลที่เกี่ยวข้องกับระบบสารสนเทศ จนสคส.วินิจฉัยโทษทางปกครอง
+              </p>
+              
+              <RadioGroup
+                value={formData.breach_option}
+                onValueChange={(value) => handleFieldChange('breach_option', value)}
+                disabled={readOnly || saving}
+                className="space-y-2"
+              >
+                {dataBreachOptions.map((option) => (
+                  <div key={option.value} className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                    <RadioGroupItem value={option.value} id={`breach_${option.value}`} className="mt-0.5" />
+                    <div className="flex-1">
+                      <Label htmlFor={`breach_${option.value}`} className="cursor-pointer text-sm">
+                        {option.label}
+                      </Label>
+                    </div>
+                    <span className="text-sm font-medium text-primary whitespace-nowrap">
+                      ({option.score}%)
+                    </span>
                   </div>
-                </div>
-              )}
+                ))}
+              </RadioGroup>
+
+              <ImpactEvidenceUpload 
+                impactScoreId={impactScore?.id || null} 
+                fieldName="data_breach" 
+                disabled={readOnly} 
+              />
             </div>
           </div>
 
