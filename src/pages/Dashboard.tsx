@@ -16,6 +16,8 @@ interface AssessmentStats {
   draft: number;
   waitingProvincial: number;
   waitingRegional: number;
+  approved: number;
+  returned: number;
 }
 
 export default function Dashboard() {
@@ -24,6 +26,8 @@ export default function Dashboard() {
     draft: 0,
     waitingProvincial: 0,
     waitingRegional: 0,
+    approved: 0,
+    returned: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +48,7 @@ export default function Dashboard() {
 
         if (assessments) {
           const draft = assessments.filter(a => 
-            a.status === 'draft' || a.status === 'returned'
+            a.status === 'draft'
           ).length;
           const waitingProvincial = assessments.filter(a => 
             a.status === 'submitted'
@@ -52,8 +56,14 @@ export default function Dashboard() {
           const waitingRegional = assessments.filter(a => 
             a.status === 'approved_provincial'
           ).length;
+          const approved = assessments.filter(a => 
+            a.status === 'approved_regional' || a.status === 'completed'
+          ).length;
+          const returned = assessments.filter(a => 
+            a.status === 'returned'
+          ).length;
 
-          setStats({ draft, waitingProvincial, waitingRegional });
+          setStats({ draft, waitingProvincial, waitingRegional, approved, returned });
         }
       } catch (error) {
         console.error('Error:', error);
@@ -85,9 +95,25 @@ export default function Dashboard() {
     { 
       label: 'รอ เขตสุขภาพ ตรวจสอบ', 
       value: loading ? '-' : stats.waitingRegional.toString(), 
-      icon: CheckCircle2, 
+      icon: Clock, 
       color: 'text-primary',
       bgColor: 'bg-primary/10',
+      href: '/assessments'
+    },
+    { 
+      label: 'ผ่านการประเมิน', 
+      value: loading ? '-' : stats.approved.toString(), 
+      icon: CheckCircle2, 
+      color: 'text-success',
+      bgColor: 'bg-success/10',
+      href: '/assessments'
+    },
+    { 
+      label: 'ต้องแก้ไข', 
+      value: loading ? '-' : stats.returned.toString(), 
+      icon: AlertTriangle, 
+      color: 'text-destructive',
+      bgColor: 'bg-destructive/10',
       href: '/assessments'
     },
   ];
@@ -105,7 +131,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         {statsDisplay.map((stat, index) => (
           <Card 
             key={index} 
