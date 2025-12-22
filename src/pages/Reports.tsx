@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { SearchableSelect } from '@/components/ui/searchable-select';
-import { ScoreChart } from '@/components/reports/ScoreChart';
+import { ScoreChart, DrillLevel } from '@/components/reports/ScoreChart';
 import { 
   Table, 
   TableBody, 
@@ -76,6 +76,17 @@ export default function Reports() {
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
   const [selectedHospital, setSelectedHospital] = useState<string>('all');
   const [reports, setReports] = useState<HospitalReport[]>([]);
+  
+  // Chart drill state for syncing table
+  const [chartDrillLevel, setChartDrillLevel] = useState<DrillLevel>('region');
+  const [chartRegionId, setChartRegionId] = useState<string | null>(null);
+  const [chartProvinceId, setChartProvinceId] = useState<string | null>(null);
+
+  const handleDrillChange = (level: DrillLevel, regionId: string | null, provinceId: string | null) => {
+    setChartDrillLevel(level);
+    setChartRegionId(regionId);
+    setChartProvinceId(provinceId);
+  };
 
   // Fetch initial data
   useEffect(() => {
@@ -311,29 +322,116 @@ export default function Reports() {
           provinces={provinces}
           hospitals={hospitals}
           assessments={assessments}
+          onDrillChange={handleDrillChange}
         />
 
-        {/* Reports Table */}
+        {/* Dynamic Reports Table based on drill level */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5" />
-              รายงานผลการประเมินรายโรงพยาบาล
+              {chartDrillLevel === 'region' && 'รายงานสรุปรายเขตสุขภาพ'}
+              {chartDrillLevel === 'province' && `รายงานสรุปรายจังหวัด - เขตสุขภาพที่ ${healthRegions.find(r => r.id === chartRegionId)?.region_number || ''}`}
+              {chartDrillLevel === 'hospital' && `รายงานผลการประเมินรายโรงพยาบาล - ${provinces.find(p => p.id === chartProvinceId)?.name || ''}`}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">กำลังโหลด...</div>
-            ) : reports.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูล</div>
-            ) : (
+            ) : chartDrillLevel === 'region' ? (
+              // Region level table
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>เขตสุขภาพ</TableHead>
+                      <TableHead className="text-right">จำนวน รพ.</TableHead>
+                      <TableHead className="text-right">มีแบบประเมิน</TableHead>
+                      <TableHead className="text-right">ผ่านการประเมิน</TableHead>
+                      <TableHead className="text-right">คะแนนเฉลี่ย</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {healthRegions.map((region) => {
+                      const regionProvinces = provinces.filter(p => p.health_region_id === region.id);
+                      const regionHospitals = hospitals.filter(h => 
+                        regionProvinces.some(p => p.id === h.province_id)
+                      );
+                      const regionAssessments = assessments.filter(a =>
+                        regionHospitals.some(h => h.id === a.hospital_id)
+                      );
+                      const completedCount = regionAssessments.filter(a => 
+                        a.status === 'approved_regional' || a.status === 'completed'
+                      ).length;
+                      const avgScore = regionAssessments.length > 0
+                        ? regionAssessments.reduce((sum, a) => sum + (a.total_score || 0), 0) / regionAssessments.filter(a => a.total_score !== null).length
+                        : 0;
+
+                      return (
+                        <TableRow key={region.id}>
+                          <TableCell className="font-medium">เขตสุขภาพที่ {region.region_number}</TableCell>
+                          <TableCell className="text-right">{regionHospitals.length}</TableCell>
+                          <TableCell className="text-right">{regionAssessments.length}</TableCell>
+                          <TableCell className="text-right">{completedCount}</TableCell>
+                          <TableCell className="text-right font-medium">
+                            {avgScore > 0 ? avgScore.toFixed(2) : '-'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : chartDrillLevel === 'province' && chartRegionId ? (
+              // Province level table
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>จังหวัด</TableHead>
+                      <TableHead className="text-right">จำนวน รพ.</TableHead>
+                      <TableHead className="text-right">มีแบบประเมิน</TableHead>
+                      <TableHead className="text-right">ผ่านการประเมิน</TableHead>
+                      <TableHead className="text-right">คะแนนเฉลี่ย</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {provinces.filter(p => p.health_region_id === chartRegionId).map((province) => {
+                      const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
+                      const provinceAssessments = assessments.filter(a =>
+                        provinceHospitals.some(h => h.id === a.hospital_id)
+                      );
+                      const completedCount = provinceAssessments.filter(a => 
+                        a.status === 'approved_regional' || a.status === 'completed'
+                      ).length;
+                      const assessmentsWithScore = provinceAssessments.filter(a => a.total_score !== null);
+                      const avgScore = assessmentsWithScore.length > 0
+                        ? assessmentsWithScore.reduce((sum, a) => sum + (a.total_score || 0), 0) / assessmentsWithScore.length
+                        : 0;
+
+                      return (
+                        <TableRow key={province.id}>
+                          <TableCell className="font-medium">{province.name}</TableCell>
+                          <TableCell className="text-right">{provinceHospitals.length}</TableCell>
+                          <TableCell className="text-right">{provinceAssessments.length}</TableCell>
+                          <TableCell className="text-right">{completedCount}</TableCell>
+                          <TableCell className="text-right font-medium">
+                            {avgScore > 0 ? avgScore.toFixed(2) : '-'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : chartDrillLevel === 'hospital' && chartProvinceId ? (
+              // Hospital level table
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>รหัส</TableHead>
                       <TableHead>โรงพยาบาล</TableHead>
-                      <TableHead>จังหวัด</TableHead>
                       <TableHead>สถานะ</TableHead>
                       <TableHead className="text-right">คะแนนรวม</TableHead>
                       <TableHead className="text-right">Quantitative</TableHead>
@@ -342,41 +440,42 @@ export default function Reports() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {reports.map((report) => (
-                      <TableRow key={report.hospital.id}>
-                        <TableCell className="font-mono text-sm">
-                          {report.hospital.code}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {report.hospital.name}
-                        </TableCell>
-                        <TableCell>{report.province?.name || '-'}</TableCell>
-                        <TableCell>
-                          {report.assessment ? (
-                            <Badge variant={statusLabels[report.assessment.status]?.variant || 'secondary'}>
-                              {statusLabels[report.assessment.status]?.label || report.assessment.status}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline">ยังไม่มีข้อมูล</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {report.assessment?.total_score?.toFixed(2) || '-'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {report.assessment?.quantitative_score?.toFixed(2) || '-'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {report.assessment?.qualitative_score?.toFixed(2) || '-'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {report.assessment?.impact_score?.toFixed(2) || '-'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {hospitals.filter(h => h.province_id === chartProvinceId).map((hospital) => {
+                      const assessment = assessments.find(a => a.hospital_id === hospital.id);
+
+                      return (
+                        <TableRow key={hospital.id}>
+                          <TableCell className="font-mono text-sm">{hospital.code}</TableCell>
+                          <TableCell className="font-medium">{hospital.name}</TableCell>
+                          <TableCell>
+                            {assessment ? (
+                              <Badge variant={statusLabels[assessment.status]?.variant || 'secondary'}>
+                                {statusLabels[assessment.status]?.label || assessment.status}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline">ยังไม่มีข้อมูล</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {assessment?.total_score?.toFixed(2) || '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {assessment?.quantitative_score?.toFixed(2) || '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {assessment?.qualitative_score?.toFixed(2) || '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {assessment?.impact_score?.toFixed(2) || '-'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูล</div>
             )}
           </CardContent>
         </Card>
