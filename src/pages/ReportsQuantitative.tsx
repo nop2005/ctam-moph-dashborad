@@ -481,32 +481,32 @@ export default function ReportsQuantitative() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="flex-1 space-y-3">
+                  <div className="flex-1 space-y-3 min-w-[320px]">
                     <div>
                       <span className="text-xl font-bold">{total}</span>
                       <span className="text-muted-foreground ml-2 text-sm">โรงพยาบาลทั้งหมด</span>
                     </div>
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 p-2 rounded-lg bg-green-50 dark:bg-green-950/30">
-                        <div className="w-3 h-3 rounded-full bg-green-500" />
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">ปลอดภัยไซเบอร์สูง (100%)</span>
+                      <div className="flex items-center gap-3 p-2 rounded-lg bg-green-50 dark:bg-green-950/30 whitespace-nowrap">
+                        <div className="w-3 h-3 rounded-full bg-green-500 shrink-0" />
+                        <span className="text-sm font-medium text-green-700 dark:text-green-400">ปลอดภัยสูง (100%)</span>
                         <span className="ml-auto text-sm font-bold">{greenCount}</span>
                         <span className="text-xs text-muted-foreground">({((greenCount / total) * 100).toFixed(1)}%)</span>
                       </div>
-                      <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-50 dark:bg-yellow-950/30">
-                        <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                        <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">ปลอดภัยต่ำ (50-99.99%)</span>
+                      <div className="flex items-center gap-3 p-2 rounded-lg bg-yellow-50 dark:bg-yellow-950/30 whitespace-nowrap">
+                        <div className="w-3 h-3 rounded-full bg-yellow-500 shrink-0" />
+                        <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">ปลอดภัยต่ำ (50-99%)</span>
                         <span className="ml-auto text-sm font-bold">{yellowCount}</span>
                         <span className="text-xs text-muted-foreground">({((yellowCount / total) * 100).toFixed(1)}%)</span>
                       </div>
-                      <div className="flex items-center gap-2 p-2 rounded-lg bg-red-50 dark:bg-red-950/30">
-                        <div className="w-3 h-3 rounded-full bg-red-500" />
+                      <div className="flex items-center gap-3 p-2 rounded-lg bg-red-50 dark:bg-red-950/30 whitespace-nowrap">
+                        <div className="w-3 h-3 rounded-full bg-red-500 shrink-0" />
                         <span className="text-sm font-medium text-red-700 dark:text-red-400">ไม่ปลอดภัย (&lt;50%)</span>
                         <span className="ml-auto text-sm font-bold">{redCount}</span>
                         <span className="text-xs text-muted-foreground">({((redCount / total) * 100).toFixed(1)}%)</span>
                       </div>
-                      <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-950/30">
-                        <div className="w-3 h-3 rounded-full bg-gray-400" />
+                      <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-950/30 whitespace-nowrap">
+                        <div className="w-3 h-3 rounded-full bg-gray-400 shrink-0" />
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-400">ยังไม่ประเมิน</span>
                         <span className="ml-auto text-sm font-bold">{grayCount}</span>
                         <span className="text-xs text-muted-foreground">({((grayCount / total) * 100).toFixed(1)}%)</span>
