@@ -55,12 +55,12 @@ const workflowSteps: WorkflowStep[] = [
 ];
 
 const getStepStatus = (step: WorkflowStep, currentStatus: AssessmentStatus): 'completed' | 'current' | 'waiting' | 'pending' => {
-  // Get current step index
+  // Get current step index - this is the step that was just completed
   const currentStepIndex = workflowSteps.findIndex(s => s.statusMatch.includes(currentStatus));
   const stepIndex = workflowSteps.indexOf(step);
 
-  if (stepIndex < currentStepIndex) return 'completed';
-  if (stepIndex === currentStepIndex) return 'current';
+  // Steps up to and including current step should be completed (green)
+  if (stepIndex <= currentStepIndex) return 'completed';
   // Next step after current should be "waiting" (pulsing)
   if (stepIndex === currentStepIndex + 1) return 'waiting';
   return 'pending';
