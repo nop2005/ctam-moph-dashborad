@@ -30,6 +30,7 @@ interface SectionApprovalProps {
   assessment: Assessment;
   sectionType: SectionType;
   onRefresh: () => void;
+  onApproveSuccess?: () => void;
 }
 
 const sectionLabels: Record<SectionType, string> = {
@@ -38,7 +39,7 @@ const sectionLabels: Record<SectionType, string> = {
   impact: 'ผลกระทบ',
 };
 
-export function SectionApproval({ assessment, sectionType, onRefresh }: SectionApprovalProps) {
+export function SectionApproval({ assessment, sectionType, onRefresh, onApproveSuccess }: SectionApprovalProps) {
   const { profile } = useAuth();
   const { toast } = useToast();
   const [processing, setProcessing] = useState(false);
@@ -183,6 +184,8 @@ export function SectionApproval({ assessment, sectionType, onRefresh }: SectionA
         });
       } else {
         toast({ title: `อนุมัติส่วน${sectionLabels[sectionType]}สำเร็จ` });
+        // Switch to next tab after successful approval
+        onApproveSuccess?.();
       }
 
       setApproveDialogOpen(false);

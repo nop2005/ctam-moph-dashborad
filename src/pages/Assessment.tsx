@@ -166,7 +166,8 @@ export default function Assessment() {
             <SectionApproval 
               assessment={assessment} 
               sectionType="quantitative" 
-              onRefresh={loadAssessmentData} 
+              onRefresh={loadAssessmentData}
+              onApproveSuccess={() => setActiveTab('qualitative')}
             />
           </TabsContent>
 
@@ -181,7 +182,8 @@ export default function Assessment() {
             <SectionApproval 
               assessment={assessment} 
               sectionType="qualitative" 
-              onRefresh={loadAssessmentData} 
+              onRefresh={loadAssessmentData}
+              onApproveSuccess={() => setActiveTab('impact')}
             />
           </TabsContent>
 
@@ -196,7 +198,8 @@ export default function Assessment() {
             <SectionApproval 
               assessment={assessment} 
               sectionType="impact" 
-              onRefresh={loadAssessmentData} 
+              onRefresh={loadAssessmentData}
+              onApproveSuccess={() => setActiveTab('summary')}
             />
           </TabsContent>
 
