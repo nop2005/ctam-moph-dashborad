@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,14 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { BarChart3, FileText, Building2 } from 'lucide-react';
+import { BarChart3, FileText, Building2, Filter } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
 
 interface HealthRegion {
@@ -47,7 +54,34 @@ interface Assessment {
   quantitative_score: number | null;
   qualitative_score: number | null;
   impact_score: number | null;
+  created_at: string;
 }
+
+// Helper function to get current fiscal year (Oct 1 - Sep 30)
+const getCurrentFiscalYear = (): number => {
+  const now = new Date();
+  const month = now.getMonth(); // 0-11
+  const year = now.getFullYear();
+  // If current month is October (9) or later, fiscal year is next year
+  // Otherwise, fiscal year is current year
+  return month >= 9 ? year + 1 : year;
+};
+
+// Generate list of fiscal years for the filter
+const generateFiscalYears = (assessments: Assessment[]): number[] => {
+  const years = new Set<number>();
+  const currentFiscalYear = getCurrentFiscalYear();
+  
+  // Add current fiscal year
+  years.add(currentFiscalYear);
+  
+  // Add years from assessments
+  assessments.forEach(a => {
+    if (a.fiscal_year) years.add(a.fiscal_year);
+  });
+  
+  return Array.from(years).sort((a, b) => b - a); // Sort descending
+};
 
 interface HospitalReport {
   hospital: Hospital;
@@ -95,11 +129,22 @@ export default function Reports() {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   
+  // Fiscal year filter
+  const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>('all');
   
   // Chart drill state for syncing table
   const [chartDrillLevel, setChartDrillLevel] = useState<DrillLevel>('region');
   const [chartRegionId, setChartRegionId] = useState<string | null>(null);
   const [chartProvinceId, setChartProvinceId] = useState<string | null>(null);
+
+  // Generate fiscal years from assessments
+  const fiscalYears = useMemo(() => generateFiscalYears(assessments), [assessments]);
+
+  // Filter assessments by fiscal year
+  const filteredAssessments = useMemo(() => {
+    if (selectedFiscalYear === 'all') return assessments;
+    return assessments.filter(a => a.fiscal_year === parseInt(selectedFiscalYear));
+  }, [assessments, selectedFiscalYear]);
 
   const handleDrillChange = (level: DrillLevel, regionId: string | null, provinceId: string | null) => {
     setChartDrillLevel(level);
@@ -115,7 +160,7 @@ export default function Reports() {
           supabase.from('health_regions').select('*').order('region_number'),
           supabase.from('provinces').select('*').order('name'),
           supabase.from('hospitals').select('*').order('name'),
-          supabase.from('assessments').select('*'),
+          supabase.from('assessments').select('id, hospital_id, status, fiscal_year, assessment_period, total_score, quantitative_score, qualitative_score, impact_score, created_at'),
         ]);
 
         if (regionsRes.error) throw regionsRes.error;
@@ -140,8 +185,11 @@ export default function Reports() {
   }, [profile]);
 
 
-  // Get latest assessments only (one per hospital)
-  const latestAssessments = getLatestAssessmentPerHospital(assessments);
+  // Get latest assessments only (one per hospital) from filtered assessments
+  const latestAssessments = useMemo(() => 
+    getLatestAssessmentPerHospital(filteredAssessments), 
+    [filteredAssessments]
+  );
 
   // Calculate statistics based on drill level
   const drillStats = (() => {
@@ -189,6 +237,22 @@ export default function Reports() {
           <div>
             <h1 className="text-2xl font-bold">รายงานและสถิติ</h1>
             <p className="text-muted-foreground">สรุปผลการประเมินตามจังหวัดและเขตสุขภาพ</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <Select value={selectedFiscalYear} onValueChange={setSelectedFiscalYear}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="ปีงบประมาณ" />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                <SelectItem value="all">ทุกปีงบประมาณ</SelectItem>
+                {fiscalYears.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    ปีงบประมาณ {year + 543}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -253,7 +317,7 @@ export default function Reports() {
           healthRegions={healthRegions}
           provinces={provinces}
           hospitals={hospitals}
-          assessments={assessments}
+          assessments={filteredAssessments}
           onDrillChange={handleDrillChange}
         />
 

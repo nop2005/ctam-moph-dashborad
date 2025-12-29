@@ -61,8 +61,35 @@ interface Assessment {
   id: string;
   hospital_id: string;
   status: string;
+  fiscal_year: number;
   quantitative_score: number | string | null;
 }
+
+// Helper function to get current fiscal year (Oct 1 - Sep 30)
+const getCurrentFiscalYear = (): number => {
+  const now = new Date();
+  const month = now.getMonth(); // 0-11
+  const year = now.getFullYear();
+  // If current month is October (9) or later, fiscal year is next year
+  // Otherwise, fiscal year is current year
+  return month >= 9 ? year + 1 : year;
+};
+
+// Generate list of fiscal years for the filter
+const generateFiscalYears = (assessments: Assessment[]): number[] => {
+  const years = new Set<number>();
+  const currentFiscalYear = getCurrentFiscalYear();
+  
+  // Add current fiscal year
+  years.add(currentFiscalYear);
+  
+  // Add years from assessments
+  assessments.forEach(a => {
+    if (a.fiscal_year) years.add(a.fiscal_year);
+  });
+  
+  return Array.from(years).sort((a, b) => b - a); // Sort descending
+};
 
 export default function ReportsQuantitative() {
   const { profile } = useAuth();
@@ -77,6 +104,7 @@ export default function ReportsQuantitative() {
   // Filters
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
+  const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>('all');
 
   // Check if user is provincial admin
   const isProvincialAdmin = profile?.role === 'provincial';
@@ -128,7 +156,7 @@ export default function ReportsQuantitative() {
         const assessmentsAll = await fetchAll<Assessment>(
           supabase
             .from('assessments')
-            .select('id, hospital_id, status, quantitative_score, created_at')
+            .select('id, hospital_id, status, fiscal_year, quantitative_score, created_at')
             .order('created_at', { ascending: true })
         );
 
@@ -183,12 +211,27 @@ export default function ReportsQuantitative() {
     }
   }, [selectedRegion, isProvincialAdmin]);
 
+  // Generate fiscal years from assessments
+  const fiscalYears = useMemo(() => generateFiscalYears(assessments), [assessments]);
+
+  // Filter assessments by fiscal year
+  const filteredAssessments = useMemo(() => {
+    if (selectedFiscalYear === 'all') return assessments;
+    return assessments.filter(a => a.fiscal_year === parseInt(selectedFiscalYear));
+  }, [assessments, selectedFiscalYear]);
+
+  // Filter assessment items by filtered assessments
+  const filteredAssessmentItems = useMemo(() => {
+    const filteredAssessmentIds = new Set(filteredAssessments.map(a => a.id));
+    return assessmentItems.filter(item => filteredAssessmentIds.has(item.assessment_id));
+  }, [assessmentItems, filteredAssessments]);
+
   // Calculate pass percentage per category for a set of hospital IDs
   // For province level: returns percentage of hospitals that passed (score = 1) each category
   // totalCount = ALL hospitals in province (including those without assessments)
   // For hospital level: returns the actual score (1 = pass, 0 = fail)
   const calculateCategoryAverages = (hospitalIds: string[], isProvinceLevel: boolean = false) => {
-    const relevantAssessments = assessments.filter(a => hospitalIds.includes(a.hospital_id));
+    const relevantAssessments = filteredAssessments.filter(a => hospitalIds.includes(a.hospital_id));
     const totalHospitalsInScope = hospitalIds.length; // Total hospitals in province
     
     return categories.map(cat => {
@@ -202,7 +245,7 @@ export default function ReportsQuantitative() {
           if (hospitalAssessments.length === 0) return; // Hospital not assessed - counts as not passed
           
           const assessmentIds = hospitalAssessments.map(a => a.id);
-          const catItems = assessmentItems.filter(
+          const catItems = filteredAssessmentItems.filter(
             item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
           );
           
@@ -219,7 +262,7 @@ export default function ReportsQuantitative() {
       } else {
         // For hospital level or region level: use original average calculation
         const assessmentIds = relevantAssessments.map(a => a.id);
-        const relevantItems = assessmentItems.filter(item => assessmentIds.includes(item.assessment_id));
+        const relevantItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id));
         const catItems = relevantItems.filter(item => item.category_id === cat.id);
         if (catItems.length === 0) return { categoryId: cat.id, average: null };
         const avg = catItems.reduce((sum, item) => sum + Number(item.score), 0) / catItems.length;
@@ -243,14 +286,14 @@ export default function ReportsQuantitative() {
         // Calculate hospitals that passed all 17 items (green)
         let hospitalsPassedAll17 = 0;
         hospitalIds.forEach(hospitalId => {
-          const hospitalAssessments = assessments.filter(a => a.hospital_id === hospitalId);
+          const hospitalAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
           if (hospitalAssessments.length === 0) return;
           
           const assessmentIds = hospitalAssessments.map(a => a.id);
           let passedAllCategories = true;
           
           categories.forEach(cat => {
-            const catItems = assessmentItems.filter(
+            const catItems = filteredAssessmentItems.filter(
               item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
             );
             const hasPassed = catItems.some(item => Number(item.score) === 1);
@@ -280,14 +323,14 @@ export default function ReportsQuantitative() {
         // Calculate hospitals that passed all 17 items (green)
         let hospitalsPassedAll17 = 0;
         hospitalIds.forEach(hospitalId => {
-          const hospitalAssessments = assessments.filter(a => a.hospital_id === hospitalId);
+          const hospitalAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
           if (hospitalAssessments.length === 0) return;
           
           const assessmentIds = hospitalAssessments.map(a => a.id);
           let passedAllCategories = true;
           
           categories.forEach(cat => {
-            const catItems = assessmentItems.filter(
+            const catItems = filteredAssessmentItems.filter(
               item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
             );
             const hasPassed = catItems.some(item => Number(item.score) === 1);
@@ -322,7 +365,7 @@ export default function ReportsQuantitative() {
         };
       });
     }
-  }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, categories, assessments, assessmentItems]);
+  }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, categories, filteredAssessments, filteredAssessmentItems]);
 
   // Get title based on filter state
   const getTitle = () => {
@@ -460,6 +503,23 @@ export default function ReportsQuantitative() {
                     {filteredProvinces.map((province) => (
                       <SelectItem key={province.id} value={province.id} className="text-sm">
                         {province.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="w-full sm:w-48">
+                <label className="text-sm font-medium mb-1.5 block">ปีงบประมาณ</label>
+                <Select value={selectedFiscalYear} onValueChange={setSelectedFiscalYear}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="เลือกปีงบประมาณ" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    <SelectItem value="all" className="text-sm">ทุกปีงบประมาณ</SelectItem>
+                    {fiscalYears.map((year) => (
+                      <SelectItem key={year} value={year.toString()} className="text-sm">
+                        ปีงบประมาณ {year + 543}
                       </SelectItem>
                     ))}
                   </SelectContent>
