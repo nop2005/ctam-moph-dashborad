@@ -47,6 +47,7 @@ interface Assessment {
   quantitative_score: number | null;
   qualitative_score: number | null;
   impact_score: number | null;
+  created_at: string;
 }
 
 interface HospitalReport {
@@ -55,7 +56,7 @@ interface HospitalReport {
   assessment: Assessment | null;
 }
 
-// Helper function to get the latest assessment for each hospital
+// Helper function to get the latest assessment for each hospital (by created_at)
 const getLatestAssessmentPerHospital = (allAssessments: Assessment[]): Assessment[] => {
   const latestMap = new Map<string, Assessment>();
   
@@ -64,12 +65,8 @@ const getLatestAssessmentPerHospital = (allAssessments: Assessment[]): Assessmen
     if (!existing) {
       latestMap.set(assessment.hospital_id, assessment);
     } else {
-      // Compare by fiscal_year first, then by assessment_period
-      if (
-        assessment.fiscal_year > existing.fiscal_year ||
-        (assessment.fiscal_year === existing.fiscal_year && 
-         assessment.assessment_period > existing.assessment_period)
-      ) {
+      // Compare by created_at timestamp (most recent wins)
+      if (new Date(assessment.created_at) > new Date(existing.created_at)) {
         latestMap.set(assessment.hospital_id, assessment);
       }
     }

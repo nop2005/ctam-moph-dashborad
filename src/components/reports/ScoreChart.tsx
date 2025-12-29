@@ -29,6 +29,7 @@ interface Assessment {
   total_score: number | null;
   fiscal_year: number;
   assessment_period: string;
+  created_at: string;
 }
 
 export type DrillLevel = 'region' | 'province' | 'hospital';
@@ -70,7 +71,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments, o
   const [selectedRegion, setSelectedRegion] = useState<HealthRegion | null>(null);
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
 
-  // Helper function to get the latest assessment for each hospital
+  // Helper function to get the latest assessment for each hospital (by created_at)
   const getLatestAssessmentPerHospital = (allAssessments: Assessment[]): Assessment[] => {
     const latestMap = new Map<string, Assessment>();
     
@@ -79,12 +80,8 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments, o
       if (!existing) {
         latestMap.set(assessment.hospital_id, assessment);
       } else {
-        // Compare by fiscal_year first, then by assessment_period
-        if (
-          assessment.fiscal_year > existing.fiscal_year ||
-          (assessment.fiscal_year === existing.fiscal_year && 
-           assessment.assessment_period > existing.assessment_period)
-        ) {
+        // Compare by created_at timestamp (most recent wins)
+        if (new Date(assessment.created_at) > new Date(existing.created_at)) {
           latestMap.set(assessment.hospital_id, assessment);
         }
       }
