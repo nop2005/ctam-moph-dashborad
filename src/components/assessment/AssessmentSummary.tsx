@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { CheckCircle2, XCircle, AlertCircle, TrendingUp, Shield, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, TrendingUp, Shield, AlertTriangle, CheckCircle, Loader2, ArrowLeft, Send } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -50,11 +50,113 @@ export function AssessmentSummary({
   const [comment, setComment] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [provincialDialogOpen, setProvincialDialogOpen] = useState(false);
+
+  // Check if provincial can approve (send to regional)
+  const canProvincialApprove = () => {
+    return profile?.role === 'provincial' && assessment.status === 'submitted';
+  };
+
   // Check if user can do final approval
   const canFinalApprove = () => {
     if (profile?.role === 'regional' && assessment.status === 'approved_provincial') return true;
     if (profile?.role === 'central_admin' && assessment.status === 'approved_regional') return true;
     return false;
+  };
+
+  // Handle provincial approval - send to regional
+  const handleProvincialApprove = async () => {
+    try {
+      setProcessing(true);
+
+      const { error: updateError } = await supabase
+        .from('assessments')
+        .update({
+          status: 'approved_provincial' as Database['public']['Enums']['assessment_status'],
+          provincial_approved_by: profile?.id,
+          provincial_approved_at: new Date().toISOString(),
+          provincial_comment: comment || null,
+        })
+        .eq('id', assessment.id);
+
+      if (updateError) throw updateError;
+
+      // Add history
+      await supabase
+        .from('approval_history')
+        .insert([{
+          assessment_id: assessment.id,
+          from_status: assessment.status,
+          to_status: 'approved_provincial' as Database['public']['Enums']['assessment_status'],
+          action: 'approve',
+          performed_by: profile?.id!,
+          comment: comment || 'ผ่านการตรวจสอบระดับจังหวัด',
+        }]);
+
+      toast({ 
+        title: 'อนุมัติสำเร็จ', 
+        description: 'ส่งต่อให้เขตสุขภาพตรวจสอบแล้ว'
+      });
+      setProvincialDialogOpen(false);
+      setComment('');
+      onRefresh?.();
+
+    } catch (error: any) {
+      console.error('Error approving:', error);
+      toast({ title: 'เกิดข้อผิดพลาด', description: error.message, variant: 'destructive' });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Handle return to hospital for revision
+  const handleReturn = async () => {
+    try {
+      setProcessing(true);
+
+      if (!comment.trim()) {
+        toast({ title: 'กรุณาระบุเหตุผล', description: 'กรุณาระบุเหตุผลในการส่งกลับแก้ไข', variant: 'destructive' });
+        setProcessing(false);
+        return;
+      }
+
+      const { error: updateError } = await supabase
+        .from('assessments')
+        .update({
+          status: 'returned' as Database['public']['Enums']['assessment_status'],
+          provincial_comment: comment,
+        })
+        .eq('id', assessment.id);
+
+      if (updateError) throw updateError;
+
+      // Add history
+      await supabase
+        .from('approval_history')
+        .insert([{
+          assessment_id: assessment.id,
+          from_status: assessment.status,
+          to_status: 'returned' as Database['public']['Enums']['assessment_status'],
+          action: 'return',
+          performed_by: profile?.id!,
+          comment: comment,
+        }]);
+
+      toast({ 
+        title: 'ส่งกลับแก้ไขแล้ว', 
+        description: 'ส่งกลับให้โรงพยาบาลแก้ไขเรียบร้อย'
+      });
+      setReturnDialogOpen(false);
+      setComment('');
+      onRefresh?.();
+
+    } catch (error: any) {
+      console.error('Error returning:', error);
+      toast({ title: 'เกิดข้อผิดพลาด', description: error.message, variant: 'destructive' });
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleFinalApprove = async () => {
@@ -296,6 +398,48 @@ export function AssessmentSummary({
         </CardContent>
       </Card>
 
+      {/* Provincial Approval Buttons */}
+      {canProvincialApprove() && (
+        <Card className="border-primary">
+          <CardHeader>
+            <CardTitle className="text-lg">ตรวจสอบและอนุมัติ (สสจ.)</CardTitle>
+            <CardDescription>
+              ตรวจสอบผลการประเมินและดำเนินการอนุมัติหรือส่งกลับแก้ไข
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>ความคิดเห็น / เหตุผล</Label>
+              <Textarea
+                placeholder="เพิ่มความคิดเห็นหรือเหตุผลในการส่งกลับ..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="min-h-[80px]"
+              />
+            </div>
+            <div className="flex gap-4">
+              <Button 
+                variant="outline"
+                size="lg" 
+                className="flex-1"
+                onClick={() => setReturnDialogOpen(true)}
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                ย้อนกลับแก้ไข
+              </Button>
+              <Button 
+                size="lg" 
+                className="flex-1"
+                onClick={() => setProvincialDialogOpen(true)}
+              >
+                <Send className="w-5 h-5 mr-2" />
+                ยืนยันส่งเขตสุขภาพ
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Final Approval Button */}
       {canFinalApprove() && (
         <Card className="border-primary">
@@ -327,7 +471,46 @@ export function AssessmentSummary({
         </Card>
       )}
 
-      {/* Approval Dialog */}
+      {/* Provincial Approval Dialog */}
+      <AlertDialog open={provincialDialogOpen} onOpenChange={setProvincialDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันส่งต่อเขตสุขภาพ</AlertDialogTitle>
+            <AlertDialogDescription>
+              คุณต้องการอนุมัติและส่งต่อการประเมินนี้ไปยังเขตสุขภาพหรือไม่? 
+              คะแนนรวม: {totalScore.toFixed(2)}/10 คะแนน
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={handleProvincialApprove} disabled={processing}>
+              {processing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              ยืนยันส่งเขตสุขภาพ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Return Dialog */}
+      <AlertDialog open={returnDialogOpen} onOpenChange={setReturnDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันส่งกลับแก้ไข</AlertDialogTitle>
+            <AlertDialogDescription>
+              คุณต้องการส่งกลับให้โรงพยาบาลแก้ไขหรือไม่? กรุณาระบุเหตุผลในช่องความคิดเห็น
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={handleReturn} disabled={processing || !comment.trim()}>
+              {processing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              ยืนยันส่งกลับ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Final Approval Dialog */}
       <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
