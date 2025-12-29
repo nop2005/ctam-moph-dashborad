@@ -104,7 +104,7 @@ export default function ReportsQuantitative() {
   // Filters
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
-  const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>('all');
+  const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
 
   // Check if user is provincial admin
   const isProvincialAdmin = profile?.role === 'provincial';
