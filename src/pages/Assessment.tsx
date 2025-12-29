@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AssessmentHeader } from '@/components/assessment/AssessmentHeader';
 import { QuantitativeSection } from '@/components/assessment/QuantitativeSection';
-import { QualitativeSection } from '@/components/assessment/QualitativeSection';
+// QualitativeSection removed - no longer used
 import { ImpactSection } from '@/components/assessment/ImpactSection';
 import { AssessmentSummary } from '@/components/assessment/AssessmentSummary';
 
@@ -147,10 +147,9 @@ export default function Assessment() {
         <ApprovalWorkflow status={assessment.status} />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-4 w-full max-w-3xl h-auto bg-muted">
+          <TabsList className="grid grid-cols-3 w-full max-w-2xl h-auto bg-muted">
             <TabsTrigger value="quantitative" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">เชิงปริมาณ (70%)</TabsTrigger>
-            <TabsTrigger value="qualitative" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">เชิงคุณภาพ (15%)</TabsTrigger>
-            <TabsTrigger value="impact" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">ผลกระทบ (15%)</TabsTrigger>
+            <TabsTrigger value="impact" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">ผลกระทบ (30%)</TabsTrigger>
             <TabsTrigger value="summary" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">สรุปผล</TabsTrigger>
           </TabsList>
 
@@ -166,22 +165,6 @@ export default function Assessment() {
             <SectionApproval 
               assessment={assessment} 
               sectionType="quantitative" 
-              onRefresh={loadAssessmentData}
-              onApproveSuccess={() => setActiveTab('qualitative')}
-            />
-          </TabsContent>
-
-          <TabsContent value="qualitative" className="space-y-4">
-            <QualitativeSection
-              assessmentId={assessment.id}
-              qualitativeScore={qualitativeScore}
-              onScoreChange={setQualitativeScore}
-              readOnly={!canEdit && !canReview && !canApprove}
-            />
-            {/* Section-level approval for qualitative */}
-            <SectionApproval 
-              assessment={assessment} 
-              sectionType="qualitative" 
               onRefresh={loadAssessmentData}
               onApproveSuccess={() => setActiveTab('impact')}
             />
