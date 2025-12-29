@@ -108,9 +108,8 @@ export default function ReportsImpact() {
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
 
-  // Toggle for showing incident/breach hospital list
-  const [showIncidentList, setShowIncidentList] = useState<boolean>(false);
-  const [showBreachList, setShowBreachList] = useState<boolean>(false);
+  // Filter type for showing only incident/breach data
+  const [filterByIssue, setFilterByIssue] = useState<'none' | 'incident' | 'breach'>('none');
 
   // Check if user is provincial admin
   const isProvincialAdmin = profile?.role === 'provincial';
@@ -224,76 +223,6 @@ export default function ReportsImpact() {
     return impactScores.find(is => is.assessment_id === assessmentId);
   };
 
-  // Get hospitals with incidents or breaches for detail list
-  const getHospitalsWithIssues = (type: 'incident' | 'breach') => {
-    let hospitalIds: string[] = [];
-
-    if (selectedRegion === 'all') {
-      hospitalIds = hospitals.map(h => h.id);
-    } else if (selectedProvince === 'all') {
-      const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
-      hospitalIds = hospitals.filter(h => 
-        regionProvinces.some(p => p.id === h.province_id)
-      ).map(h => h.id);
-    } else {
-      hospitalIds = hospitals.filter(h => h.province_id === selectedProvince).map(h => h.id);
-    }
-
-    const result: Array<{
-      hospitalId: string;
-      hospitalName: string;
-      hospitalCode: string;
-      provinceName: string;
-      assessmentId: string;
-      fiscalYear: number;
-      totalScore: number | null;
-    }> = [];
-
-    hospitalIds.forEach(hospitalId => {
-      const hospitalAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
-      
-      hospitalAssessments.forEach(assessment => {
-        const impactScore = getImpactScoreForAssessment(assessment.id);
-        
-        if (type === 'incident' && impactScore?.had_incident) {
-          const hospital = hospitals.find(h => h.id === hospitalId);
-          const province = provinces.find(p => p.id === hospital?.province_id);
-          
-          result.push({
-            hospitalId,
-            hospitalName: hospital?.name || '',
-            hospitalCode: hospital?.code || '',
-            provinceName: province?.name || '',
-            assessmentId: assessment.id,
-            fiscalYear: assessment.fiscal_year,
-            totalScore: impactScore?.total_score ?? null,
-          });
-        }
-        
-        if (type === 'breach' && impactScore?.had_data_breach) {
-          const hospital = hospitals.find(h => h.id === hospitalId);
-          const province = provinces.find(p => p.id === hospital?.province_id);
-          
-          result.push({
-            hospitalId,
-            hospitalName: hospital?.name || '',
-            hospitalCode: hospital?.code || '',
-            provinceName: province?.name || '',
-            assessmentId: assessment.id,
-            fiscalYear: assessment.fiscal_year,
-            totalScore: impactScore?.total_score ?? null,
-          });
-        }
-      });
-    });
-
-    return result;
-  };
-
-  // Memoized lists
-  const hospitalsWithIncidents = useMemo(() => getHospitalsWithIssues('incident'), [selectedRegion, selectedProvince, hospitals, provinces, filteredAssessments, impactScores]);
-  const hospitalsWithBreaches = useMemo(() => getHospitalsWithIssues('breach'), [selectedRegion, selectedProvince, hospitals, provinces, filteredAssessments, impactScores]);
-
   // Calculate impact statistics for a set of hospital IDs
   const calculateImpactStats = (hospitalIds: string[]) => {
     const relevantAssessments = filteredAssessments.filter(a => hospitalIds.includes(a.hospital_id));
@@ -375,9 +304,24 @@ export default function ReportsImpact() {
 
   // Table data based on drill-down level
   const tableData = useMemo(() => {
+    // Helper to check if a hospital has incident/breach
+    const hospitalHasIssue = (hospitalId: string): { hasIncident: boolean; hasBreach: boolean } => {
+      const hospitalAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
+      let hasIncident = false;
+      let hasBreach = false;
+      
+      hospitalAssessments.forEach(assessment => {
+        const impactScore = getImpactScoreForAssessment(assessment.id);
+        if (impactScore?.had_incident) hasIncident = true;
+        if (impactScore?.had_data_breach) hasBreach = true;
+      });
+      
+      return { hasIncident, hasBreach };
+    };
+
     if (selectedRegion === 'all') {
       // Show all regions
-      return healthRegions.map(region => {
+      const allRegions = healthRegions.map(region => {
         const regionProvinces = provinces.filter(p => p.health_region_id === region.id);
         const regionHospitals = hospitals.filter(h => 
           regionProvinces.some(p => p.id === h.province_id)
@@ -392,10 +336,18 @@ export default function ReportsImpact() {
           ...stats,
         };
       });
+
+      // Apply issue filter
+      if (filterByIssue === 'incident') {
+        return allRegions.filter(r => r.totalIncidents > 0);
+      } else if (filterByIssue === 'breach') {
+        return allRegions.filter(r => r.totalBreaches > 0);
+      }
+      return allRegions;
     } else if (selectedProvince === 'all') {
       // Show provinces in selected region
       const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
-      return regionProvinces.map(province => {
+      const allProvinces = regionProvinces.map(province => {
         const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
         const hospitalIds = provinceHospitals.map(h => h.id);
         const stats = calculateImpactStats(hospitalIds);
@@ -407,14 +359,23 @@ export default function ReportsImpact() {
           ...stats,
         };
       });
+
+      // Apply issue filter
+      if (filterByIssue === 'incident') {
+        return allProvinces.filter(p => p.totalIncidents > 0);
+      } else if (filterByIssue === 'breach') {
+        return allProvinces.filter(p => p.totalBreaches > 0);
+      }
+      return allProvinces;
     } else {
       // Show hospitals in selected province
       const provinceHospitals = hospitals.filter(h => h.province_id === selectedProvince);
-      return provinceHospitals.map(hospital => {
+      const allHospitals = provinceHospitals.map(hospital => {
         const hospitalAssessments = filteredAssessments.filter(a => a.hospital_id === hospital.id);
         const latestAssessment = hospitalAssessments[hospitalAssessments.length - 1];
         const impactScore = latestAssessment ? getImpactScoreForAssessment(latestAssessment.id) : undefined;
         const level = getImpactLevel(impactScore?.total_score ?? null);
+        const issues = hospitalHasIssue(hospital.id);
 
         return {
           id: hospital.id,
@@ -428,10 +389,20 @@ export default function ReportsImpact() {
           hadBreach: impactScore?.had_data_breach ?? null,
           incidentScore: impactScore?.incident_score ?? null,
           breachScore: impactScore?.breach_score ?? null,
+          hasAnyIncident: issues.hasIncident,
+          hasAnyBreach: issues.hasBreach,
         };
       });
+
+      // Apply issue filter
+      if (filterByIssue === 'incident') {
+        return allHospitals.filter(h => h.hasAnyIncident);
+      } else if (filterByIssue === 'breach') {
+        return allHospitals.filter(h => h.hasAnyBreach);
+      }
+      return allHospitals;
     }
-  }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, filteredAssessments, impactScores]);
+  }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, filteredAssessments, impactScores, filterByIssue]);
 
   // Get title based on filter state
   const getTitle = () => {
@@ -642,17 +613,16 @@ export default function ReportsImpact() {
                   </div>
                 </div>
 
-                {/* Incident & Breach Summary - Clickable */}
+                {/* Incident & Breach Summary - Clickable Filter Buttons */}
                 <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-4">
                   <button 
                     className={`text-center p-3 rounded-lg transition-all ${
-                      showIncidentList 
+                      filterByIssue === 'incident' 
                         ? 'bg-orange-200 dark:bg-orange-900/40 ring-2 ring-orange-500' 
                         : 'bg-orange-50 dark:bg-orange-950/20 hover:bg-orange-100 dark:hover:bg-orange-900/30'
                     }`}
                     onClick={() => {
-                      setShowIncidentList(!showIncidentList);
-                      setShowBreachList(false);
+                      setFilterByIssue(filterByIssue === 'incident' ? 'none' : 'incident');
                     }}
                   >
                     <div className="text-2xl font-bold text-orange-600">{pieChartData.stats.totalIncidents}</div>
@@ -660,13 +630,12 @@ export default function ReportsImpact() {
                   </button>
                   <button 
                     className={`text-center p-3 rounded-lg transition-all ${
-                      showBreachList 
+                      filterByIssue === 'breach' 
                         ? 'bg-red-200 dark:bg-red-900/40 ring-2 ring-red-500' 
                         : 'bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-900/30'
                     }`}
                     onClick={() => {
-                      setShowBreachList(!showBreachList);
-                      setShowIncidentList(false);
+                      setFilterByIssue(filterByIssue === 'breach' ? 'none' : 'breach');
                     }}
                   >
                     <div className="text-2xl font-bold text-red-600">{pieChartData.stats.totalBreaches}</div>
@@ -674,69 +643,20 @@ export default function ReportsImpact() {
                   </button>
                 </div>
 
-                {/* Incident Hospital List */}
-                {showIncidentList && hospitalsWithIncidents.length > 0 && (
-                  <div className="mt-4 pt-4 border-t">
-                    <h4 className="font-medium text-orange-700 dark:text-orange-400 mb-3 flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4" />
-                      รายชื่อโรงพยาบาลที่มีเหตุการณ์ ({hospitalsWithIncidents.length})
-                    </h4>
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                      {hospitalsWithIncidents.map((item, index) => (
-                        <div 
-                          key={`${item.assessmentId}-${index}`}
-                          className="flex items-center justify-between p-3 rounded-lg bg-orange-50/50 dark:bg-orange-950/10 border border-orange-200 dark:border-orange-800"
-                        >
-                          <div className="flex-1">
-                            <div className="font-medium text-foreground">{item.hospitalName}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {item.provinceName} • รหัส {item.hospitalCode} • ปีงบประมาณ {item.fiscalYear + 543}
-                            </div>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="ml-2 text-orange-600 border-orange-300 hover:bg-orange-100"
-                            onClick={() => window.open(`/assessment?id=${item.assessmentId}`, '_blank')}
-                          >
-                            ดูรายละเอียด
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Breach Hospital List */}
-                {showBreachList && hospitalsWithBreaches.length > 0 && (
-                  <div className="mt-4 pt-4 border-t">
-                    <h4 className="font-medium text-red-700 dark:text-red-400 mb-3 flex items-center gap-2">
-                      <ShieldX className="w-4 h-4" />
-                      รายชื่อโรงพยาบาลที่มีการละเมิดข้อมูล ({hospitalsWithBreaches.length})
-                    </h4>
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                      {hospitalsWithBreaches.map((item, index) => (
-                        <div 
-                          key={`${item.assessmentId}-${index}`}
-                          className="flex items-center justify-between p-3 rounded-lg bg-red-50/50 dark:bg-red-950/10 border border-red-200 dark:border-red-800"
-                        >
-                          <div className="flex-1">
-                            <div className="font-medium text-foreground">{item.hospitalName}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {item.provinceName} • รหัส {item.hospitalCode} • ปีงบประมาณ {item.fiscalYear + 543}
-                            </div>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="ml-2 text-red-600 border-red-300 hover:bg-red-100"
-                            onClick={() => window.open(`/assessment?id=${item.assessmentId}`, '_blank')}
-                          >
-                            ดูรายละเอียด
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
+                {/* Filter active indicator */}
+                {filterByIssue !== 'none' && (
+                  <div className="mt-3 p-2 rounded-lg bg-muted text-sm text-muted-foreground flex items-center justify-between">
+                    <span>
+                      กำลังแสดงเฉพาะ: {filterByIssue === 'incident' ? 'เขต/จังหวัด/รพ. ที่มีเหตุการณ์' : 'เขต/จังหวัด/รพ. ที่มีการละเมิดข้อมูล'}
+                    </span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setFilterByIssue('none')}
+                      className="h-6 px-2 text-xs"
+                    >
+                      ล้างตัวกรอง
+                    </Button>
                   </div>
                 )}
               </div>
