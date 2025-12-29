@@ -375,9 +375,8 @@ export default function Reports() {
                       <TableHead>โรงพยาบาล</TableHead>
                       <TableHead>สถานะ</TableHead>
                       <TableHead className="text-right">คะแนนรวม</TableHead>
-                      <TableHead className="text-right">Quantitative</TableHead>
-                      <TableHead className="text-right">Qualitative</TableHead>
-                      <TableHead className="text-right">Impact</TableHead>
+                      <TableHead className="text-right">เชิงปริมาณ</TableHead>
+                      <TableHead className="text-right">ผลกระทบ</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -402,9 +401,6 @@ export default function Reports() {
                           </TableCell>
                           <TableCell className="text-right">
                             {assessment?.quantitative_score?.toFixed(2) || '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {assessment?.qualitative_score?.toFixed(2) || '-'}
                           </TableCell>
                           <TableCell className="text-right">
                             {assessment?.impact_score?.toFixed(2) || '-'}
