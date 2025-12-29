@@ -203,10 +203,6 @@ export function AssessmentSummary({
                   <CheckCircle2 className="w-3 h-3" />
                   <span>{passCount} ผ่าน</span>
                 </div>
-                <div className="flex items-center gap-1 text-warning">
-                  <AlertCircle className="w-3 h-3" />
-                  <span>{partialCount} บางส่วน</span>
-                </div>
                 <div className="flex items-center gap-1 text-destructive">
                   <XCircle className="w-3 h-3" />
                   <span>{failCount} ไม่ผ่าน</span>
