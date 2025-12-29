@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { CheckCircle2, XCircle, AlertCircle, TrendingUp, Shield, Users, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, TrendingUp, Shield, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -66,9 +66,9 @@ export function AssessmentSummary({
       const updateData: Record<string, unknown> = {
         status: nextStatus,
         quantitative_score: calculateQuantitativeScore(),
-        qualitative_score: getQualitativeScoreValue(),
+        qualitative_score: 0, // No longer used
         impact_score: getImpactScoreValue(),
-        total_score: calculateQuantitativeScore() + getQualitativeScoreValue() + getImpactScoreValue(),
+        total_score: calculateQuantitativeScore() + getImpactScoreValue(),
       };
 
       if (profile?.role === 'regional') {
@@ -111,7 +111,7 @@ export function AssessmentSummary({
       setProcessing(false);
     }
   };
-  // Calculate quantitative score (7 points max) - only count passed items
+  // Calculate quantitative score (7 points max = 70%) - only count passed items
   const calculateQuantitativeScore = () => {
     const total = categories.length;
     if (total === 0) return 0;
@@ -121,27 +121,18 @@ export function AssessmentSummary({
     return score;
   };
 
-  // Get qualitative score (1.5 points max)
-  const getQualitativeScoreValue = () => {
-    if (!qualitativeScore) return 0;
-    // Convert from 15-scale to 1.5-scale
-    const originalScore = Number(qualitativeScore.total_score) || 0;
-    return originalScore / 10;
-  };
-
-  // Get impact score (1.5 points max)
+  // Get impact score (3 points max = 30%)
   const getImpactScoreValue = () => {
-    if (!impactScore) return 1.5;
-    // total_score in DB is stored as 0-15, convert to 0-1.5 scale
-    const originalScore = Number(impactScore.total_score) ?? 15;
-    // Clamp to max 1.5
-    return Math.min(originalScore / 10, 1.5);
+    if (!impactScore) return 3;
+    // total_score in DB is stored as 0-100 scale, convert to 0-3 scale (30%)
+    const originalScore = Number(impactScore.total_score) ?? 100;
+    // Clamp to max 3
+    return Math.min((originalScore / 100) * 3, 3);
   };
 
   const quantitativeScoreValue = calculateQuantitativeScore();
-  const qualScore = getQualitativeScoreValue();
   const impScore = getImpactScoreValue();
-  const totalScore = quantitativeScoreValue + qualScore + impScore;
+  const totalScore = quantitativeScoreValue + impScore;
 
   const passCount = items.filter(i => i.status === 'pass').length;
   const partialCount = items.filter(i => i.status === 'partial').length;
@@ -191,7 +182,7 @@ export function AssessmentSummary({
       </Card>
 
       {/* Score Breakdown */}
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-2 gap-4">
         {/* Quantitative */}
         <Card>
           <CardHeader className="pb-2">
@@ -228,57 +219,30 @@ export function AssessmentSummary({
           </CardContent>
         </Card>
 
-        {/* Qualitative */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="w-4 h-4 text-primary" />
-              เชิงคุณภาพ (15%)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold">{qualScore.toFixed(2)}</span>
-                <span className="text-muted-foreground">/1.5 คะแนน</span>
-              </div>
-              <Progress value={(qualScore / 1.5) * 100} className="h-2" />
-              {qualitativeScore ? (
-                <div className="text-sm text-muted-foreground">
-                  <div>ภาวะผู้นำ: {((Number(qualitativeScore.leadership_score) || 0) / 10).toFixed(2)}/0.5</div>
-                  <div>ความยั่งยืน: {((Number(qualitativeScore.sustainable_score) || 0) / 10).toFixed(2)}/1</div>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">ยังไม่ได้ประเมิน</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Impact */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-primary" />
-              ผลกระทบ (15%)
+              ผลกระทบ (30%)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold">{impScore.toFixed(2)}</span>
-                <span className="text-muted-foreground">/1.5 คะแนน</span>
+                <span className="text-muted-foreground">/3 คะแนน</span>
               </div>
-              <Progress value={(impScore / 1.5) * 100} className="h-2" />
+              <Progress value={(impScore / 3) * 100} className="h-2" />
               {impactScore ? (
                 <div className="text-sm text-muted-foreground">
                   {impactScore.had_incident ? (
-                    <div className="text-destructive">• เกิด Incident (หัก {(Math.abs(Number(impactScore.incident_score) || 0) / 10).toFixed(2)})</div>
+                    <div className="text-destructive">• เกิด Incident (หัก {((Math.abs(Number(impactScore.incident_score) || 0) / 100) * 3).toFixed(2)})</div>
                   ) : (
                     <div className="text-success">• ไม่เกิด Incident</div>
                   )}
                   {impactScore.had_data_breach ? (
-                    <div className="text-destructive">• เกิด Data Breach (หัก {(Math.abs(Number(impactScore.breach_score) || 0) / 10).toFixed(2)})</div>
+                    <div className="text-destructive">• เกิด Data Breach (หัก {((Math.abs(Number(impactScore.breach_score) || 0) / 100) * 3).toFixed(2)})</div>
                   ) : (
                     <div className="text-success">• ไม่เกิด Data Breach</div>
                   )}
