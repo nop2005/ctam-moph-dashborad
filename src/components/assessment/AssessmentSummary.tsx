@@ -171,7 +171,7 @@ export function AssessmentSummary({
         return;
       }
 
-      // Reset all approval states and send back to draft/returned
+      // Reset ALL approval states (provincial + all sections) and send back to returned
       const { error: updateError } = await supabase
         .from('assessments')
         .update({
@@ -181,6 +181,13 @@ export function AssessmentSummary({
           provincial_approved_by: null,
           provincial_approved_at: null,
           provincial_comment: null,
+          // Reset ALL section approvals so provincial must approve again
+          quantitative_approved_by: null,
+          quantitative_approved_at: null,
+          qualitative_approved_by: null,
+          qualitative_approved_at: null,
+          impact_approved_by: null,
+          impact_approved_at: null,
         })
         .eq('id', assessment.id);
 
