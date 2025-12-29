@@ -336,15 +336,36 @@ export function QuantitativeSection({
                         <div className="font-medium">{category.name_th}</div>
                         <div className="text-sm text-muted-foreground">{category.name_en}</div>
                       </div>
-                      {item && (
-                        <Badge 
-                          variant="outline" 
-                          className={`${statusOption?.color} border-current`}
-                        >
-                          {statusOption?.icon}
-                          <span className="ml-1">{statusOption?.label}</span>
-                        </Badge>
-                      )}
+                      {/* Status Selection in Trigger */}
+                      <div 
+                        className="flex items-center gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {statusOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!readOnly && savingId !== item?.id) {
+                                handleStatusChange(category.id, option.value);
+                              }
+                            }}
+                            disabled={readOnly || savingId === item?.id}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-full border transition-all ${
+                              item?.status === option.value 
+                                ? `${option.color} border-current bg-background font-medium` 
+                                : 'text-muted-foreground border-transparent hover:border-muted-foreground/30'
+                            } ${readOnly ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          >
+                            {option.icon}
+                            <span className="text-sm">{option.label}</span>
+                          </button>
+                        ))}
+                        {savingId === item?.id && (
+                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                        )}
+                      </div>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="px-6 pb-6">
@@ -352,33 +373,6 @@ export function QuantitativeSection({
                       {/* Description */}
                       <div className="text-sm text-muted-foreground mb-4">
                         {category.description}
-                      </div>
-
-                      {/* Status Selection */}
-                      <div className="space-y-3">
-                        <Label className="font-medium">สถานะการประเมิน</Label>
-                        <RadioGroup
-                          value={item?.status || 'fail'}
-                          onValueChange={(value) => handleStatusChange(category.id, value as ItemStatus)}
-                          disabled={readOnly || savingId === item?.id}
-                          className="flex flex-wrap gap-4"
-                        >
-                          {statusOptions.map((option) => (
-                            <div key={option.value} className="flex items-center space-x-2">
-                              <RadioGroupItem value={option.value} id={`${category.id}-${option.value}`} />
-                              <Label 
-                                htmlFor={`${category.id}-${option.value}`}
-                                className={`flex items-center gap-2 cursor-pointer ${option.color}`}
-                              >
-                                {option.icon}
-                                {option.label}
-                              </Label>
-                            </div>
-                          ))}
-                          {savingId === item?.id && (
-                            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                          )}
-                        </RadioGroup>
                       </div>
 
                       {/* Description/Notes */}
