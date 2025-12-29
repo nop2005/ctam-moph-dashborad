@@ -125,6 +125,7 @@ export function QuantitativeSection({
 }: QuantitativeSectionProps) {
   const { toast } = useToast();
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   const getItemForCategory = (categoryId: string) => {
     return items.find(item => item.category_id === categoryId);
@@ -159,6 +160,11 @@ export function QuantitativeSection({
       onItemsChange(
         items.map(i => i.id === item.id ? { ...i, status: newStatus, score } : i)
       );
+
+      // Auto expand accordion when status is selected
+      if (!expandedItems.includes(categoryId)) {
+        setExpandedItems(prev => [...prev, categoryId]);
+      }
 
     } catch (error: any) {
       console.error('Error updating item:', error);
@@ -320,10 +326,16 @@ export function QuantitativeSection({
       {/* Categories */}
       <Card>
         <CardContent className="p-0">
-          <Accordion type="multiple" className="w-full">
+          <Accordion 
+            type="multiple" 
+            className="w-full"
+            value={expandedItems}
+            onValueChange={setExpandedItems}
+          >
             {categories.map((category, index) => {
               const item = getItemForCategory(category.id);
               const statusOption = statusOptions.find(s => s.value === item?.status);
+              const showFileUpload = item?.status === 'pass';
               
               return (
                 <AccordionItem key={category.id} value={category.id}>
@@ -387,17 +399,19 @@ export function QuantitativeSection({
                         />
                       </div>
 
-                      {/* File Upload */}
-                      <div className="space-y-2">
-                        <Label className="font-medium">แนบหลักฐาน</Label>
-                        {item && (
-                          <FileUpload
-                            assessmentId={assessmentId}
-                            assessmentItemId={item.id}
-                            readOnly={readOnly}
-                          />
-                        )}
-                      </div>
+                      {/* File Upload - Only show when status is 'pass' (มี) */}
+                      {showFileUpload && (
+                        <div className="space-y-2">
+                          <Label className="font-medium">แนบหลักฐาน</Label>
+                          {item && (
+                            <FileUpload
+                              assessmentId={assessmentId}
+                              assessmentItemId={item.id}
+                              readOnly={readOnly}
+                            />
+                          )}
+                        </div>
+                      )}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
