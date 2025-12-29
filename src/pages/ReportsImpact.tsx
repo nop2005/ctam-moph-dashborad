@@ -461,14 +461,14 @@ export default function ReportsImpact() {
               <div className="w-full sm:w-48">
                 <label className="text-sm text-muted-foreground mb-1 block">ปีงบประมาณ</label>
                 <Select value={selectedFiscalYear} onValueChange={setSelectedFiscalYear}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="เลือกปีงบประมาณ" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">ทุกปีงบประมาณ</SelectItem>
                     {fiscalYears.map(year => (
                       <SelectItem key={year} value={year.toString()}>
-                        ปีงบประมาณ {year}
+                        ปีงบประมาณ {year + 543}
                       </SelectItem>
                     ))}
                   </SelectContent>
