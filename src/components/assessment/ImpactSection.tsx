@@ -259,8 +259,8 @@ export function ImpactSection({
   const scores = calculateScores(formData);
   const progressPercentage = scores.total_score;
 
-  // Calculate score converted to 15% weight (out of 1.5 points)
-  const scoreOut1_5 = (scores.total_score / 100) * 1.5;
+  // Calculate score converted to 30% weight (out of 3 points)
+  const scoreOut3 = (scores.total_score / 100) * 3;
 
   // Get quality level based on percentage
   const qualityLevel = getQualityLevel(progressPercentage);
@@ -273,14 +273,14 @@ export function ImpactSection({
         <Card className={`border-2 ${qualityLevel.borderColor}`}>
           <CardHeader className="flex flex-row items-start justify-between pb-2">
             <div>
-              <CardTitle className="text-base">ผลกระทบ (Impact) - 15%</CardTitle>
+              <CardTitle className="text-base">ผลกระทบ (Impact) - 30%</CardTitle>
               <CardDescription className="text-xs">
                 ประเมินผลกระทบจาก Cyber Incident และ Data Breach
               </CardDescription>
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-primary">
-                {scoreOut1_5.toFixed(2)}<span className="text-sm text-muted-foreground">/1.5</span>
+                {scoreOut3.toFixed(2)}<span className="text-sm text-muted-foreground">/3</span>
               </div>
               <div className="text-xs text-muted-foreground">คะแนน</div>
             </div>
