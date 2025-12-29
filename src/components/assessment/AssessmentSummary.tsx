@@ -52,6 +52,7 @@ export function AssessmentSummary({
 
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [provincialDialogOpen, setProvincialDialogOpen] = useState(false);
+  const [regionalReturnDialogOpen, setRegionalReturnDialogOpen] = useState(false);
 
   // Check if provincial can approve (send to regional)
   const canProvincialApprove = () => {
@@ -110,7 +111,7 @@ export function AssessmentSummary({
     }
   };
 
-  // Handle return to hospital for revision
+  // Handle return to hospital for revision (Provincial)
   const handleReturn = async () => {
     try {
       setProcessing(true);
@@ -148,6 +149,60 @@ export function AssessmentSummary({
         description: 'ส่งกลับให้โรงพยาบาลแก้ไขเรียบร้อย'
       });
       setReturnDialogOpen(false);
+      setComment('');
+      onRefresh?.();
+
+    } catch (error: any) {
+      console.error('Error returning:', error);
+      toast({ title: 'เกิดข้อผิดพลาด', description: error.message, variant: 'destructive' });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Handle return to hospital for revision (Regional)
+  const handleRegionalReturn = async () => {
+    try {
+      setProcessing(true);
+
+      if (!comment.trim()) {
+        toast({ title: 'กรุณาระบุเหตุผล', description: 'กรุณาระบุเหตุผลในการส่งกลับแก้ไข', variant: 'destructive' });
+        setProcessing(false);
+        return;
+      }
+
+      // Reset all approval states and send back to draft/returned
+      const { error: updateError } = await supabase
+        .from('assessments')
+        .update({
+          status: 'returned' as Database['public']['Enums']['assessment_status'],
+          regional_comment: comment,
+          // Reset provincial approval so flow starts again
+          provincial_approved_by: null,
+          provincial_approved_at: null,
+          provincial_comment: null,
+        })
+        .eq('id', assessment.id);
+
+      if (updateError) throw updateError;
+
+      // Add history
+      await supabase
+        .from('approval_history')
+        .insert([{
+          assessment_id: assessment.id,
+          from_status: assessment.status,
+          to_status: 'returned' as Database['public']['Enums']['assessment_status'],
+          action: 'return',
+          performed_by: profile?.id!,
+          comment: comment,
+        }]);
+
+      toast({ 
+        title: 'ส่งกลับแก้ไขแล้ว', 
+        description: 'ส่งกลับให้โรงพยาบาลแก้ไขและเริ่ม Flow การอนุมัติใหม่'
+      });
+      setRegionalReturnDialogOpen(false);
       setComment('');
       onRefresh?.();
 
@@ -440,7 +495,7 @@ export function AssessmentSummary({
         </Card>
       )}
 
-      {/* Final Approval Button */}
+      {/* Final Approval Button - Regional */}
       {canFinalApprove() && (
         <Card className="border-primary">
           <CardHeader>
@@ -459,14 +514,25 @@ export function AssessmentSummary({
                 className="min-h-[80px]"
               />
             </div>
-            <Button 
-              size="lg" 
-              className="w-full"
-              onClick={() => setDialogOpen(true)}
-            >
-              <CheckCircle className="w-5 h-5 mr-2" />
-              อนุมัติการประเมินเสร็จสิ้น
-            </Button>
+            <div className="flex gap-4">
+              <Button 
+                variant="outline"
+                size="lg" 
+                className="flex-1"
+                onClick={() => setRegionalReturnDialogOpen(true)}
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                ส่งกลับไปแก้ไข
+              </Button>
+              <Button 
+                size="lg" 
+                className="flex-1"
+                onClick={() => setDialogOpen(true)}
+              >
+                <CheckCircle className="w-5 h-5 mr-2" />
+                อนุมัติการประเมินเสร็จสิ้น
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -503,6 +569,25 @@ export function AssessmentSummary({
           <AlertDialogFooter>
             <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
             <AlertDialogAction onClick={handleReturn} disabled={processing || !comment.trim()}>
+              {processing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              ยืนยันส่งกลับ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Regional Return Dialog */}
+      <AlertDialog open={regionalReturnDialogOpen} onOpenChange={setRegionalReturnDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันส่งกลับแก้ไข</AlertDialogTitle>
+            <AlertDialogDescription>
+              คุณต้องการส่งกลับให้โรงพยาบาลแก้ไขหรือไม่? การอนุมัติจากระดับจังหวัดจะถูกยกเลิกและต้องเริ่มกระบวนการอนุมัติใหม่ กรุณาระบุเหตุผลในช่องความคิดเห็น
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRegionalReturn} disabled={processing || !comment.trim()}>
               {processing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               ยืนยันส่งกลับ
             </AlertDialogAction>
