@@ -108,6 +108,10 @@ export default function ReportsImpact() {
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
 
+  // Toggle for showing incident/breach hospital list
+  const [showIncidentList, setShowIncidentList] = useState<boolean>(false);
+  const [showBreachList, setShowBreachList] = useState<boolean>(false);
+
   // Check if user is provincial admin
   const isProvincialAdmin = profile?.role === 'provincial';
   const userProvinceId = profile?.province_id;
@@ -219,6 +223,76 @@ export default function ReportsImpact() {
   const getImpactScoreForAssessment = (assessmentId: string): ImpactScore | undefined => {
     return impactScores.find(is => is.assessment_id === assessmentId);
   };
+
+  // Get hospitals with incidents or breaches for detail list
+  const getHospitalsWithIssues = (type: 'incident' | 'breach') => {
+    let hospitalIds: string[] = [];
+
+    if (selectedRegion === 'all') {
+      hospitalIds = hospitals.map(h => h.id);
+    } else if (selectedProvince === 'all') {
+      const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
+      hospitalIds = hospitals.filter(h => 
+        regionProvinces.some(p => p.id === h.province_id)
+      ).map(h => h.id);
+    } else {
+      hospitalIds = hospitals.filter(h => h.province_id === selectedProvince).map(h => h.id);
+    }
+
+    const result: Array<{
+      hospitalId: string;
+      hospitalName: string;
+      hospitalCode: string;
+      provinceName: string;
+      assessmentId: string;
+      fiscalYear: number;
+      totalScore: number | null;
+    }> = [];
+
+    hospitalIds.forEach(hospitalId => {
+      const hospitalAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
+      
+      hospitalAssessments.forEach(assessment => {
+        const impactScore = getImpactScoreForAssessment(assessment.id);
+        
+        if (type === 'incident' && impactScore?.had_incident) {
+          const hospital = hospitals.find(h => h.id === hospitalId);
+          const province = provinces.find(p => p.id === hospital?.province_id);
+          
+          result.push({
+            hospitalId,
+            hospitalName: hospital?.name || '',
+            hospitalCode: hospital?.code || '',
+            provinceName: province?.name || '',
+            assessmentId: assessment.id,
+            fiscalYear: assessment.fiscal_year,
+            totalScore: impactScore?.total_score ?? null,
+          });
+        }
+        
+        if (type === 'breach' && impactScore?.had_data_breach) {
+          const hospital = hospitals.find(h => h.id === hospitalId);
+          const province = provinces.find(p => p.id === hospital?.province_id);
+          
+          result.push({
+            hospitalId,
+            hospitalName: hospital?.name || '',
+            hospitalCode: hospital?.code || '',
+            provinceName: province?.name || '',
+            assessmentId: assessment.id,
+            fiscalYear: assessment.fiscal_year,
+            totalScore: impactScore?.total_score ?? null,
+          });
+        }
+      });
+    });
+
+    return result;
+  };
+
+  // Memoized lists
+  const hospitalsWithIncidents = useMemo(() => getHospitalsWithIssues('incident'), [selectedRegion, selectedProvince, hospitals, provinces, filteredAssessments, impactScores]);
+  const hospitalsWithBreaches = useMemo(() => getHospitalsWithIssues('breach'), [selectedRegion, selectedProvince, hospitals, provinces, filteredAssessments, impactScores]);
 
   // Calculate impact statistics for a set of hospital IDs
   const calculateImpactStats = (hospitalIds: string[]) => {
@@ -568,17 +642,103 @@ export default function ReportsImpact() {
                   </div>
                 </div>
 
-                {/* Incident & Breach Summary */}
+                {/* Incident & Breach Summary - Clickable */}
                 <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20">
+                  <button 
+                    className={`text-center p-3 rounded-lg transition-all ${
+                      showIncidentList 
+                        ? 'bg-orange-200 dark:bg-orange-900/40 ring-2 ring-orange-500' 
+                        : 'bg-orange-50 dark:bg-orange-950/20 hover:bg-orange-100 dark:hover:bg-orange-900/30'
+                    }`}
+                    onClick={() => {
+                      setShowIncidentList(!showIncidentList);
+                      setShowBreachList(false);
+                    }}
+                  >
                     <div className="text-2xl font-bold text-orange-600">{pieChartData.stats.totalIncidents}</div>
                     <div className="text-sm text-orange-700 dark:text-orange-400">รพ. มีเหตุการณ์</div>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-950/20">
+                  </button>
+                  <button 
+                    className={`text-center p-3 rounded-lg transition-all ${
+                      showBreachList 
+                        ? 'bg-red-200 dark:bg-red-900/40 ring-2 ring-red-500' 
+                        : 'bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-900/30'
+                    }`}
+                    onClick={() => {
+                      setShowBreachList(!showBreachList);
+                      setShowIncidentList(false);
+                    }}
+                  >
                     <div className="text-2xl font-bold text-red-600">{pieChartData.stats.totalBreaches}</div>
                     <div className="text-sm text-red-700 dark:text-red-400">รพ. มีการละเมิดข้อมูล</div>
-                  </div>
+                  </button>
                 </div>
+
+                {/* Incident Hospital List */}
+                {showIncidentList && hospitalsWithIncidents.length > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <h4 className="font-medium text-orange-700 dark:text-orange-400 mb-3 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      รายชื่อโรงพยาบาลที่มีเหตุการณ์ ({hospitalsWithIncidents.length})
+                    </h4>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                      {hospitalsWithIncidents.map((item, index) => (
+                        <div 
+                          key={`${item.assessmentId}-${index}`}
+                          className="flex items-center justify-between p-3 rounded-lg bg-orange-50/50 dark:bg-orange-950/10 border border-orange-200 dark:border-orange-800"
+                        >
+                          <div className="flex-1">
+                            <div className="font-medium text-foreground">{item.hospitalName}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {item.provinceName} • รหัส {item.hospitalCode} • ปีงบประมาณ {item.fiscalYear + 543}
+                            </div>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="ml-2 text-orange-600 border-orange-300 hover:bg-orange-100"
+                            onClick={() => window.open(`/assessment?id=${item.assessmentId}`, '_blank')}
+                          >
+                            ดูรายละเอียด
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Breach Hospital List */}
+                {showBreachList && hospitalsWithBreaches.length > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <h4 className="font-medium text-red-700 dark:text-red-400 mb-3 flex items-center gap-2">
+                      <ShieldX className="w-4 h-4" />
+                      รายชื่อโรงพยาบาลที่มีการละเมิดข้อมูล ({hospitalsWithBreaches.length})
+                    </h4>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                      {hospitalsWithBreaches.map((item, index) => (
+                        <div 
+                          key={`${item.assessmentId}-${index}`}
+                          className="flex items-center justify-between p-3 rounded-lg bg-red-50/50 dark:bg-red-950/10 border border-red-200 dark:border-red-800"
+                        >
+                          <div className="flex-1">
+                            <div className="font-medium text-foreground">{item.hospitalName}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {item.provinceName} • รหัส {item.hospitalCode} • ปีงบประมาณ {item.fiscalYear + 543}
+                            </div>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="ml-2 text-red-600 border-red-300 hover:bg-red-100"
+                            onClick={() => window.open(`/assessment?id=${item.assessmentId}`, '_blank')}
+                          >
+                            ดูรายละเอียด
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
