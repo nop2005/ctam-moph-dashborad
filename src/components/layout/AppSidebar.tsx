@@ -47,7 +47,6 @@ const menuItems = [
 const reportSubItems = [
   { title: 'รายงานภาพรวม', url: '/reports', icon: PieChart },
   { title: 'เชิงปริมาณ', url: '/reports/quantitative', icon: TrendingUp },
-  { title: 'เชิงคุณภาพ', url: '/reports/qualitative', icon: Target },
   { title: 'เชิงผลกระทบ', url: '/reports/impact', icon: AlertTriangle },
 ];
 
