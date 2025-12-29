@@ -173,16 +173,16 @@ export default function Assessment() {
         <ApprovalWorkflow status={assessment.status} />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-3 w-full max-w-2xl h-auto bg-muted">
-            <TabsTrigger value="quantitative" className="flex flex-col text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">
+          <TabsList className="flex justify-center gap-4 w-full max-w-3xl mx-auto h-auto bg-transparent">
+            <TabsTrigger value="quantitative" className="flex flex-col text-lg py-3 px-6 rounded-lg border border-border bg-muted data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">
               <span>เชิงปริมาณ (70%)</span>
               <span className="text-sm font-bold text-orange-500 data-[state=active]:text-orange-200">{quantScore.score}/{quantScore.total}</span>
             </TabsTrigger>
-            <TabsTrigger value="impact" className="flex flex-col text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">
+            <TabsTrigger value="impact" className="flex flex-col text-lg py-3 px-6 rounded-lg border border-border bg-muted data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">
               <span>ผลกระทบ (30%)</span>
               <span className="text-sm font-bold text-orange-500 data-[state=active]:text-orange-200">{impactScoreCalc.score}/{impactScoreCalc.total}</span>
             </TabsTrigger>
-            <TabsTrigger value="summary" className="flex flex-col text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">
+            <TabsTrigger value="summary" className="flex flex-col text-lg py-3 px-6 rounded-lg border border-border bg-muted data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">
               <span>สรุปผล (100%)</span>
               <span className="text-sm font-bold text-orange-500 data-[state=active]:text-orange-200">{totalScore.score}/{totalScore.total}</span>
             </TabsTrigger>
