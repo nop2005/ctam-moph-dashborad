@@ -27,6 +27,8 @@ interface Assessment {
   id: string;
   hospital_id: string;
   total_score: number | null;
+  fiscal_year: number;
+  assessment_period: string;
 }
 
 export type DrillLevel = 'region' | 'province' | 'hospital';
@@ -68,16 +70,42 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments, o
   const [selectedRegion, setSelectedRegion] = useState<HealthRegion | null>(null);
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
 
-  // Calculate average score for a set of hospital IDs
-  const calculateAverageScore = (hospitalIds: string[]): number => {
-    const relevantAssessments = assessments.filter(a => 
+  // Helper function to get the latest assessment for each hospital
+  const getLatestAssessmentPerHospital = (allAssessments: Assessment[]): Assessment[] => {
+    const latestMap = new Map<string, Assessment>();
+    
+    for (const assessment of allAssessments) {
+      const existing = latestMap.get(assessment.hospital_id);
+      if (!existing) {
+        latestMap.set(assessment.hospital_id, assessment);
+      } else {
+        // Compare by fiscal_year first, then by assessment_period
+        if (
+          assessment.fiscal_year > existing.fiscal_year ||
+          (assessment.fiscal_year === existing.fiscal_year && 
+           assessment.assessment_period > existing.assessment_period)
+        ) {
+          latestMap.set(assessment.hospital_id, assessment);
+        }
+      }
+    }
+    
+    return Array.from(latestMap.values());
+  };
+
+  // Get latest assessments only
+  const latestAssessments = getLatestAssessmentPerHospital(assessments);
+
+  // Calculate score for a set of hospital IDs (using latest assessments)
+  const calculateTotalScore = (hospitalIds: string[]): number => {
+    const relevantAssessments = latestAssessments.filter(a => 
       hospitalIds.includes(a.hospital_id) && a.total_score !== null
     );
     
     if (relevantAssessments.length === 0) return 0;
     
-    const totalScore = relevantAssessments.reduce((sum, a) => sum + (a.total_score || 0), 0);
-    return totalScore / relevantAssessments.length;
+    // Return sum of latest scores
+    return relevantAssessments.reduce((sum, a) => sum + (a.total_score || 0), 0);
   };
 
   // Get data based on drill level
@@ -93,7 +121,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments, o
         return {
           id: region.id,
           name: `เขต ${region.region_number}`,
-          score: calculateAverageScore(hospitalIds),
+          score: calculateTotalScore(hospitalIds),
           color: COLORS[index % COLORS.length],
         };
       });
@@ -109,7 +137,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments, o
         return {
           id: province.id,
           name: province.name,
-          score: calculateAverageScore(hospitalIds),
+          score: calculateTotalScore(hospitalIds),
           color: COLORS[index % COLORS.length],
         };
       });
@@ -119,7 +147,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments, o
       const provinceHospitals = hospitals.filter(h => h.province_id === selectedProvince.id);
       
       return provinceHospitals.map((hospital, index) => {
-        const assessment = assessments.find(a => a.hospital_id === hospital.id);
+        const assessment = latestAssessments.find(a => a.hospital_id === hospital.id);
         
         return {
           id: hospital.id,
@@ -165,15 +193,15 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments, o
 
   const getTitle = () => {
     if (drillLevel === 'region') {
-      return 'คะแนนเฉลี่ยรายเขตสุขภาพ';
+      return 'คะแนนรวมรายเขตสุขภาพ (รอบล่าสุด)';
     }
     if (drillLevel === 'province' && selectedRegion) {
-      return `คะแนนเฉลี่ยรายจังหวัด - เขตสุขภาพที่ ${selectedRegion.region_number}`;
+      return `คะแนนรวมรายจังหวัด - เขตสุขภาพที่ ${selectedRegion.region_number} (รอบล่าสุด)`;
     }
     if (drillLevel === 'hospital' && selectedProvince) {
-      return `คะแนนรายโรงพยาบาล - ${selectedProvince.name}`;
+      return `คะแนนรายโรงพยาบาล - ${selectedProvince.name} (รอบล่าสุด)`;
     }
-    return 'คะแนนเฉลี่ย';
+    return 'คะแนนรวม';
   };
 
   const chartData = getChartData();

@@ -55,6 +55,29 @@ interface HospitalReport {
   assessment: Assessment | null;
 }
 
+// Helper function to get the latest assessment for each hospital
+const getLatestAssessmentPerHospital = (allAssessments: Assessment[]): Assessment[] => {
+  const latestMap = new Map<string, Assessment>();
+  
+  for (const assessment of allAssessments) {
+    const existing = latestMap.get(assessment.hospital_id);
+    if (!existing) {
+      latestMap.set(assessment.hospital_id, assessment);
+    } else {
+      // Compare by fiscal_year first, then by assessment_period
+      if (
+        assessment.fiscal_year > existing.fiscal_year ||
+        (assessment.fiscal_year === existing.fiscal_year && 
+         assessment.assessment_period > existing.assessment_period)
+      ) {
+        latestMap.set(assessment.hospital_id, assessment);
+      }
+    }
+  }
+  
+  return Array.from(latestMap.values());
+};
+
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   'draft': { label: 'ร่าง', variant: 'secondary' },
   'submitted': { label: 'รอ สสจ. ตรวจสอบ', variant: 'outline' },
@@ -117,6 +140,9 @@ export default function Reports() {
   }, [profile]);
 
 
+  // Get latest assessments only (one per hospital)
+  const latestAssessments = getLatestAssessmentPerHospital(assessments);
+
   // Calculate statistics based on drill level
   const drillStats = (() => {
     let filteredHospitals: Hospital[] = [];
@@ -125,20 +151,20 @@ export default function Reports() {
     if (chartDrillLevel === 'region') {
       // All hospitals
       filteredHospitals = hospitals;
-      filteredAssessments = assessments;
+      filteredAssessments = latestAssessments;
     } else if (chartDrillLevel === 'province' && chartRegionId) {
       // Hospitals in selected region
       const regionProvinces = provinces.filter(p => p.health_region_id === chartRegionId);
       filteredHospitals = hospitals.filter(h => 
         regionProvinces.some(p => p.id === h.province_id)
       );
-      filteredAssessments = assessments.filter(a =>
+      filteredAssessments = latestAssessments.filter(a =>
         filteredHospitals.some(h => h.id === a.hospital_id)
       );
     } else if (chartDrillLevel === 'hospital' && chartProvinceId) {
       // Hospitals in selected province
       filteredHospitals = hospitals.filter(h => h.province_id === chartProvinceId);
-      filteredAssessments = assessments.filter(a =>
+      filteredAssessments = latestAssessments.filter(a =>
         filteredHospitals.some(h => h.id === a.hospital_id)
       );
     }
@@ -263,15 +289,18 @@ export default function Reports() {
                       const regionHospitals = hospitals.filter(h => 
                         regionProvinces.some(p => p.id === h.province_id)
                       );
-                      const regionAssessments = assessments.filter(a =>
+                      // Use latest assessments only
+                      const regionLatestAssessments = latestAssessments.filter(a =>
                         regionHospitals.some(h => h.id === a.hospital_id)
                       );
-                      const completedCount = regionAssessments.filter(a => 
+                      const completedCount = regionLatestAssessments.filter(a => 
                         a.status === 'approved_regional' || a.status === 'completed'
                       ).length;
-                      const avgScore = regionAssessments.length > 0
-                        ? regionAssessments.reduce((sum, a) => sum + (a.total_score || 0), 0) / regionAssessments.filter(a => a.total_score !== null).length
-                        : 0;
+                      // Sum of latest scores (not average)
+                      const totalScoreSum = regionLatestAssessments
+                        .filter(a => a.total_score !== null)
+                        .reduce((sum, a) => sum + (a.total_score || 0), 0);
+                      const scoreCount = regionLatestAssessments.filter(a => a.total_score !== null).length;
 
                       return (
                         <TableRow 
@@ -283,10 +312,10 @@ export default function Reports() {
                             เขตสุขภาพที่ {region.region_number}
                           </TableCell>
                           <TableCell className="text-right">{regionHospitals.length}</TableCell>
-                          <TableCell className="text-right">{regionAssessments.length}</TableCell>
+                          <TableCell className="text-right">{regionLatestAssessments.length}</TableCell>
                           <TableCell className="text-right">{completedCount}</TableCell>
                           <TableCell className="text-right font-medium">
-                            {avgScore > 0 ? avgScore.toFixed(2) : '-'}
+                            {scoreCount > 0 ? totalScoreSum.toFixed(2) : '-'}
                           </TableCell>
                         </TableRow>
                       );
@@ -319,16 +348,18 @@ export default function Reports() {
                   <TableBody>
                     {provinces.filter(p => p.health_region_id === chartRegionId).map((province) => {
                       const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
-                      const provinceAssessments = assessments.filter(a =>
+                      // Use latest assessments only
+                      const provinceLatestAssessments = latestAssessments.filter(a =>
                         provinceHospitals.some(h => h.id === a.hospital_id)
                       );
-                      const completedCount = provinceAssessments.filter(a => 
+                      const completedCount = provinceLatestAssessments.filter(a => 
                         a.status === 'approved_regional' || a.status === 'completed'
                       ).length;
-                      const assessmentsWithScore = provinceAssessments.filter(a => a.total_score !== null);
-                      const avgScore = assessmentsWithScore.length > 0
-                        ? assessmentsWithScore.reduce((sum, a) => sum + (a.total_score || 0), 0) / assessmentsWithScore.length
-                        : 0;
+                      // Sum of latest scores (not average)
+                      const totalScoreSum = provinceLatestAssessments
+                        .filter(a => a.total_score !== null)
+                        .reduce((sum, a) => sum + (a.total_score || 0), 0);
+                      const scoreCount = provinceLatestAssessments.filter(a => a.total_score !== null).length;
 
                       return (
                         <TableRow 
@@ -338,10 +369,10 @@ export default function Reports() {
                         >
                           <TableCell className="font-medium text-primary underline">{province.name}</TableCell>
                           <TableCell className="text-right">{provinceHospitals.length}</TableCell>
-                          <TableCell className="text-right">{provinceAssessments.length}</TableCell>
+                          <TableCell className="text-right">{provinceLatestAssessments.length}</TableCell>
                           <TableCell className="text-right">{completedCount}</TableCell>
                           <TableCell className="text-right font-medium">
-                            {avgScore > 0 ? avgScore.toFixed(2) : '-'}
+                            {scoreCount > 0 ? totalScoreSum.toFixed(2) : '-'}
                           </TableCell>
                         </TableRow>
                       );
@@ -373,6 +404,7 @@ export default function Reports() {
                     <TableRow>
                       <TableHead>รหัส</TableHead>
                       <TableHead>โรงพยาบาล</TableHead>
+                      <TableHead>รอบการประเมิน</TableHead>
                       <TableHead>สถานะ</TableHead>
                       <TableHead className="text-right">คะแนนรวม</TableHead>
                       <TableHead className="text-right">เชิงปริมาณ</TableHead>
@@ -381,12 +413,20 @@ export default function Reports() {
                   </TableHeader>
                   <TableBody>
                     {hospitals.filter(h => h.province_id === chartProvinceId).map((hospital) => {
-                      const assessment = assessments.find(a => a.hospital_id === hospital.id);
+                      // Use latest assessment only
+                      const assessment = latestAssessments.find(a => a.hospital_id === hospital.id);
 
                       return (
                         <TableRow key={hospital.id}>
                           <TableCell className="font-mono text-sm">{hospital.code}</TableCell>
                           <TableCell className="font-medium">{hospital.name}</TableCell>
+                          <TableCell>
+                            {assessment ? (
+                              <span className="text-sm">
+                                {assessment.assessment_period} / {assessment.fiscal_year}
+                              </span>
+                            ) : '-'}
+                          </TableCell>
                           <TableCell>
                             {assessment ? (
                               <Badge variant={statusLabels[assessment.status]?.variant || 'secondary'}>
