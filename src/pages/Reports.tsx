@@ -404,7 +404,7 @@ export default function Reports() {
                     <TableRow>
                       <TableHead>รหัส</TableHead>
                       <TableHead>โรงพยาบาล</TableHead>
-                      <TableHead>รอบการประเมิน</TableHead>
+                      <TableHead>ครั้งที่ประเมิน</TableHead>
                       <TableHead>สถานะ</TableHead>
                       <TableHead className="text-right">คะแนนรวม</TableHead>
                       <TableHead className="text-right">เชิงปริมาณ</TableHead>
@@ -423,7 +423,7 @@ export default function Reports() {
                           <TableCell>
                             {assessment ? (
                               <span className="text-sm">
-                                {assessment.assessment_period} / {assessment.fiscal_year}
+                                {assessment.assessment_period}/{assessment.fiscal_year + 543}
                               </span>
                             ) : '-'}
                           </TableCell>

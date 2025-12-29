@@ -39,12 +39,11 @@ export default function AssessmentList() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedHospital, setSelectedHospital] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('Q1');
   const [creating, setCreating] = useState(false);
+  const [nextPeriod, setNextPeriod] = useState<string>('1');
 
   const currentYear = new Date().getFullYear();
   const years = [currentYear - 1, currentYear, currentYear + 1];
-  const periods = ['Q1', 'Q2', 'Q3', 'Q4'];
 
   useEffect(() => {
     if (profile) {
@@ -74,6 +73,13 @@ export default function AssessmentList() {
         setHospitals(hospitalData || []);
         if (hospitalData?.[0]) {
           setSelectedHospital(hospitalData[0].id);
+          
+          // Calculate next assessment period for this hospital
+          const hospitalAssessments = (assessmentsData || []).filter(
+            a => a.hospital_id === hospitalData[0].id && 
+                 a.fiscal_year === parseInt(selectedYear)
+          );
+          setNextPeriod((hospitalAssessments.length + 1).toString());
         }
       } else if (profile?.role === 'central_admin') {
         const { data: hospitalsData } = await supabase
@@ -91,8 +97,19 @@ export default function AssessmentList() {
     }
   };
 
+  // Calculate next assessment period when hospital or year changes
+  useEffect(() => {
+    if (selectedHospital && selectedYear) {
+      const hospitalAssessments = assessments.filter(
+        a => a.hospital_id === selectedHospital && 
+             a.fiscal_year === parseInt(selectedYear)
+      );
+      setNextPeriod((hospitalAssessments.length + 1).toString());
+    }
+  }, [selectedHospital, selectedYear, assessments]);
+
   const handleCreateAssessment = async () => {
-    if (!selectedHospital || !selectedYear || !selectedPeriod) {
+    if (!selectedHospital || !selectedYear) {
       toast({ title: 'กรุณากรอกข้อมูลให้ครบ', variant: 'destructive' });
       return;
     }
@@ -100,31 +117,13 @@ export default function AssessmentList() {
     try {
       setCreating(true);
 
-      // Check for duplicate assessment
-      const { data: existing } = await supabase
-        .from('assessments')
-        .select('id')
-        .eq('hospital_id', selectedHospital)
-        .eq('fiscal_year', parseInt(selectedYear))
-        .eq('assessment_period', selectedPeriod)
-        .maybeSingle();
-
-      if (existing) {
-        toast({ 
-          title: 'มีแบบประเมินซ้ำ', 
-          description: `แบบประเมินปี ${selectedYear} ${selectedPeriod} มีอยู่แล้ว`,
-          variant: 'destructive' 
-        });
-        return;
-      }
-
-      // Create assessment
+      // Create assessment with auto-generated period number
       const { data: newAssessment, error: createError } = await supabase
         .from('assessments')
         .insert({
           hospital_id: selectedHospital,
           fiscal_year: parseInt(selectedYear),
-          assessment_period: selectedPeriod,
+          assessment_period: nextPeriod,
           created_by: profile?.id,
           status: 'draft',
         })
@@ -189,7 +188,7 @@ export default function AssessmentList() {
                 <DialogHeader>
                   <DialogTitle>สร้างแบบประเมินใหม่</DialogTitle>
                   <DialogDescription>
-                    เลือกโรงพยาบาล ปีงบประมาณ และรอบการประเมิน
+                    เลือกโรงพยาบาล และปีงบประมาณ
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -223,17 +222,10 @@ export default function AssessmentList() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>รอบการประเมิน</Label>
-                      <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="เลือกรอบ" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {periods.map(p => (
-                            <SelectItem key={p} value={p}>{p}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>ครั้งที่ประเมิน</Label>
+                      <div className="h-10 px-3 py-2 border rounded-md bg-muted text-muted-foreground flex items-center">
+                        ครั้งที่ {nextPeriod}/{parseInt(selectedYear) + 543}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -284,7 +276,7 @@ export default function AssessmentList() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>โรงพยาบาล</TableHead>
-                    <TableHead>ปี/รอบ</TableHead>
+                    <TableHead>ครั้งที่ประเมิน</TableHead>
                     <TableHead>สถานะ</TableHead>
                     <TableHead>คะแนนรวม (10)</TableHead>
                     <TableHead>วันที่สร้าง</TableHead>
@@ -300,7 +292,7 @@ export default function AssessmentList() {
                           {(assessment as any).hospitals?.name || '-'}
                         </TableCell>
                         <TableCell>
-                          {assessment.fiscal_year + 543} / {assessment.assessment_period}
+                          {assessment.assessment_period}/{assessment.fiscal_year + 543}
                         </TableCell>
                         <TableCell>
                           <Badge className={status.className}>{status.label}</Badge>
