@@ -274,8 +274,14 @@ export default function Reports() {
                         : 0;
 
                       return (
-                        <TableRow key={region.id}>
-                          <TableCell className="font-medium">เขตสุขภาพที่ {region.region_number}</TableCell>
+                        <TableRow 
+                          key={region.id} 
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => handleDrillChange('province', region.id, null)}
+                        >
+                          <TableCell className="font-medium text-primary underline">
+                            เขตสุขภาพที่ {region.region_number}
+                          </TableCell>
                           <TableCell className="text-right">{regionHospitals.length}</TableCell>
                           <TableCell className="text-right">{regionAssessments.length}</TableCell>
                           <TableCell className="text-right">{completedCount}</TableCell>
@@ -291,6 +297,15 @@ export default function Reports() {
             ) : chartDrillLevel === 'province' && chartRegionId ? (
               // Province level table
               <div className="overflow-x-auto">
+                <div className="mb-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleDrillChange('region', null, null)}
+                  >
+                    ← กลับไปดูเขตสุขภาพทั้งหมด
+                  </Button>
+                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -316,8 +331,12 @@ export default function Reports() {
                         : 0;
 
                       return (
-                        <TableRow key={province.id}>
-                          <TableCell className="font-medium">{province.name}</TableCell>
+                        <TableRow 
+                          key={province.id}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => handleDrillChange('hospital', chartRegionId, province.id)}
+                        >
+                          <TableCell className="font-medium text-primary underline">{province.name}</TableCell>
                           <TableCell className="text-right">{provinceHospitals.length}</TableCell>
                           <TableCell className="text-right">{provinceAssessments.length}</TableCell>
                           <TableCell className="text-right">{completedCount}</TableCell>
@@ -333,6 +352,22 @@ export default function Reports() {
             ) : chartDrillLevel === 'hospital' && chartProvinceId ? (
               // Hospital level table
               <div className="overflow-x-auto">
+                <div className="mb-4 flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleDrillChange('region', null, null)}
+                  >
+                    ← เขตสุขภาพทั้งหมด
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleDrillChange('province', chartRegionId, null)}
+                  >
+                    ← กลับไปดูจังหวัด
+                  </Button>
+                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
