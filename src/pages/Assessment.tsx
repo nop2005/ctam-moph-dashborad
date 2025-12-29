@@ -150,7 +150,7 @@ export default function Assessment() {
           <TabsList className="grid grid-cols-3 w-full max-w-2xl h-auto bg-muted">
             <TabsTrigger value="quantitative" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">เชิงปริมาณ (70%)</TabsTrigger>
             <TabsTrigger value="impact" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">ผลกระทบ (30%)</TabsTrigger>
-            <TabsTrigger value="summary" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">สรุปผล</TabsTrigger>
+            <TabsTrigger value="summary" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">สรุปผล (100%)</TabsTrigger>
           </TabsList>
 
           <TabsContent value="quantitative" className="space-y-4">
