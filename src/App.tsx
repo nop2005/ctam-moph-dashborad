@@ -13,6 +13,7 @@ import Assessment from "./pages/Assessment";
 import UserManagement from "./pages/UserManagement";
 import Reports from "./pages/Reports";
 import ReportsQuantitative from "./pages/ReportsQuantitative";
+import ReportsImpact from "./pages/ReportsImpact";
 import ProfileSettings from "./pages/ProfileSettings";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
@@ -75,6 +76,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ReportsQuantitative />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/reports/impact" 
+              element={
+                <ProtectedRoute>
+                  <ReportsImpact />
                 </ProtectedRoute>
               } 
             />
