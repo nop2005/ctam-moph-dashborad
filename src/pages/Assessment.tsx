@@ -44,6 +44,32 @@ export default function Assessment() {
                    (profile?.role === 'regional' && assessment?.status === 'approved_provincial');
   const canApprove = profile?.role === 'central_admin';
 
+  // Calculate scores for tabs
+  const calculateQuantitativeScore = () => {
+    const passCount = items.filter(item => item.status === 'pass').length;
+    const totalCategories = categories.length;
+    if (totalCategories === 0) return { score: 0, total: 7 };
+    const score = (passCount / totalCategories) * 7;
+    return { score: Math.round(score * 100) / 100, total: 7 };
+  };
+
+  const calculateImpactScore = () => {
+    const maxScore = 3;
+    const score = impactScore?.total_score ? Number(impactScore.total_score) * (maxScore / 100) : 0;
+    return { score: Math.round(score * 100) / 100, total: maxScore };
+  };
+
+  const calculateTotalScore = () => {
+    const quantScore = calculateQuantitativeScore();
+    const impactScoreVal = calculateImpactScore();
+    const total = quantScore.score + impactScoreVal.score;
+    return { score: Math.round(total * 100) / 100, total: 10 };
+  };
+
+  const quantScore = calculateQuantitativeScore();
+  const impactScoreCalc = calculateImpactScore();
+  const totalScore = calculateTotalScore();
+
   useEffect(() => {
     if (id) {
       loadAssessmentData();
@@ -148,9 +174,18 @@ export default function Assessment() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid grid-cols-3 w-full max-w-2xl h-auto bg-muted">
-            <TabsTrigger value="quantitative" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">เชิงปริมาณ (70%)</TabsTrigger>
-            <TabsTrigger value="impact" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">ผลกระทบ (30%)</TabsTrigger>
-            <TabsTrigger value="summary" className="text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">สรุปผล (100%)</TabsTrigger>
+            <TabsTrigger value="quantitative" className="flex flex-col text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">
+              <span>เชิงปริมาณ (70%)</span>
+              <span className="text-sm font-bold text-orange-500 data-[state=active]:text-orange-200">{quantScore.score}/{quantScore.total}</span>
+            </TabsTrigger>
+            <TabsTrigger value="impact" className="flex flex-col text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">
+              <span>ผลกระทบ (30%)</span>
+              <span className="text-sm font-bold text-orange-500 data-[state=active]:text-orange-200">{impactScoreCalc.score}/{impactScoreCalc.total}</span>
+            </TabsTrigger>
+            <TabsTrigger value="summary" className="flex flex-col text-lg py-3 border border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary">
+              <span>สรุปผล (100%)</span>
+              <span className="text-sm font-bold text-orange-500 data-[state=active]:text-orange-200">{totalScore.score}/{totalScore.total}</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="quantitative" className="space-y-4">
