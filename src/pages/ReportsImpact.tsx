@@ -85,12 +85,12 @@ const generateFiscalYears = (assessments: Assessment[]): number[] => {
   return Array.from(years).sort((a, b) => b - a);
 };
 
-// Impact level classification based on total_score
+// Impact level classification based on total_score (percentage)
 const getImpactLevel = (totalScore: number | null): { level: string; color: string; bgColor: string } => {
   if (totalScore === null) return { level: 'ยังไม่ประเมิน', color: 'text-muted-foreground', bgColor: 'bg-muted' };
-  if (totalScore >= 15) return { level: 'ปลอดภัยสูง', color: 'text-green-600', bgColor: 'bg-green-100' };
-  if (totalScore >= 10) return { level: 'ปลอดภัยปานกลาง', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
-  if (totalScore >= 5) return { level: 'ความเสี่ยงต่ำ', color: 'text-orange-600', bgColor: 'bg-orange-100' };
+  if (totalScore >= 100) return { level: 'ปลอดภัยสูง', color: 'text-green-600', bgColor: 'bg-green-100' };
+  if (totalScore >= 80) return { level: 'ปลอดภัยปานกลาง', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
+  if (totalScore >= 70) return { level: 'ความเสี่ยงต่ำ', color: 'text-orange-600', bgColor: 'bg-orange-100' };
   return { level: 'ความเสี่ยงสูง', color: 'text-red-600', bgColor: 'bg-red-100' };
 };
 
@@ -530,7 +530,7 @@ export default function ReportsImpact() {
                   <div className="flex items-center justify-between p-2 rounded-lg bg-green-50 dark:bg-green-950/20">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-5 h-5 text-green-600" />
-                      <span className="text-green-700 dark:text-green-400">ปลอดภัยสูง (≥15 คะแนน)</span>
+                      <span className="text-green-700 dark:text-green-400">ปลอดภัยสูง (100 คะแนน)</span>
                     </div>
                     <span className="font-bold text-green-600">{pieChartData.stats.highSafety}</span>
                   </div>
@@ -538,7 +538,7 @@ export default function ReportsImpact() {
                   <div className="flex items-center justify-between p-2 rounded-lg bg-yellow-50 dark:bg-yellow-950/20">
                     <div className="flex items-center gap-2">
                       <ShieldAlert className="w-5 h-5 text-yellow-600" />
-                      <span className="text-yellow-700 dark:text-yellow-400">ปลอดภัยปานกลาง (10-14 คะแนน)</span>
+                      <span className="text-yellow-700 dark:text-yellow-400">ปลอดภัยปานกลาง (80-99 คะแนน)</span>
                     </div>
                     <span className="font-bold text-yellow-600">{pieChartData.stats.mediumSafety}</span>
                   </div>
@@ -546,7 +546,7 @@ export default function ReportsImpact() {
                   <div className="flex items-center justify-between p-2 rounded-lg bg-orange-50 dark:bg-orange-950/20">
                     <div className="flex items-center gap-2">
                       <AlertCircle className="w-5 h-5 text-orange-600" />
-                      <span className="text-orange-700 dark:text-orange-400">ความเสี่ยงต่ำ (5-9 คะแนน)</span>
+                      <span className="text-orange-700 dark:text-orange-400">ความเสี่ยงต่ำ (70-79 คะแนน)</span>
                     </div>
                     <span className="font-bold text-orange-600">{pieChartData.stats.lowRisk}</span>
                   </div>
@@ -554,7 +554,7 @@ export default function ReportsImpact() {
                   <div className="flex items-center justify-between p-2 rounded-lg bg-red-50 dark:bg-red-950/20">
                     <div className="flex items-center gap-2">
                       <ShieldX className="w-5 h-5 text-red-600" />
-                      <span className="text-red-700 dark:text-red-400">ความเสี่ยงสูง (&lt;5 คะแนน)</span>
+                      <span className="text-red-700 dark:text-red-400">ความเสี่ยงสูง (&lt;70 คะแนน)</span>
                     </div>
                     <span className="font-bold text-red-600">{pieChartData.stats.highRisk}</span>
                   </div>
