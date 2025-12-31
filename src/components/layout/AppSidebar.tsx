@@ -34,13 +34,13 @@ const menuItems = [
     title: 'หน้าหลัก', 
     url: '/dashboard', 
     icon: LayoutDashboard,
-    roles: ['hospital_it', 'provincial', 'regional', 'central_admin']
+    roles: ['hospital_it', 'provincial', 'regional', 'central_admin', 'health_office']
   },
   { 
     title: 'แบบประเมิน CTAM+', 
     url: '/assessments', 
     icon: FileText,
-    roles: ['hospital_it', 'provincial', 'regional', 'central_admin']
+    roles: ['hospital_it', 'provincial', 'regional', 'central_admin', 'health_office']
   },
 ];
 
