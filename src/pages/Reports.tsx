@@ -44,6 +44,15 @@ interface Hospital {
   province_id: string;
 }
 
+interface HealthOffice {
+  id: string;
+  name: string;
+  code: string;
+  province_id: string | null;
+  health_region_id: string;
+  office_type: string;
+}
+
 interface Assessment {
   id: string;
   hospital_id: string;
@@ -127,6 +136,7 @@ export default function Reports() {
   const [healthRegions, setHealthRegions] = useState<HealthRegion[]>([]);
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [healthOffices, setHealthOffices] = useState<HealthOffice[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   
   // Fiscal year filter
@@ -156,21 +166,24 @@ export default function Reports() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [regionsRes, provincesRes, hospitalsRes, assessmentsRes] = await Promise.all([
+        const [regionsRes, provincesRes, hospitalsRes, healthOfficesRes, assessmentsRes] = await Promise.all([
           supabase.from('health_regions').select('*').order('region_number'),
           supabase.from('provinces').select('*').order('name'),
           supabase.from('hospitals').select('*').order('name'),
+          supabase.from('health_offices').select('*').order('name'),
           supabase.from('assessments').select('id, hospital_id, status, fiscal_year, assessment_period, total_score, quantitative_score, qualitative_score, impact_score, created_at'),
         ]);
 
         if (regionsRes.error) throw regionsRes.error;
         if (provincesRes.error) throw provincesRes.error;
         if (hospitalsRes.error) throw hospitalsRes.error;
+        if (healthOfficesRes.error) throw healthOfficesRes.error;
         if (assessmentsRes.error) throw assessmentsRes.error;
 
         setHealthRegions(regionsRes.data || []);
         setProvinces(provincesRes.data || []);
         setHospitals(hospitalsRes.data || []);
+        setHealthOffices(healthOfficesRes.data || []);
         setAssessments(assessmentsRes.data || []);
 
       } catch (error) {
@@ -191,34 +204,40 @@ export default function Reports() {
     [filteredAssessments]
   );
 
-  // Calculate statistics based on drill level
+  // Calculate statistics based on drill level (including health offices)
   const drillStats = (() => {
     let filteredHospitals: Hospital[] = [];
+    let filteredHealthOffices: HealthOffice[] = [];
     let filteredAssessments: Assessment[] = [];
 
     if (chartDrillLevel === 'region') {
-      // All hospitals
+      // All hospitals and health offices
       filteredHospitals = hospitals;
+      filteredHealthOffices = healthOffices;
       filteredAssessments = latestAssessments;
     } else if (chartDrillLevel === 'province' && chartRegionId) {
-      // Hospitals in selected region
+      // Hospitals and health offices in selected region
       const regionProvinces = provinces.filter(p => p.health_region_id === chartRegionId);
       filteredHospitals = hospitals.filter(h => 
         regionProvinces.some(p => p.id === h.province_id)
       );
+      filteredHealthOffices = healthOffices.filter(ho => ho.health_region_id === chartRegionId);
       filteredAssessments = latestAssessments.filter(a =>
         filteredHospitals.some(h => h.id === a.hospital_id)
       );
     } else if (chartDrillLevel === 'hospital' && chartProvinceId) {
-      // Hospitals in selected province
+      // Hospitals in selected province + health offices in that province
       filteredHospitals = hospitals.filter(h => h.province_id === chartProvinceId);
+      filteredHealthOffices = healthOffices.filter(ho => ho.province_id === chartProvinceId);
       filteredAssessments = latestAssessments.filter(a =>
         filteredHospitals.some(h => h.id === a.hospital_id)
       );
     }
 
+    const totalUnits = filteredHospitals.length + filteredHealthOffices.length;
+
     return {
-      totalHospitals: filteredHospitals.length,
+      totalHospitals: totalUnits,
       withAssessment: filteredAssessments.length,
       completed: filteredAssessments.filter(a => 
         a.status === 'approved_regional' || a.status === 'completed'
@@ -263,7 +282,7 @@ export default function Reports() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold">{drillStats.totalHospitals}</p>
-                  <p className="text-sm text-muted-foreground">โรงพยาบาลทั้งหมด</p>
+                  <p className="text-sm text-muted-foreground">สถานบริการทั้งหมด</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Building2 className="w-6 h-6 text-primary" />
@@ -328,7 +347,7 @@ export default function Reports() {
               <BarChart3 className="w-5 h-5" />
               {chartDrillLevel === 'region' && 'รายงานสรุปรายเขตสุขภาพ'}
               {chartDrillLevel === 'province' && `รายงานสรุปรายจังหวัด - เขตสุขภาพที่ ${healthRegions.find(r => r.id === chartRegionId)?.region_number || ''}`}
-              {chartDrillLevel === 'hospital' && `รายงานผลการประเมินรายโรงพยาบาล - ${provinces.find(p => p.id === chartProvinceId)?.name || ''}`}
+              {chartDrillLevel === 'hospital' && `คะแนนรายสถานบริการ - ${provinces.find(p => p.id === chartProvinceId)?.name || ''}`}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -341,7 +360,7 @@ export default function Reports() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>เขตสุขภาพ</TableHead>
-                      <TableHead className="text-right">จำนวน รพ.</TableHead>
+                      <TableHead className="text-right">จำนวนสถานบริการ</TableHead>
                       <TableHead className="text-right">มีแบบประเมิน</TableHead>
                       <TableHead className="text-right">ผ่านการประเมิน</TableHead>
                       <TableHead className="text-right">คะแนนเฉลี่ย</TableHead>
@@ -353,6 +372,8 @@ export default function Reports() {
                       const regionHospitals = hospitals.filter(h => 
                         regionProvinces.some(p => p.id === h.province_id)
                       );
+                      const regionHealthOffices = healthOffices.filter(ho => ho.health_region_id === region.id);
+                      const totalUnits = regionHospitals.length + regionHealthOffices.length;
                       // Use latest assessments only
                       const regionLatestAssessments = latestAssessments.filter(a =>
                         regionHospitals.some(h => h.id === a.hospital_id)
@@ -375,7 +396,7 @@ export default function Reports() {
                           <TableCell className="font-medium text-primary underline">
                             เขตสุขภาพที่ {region.region_number}
                           </TableCell>
-                          <TableCell className="text-right">{regionHospitals.length}</TableCell>
+                          <TableCell className="text-right">{totalUnits}</TableCell>
                           <TableCell className="text-right">{regionLatestAssessments.length}</TableCell>
                           <TableCell className="text-right">{completedCount}</TableCell>
                           <TableCell className="text-right font-medium">
@@ -403,7 +424,7 @@ export default function Reports() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>จังหวัด</TableHead>
-                      <TableHead className="text-right">จำนวน รพ.</TableHead>
+                      <TableHead className="text-right">จำนวนสถานบริการ</TableHead>
                       <TableHead className="text-right">มีแบบประเมิน</TableHead>
                       <TableHead className="text-right">ผ่านการประเมิน</TableHead>
                       <TableHead className="text-right">คะแนนเฉลี่ย</TableHead>
@@ -412,6 +433,8 @@ export default function Reports() {
                   <TableBody>
                     {provinces.filter(p => p.health_region_id === chartRegionId).map((province) => {
                       const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
+                      const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === province.id);
+                      const totalUnits = provinceHospitals.length + provinceHealthOffices.length;
                       // Use latest assessments only
                       const provinceLatestAssessments = latestAssessments.filter(a =>
                         provinceHospitals.some(h => h.id === a.hospital_id)
@@ -432,7 +455,7 @@ export default function Reports() {
                           onClick={() => handleDrillChange('hospital', chartRegionId, province.id)}
                         >
                           <TableCell className="font-medium text-primary underline">{province.name}</TableCell>
-                          <TableCell className="text-right">{provinceHospitals.length}</TableCell>
+                          <TableCell className="text-right">{totalUnits}</TableCell>
                           <TableCell className="text-right">{provinceLatestAssessments.length}</TableCell>
                           <TableCell className="text-right">{completedCount}</TableCell>
                           <TableCell className="text-right font-medium">
@@ -467,7 +490,8 @@ export default function Reports() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>รหัส</TableHead>
-                      <TableHead>โรงพยาบาล</TableHead>
+                      <TableHead>สถานบริการ</TableHead>
+                      <TableHead>ประเภท</TableHead>
                       <TableHead>ครั้งที่ประเมิน</TableHead>
                       <TableHead>สถานะ</TableHead>
                       <TableHead className="text-right">คะแนนรวม</TableHead>
@@ -476,14 +500,17 @@ export default function Reports() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {/* Render hospitals */}
                     {hospitals.filter(h => h.province_id === chartProvinceId).map((hospital) => {
-                      // Use latest assessment only
                       const assessment = latestAssessments.find(a => a.hospital_id === hospital.id);
 
                       return (
                         <TableRow key={hospital.id}>
                           <TableCell className="font-mono text-sm">{hospital.code}</TableCell>
                           <TableCell className="font-medium">{hospital.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">โรงพยาบาล</Badge>
+                          </TableCell>
                           <TableCell>
                             {assessment ? (
                               <span className="text-sm">
@@ -512,6 +539,23 @@ export default function Reports() {
                         </TableRow>
                       );
                     })}
+                    {/* Render health offices in this province */}
+                    {healthOffices.filter(ho => ho.province_id === chartProvinceId).map((office) => (
+                      <TableRow key={office.id}>
+                        <TableCell className="font-mono text-sm">{office.code}</TableCell>
+                        <TableCell className="font-medium">{office.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{office.office_type}</Badge>
+                        </TableCell>
+                        <TableCell>-</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">ยังไม่มีข้อมูล</Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">-</TableCell>
+                        <TableCell className="text-right">-</TableCell>
+                        <TableCell className="text-right">-</TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
