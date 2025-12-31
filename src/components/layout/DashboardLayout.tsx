@@ -29,7 +29,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     const fetchOrganizationName = async () => {
       if (!profile) return;
 
-      if (profile.hospital_id) {
+      // For health_office role, fetch from health_offices table
+      if (profile.health_office_id) {
+        const { data } = await supabase
+          .from('health_offices')
+          .select('name')
+          .eq('id', profile.health_office_id)
+          .maybeSingle();
+        if (data) setOrganizationName(data.name);
+      } else if (profile.hospital_id) {
         const { data } = await supabase
           .from('hospitals')
           .select('name')
@@ -63,6 +71,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       provincial: 'สสจ.',
       regional: 'เขตสุขภาพ',
       central_admin: 'Super Admin',
+      health_office: 'สสจ./สนข.',
     };
     return labels[role] || role;
   };

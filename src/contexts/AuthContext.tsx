@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-type UserRole = 'hospital_it' | 'provincial' | 'regional' | 'central_admin';
+type UserRole = 'hospital_it' | 'provincial' | 'regional' | 'central_admin' | 'health_office';
 
 interface Profile {
   id: string;
@@ -13,6 +13,7 @@ interface Profile {
   hospital_id: string | null;
   province_id: string | null;
   health_region_id: string | null;
+  health_office_id: string | null;
   phone: string | null;
   is_active: boolean;
 }
