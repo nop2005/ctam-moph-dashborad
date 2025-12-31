@@ -35,7 +35,7 @@ interface Profile {
   email: string;
   full_name: string | null;
   phone: string | null;
-  role: 'hospital_it' | 'provincial' | 'regional' | 'central_admin';
+  role: 'hospital_it' | 'provincial' | 'regional' | 'central_admin' | 'health_office';
   hospital_id: string | null;
   province_id: string | null;
   health_region_id: string | null;
@@ -85,11 +85,17 @@ export default function SuperAdmin() {
   const [editFullName, setEditFullName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   
-  // Bulk create dialog
+  // Bulk create dialog for hospitals
   const [isBulkCreateDialogOpen, setIsBulkCreateDialogOpen] = useState(false);
   const [bulkCreateProvinceId, setBulkCreateProvinceId] = useState('');
   const [isBulkCreating, setIsBulkCreating] = useState(false);
   const [bulkCreateResults, setBulkCreateResults] = useState<any[]>([]);
+  
+  // Bulk create dialog for health offices
+  const [isHealthOfficeBulkDialogOpen, setIsHealthOfficeBulkDialogOpen] = useState(false);
+  const [bulkHealthOfficeRegionId, setBulkHealthOfficeRegionId] = useState('');
+  const [isBulkCreatingHealthOffice, setIsBulkCreatingHealthOffice] = useState(false);
+  const [healthOfficeBulkResults, setHealthOfficeBulkResults] = useState<any[]>([]);
   
   // Card filter state
   type CardFilter = 'all' | 'pending' | 'active' | 'central_admin' | 'regional' | 'provincial';
@@ -127,6 +133,7 @@ export default function SuperAdmin() {
       provincial: 'ผู้ประเมินระดับจังหวัด (สสจ.)',
       regional: 'ผู้ประเมินระดับเขตสุขภาพ',
       central_admin: 'ส่วนกลาง (Super Admin)',
+      health_office: 'สำนักงาน สสจ./เขตสุขภาพ',
     };
     return labels[role] || role;
   };
@@ -137,6 +144,7 @@ export default function SuperAdmin() {
       provincial: 'outline',
       regional: 'default',
       central_admin: 'destructive',
+      health_office: 'outline',
     };
     return variants[role] || 'secondary';
   };
@@ -298,6 +306,54 @@ export default function SuperAdmin() {
     }
   };
 
+  const handleBulkCreateHealthOfficeUsers = async () => {
+    if (!bulkHealthOfficeRegionId) {
+      toast.error('กรุณาเลือกเขตสุขภาพ');
+      return;
+    }
+
+    setIsBulkCreatingHealthOffice(true);
+    setHealthOfficeBulkResults([]);
+
+    try {
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('กรุณาเข้าสู่ระบบใหม่');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-health-office-users`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ health_region_id: bulkHealthOfficeRegionId }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setHealthOfficeBulkResults(data.results);
+        const successCount = data.results.filter((r: any) => r.status === 'success').length;
+        const skippedCount = data.results.filter((r: any) => r.status === 'skipped').length;
+        toast.success(`สร้างผู้ใช้ สสจ./เขตสุขภาพ สำเร็จ ${successCount} ราย, ข้าม ${skippedCount} ราย`);
+        fetchData();
+      } else {
+        toast.error(data.error || 'เกิดข้อผิดพลาด');
+      }
+    } catch (error) {
+      console.error('Error creating health office bulk users:', error);
+      toast.error('ไม่สามารถสร้างผู้ใช้ได้');
+    } finally {
+      setIsBulkCreatingHealthOffice(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     if (!selectedProfile) return;
     
@@ -423,10 +479,16 @@ export default function SuperAdmin() {
             อนุมัติผู้ใช้ใหม่และจัดการสิทธิ์ผู้ใช้งานทั้งหมดในระบบ
           </p>
         </div>
-        <Button onClick={() => setIsBulkCreateDialogOpen(true)} className="gap-2">
-          <UserPlus className="h-4 w-4" />
-          สร้างผู้ใช้ รพ. แบบ Bulk
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsHealthOfficeBulkDialogOpen(true)} variant="outline" className="gap-2">
+            <Building2 className="h-4 w-4" />
+            สร้างผู้ใช้ สสจ. แบบ Bulk
+          </Button>
+          <Button onClick={() => setIsBulkCreateDialogOpen(true)} className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            สร้างผู้ใช้ รพ. แบบ Bulk
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -969,6 +1031,80 @@ export default function SuperAdmin() {
                 disabled={isBulkCreating || !bulkCreateProvinceId}
               >
                 {isBulkCreating ? 'กำลังสร้าง...' : 'สร้างผู้ใช้'}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Health Office Bulk Create Dialog */}
+      <Dialog open={isHealthOfficeBulkDialogOpen} onOpenChange={setIsHealthOfficeBulkDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>สร้างผู้ใช้ สสจ./เขตสุขภาพ แบบ Bulk</DialogTitle>
+            <DialogDescription>
+              สร้างผู้ใช้สำหรับ สสจ. และสำนักงานเขตสุขภาพทั้งหมดในเขตที่เลือก
+              <br />
+              <span className="text-primary font-medium">Email: รหัส 5 หลัก@ctam.moph | Password: รหัส 5 หลัก</span>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>เลือกเขตสุขภาพ</Label>
+              <Select value={bulkHealthOfficeRegionId} onValueChange={setBulkHealthOfficeRegionId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกเขตสุขภาพ" />
+                </SelectTrigger>
+                <SelectContent>
+                  {healthRegions.map((region) => (
+                    <SelectItem key={region.id} value={region.id}>
+                      เขตสุขภาพที่ {region.region_number}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {healthOfficeBulkResults.length > 0 && (
+              <div className="space-y-2">
+                <Label>ผลลัพธ์การสร้างผู้ใช้</Label>
+                <div className="max-h-60 overflow-y-auto border rounded-md p-2 space-y-1">
+                  {healthOfficeBulkResults.map((result, index) => (
+                    <div 
+                      key={index} 
+                      className={`text-sm p-2 rounded ${
+                        result.status === 'success' 
+                          ? 'bg-success/10 text-success' 
+                          : result.status === 'skipped' 
+                          ? 'bg-warning/10 text-warning' 
+                          : 'bg-destructive/10 text-destructive'
+                      }`}
+                    >
+                      <span className="font-medium">{result.office_code}</span> - {result.office_name}
+                      {result.email && <span className="text-xs block">Email: {result.email} | Password: {result.password}</span>}
+                      <span className="text-xs block">{result.message}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsHealthOfficeBulkDialogOpen(false);
+              setHealthOfficeBulkResults([]);
+              setBulkHealthOfficeRegionId('');
+            }}>
+              ปิด
+            </Button>
+            {healthOfficeBulkResults.length === 0 && (
+              <Button 
+                onClick={handleBulkCreateHealthOfficeUsers} 
+                disabled={isBulkCreatingHealthOffice || !bulkHealthOfficeRegionId}
+              >
+                {isBulkCreatingHealthOffice ? 'กำลังสร้าง...' : 'สร้างผู้ใช้'}
               </Button>
             )}
           </DialogFooter>
