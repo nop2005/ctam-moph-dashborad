@@ -1,1 +1,7 @@
 project_id = "rljbkkwzqnvawizyyzzb"
+
+[functions.create-hospital-users]
+verify_jwt = false
+
+[functions.create-health-office-users]
+verify_jwt = false

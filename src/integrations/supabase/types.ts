@@ -335,6 +335,54 @@ export type Database = {
           },
         ]
       }
+      health_offices: {
+        Row: {
+          code: string
+          created_at: string
+          health_region_id: string
+          id: string
+          name: string
+          office_type: string
+          province_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          health_region_id: string
+          id?: string
+          name: string
+          office_type?: string
+          province_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          health_region_id?: string
+          id?: string
+          name?: string
+          office_type?: string
+          province_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_offices_health_region_id_fkey"
+            columns: ["health_region_id"]
+            isOneToOne: false
+            referencedRelation: "health_regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_offices_province_id_fkey"
+            columns: ["province_id"]
+            isOneToOne: false
+            referencedRelation: "provinces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       health_regions: {
         Row: {
           created_at: string
@@ -518,6 +566,7 @@ export type Database = {
           created_at: string
           email: string
           full_name: string | null
+          health_office_id: string | null
           health_region_id: string | null
           hospital_id: string | null
           id: string
@@ -532,6 +581,7 @@ export type Database = {
           created_at?: string
           email: string
           full_name?: string | null
+          health_office_id?: string | null
           health_region_id?: string | null
           hospital_id?: string | null
           id?: string
@@ -546,6 +596,7 @@ export type Database = {
           created_at?: string
           email?: string
           full_name?: string | null
+          health_office_id?: string | null
           health_region_id?: string | null
           hospital_id?: string | null
           id?: string
@@ -557,6 +608,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_health_office_id_fkey"
+            columns: ["health_office_id"]
+            isOneToOne: false
+            referencedRelation: "health_offices"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_health_region_id_fkey"
             columns: ["health_region_id"]
@@ -757,7 +815,12 @@ export type Database = {
         | "approved_regional"
         | "completed"
       item_status: "pass" | "fail" | "partial" | "not_applicable"
-      user_role: "hospital_it" | "provincial" | "regional" | "central_admin"
+      user_role:
+        | "hospital_it"
+        | "provincial"
+        | "regional"
+        | "central_admin"
+        | "health_office"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -894,7 +957,13 @@ export const Constants = {
         "completed",
       ],
       item_status: ["pass", "fail", "partial", "not_applicable"],
-      user_role: ["hospital_it", "provincial", "regional", "central_admin"],
+      user_role: [
+        "hospital_it",
+        "provincial",
+        "regional",
+        "central_admin",
+        "health_office",
+      ],
     },
   },
 } as const
