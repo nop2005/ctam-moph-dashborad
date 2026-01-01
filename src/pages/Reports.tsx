@@ -138,7 +138,7 @@ export default function Reports() {
   const [assessments, setAssessments] = useState<Assessment[]>([]);
 
   // Fiscal year filter
-  const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>('all');
+  const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
 
   // Chart drill state for syncing table
   const [chartDrillLevel, setChartDrillLevel] = useState<DrillLevel>('region');
@@ -298,7 +298,7 @@ export default function Reports() {
         </div>
 
         {/* Score Chart */}
-        <ScoreChart healthRegions={healthRegions} provinces={provinces} hospitals={hospitals} assessments={filteredAssessments} onDrillChange={handleDrillChange} />
+        <ScoreChart healthRegions={healthRegions} provinces={provinces} hospitals={hospitals} assessments={filteredAssessments} onDrillChange={handleDrillChange} selectedFiscalYear={selectedFiscalYear} />
 
         {/* Dynamic Reports Table based on drill level */}
         <Card>
