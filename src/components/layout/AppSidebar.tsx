@@ -27,6 +27,9 @@ import {
   TrendingUp,
   Target,
   AlertTriangle,
+  ClipboardCheck,
+  FileSearch,
+  FileCheck,
 } from 'lucide-react';
 
 const menuItems = [
@@ -48,6 +51,11 @@ const reportSubItems = [
   { title: 'รายงานภาพรวม', url: '/reports', icon: PieChart },
   { title: 'เชิงปริมาณ', url: '/reports/quantitative', icon: TrendingUp },
   { title: 'เชิงผลกระทบ', url: '/reports/impact', icon: AlertTriangle },
+];
+
+const inspectionSubItems = [
+  { title: 'รายงานผู้นิเทศ', url: '/inspection/supervisor', icon: FileSearch },
+  { title: 'รายงานผู้รับนิเทศ', url: '/inspection/supervisee', icon: FileCheck },
 ];
 
 const adminItems = [
@@ -88,6 +96,7 @@ export function AppSidebar() {
 
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + '/');
   const isReportsActive = currentPath.startsWith('/reports');
+  const isInspectionActive = currentPath.startsWith('/inspection');
 
   const filterByRole = (items: typeof menuItems) => {
     if (!profile?.role) return items;
@@ -158,6 +167,38 @@ export function AppSidebar() {
                 </SidebarMenuButton>
                 <SidebarMenuSub className="border-sidebar-border">
                   {reportSubItems.map((subItem) => (
+                    <SidebarMenuSubItem key={subItem.title}>
+                      <SidebarMenuSubButton
+                        onClick={() => navigate(subItem.url)}
+                        isActive={currentPath === subItem.url}
+                        className={`
+                          text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
+                          data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                        `}
+                      >
+                        <subItem.icon className="h-3 w-3" />
+                        <span>{subItem.title}</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  ))}
+                </SidebarMenuSub>
+              </SidebarMenuItem>
+
+              {/* Inspection Reports with Submenu */}
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  tooltip="รายงานตรวจราชการ"
+                  isActive={isInspectionActive}
+                  className={`
+                    text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                    data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                  `}
+                >
+                  <ClipboardCheck className="h-4 w-4" />
+                  <span>รายงานตรวจราชการ</span>
+                </SidebarMenuButton>
+                <SidebarMenuSub className="border-sidebar-border">
+                  {inspectionSubItems.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton
                         onClick={() => navigate(subItem.url)}
