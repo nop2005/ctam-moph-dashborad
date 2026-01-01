@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface ProvinceStats {
   provinceId: string;
   provinceName: string;
-  provinceCode: string;
+  hospitalCount: number;
   round1Status: 'completed' | 'pending' | 'not_started';
   round2Status: 'completed' | 'pending' | 'not_started';
   round1AssessmentId?: string;
@@ -75,7 +75,7 @@ export default function InspectionRegionDetail() {
         // Fetch provinces in this region
         const { data: provinces } = await supabase
           .from('provinces')
-          .select('id, name, code')
+          .select('id, name')
           .eq('health_region_id', regionId)
           .order('name', { ascending: true });
 
@@ -83,6 +83,11 @@ export default function InspectionRegionDetail() {
           setProvinceStats([]);
           return;
         }
+
+        // Fetch hospitals to count per province
+        const { data: hospitals } = await supabase
+          .from('hospitals')
+          .select('id, province_id');
 
         // Fetch assessments for provinces in this region
         let assessmentQuery = supabase
@@ -108,6 +113,9 @@ export default function InspectionRegionDetail() {
             return hospital?.province_id === province.id;
           }) || [];
 
+          // Count hospitals in this province
+          const hospitalCount = hospitals?.filter(h => h.province_id === province.id).length || 0;
+
           const round1Assessment = provinceAssessments.find(a => a.assessment_period === 'รอบที่ 1');
           const round2Assessment = provinceAssessments.find(a => a.assessment_period === 'รอบที่ 2');
 
@@ -120,7 +128,7 @@ export default function InspectionRegionDetail() {
           return {
             provinceId: province.id,
             provinceName: province.name,
-            provinceCode: province.code,
+            hospitalCount,
             round1Status: getStatus(round1Assessment),
             round2Status: getStatus(round2Assessment),
             round1AssessmentId: round1Assessment?.id,
@@ -259,7 +267,7 @@ export default function InspectionRegionDetail() {
               <TableHeader>
                 <TableRow>
                   <TableHead>จังหวัด</TableHead>
-                  <TableHead>รหัส</TableHead>
+                  <TableHead className="text-center">จำนวน รพ.</TableHead>
                   <TableHead className="text-center">รอบที่ 1</TableHead>
                   <TableHead className="text-center">รอบที่ 2</TableHead>
                 </TableRow>
@@ -275,7 +283,7 @@ export default function InspectionRegionDetail() {
                   provinceStats.map((stat) => (
                     <TableRow key={stat.provinceId}>
                       <TableCell className="font-medium">{stat.provinceName}</TableCell>
-                      <TableCell className="text-muted-foreground">{stat.provinceCode}</TableCell>
+                      <TableCell className="text-center text-muted-foreground">{stat.hospitalCount}</TableCell>
                       <TableCell className="text-center">{getStatusBadge(stat.round1Status)}</TableCell>
                       <TableCell className="text-center">{getStatusBadge(stat.round2Status)}</TableCell>
                     </TableRow>
