@@ -320,7 +320,7 @@ export default function Reports() {
                       <TableHead>เขตสุขภาพ</TableHead>
                       <TableHead className="text-right">จำนวนสถานบริการ</TableHead>
                       <TableHead className="text-right">มีแบบประเมิน</TableHead>
-                      <TableHead className="text-right">ผ่านการประเมิน</TableHead>
+                      <TableHead className="text-right">อนุมัติแล้ว</TableHead>
                       <TableHead className="text-right">คะแนนเฉลี่ย</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -364,7 +364,7 @@ export default function Reports() {
                       <TableHead>จังหวัด</TableHead>
                       <TableHead className="text-right">จำนวนสถานบริการ</TableHead>
                       <TableHead className="text-right">มีแบบประเมิน</TableHead>
-                      <TableHead className="text-right">ผ่านการประเมิน</TableHead>
+                      <TableHead className="text-right">อนุมัติแล้ว</TableHead>
                       <TableHead className="text-right">คะแนนเฉลี่ย</TableHead>
                     </TableRow>
                   </TableHeader>
