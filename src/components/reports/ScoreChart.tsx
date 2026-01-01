@@ -39,6 +39,7 @@ interface ScoreChartProps {
   hospitals: Hospital[];
   assessments: Assessment[];
   onDrillChange?: (level: DrillLevel, regionId: string | null, provinceId: string | null) => void;
+  selectedFiscalYear?: string;
 }
 
 
@@ -65,7 +66,7 @@ const COLORS = [
   '#F59E0B', // amber
 ];
 
-export function ScoreChart({ healthRegions, provinces, hospitals, assessments, onDrillChange }: ScoreChartProps) {
+export function ScoreChart({ healthRegions, provinces, hospitals, assessments, onDrillChange, selectedFiscalYear }: ScoreChartProps) {
   const [drillLevel, setDrillLevel] = useState<DrillLevel>('region');
   const [selectedRegion, setSelectedRegion] = useState<HealthRegion | null>(null);
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
@@ -192,14 +193,18 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments, o
   };
 
   const getTitle = () => {
+    const fiscalYearLabel = selectedFiscalYear && selectedFiscalYear !== 'all' 
+      ? `(ปีงบประมาณ ${parseInt(selectedFiscalYear) + 543})` 
+      : '(ทุกปีงบประมาณ)';
+    
     if (drillLevel === 'region') {
-      return 'คะแนนรวมรายเขตสุขภาพ (รอบล่าสุด)';
+      return `คะแนนรวมรายเขตสุขภาพ ${fiscalYearLabel}`;
     }
     if (drillLevel === 'province' && selectedRegion) {
-      return `คะแนนรวมรายจังหวัด - เขตสุขภาพที่ ${selectedRegion.region_number} (รอบล่าสุด)`;
+      return `คะแนนรวมรายจังหวัด - เขตสุขภาพที่ ${selectedRegion.region_number} ${fiscalYearLabel}`;
     }
     if (drillLevel === 'hospital' && selectedProvince) {
-      return `คะแนนรายโรงพยาบาล - ${selectedProvince.name} (รอบล่าสุด)`;
+      return `คะแนนรายโรงพยาบาล - ${selectedProvince.name} ${fiscalYearLabel}`;
     }
     return 'คะแนนรวม';
   };
