@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -25,6 +26,7 @@ const getCurrentFiscalYear = () => {
 };
 
 export default function InspectionSupervisor() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [regionStats, setRegionStats] = useState<RegionStats[]>([]);
   const [fiscalYears, setFiscalYears] = useState<number[]>([]);
@@ -190,9 +192,9 @@ export default function InspectionSupervisor() {
                   </TableRow>
                 ) : (
                   regionStats.map((stat) => (
-                    <TableRow key={stat.regionId}>
+                    <TableRow key={stat.regionId} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/inspection/supervisor/region/${stat.regionId}`)}>
                       <TableCell className="font-medium">
-                        <span className="text-primary hover:underline cursor-pointer">
+                        <span className="text-primary hover:underline">
                           เขตสุขภาพที่ {stat.regionNumber}
                         </span>
                       </TableCell>

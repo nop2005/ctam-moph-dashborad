@@ -16,6 +16,7 @@ import ReportsQuantitative from "./pages/ReportsQuantitative";
 import ReportsImpact from "./pages/ReportsImpact";
 import InspectionSupervisor from "./pages/InspectionSupervisor";
 import InspectionSupervisee from "./pages/InspectionSupervisee";
+import InspectionRegionDetail from "./pages/InspectionRegionDetail";
 import ProfileSettings from "./pages/ProfileSettings";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
@@ -94,6 +95,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <InspectionSupervisor />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/inspection/supervisor/region/:regionId" 
+              element={
+                <ProtectedRoute>
+                  <InspectionRegionDetail />
                 </ProtectedRoute>
               } 
             />
