@@ -109,9 +109,9 @@ export default function InspectionSupervisee() {
 
       const provinceIds = provinces.map(p => p.id);
 
-      // Fetch inspection files for these provinces
+      // Fetch supervisee inspection files (separate table from supervisor)
       let inspectionQuery = supabase
-        .from('inspection_files')
+        .from('supervisee_inspection_files')
         .select('*')
         .in('province_id', provinceIds);
 
@@ -165,25 +165,25 @@ export default function InspectionSupervisee() {
     setUploading(`${provinceId}-${round}-${fileType}`);
 
     try {
-      // Upload file to storage - convert Thai round to English for valid file path
+      // Upload file to storage - use supervisee bucket (separate from supervisor)
       const roundPath = round === 'รอบที่ 1' ? 'round_1' : 'round_2';
       const fileExt = file.name.split('.').pop();
       const fileName = `${regionId}/${provinceId}/${fiscalYear}/${roundPath}/${fileType}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
-        .from('inspection-files')
+        .from('supervisee-inspection-files')
         .upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('inspection-files')
+        .from('supervisee-inspection-files')
         .getPublicUrl(fileName);
 
-      // Check if record exists
+      // Check if record exists in supervisee table
       const { data: existing } = await supabase
-        .from('inspection_files')
+        .from('supervisee_inspection_files')
         .select('id')
         .eq('province_id', provinceId)
         .eq('fiscal_year', fiscalYear)
@@ -194,7 +194,7 @@ export default function InspectionSupervisee() {
       if (existing) {
         // Update existing record
         const { error: updateError } = await supabase
-          .from('inspection_files')
+          .from('supervisee_inspection_files')
           .update({
             file_name: file.name,
             file_path: urlData.publicUrl,
@@ -206,7 +206,7 @@ export default function InspectionSupervisee() {
       } else {
         // Insert new record
         const { error: insertError } = await supabase
-          .from('inspection_files')
+          .from('supervisee_inspection_files')
           .insert({
             province_id: provinceId,
             health_region_id: regionId,

@@ -859,6 +859,66 @@ export type Database = {
           },
         ]
       }
+      supervisee_inspection_files: {
+        Row: {
+          assessment_round: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string
+          fiscal_year: number
+          health_region_id: string
+          id: string
+          province_id: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          assessment_round: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type: string
+          fiscal_year: number
+          health_region_id: string
+          id?: string
+          province_id: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          assessment_round?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string
+          fiscal_year?: number
+          health_region_id?: string
+          id?: string
+          province_id?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supervisee_inspection_files_health_region_id_fkey"
+            columns: ["health_region_id"]
+            isOneToOne: false
+            referencedRelation: "health_regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supervisee_inspection_files_province_id_fkey"
+            columns: ["province_id"]
+            isOneToOne: false
+            referencedRelation: "provinces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
