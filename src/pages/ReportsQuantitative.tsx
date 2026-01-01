@@ -41,6 +41,15 @@ interface Hospital {
   province_id: string;
 }
 
+interface HealthOffice {
+  id: string;
+  name: string;
+  code: string;
+  province_id: string | null;
+  health_region_id: string;
+  office_type: string;
+}
+
 interface CTAMCategory {
   id: string;
   code: string;
@@ -59,7 +68,8 @@ interface AssessmentItem {
 
 interface Assessment {
   id: string;
-  hospital_id: string;
+  hospital_id: string | null;
+  health_office_id: string | null;
   status: string;
   fiscal_year: number;
   quantitative_score: number | string | null;
@@ -97,6 +107,7 @@ export default function ReportsQuantitative() {
   const [healthRegions, setHealthRegions] = useState<HealthRegion[]>([]);
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [healthOffices, setHealthOffices] = useState<HealthOffice[]>([]);
   const [categories, setCategories] = useState<CTAMCategory[]>([]);
   const [assessmentItems, setAssessmentItems] = useState<AssessmentItem[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
@@ -136,27 +147,30 @@ export default function ReportsQuantitative() {
 
     const fetchData = async () => {
       try {
-        const [regionsRes, provincesRes, hospitalsRes, categoriesRes] = await Promise.all([
+        const [regionsRes, provincesRes, hospitalsRes, healthOfficesRes, categoriesRes] = await Promise.all([
           supabase.from('health_regions').select('*').order('region_number'),
           supabase.from('provinces').select('*').order('name'),
           supabase.from('hospitals').select('*').order('name'),
+          supabase.from('health_offices').select('*').order('name'),
           supabase.from('ctam_categories').select('*').order('order_number'),
         ]);
 
         if (regionsRes.error) throw regionsRes.error;
         if (provincesRes.error) throw provincesRes.error;
         if (hospitalsRes.error) throw hospitalsRes.error;
+        if (healthOfficesRes.error) throw healthOfficesRes.error;
         if (categoriesRes.error) throw categoriesRes.error;
 
         setHealthRegions(regionsRes.data || []);
         setProvinces(provincesRes.data || []);
         setHospitals(hospitalsRes.data || []);
+        setHealthOffices(healthOfficesRes.data || []);
         setCategories(categoriesRes.data || []);
 
         const assessmentsAll = await fetchAll<Assessment>(
           supabase
             .from('assessments')
-            .select('id, hospital_id, status, fiscal_year, quantitative_score, created_at')
+            .select('id, hospital_id, health_office_id, status, fiscal_year, quantitative_score, created_at')
             .order('created_at', { ascending: true })
         );
 
@@ -226,41 +240,59 @@ export default function ReportsQuantitative() {
     return assessmentItems.filter(item => filteredAssessmentIds.has(item.assessment_id));
   }, [assessmentItems, filteredAssessments]);
 
-  // Calculate pass percentage per category for a set of hospital IDs
-  // For province level: returns percentage of hospitals that passed (score = 1) each category
-  // totalCount = ALL hospitals in province (including those without assessments)
-  // For hospital level: returns the actual score (1 = pass, 0 = fail)
-  const calculateCategoryAverages = (hospitalIds: string[], isProvinceLevel: boolean = false) => {
-    const relevantAssessments = filteredAssessments.filter(a => hospitalIds.includes(a.hospital_id));
-    const totalHospitalsInScope = hospitalIds.length; // Total hospitals in province
+  // Calculate pass percentage per category for a set of hospital IDs and health office IDs
+  // For province level: returns percentage of units that passed (score = 1) each category
+  // totalCount = ALL units in scope (including those without assessments)
+  // For unit level: returns the actual score (1 = pass, 0 = fail)
+  const calculateCategoryAverages = (hospitalIds: string[], healthOfficeIds: string[] = [], isProvinceLevel: boolean = false) => {
+    const relevantAssessments = filteredAssessments.filter(a => 
+      (a.hospital_id && hospitalIds.includes(a.hospital_id)) ||
+      (a.health_office_id && healthOfficeIds.includes(a.health_office_id))
+    );
+    const totalUnitsInScope = hospitalIds.length + healthOfficeIds.length;
     
     return categories.map(cat => {
       if (isProvinceLevel) {
-        // For province level: calculate percentage of hospitals that passed this category
-        // Denominator is ALL hospitals in province (not just those with assessments)
+        // For province level: calculate percentage of units that passed this category
         let passedCount = 0;
         
+        // Check hospitals
         hospitalIds.forEach(hospitalId => {
-          const hospitalAssessments = relevantAssessments.filter(a => a.hospital_id === hospitalId);
-          if (hospitalAssessments.length === 0) return; // Hospital not assessed - counts as not passed
+          const unitAssessments = relevantAssessments.filter(a => a.hospital_id === hospitalId);
+          if (unitAssessments.length === 0) return;
           
-          const assessmentIds = hospitalAssessments.map(a => a.id);
+          const assessmentIds = unitAssessments.map(a => a.id);
           const catItems = filteredAssessmentItems.filter(
             item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
           );
           
           if (catItems.length > 0) {
-            // Check if any assessment has score = 1 (pass)
             const hasPassed = catItems.some(item => Number(item.score) === 1);
             if (hasPassed) passedCount++;
           }
         });
         
-        if (totalHospitalsInScope === 0) return { categoryId: cat.id, average: null, passedCount: 0, totalCount: 0 };
-        const percentage = (passedCount / totalHospitalsInScope) * 100;
-        return { categoryId: cat.id, average: percentage, passedCount, totalCount: totalHospitalsInScope };
+        // Check health offices
+        healthOfficeIds.forEach(officeId => {
+          const unitAssessments = relevantAssessments.filter(a => a.health_office_id === officeId);
+          if (unitAssessments.length === 0) return;
+          
+          const assessmentIds = unitAssessments.map(a => a.id);
+          const catItems = filteredAssessmentItems.filter(
+            item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
+          );
+          
+          if (catItems.length > 0) {
+            const hasPassed = catItems.some(item => Number(item.score) === 1);
+            if (hasPassed) passedCount++;
+          }
+        });
+        
+        if (totalUnitsInScope === 0) return { categoryId: cat.id, average: null, passedCount: 0, totalCount: 0 };
+        const percentage = (passedCount / totalUnitsInScope) * 100;
+        return { categoryId: cat.id, average: percentage, passedCount, totalCount: totalUnitsInScope };
       } else {
-        // For hospital level or region level: use original average calculation
+        // For unit level: use original average calculation
         const assessmentIds = relevantAssessments.map(a => a.id);
         const relevantItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id));
         const catItems = relevantItems.filter(item => item.category_id === cat.id);
@@ -280,16 +312,20 @@ export default function ReportsQuantitative() {
         const regionHospitals = hospitals.filter(h => 
           regionProvinces.some(p => p.id === h.province_id)
         );
+        const regionHealthOffices = healthOffices.filter(ho => ho.health_region_id === region.id);
         const hospitalIds = regionHospitals.map(h => h.id);
-        const categoryAverages = calculateCategoryAverages(hospitalIds, true); // Use same calculation as province level
+        const healthOfficeIds = regionHealthOffices.map(ho => ho.id);
+        const categoryAverages = calculateCategoryAverages(hospitalIds, healthOfficeIds, true);
         
-        // Calculate hospitals that passed all 17 items (green)
-        let hospitalsPassedAll17 = 0;
+        // Calculate units that passed all 17 items (green)
+        let unitsPassedAll17 = 0;
+        
+        // Check hospitals
         hospitalIds.forEach(hospitalId => {
-          const hospitalAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
-          if (hospitalAssessments.length === 0) return;
+          const unitAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
+          if (unitAssessments.length === 0) return;
           
-          const assessmentIds = hospitalAssessments.map(a => a.id);
+          const assessmentIds = unitAssessments.map(a => a.id);
           let passedAllCategories = true;
           
           categories.forEach(cat => {
@@ -300,33 +336,56 @@ export default function ReportsQuantitative() {
             if (!hasPassed) passedAllCategories = false;
           });
           
-          if (passedAllCategories) hospitalsPassedAll17++;
+          if (passedAllCategories) unitsPassedAll17++;
+        });
+        
+        // Check health offices
+        healthOfficeIds.forEach(officeId => {
+          const unitAssessments = filteredAssessments.filter(a => a.health_office_id === officeId);
+          if (unitAssessments.length === 0) return;
+          
+          const assessmentIds = unitAssessments.map(a => a.id);
+          let passedAllCategories = true;
+          
+          categories.forEach(cat => {
+            const catItems = filteredAssessmentItems.filter(
+              item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
+            );
+            const hasPassed = catItems.some(item => Number(item.score) === 1);
+            if (!hasPassed) passedAllCategories = false;
+          });
+          
+          if (passedAllCategories) unitsPassedAll17++;
         });
 
         return {
           id: region.id,
           name: `เขตสุขภาพที่ ${region.region_number}`,
           type: 'region' as const,
-          hospitalCount: regionHospitals.length,
-          hospitalsPassedAll17,
+          hospitalCount: regionHospitals.length + regionHealthOffices.length,
+          hospitalsPassedAll17: unitsPassedAll17,
           categoryAverages,
         };
       });
     } else if (selectedProvince === 'all') {
-      // Show provinces in selected region - use percentage of hospitals that passed
+      // Show provinces in selected region
       const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
       return regionProvinces.map(province => {
         const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
+        const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === province.id);
         const hospitalIds = provinceHospitals.map(h => h.id);
-        const categoryAverages = calculateCategoryAverages(hospitalIds, true); // Use province level calculation
+        const healthOfficeIds = provinceHealthOffices.map(ho => ho.id);
+        const categoryAverages = calculateCategoryAverages(hospitalIds, healthOfficeIds, true);
         
-        // Calculate hospitals that passed all 17 items (green)
-        let hospitalsPassedAll17 = 0;
+        // Calculate units that passed all 17 items
+        let unitsPassedAll17 = 0;
+        
+        // Check hospitals
         hospitalIds.forEach(hospitalId => {
-          const hospitalAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
-          if (hospitalAssessments.length === 0) return;
+          const unitAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
+          if (unitAssessments.length === 0) return;
           
-          const assessmentIds = hospitalAssessments.map(a => a.id);
+          const assessmentIds = unitAssessments.map(a => a.id);
           let passedAllCategories = true;
           
           categories.forEach(cat => {
@@ -337,23 +396,44 @@ export default function ReportsQuantitative() {
             if (!hasPassed) passedAllCategories = false;
           });
           
-          if (passedAllCategories) hospitalsPassedAll17++;
+          if (passedAllCategories) unitsPassedAll17++;
+        });
+        
+        // Check health offices
+        healthOfficeIds.forEach(officeId => {
+          const unitAssessments = filteredAssessments.filter(a => a.health_office_id === officeId);
+          if (unitAssessments.length === 0) return;
+          
+          const assessmentIds = unitAssessments.map(a => a.id);
+          let passedAllCategories = true;
+          
+          categories.forEach(cat => {
+            const catItems = filteredAssessmentItems.filter(
+              item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
+            );
+            const hasPassed = catItems.some(item => Number(item.score) === 1);
+            if (!hasPassed) passedAllCategories = false;
+          });
+          
+          if (passedAllCategories) unitsPassedAll17++;
         });
 
         return {
           id: province.id,
           name: province.name,
           type: 'province' as const,
-          hospitalCount: provinceHospitals.length,
-          hospitalsPassedAll17,
+          hospitalCount: provinceHospitals.length + provinceHealthOffices.length,
+          hospitalsPassedAll17: unitsPassedAll17,
           categoryAverages,
         };
       });
     } else {
-      // Show hospitals in selected province
+      // Show hospitals and health offices in selected province
       const provinceHospitals = hospitals.filter(h => h.province_id === selectedProvince);
-      return provinceHospitals.map(hospital => {
-        const categoryAverages = calculateCategoryAverages([hospital.id]);
+      const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === selectedProvince);
+      
+      const hospitalRows = provinceHospitals.map(hospital => {
+        const categoryAverages = calculateCategoryAverages([hospital.id], []);
 
         return {
           id: hospital.id,
@@ -364,8 +444,23 @@ export default function ReportsQuantitative() {
           categoryAverages,
         };
       });
+      
+      const healthOfficeRows = provinceHealthOffices.map(office => {
+        const categoryAverages = calculateCategoryAverages([], [office.id]);
+
+        return {
+          id: office.id,
+          name: office.name,
+          code: office.code,
+          type: 'health_office' as const,
+          hospitalCount: 1,
+          categoryAverages,
+        };
+      });
+      
+      return [...hospitalRows, ...healthOfficeRows];
     }
-  }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, categories, filteredAssessments, filteredAssessmentItems]);
+  }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, healthOffices, categories, filteredAssessments, filteredAssessmentItems]);
 
   // Get title based on filter state
   const getTitle = () => {

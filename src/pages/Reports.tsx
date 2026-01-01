@@ -55,7 +55,8 @@ interface HealthOffice {
 
 interface Assessment {
   id: string;
-  hospital_id: string;
+  hospital_id: string | null;
+  health_office_id: string | null;
   status: string;
   fiscal_year: number;
   assessment_period: string;
@@ -98,14 +99,18 @@ interface HospitalReport {
   assessment: Assessment | null;
 }
 
-// Helper function to get the latest assessment for each hospital
-const getLatestAssessmentPerHospital = (allAssessments: Assessment[]): Assessment[] => {
+// Helper function to get the latest assessment for each hospital or health office
+const getLatestAssessmentPerUnit = (allAssessments: Assessment[]): Assessment[] => {
   const latestMap = new Map<string, Assessment>();
   
   for (const assessment of allAssessments) {
-    const existing = latestMap.get(assessment.hospital_id);
+    // Use hospital_id or health_office_id as key
+    const unitId = assessment.hospital_id || assessment.health_office_id;
+    if (!unitId) continue;
+    
+    const existing = latestMap.get(unitId);
     if (!existing) {
-      latestMap.set(assessment.hospital_id, assessment);
+      latestMap.set(unitId, assessment);
     } else {
       // Compare by fiscal_year first, then by assessment_period
       if (
@@ -113,7 +118,7 @@ const getLatestAssessmentPerHospital = (allAssessments: Assessment[]): Assessmen
         (assessment.fiscal_year === existing.fiscal_year && 
          assessment.assessment_period > existing.assessment_period)
       ) {
-        latestMap.set(assessment.hospital_id, assessment);
+        latestMap.set(unitId, assessment);
       }
     }
   }
@@ -171,7 +176,7 @@ export default function Reports() {
           supabase.from('provinces').select('*').order('name'),
           supabase.from('hospitals').select('*').order('name'),
           supabase.from('health_offices').select('*').order('name'),
-          supabase.from('assessments').select('id, hospital_id, status, fiscal_year, assessment_period, total_score, quantitative_score, qualitative_score, impact_score, created_at'),
+          supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, assessment_period, total_score, quantitative_score, qualitative_score, impact_score, created_at'),
         ]);
 
         if (regionsRes.error) throw regionsRes.error;
@@ -198,9 +203,9 @@ export default function Reports() {
   }, [profile]);
 
 
-  // Get latest assessments only (one per hospital) from filtered assessments
+  // Get latest assessments only (one per hospital/health_office) from filtered assessments
   const latestAssessments = useMemo(() => 
-    getLatestAssessmentPerHospital(filteredAssessments), 
+    getLatestAssessmentPerUnit(filteredAssessments), 
     [filteredAssessments]
   );
 
@@ -223,14 +228,16 @@ export default function Reports() {
       );
       filteredHealthOffices = healthOffices.filter(ho => ho.health_region_id === chartRegionId);
       filteredAssessments = latestAssessments.filter(a =>
-        filteredHospitals.some(h => h.id === a.hospital_id)
+        filteredHospitals.some(h => h.id === a.hospital_id) ||
+        filteredHealthOffices.some(ho => ho.id === a.health_office_id)
       );
     } else if (chartDrillLevel === 'hospital' && chartProvinceId) {
       // Hospitals in selected province + health offices in that province
       filteredHospitals = hospitals.filter(h => h.province_id === chartProvinceId);
       filteredHealthOffices = healthOffices.filter(ho => ho.province_id === chartProvinceId);
       filteredAssessments = latestAssessments.filter(a =>
-        filteredHospitals.some(h => h.id === a.hospital_id)
+        filteredHospitals.some(h => h.id === a.hospital_id) ||
+        filteredHealthOffices.some(ho => ho.id === a.health_office_id)
       );
     }
 
@@ -374,9 +381,10 @@ export default function Reports() {
                       );
                       const regionHealthOffices = healthOffices.filter(ho => ho.health_region_id === region.id);
                       const totalUnits = regionHospitals.length + regionHealthOffices.length;
-                      // Use latest assessments only
+                      // Use latest assessments only (include both hospitals and health offices)
                       const regionLatestAssessments = latestAssessments.filter(a =>
-                        regionHospitals.some(h => h.id === a.hospital_id)
+                        regionHospitals.some(h => h.id === a.hospital_id) ||
+                        regionHealthOffices.some(ho => ho.id === a.health_office_id)
                       );
                       const completedCount = regionLatestAssessments.filter(a => 
                         a.status === 'approved_regional' || a.status === 'completed'
@@ -435,9 +443,10 @@ export default function Reports() {
                       const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
                       const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === province.id);
                       const totalUnits = provinceHospitals.length + provinceHealthOffices.length;
-                      // Use latest assessments only
+                      // Use latest assessments only (include both hospitals and health offices)
                       const provinceLatestAssessments = latestAssessments.filter(a =>
-                        provinceHospitals.some(h => h.id === a.hospital_id)
+                        provinceHospitals.some(h => h.id === a.hospital_id) ||
+                        provinceHealthOffices.some(ho => ho.id === a.health_office_id)
                       );
                       const completedCount = provinceLatestAssessments.filter(a => 
                         a.status === 'approved_regional' || a.status === 'completed'
@@ -540,22 +549,44 @@ export default function Reports() {
                       );
                     })}
                     {/* Render health offices in this province */}
-                    {healthOffices.filter(ho => ho.province_id === chartProvinceId).map((office) => (
-                      <TableRow key={office.id}>
-                        <TableCell className="font-mono text-sm">{office.code}</TableCell>
-                        <TableCell className="font-medium">{office.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{office.office_type}</Badge>
-                        </TableCell>
-                        <TableCell>-</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">ยังไม่มีข้อมูล</Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">-</TableCell>
-                        <TableCell className="text-right">-</TableCell>
-                        <TableCell className="text-right">-</TableCell>
-                      </TableRow>
-                    ))}
+                    {healthOffices.filter(ho => ho.province_id === chartProvinceId).map((office) => {
+                      const assessment = latestAssessments.find(a => a.health_office_id === office.id);
+                      
+                      return (
+                        <TableRow key={office.id}>
+                          <TableCell className="font-mono text-sm">{office.code}</TableCell>
+                          <TableCell className="font-medium">{office.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{office.office_type}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {assessment ? (
+                              <span className="text-sm">
+                                {assessment.assessment_period}/{assessment.fiscal_year + 543}
+                              </span>
+                            ) : '-'}
+                          </TableCell>
+                          <TableCell>
+                            {assessment ? (
+                              <Badge variant={statusLabels[assessment.status]?.variant || 'secondary'}>
+                                {statusLabels[assessment.status]?.label || assessment.status}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline">ยังไม่มีข้อมูล</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {assessment?.total_score?.toFixed(2) || '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {assessment?.quantitative_score?.toFixed(2) || '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {assessment?.impact_score?.toFixed(2) || '-'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

@@ -42,6 +42,15 @@ interface Hospital {
   province_id: string;
 }
 
+interface HealthOffice {
+  id: string;
+  name: string;
+  code: string;
+  province_id: string | null;
+  health_region_id: string;
+  office_type: string;
+}
+
 interface ImpactScore {
   id: string;
   assessment_id: string;
@@ -57,7 +66,8 @@ interface ImpactScore {
 
 interface Assessment {
   id: string;
-  hospital_id: string;
+  hospital_id: string | null;
+  health_office_id: string | null;
   status: string;
   fiscal_year: number;
   impact_score: number | null;
@@ -100,6 +110,7 @@ export default function ReportsImpact() {
   const [healthRegions, setHealthRegions] = useState<HealthRegion[]>([]);
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [healthOffices, setHealthOffices] = useState<HealthOffice[]>([]);
   const [impactScores, setImpactScores] = useState<ImpactScore[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
 
@@ -138,24 +149,27 @@ export default function ReportsImpact() {
 
     const fetchData = async () => {
       try {
-        const [regionsRes, provincesRes, hospitalsRes] = await Promise.all([
+        const [regionsRes, provincesRes, hospitalsRes, healthOfficesRes] = await Promise.all([
           supabase.from('health_regions').select('*').order('region_number'),
           supabase.from('provinces').select('*').order('name'),
           supabase.from('hospitals').select('*').order('name'),
+          supabase.from('health_offices').select('*').order('name'),
         ]);
 
         if (regionsRes.error) throw regionsRes.error;
         if (provincesRes.error) throw provincesRes.error;
         if (hospitalsRes.error) throw hospitalsRes.error;
+        if (healthOfficesRes.error) throw healthOfficesRes.error;
 
         setHealthRegions(regionsRes.data || []);
         setProvinces(provincesRes.data || []);
         setHospitals(hospitalsRes.data || []);
+        setHealthOffices(healthOfficesRes.data || []);
 
         const assessmentsAll = await fetchAll<Assessment>(
           supabase
             .from('assessments')
-            .select('id, hospital_id, status, fiscal_year, impact_score, created_at')
+            .select('id, hospital_id, health_office_id, status, fiscal_year, impact_score, created_at')
             .order('created_at', { ascending: true })
         );
 
@@ -223,9 +237,12 @@ export default function ReportsImpact() {
     return impactScores.find(is => is.assessment_id === assessmentId);
   };
 
-  // Calculate impact statistics for a set of hospital IDs
-  const calculateImpactStats = (hospitalIds: string[]) => {
-    const relevantAssessments = filteredAssessments.filter(a => hospitalIds.includes(a.hospital_id));
+  // Calculate impact statistics for a set of hospital IDs and health office IDs
+  const calculateImpactStats = (hospitalIds: string[], healthOfficeIds: string[] = []) => {
+    const relevantAssessments = filteredAssessments.filter(a => 
+      (a.hospital_id && hospitalIds.includes(a.hospital_id)) ||
+      (a.health_office_id && healthOfficeIds.includes(a.health_office_id))
+    );
     
     let highSafety = 0;
     let mediumSafety = 0;
@@ -235,15 +252,41 @@ export default function ReportsImpact() {
     let totalIncidents = 0;
     let totalBreaches = 0;
 
+    // Process hospitals
     hospitalIds.forEach(hospitalId => {
-      const hospitalAssessments = relevantAssessments.filter(a => a.hospital_id === hospitalId);
-      if (hospitalAssessments.length === 0) {
+      const unitAssessments = relevantAssessments.filter(a => a.hospital_id === hospitalId);
+      if (unitAssessments.length === 0) {
         notAssessed++;
         return;
       }
 
-      // Get latest assessment's impact score
-      const latestAssessment = hospitalAssessments[hospitalAssessments.length - 1];
+      const latestAssessment = unitAssessments[unitAssessments.length - 1];
+      const impactScore = getImpactScoreForAssessment(latestAssessment.id);
+
+      if (!impactScore || impactScore.total_score === null) {
+        notAssessed++;
+        return;
+      }
+
+      const level = getImpactLevel(impactScore.total_score);
+      if (level.level === 'ปลอดภัยสูง') highSafety++;
+      else if (level.level === 'ปลอดภัยปานกลาง') mediumSafety++;
+      else if (level.level === 'ความเสี่ยงต่ำ') lowRisk++;
+      else if (level.level === 'ความเสี่ยงสูง') highRisk++;
+
+      if (impactScore.had_incident) totalIncidents++;
+      if (impactScore.had_data_breach) totalBreaches++;
+    });
+
+    // Process health offices
+    healthOfficeIds.forEach(officeId => {
+      const unitAssessments = relevantAssessments.filter(a => a.health_office_id === officeId);
+      if (unitAssessments.length === 0) {
+        notAssessed++;
+        return;
+      }
+
+      const latestAssessment = unitAssessments[unitAssessments.length - 1];
       const impactScore = getImpactScoreForAssessment(latestAssessment.id);
 
       if (!impactScore || impactScore.total_score === null) {
@@ -262,7 +305,7 @@ export default function ReportsImpact() {
     });
 
     return {
-      total: hospitalIds.length,
+      total: hospitalIds.length + healthOfficeIds.length,
       highSafety,
       mediumSafety,
       lowRisk,
@@ -276,19 +319,23 @@ export default function ReportsImpact() {
   // Pie chart data based on current filter
   const pieChartData = useMemo(() => {
     let hospitalIds: string[] = [];
+    let healthOfficeIds: string[] = [];
 
     if (selectedRegion === 'all') {
       hospitalIds = hospitals.map(h => h.id);
+      healthOfficeIds = healthOffices.map(ho => ho.id);
     } else if (selectedProvince === 'all') {
       const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
       hospitalIds = hospitals.filter(h => 
         regionProvinces.some(p => p.id === h.province_id)
       ).map(h => h.id);
+      healthOfficeIds = healthOffices.filter(ho => ho.health_region_id === selectedRegion).map(ho => ho.id);
     } else {
       hospitalIds = hospitals.filter(h => h.province_id === selectedProvince).map(h => h.id);
+      healthOfficeIds = healthOffices.filter(ho => ho.province_id === selectedProvince).map(ho => ho.id);
     }
 
-    const stats = calculateImpactStats(hospitalIds);
+    const stats = calculateImpactStats(hospitalIds, healthOfficeIds);
 
     return {
       data: [
@@ -300,17 +347,19 @@ export default function ReportsImpact() {
       ].filter(d => d.value > 0),
       stats,
     };
-  }, [selectedRegion, selectedProvince, hospitals, provinces, filteredAssessments, impactScores]);
+  }, [selectedRegion, selectedProvince, hospitals, healthOffices, provinces, filteredAssessments, impactScores]);
 
   // Table data based on drill-down level
   const tableData = useMemo(() => {
-    // Helper to check if a hospital has incident/breach
-    const hospitalHasIssue = (hospitalId: string): { hasIncident: boolean; hasBreach: boolean } => {
-      const hospitalAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
+    // Helper to check if a unit has incident/breach
+    const unitHasIssue = (unitId: string, isHealthOffice: boolean = false): { hasIncident: boolean; hasBreach: boolean } => {
+      const unitAssessments = filteredAssessments.filter(a => 
+        isHealthOffice ? a.health_office_id === unitId : a.hospital_id === unitId
+      );
       let hasIncident = false;
       let hasBreach = false;
       
-      hospitalAssessments.forEach(assessment => {
+      unitAssessments.forEach(assessment => {
         const impactScore = getImpactScoreForAssessment(assessment.id);
         if (impactScore?.had_incident) hasIncident = true;
         if (impactScore?.had_data_breach) hasBreach = true;
@@ -326,8 +375,10 @@ export default function ReportsImpact() {
         const regionHospitals = hospitals.filter(h => 
           regionProvinces.some(p => p.id === h.province_id)
         );
+        const regionHealthOffices = healthOffices.filter(ho => ho.health_region_id === region.id);
         const hospitalIds = regionHospitals.map(h => h.id);
-        const stats = calculateImpactStats(hospitalIds);
+        const healthOfficeIds = regionHealthOffices.map(ho => ho.id);
+        const stats = calculateImpactStats(hospitalIds, healthOfficeIds);
 
         return {
           id: region.id,
@@ -349,8 +400,10 @@ export default function ReportsImpact() {
       const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
       const allProvinces = regionProvinces.map(province => {
         const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
+        const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === province.id);
         const hospitalIds = provinceHospitals.map(h => h.id);
-        const stats = calculateImpactStats(hospitalIds);
+        const healthOfficeIds = provinceHealthOffices.map(ho => ho.id);
+        const stats = calculateImpactStats(hospitalIds, healthOfficeIds);
 
         return {
           id: province.id,
@@ -360,7 +413,6 @@ export default function ReportsImpact() {
         };
       });
 
-      // Apply issue filter
       if (filterByIssue === 'incident') {
         return allProvinces.filter(p => p.totalIncidents > 0);
       } else if (filterByIssue === 'breach') {
@@ -368,14 +420,16 @@ export default function ReportsImpact() {
       }
       return allProvinces;
     } else {
-      // Show hospitals in selected province
+      // Show hospitals and health offices in selected province
       const provinceHospitals = hospitals.filter(h => h.province_id === selectedProvince);
+      const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === selectedProvince);
+      
       const allHospitals = provinceHospitals.map(hospital => {
         const hospitalAssessments = filteredAssessments.filter(a => a.hospital_id === hospital.id);
         const latestAssessment = hospitalAssessments[hospitalAssessments.length - 1];
         const impactScore = latestAssessment ? getImpactScoreForAssessment(latestAssessment.id) : undefined;
         const level = getImpactLevel(impactScore?.total_score ?? null);
-        const issues = hospitalHasIssue(hospital.id);
+        const issues = unitHasIssue(hospital.id, false);
 
         return {
           id: hospital.id,
@@ -393,16 +447,41 @@ export default function ReportsImpact() {
           hasAnyBreach: issues.hasBreach,
         };
       });
+      
+      const allHealthOffices = provinceHealthOffices.map(office => {
+        const officeAssessments = filteredAssessments.filter(a => a.health_office_id === office.id);
+        const latestAssessment = officeAssessments[officeAssessments.length - 1];
+        const impactScore = latestAssessment ? getImpactScoreForAssessment(latestAssessment.id) : undefined;
+        const level = getImpactLevel(impactScore?.total_score ?? null);
+        const issues = unitHasIssue(office.id, true);
 
-      // Apply issue filter
+        return {
+          id: office.id,
+          name: office.name,
+          code: office.code,
+          type: 'health_office' as const,
+          impactScore: impactScore?.total_score ?? null,
+          level: level.level,
+          levelColor: level.color,
+          hadIncident: impactScore?.had_incident ?? null,
+          hadBreach: impactScore?.had_data_breach ?? null,
+          incidentScore: impactScore?.incident_score ?? null,
+          breachScore: impactScore?.breach_score ?? null,
+          hasAnyIncident: issues.hasIncident,
+          hasAnyBreach: issues.hasBreach,
+        };
+      });
+      
+      const allUnits = [...allHospitals, ...allHealthOffices];
+
       if (filterByIssue === 'incident') {
-        return allHospitals.filter(h => h.hasAnyIncident);
+        return allUnits.filter(h => h.hasAnyIncident);
       } else if (filterByIssue === 'breach') {
-        return allHospitals.filter(h => h.hasAnyBreach);
+        return allUnits.filter(h => h.hasAnyBreach);
       }
-      return allHospitals;
+      return allUnits;
     }
-  }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, filteredAssessments, impactScores, filterByIssue]);
+  }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, healthOffices, filteredAssessments, impactScores, filterByIssue]);
 
   // Get title based on filter state
   const getTitle = () => {
