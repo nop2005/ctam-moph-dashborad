@@ -817,7 +817,7 @@ export default function ReportsImpact() {
                           className={isDrillRow ? 'cursor-pointer hover:bg-muted/50' : ''}
                           onClick={() => isDrillRow && handleRowClick(row)}
                         >
-                          <TableCell className="font-medium">{row.name}</TableCell>
+                          <TableCell className={`font-medium ${isDrillRow ? 'text-primary hover:underline' : ''}`}>{row.name}</TableCell>
                           {isUnitRow ? (
                             <>
                               <TableCell className="text-center text-muted-foreground">
