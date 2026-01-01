@@ -14,6 +14,8 @@ import UserManagement from "./pages/UserManagement";
 import Reports from "./pages/Reports";
 import ReportsQuantitative from "./pages/ReportsQuantitative";
 import ReportsImpact from "./pages/ReportsImpact";
+import InspectionSupervisor from "./pages/InspectionSupervisor";
+import InspectionSupervisee from "./pages/InspectionSupervisee";
 import ProfileSettings from "./pages/ProfileSettings";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
@@ -84,6 +86,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ReportsImpact />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/inspection/supervisor" 
+              element={
+                <ProtectedRoute>
+                  <InspectionSupervisor />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/inspection/supervisee" 
+              element={
+                <ProtectedRoute>
+                  <InspectionSupervisee />
                 </ProtectedRoute>
               } 
             />
