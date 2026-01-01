@@ -478,11 +478,11 @@ export default function ReportsQuantitative() {
   // Format score display - show "ผ่าน" for 1, "ไม่ผ่าน" for 0 or other values
   const formatScore = (
     catAvg: { average: number | null; passedCount?: number; totalCount?: number }, 
-    type: 'hospital' | 'province' | 'region' = 'region'
+    type: 'hospital' | 'health_office' | 'province' | 'region' = 'region'
   ) => {
     if (catAvg.average === null) return '-';
-    // For hospital level, show ผ่าน/ไม่ผ่าน
-    if (type === 'hospital') {
+    // For hospital/health_office level, show ผ่าน/ไม่ผ่าน
+    if (type === 'hospital' || type === 'health_office') {
       if (catAvg.average === 1) return 'ผ่าน';
       return 'ไม่ผ่าน';
     }
@@ -500,7 +500,7 @@ export default function ReportsQuantitative() {
   };
 
   // Get score color class - adjusted for province/region level (percentage 0-100)
-  const getScoreColorClass = (score: number | null, type: 'hospital' | 'province' | 'region' = 'region') => {
+  const getScoreColorClass = (score: number | null, type: 'hospital' | 'health_office' | 'province' | 'region' = 'region') => {
     if (score === null) return 'text-muted-foreground';
     
     if (type === 'province' || type === 'region') {
@@ -510,7 +510,7 @@ export default function ReportsQuantitative() {
       return 'text-red-600 dark:text-red-400';
     }
     
-    // Hospital level uses 0-1 scale
+    // Hospital/health_office level uses 0-1 scale
     if (score >= 0.8) return 'text-green-600 dark:text-green-400 font-medium';
     if (score >= 0.5) return 'text-yellow-600 dark:text-yellow-400';
     return 'text-red-600 dark:text-red-400';
@@ -926,7 +926,7 @@ export default function ReportsQuantitative() {
                                     {row.name}
                                   </button>
                                 )}
-                                {row.type === 'hospital' && (
+                                {(row.type === 'hospital' || row.type === 'health_office') && (
                                   <>
                                     <span>{row.name}</span>
                                     {'code' in row && (
