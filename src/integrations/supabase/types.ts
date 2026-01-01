@@ -116,6 +116,7 @@ export type Database = {
           created_at: string
           created_by: string
           fiscal_year: number
+          health_office_id: string | null
           hospital_id: string
           id: string
           impact_approved_at: string | null
@@ -144,6 +145,7 @@ export type Database = {
           created_at?: string
           created_by: string
           fiscal_year: number
+          health_office_id?: string | null
           hospital_id: string
           id?: string
           impact_approved_at?: string | null
@@ -172,6 +174,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           fiscal_year?: number
+          health_office_id?: string | null
           hospital_id?: string
           id?: string
           impact_approved_at?: string | null
@@ -201,6 +204,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessments_health_office_id_fkey"
+            columns: ["health_office_id"]
+            isOneToOne: false
+            referencedRelation: "health_offices"
             referencedColumns: ["id"]
           },
           {

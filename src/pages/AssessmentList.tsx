@@ -18,6 +18,7 @@ import type { Database } from '@/integrations/supabase/types';
 
 type Assessment = Database['public']['Tables']['assessments']['Row'];
 type Hospital = Database['public']['Tables']['hospitals']['Row'];
+type HealthOffice = Database['public']['Tables']['health_offices']['Row'];
 
 const statusLabels: Record<string, { label: string; className: string }> = {
   draft: { label: 'ร่าง', className: 'status-draft' },
@@ -34,8 +35,9 @@ export default function AssessmentList() {
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [assessments, setAssessments] = useState<(Assessment & { hospitals?: Hospital })[]>([]);
+  const [assessments, setAssessments] = useState<(Assessment & { hospitals?: Hospital; health_offices?: HealthOffice })[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [healthOffice, setHealthOffice] = useState<HealthOffice | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedHospital, setSelectedHospital] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
@@ -58,7 +60,7 @@ export default function AssessmentList() {
       // Load assessments
       const { data: assessmentsData, error: assessError } = await supabase
         .from('assessments')
-        .select('*, hospitals(*)')
+        .select('*, hospitals(*), health_offices(*)')
         .order('created_at', { ascending: false });
 
       if (assessError) throw assessError;
@@ -81,6 +83,23 @@ export default function AssessmentList() {
           );
           setNextPeriod((hospitalAssessments.length + 1).toString());
         }
+      } else if (profile?.role === 'health_office' && profile.health_office_id) {
+        // Load health office info for health_office users
+        const { data: healthOfficeData } = await supabase
+          .from('health_offices')
+          .select('*')
+          .eq('id', profile.health_office_id)
+          .maybeSingle();
+        setHealthOffice(healthOfficeData);
+        
+        if (healthOfficeData) {
+          // Calculate next assessment period for this health office
+          const healthOfficeAssessments = (assessmentsData || []).filter(
+            a => a.health_office_id === healthOfficeData.id && 
+                 a.fiscal_year === parseInt(selectedYear)
+          );
+          setNextPeriod((healthOfficeAssessments.length + 1).toString());
+        }
       } else if (profile?.role === 'central_admin') {
         const { data: hospitalsData } = await supabase
           .from('hospitals')
@@ -99,18 +118,34 @@ export default function AssessmentList() {
 
   // Calculate next assessment period when hospital or year changes
   useEffect(() => {
-    if (selectedHospital && selectedYear) {
+    if (profile?.role === 'health_office' && healthOffice && selectedYear) {
+      const healthOfficeAssessments = assessments.filter(
+        a => a.health_office_id === healthOffice.id && 
+             a.fiscal_year === parseInt(selectedYear)
+      );
+      setNextPeriod((healthOfficeAssessments.length + 1).toString());
+    } else if (selectedHospital && selectedYear) {
       const hospitalAssessments = assessments.filter(
         a => a.hospital_id === selectedHospital && 
              a.fiscal_year === parseInt(selectedYear)
       );
       setNextPeriod((hospitalAssessments.length + 1).toString());
     }
-  }, [selectedHospital, selectedYear, assessments]);
+  }, [selectedHospital, selectedYear, assessments, healthOffice, profile?.role]);
 
   const handleCreateAssessment = async () => {
-    if (!selectedHospital || !selectedYear) {
+    // Validate based on user role
+    const isHealthOfficeUser = profile?.role === 'health_office';
+    if (!isHealthOfficeUser && !selectedHospital) {
       toast({ title: 'กรุณากรอกข้อมูลให้ครบ', variant: 'destructive' });
+      return;
+    }
+    if (isHealthOfficeUser && !healthOffice) {
+      toast({ title: 'ไม่พบข้อมูลหน่วยงาน', variant: 'destructive' });
+      return;
+    }
+    if (!selectedYear) {
+      toast({ title: 'กรุณาเลือกปีงบประมาณ', variant: 'destructive' });
       return;
     }
 
@@ -118,15 +153,23 @@ export default function AssessmentList() {
       setCreating(true);
 
       // Create assessment with auto-generated period number
+      const insertData: any = {
+        fiscal_year: parseInt(selectedYear),
+        assessment_period: nextPeriod,
+        created_by: profile?.id,
+        status: 'draft',
+      };
+
+      // Set either hospital_id or health_office_id based on user role
+      if (isHealthOfficeUser && healthOffice) {
+        insertData.health_office_id = healthOffice.id;
+      } else {
+        insertData.hospital_id = selectedHospital;
+      }
+
       const { data: newAssessment, error: createError } = await supabase
         .from('assessments')
-        .insert({
-          hospital_id: selectedHospital,
-          fiscal_year: parseInt(selectedYear),
-          assessment_period: nextPeriod,
-          created_by: profile?.id,
-          status: 'draft',
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -165,7 +208,7 @@ export default function AssessmentList() {
     }
   };
 
-  const canCreate = profile?.role === 'hospital_it' || profile?.role === 'central_admin';
+  const canCreate = profile?.role === 'hospital_it' || profile?.role === 'central_admin' || profile?.role === 'health_office';
 
   return (
     <DashboardLayout>
@@ -188,10 +231,21 @@ export default function AssessmentList() {
                 <DialogHeader>
                   <DialogTitle>สร้างแบบประเมินใหม่</DialogTitle>
                   <DialogDescription>
-                    เลือกโรงพยาบาล และปีงบประมาณ
+                    {profile?.role === 'health_office' 
+                      ? 'สร้างแบบประเมินสำหรับหน่วยงานของคุณ'
+                      : 'เลือกโรงพยาบาล และปีงบประมาณ'
+                    }
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
+                  {profile?.role === 'health_office' && healthOffice && (
+                    <div className="space-y-2">
+                      <Label>หน่วยงาน</Label>
+                      <div className="h-10 px-3 py-2 border rounded-md bg-muted text-muted-foreground flex items-center">
+                        {healthOffice.name}
+                      </div>
+                    </div>
+                  )}
                   {profile?.role === 'central_admin' && (
                     <div className="space-y-2">
                       <Label>โรงพยาบาล</Label>
@@ -289,7 +343,7 @@ export default function AssessmentList() {
                     return (
                       <TableRow key={assessment.id}>
                         <TableCell className="font-medium">
-                          {(assessment as any).hospitals?.name || '-'}
+                          {(assessment as any).hospitals?.name || (assessment as any).health_offices?.name || '-'}
                         </TableCell>
                         <TableCell>
                           {assessment.assessment_period}/{assessment.fiscal_year + 543}

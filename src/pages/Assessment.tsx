@@ -22,6 +22,7 @@ type CTAMCategory = Database['public']['Tables']['ctam_categories']['Row'];
 type QualitativeScore = Database['public']['Tables']['qualitative_scores']['Row'];
 type ImpactScore = Database['public']['Tables']['impact_scores']['Row'];
 type Hospital = Database['public']['Tables']['hospitals']['Row'];
+type HealthOffice = Database['public']['Tables']['health_offices']['Row'];
 
 export default function Assessment() {
   const { id } = useParams<{ id: string }>();
@@ -36,10 +37,12 @@ export default function Assessment() {
   const [qualitativeScore, setQualitativeScore] = useState<QualitativeScore | null>(null);
   const [impactScore, setImpactScore] = useState<ImpactScore | null>(null);
   const [hospital, setHospital] = useState<Hospital | null>(null);
+  const [healthOffice, setHealthOffice] = useState<HealthOffice | null>(null);
   const [activeTab, setActiveTab] = useState('quantitative');
 
   const isReadOnly = assessment?.status !== 'draft' && assessment?.status !== 'returned';
-  const canEdit = profile?.role === 'hospital_it' && !isReadOnly;
+  // Health office users can edit their own assessments just like hospital_it
+  const canEdit = (profile?.role === 'hospital_it' || profile?.role === 'health_office') && !isReadOnly;
   const canReview = (profile?.role === 'provincial' && assessment?.status === 'submitted') ||
                    (profile?.role === 'regional' && assessment?.status === 'approved_provincial');
   const canApprove = profile?.role === 'central_admin';
@@ -104,13 +107,25 @@ export default function Assessment() {
       }
       setAssessment(assessmentData);
 
-      // Load hospital info
-      const { data: hospitalData } = await supabase
-        .from('hospitals')
-        .select('*')
-        .eq('id', assessmentData.hospital_id)
-        .maybeSingle();
-      setHospital(hospitalData);
+      // Load hospital info if hospital_id exists
+      if (assessmentData.hospital_id) {
+        const { data: hospitalData } = await supabase
+          .from('hospitals')
+          .select('*')
+          .eq('id', assessmentData.hospital_id)
+          .maybeSingle();
+        setHospital(hospitalData);
+      }
+
+      // Load health office info if health_office_id exists
+      if (assessmentData.health_office_id) {
+        const { data: healthOfficeData } = await supabase
+          .from('health_offices')
+          .select('*')
+          .eq('id', assessmentData.health_office_id)
+          .maybeSingle();
+        setHealthOffice(healthOfficeData);
+      }
 
       // Load assessment items
       const { data: itemsData, error: itemsError } = await supabase
@@ -165,6 +180,7 @@ export default function Assessment() {
         <AssessmentHeader 
           assessment={assessment} 
           hospital={hospital}
+          healthOffice={healthOffice}
           onRefresh={loadAssessmentData}
           canEdit={canEdit}
         />
