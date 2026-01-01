@@ -58,7 +58,11 @@ export default function Assessment() {
 
   const calculateImpactScore = () => {
     const maxScore = 3;
-    const score = impactScore?.total_score ? Number(impactScore.total_score) * (maxScore / 100) : 0;
+    // If no impact score exists yet, calculate default score (no incident + no breach = 100%)
+    const totalScorePercent = impactScore?.total_score !== null && impactScore?.total_score !== undefined 
+      ? Number(impactScore.total_score) 
+      : 100; // Default: no incident + no breach = 50 + 50 = 100
+    const score = totalScorePercent * (maxScore / 100);
     return { score: Math.round(score * 100) / 100, total: maxScore };
   };
 
