@@ -25,10 +25,19 @@ interface Hospital {
 
 interface Assessment {
   id: string;
-  hospital_id: string;
+  hospital_id: string | null;
+  health_office_id?: string | null;
   total_score: number | null;
   fiscal_year: number;
   assessment_period: string;
+}
+
+interface HealthOffice {
+  id: string;
+  name: string;
+  code: string;
+  province_id: string | null;
+  health_region_id: string;
 }
 
 export type DrillLevel = 'region' | 'province' | 'hospital';
@@ -37,6 +46,7 @@ interface ScoreChartProps {
   healthRegions: HealthRegion[];
   provinces: Province[];
   hospitals: Hospital[];
+  healthOffices?: HealthOffice[];
   assessments: Assessment[];
   onDrillChange?: (level: DrillLevel, regionId: string | null, provinceId: string | null) => void;
   selectedFiscalYear?: string;
@@ -66,19 +76,22 @@ const COLORS = [
   '#F59E0B', // amber
 ];
 
-export function ScoreChart({ healthRegions, provinces, hospitals, assessments, onDrillChange, selectedFiscalYear }: ScoreChartProps) {
+export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices = [], assessments, onDrillChange, selectedFiscalYear }: ScoreChartProps) {
   const [drillLevel, setDrillLevel] = useState<DrillLevel>('region');
   const [selectedRegion, setSelectedRegion] = useState<HealthRegion | null>(null);
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
 
-  // Helper function to get the latest assessment for each hospital
-  const getLatestAssessmentPerHospital = (allAssessments: Assessment[]): Assessment[] => {
+  // Helper function to get the latest assessment for each unit (hospital or health office)
+  const getLatestAssessmentPerUnit = (allAssessments: Assessment[]): Assessment[] => {
     const latestMap = new Map<string, Assessment>();
     
     for (const assessment of allAssessments) {
-      const existing = latestMap.get(assessment.hospital_id);
+      const unitId = assessment.hospital_id || assessment.health_office_id;
+      if (!unitId) continue;
+      
+      const existing = latestMap.get(unitId);
       if (!existing) {
-        latestMap.set(assessment.hospital_id, assessment);
+        latestMap.set(unitId, assessment);
       } else {
         // Compare by fiscal_year first, then by assessment_period
         if (
@@ -86,7 +99,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments, o
           (assessment.fiscal_year === existing.fiscal_year && 
            assessment.assessment_period > existing.assessment_period)
         ) {
-          latestMap.set(assessment.hospital_id, assessment);
+          latestMap.set(unitId, assessment);
         }
       }
     }
@@ -95,12 +108,14 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments, o
   };
 
   // Get latest assessments only
-  const latestAssessments = getLatestAssessmentPerHospital(assessments);
+  const latestAssessments = getLatestAssessmentPerUnit(assessments);
 
-  // Calculate average score for a set of hospital IDs (using latest assessments)
-  const calculateAverageScore = (hospitalIds: string[]): number => {
+  // Calculate average score for a set of hospital IDs and health office IDs
+  const calculateAverageScore = (hospitalIds: string[], healthOfficeIds: string[] = []): number => {
     const relevantAssessments = latestAssessments.filter(a => 
-      hospitalIds.includes(a.hospital_id) && a.total_score !== null
+      ((a.hospital_id && hospitalIds.includes(a.hospital_id)) || 
+       (a.health_office_id && healthOfficeIds.includes(a.health_office_id))) && 
+      a.total_score !== null
     );
     
     if (relevantAssessments.length === 0) return 0;
@@ -118,12 +133,14 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments, o
         const regionHospitals = hospitals.filter(h => 
           regionProvinces.some(p => p.id === h.province_id)
         );
+        const regionHealthOffices = healthOffices.filter(ho => ho.health_region_id === region.id);
         const hospitalIds = regionHospitals.map(h => h.id);
+        const healthOfficeIds = regionHealthOffices.map(ho => ho.id);
         
         return {
           id: region.id,
           name: `เขต ${region.region_number}`,
-          score: calculateAverageScore(hospitalIds),
+          score: calculateAverageScore(hospitalIds, healthOfficeIds),
           color: COLORS[index % COLORS.length],
         };
       });
@@ -134,12 +151,14 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments, o
       
       return regionProvinces.map((province, index) => {
         const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
+        const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === province.id);
         const hospitalIds = provinceHospitals.map(h => h.id);
+        const healthOfficeIds = provinceHealthOffices.map(ho => ho.id);
         
         return {
           id: province.id,
           name: province.name,
-          score: calculateAverageScore(hospitalIds),
+          score: calculateAverageScore(hospitalIds, healthOfficeIds),
           color: COLORS[index % COLORS.length],
         };
       });
