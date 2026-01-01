@@ -202,7 +202,7 @@ export function AppSidebar() {
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton
                         onClick={() => navigate(subItem.url)}
-                        isActive={currentPath === subItem.url}
+                        isActive={currentPath === subItem.url || currentPath.startsWith(subItem.url + '/')}
                         className={`
                           text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
                           data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium

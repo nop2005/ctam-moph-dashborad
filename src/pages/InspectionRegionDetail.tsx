@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, MapPin, Loader2, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { ArrowLeft, MapPin, Loader2, CheckCircle, Clock, XCircle, Upload, FileText, Presentation } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ProvinceStats {
@@ -269,13 +269,17 @@ export default function InspectionRegionDetail() {
                   <TableHead>จังหวัด</TableHead>
                   <TableHead className="text-center">จำนวน รพ.</TableHead>
                   <TableHead className="text-center">รอบที่ 1</TableHead>
+                  <TableHead className="text-center">อัพโหลดรายงาน</TableHead>
+                  <TableHead className="text-center">อัพโหลดสไลด์</TableHead>
                   <TableHead className="text-center">รอบที่ 2</TableHead>
+                  <TableHead className="text-center">อัพโหลดรายงาน</TableHead>
+                  <TableHead className="text-center">อัพโหลดสไลด์</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {provinceStats.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                       ไม่พบข้อมูลจังหวัด
                     </TableCell>
                   </TableRow>
@@ -285,7 +289,31 @@ export default function InspectionRegionDetail() {
                       <TableCell className="font-medium">{stat.provinceName}</TableCell>
                       <TableCell className="text-center text-muted-foreground">{stat.hospitalCount}</TableCell>
                       <TableCell className="text-center">{getStatusBadge(stat.round1Status)}</TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="outline" size="sm" className="gap-1">
+                          <FileText className="h-3 w-3" />
+                          อัพโหลด
+                        </Button>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="outline" size="sm" className="gap-1">
+                          <Presentation className="h-3 w-3" />
+                          อัพโหลด
+                        </Button>
+                      </TableCell>
                       <TableCell className="text-center">{getStatusBadge(stat.round2Status)}</TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="outline" size="sm" className="gap-1">
+                          <FileText className="h-3 w-3" />
+                          อัพโหลด
+                        </Button>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="outline" size="sm" className="gap-1">
+                          <Presentation className="h-3 w-3" />
+                          อัพโหลด
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
