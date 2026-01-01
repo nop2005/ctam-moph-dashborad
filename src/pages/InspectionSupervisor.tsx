@@ -1,27 +1,216 @@
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileSearch } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FileSearch, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface RegionStats {
+  regionId: string;
+  regionNumber: number;
+  regionName: string;
+  provinceCount: number;
+  round1Count: number;
+  round2Count: number;
+  round1Percentage: number;
+  round2Percentage: number;
+}
+
+const getCurrentFiscalYear = () => {
+  const now = new Date();
+  const month = now.getMonth();
+  const year = now.getFullYear();
+  return month >= 9 ? year + 1 : year;
+};
 
 export default function InspectionSupervisor() {
+  const [loading, setLoading] = useState(true);
+  const [regionStats, setRegionStats] = useState<RegionStats[]>([]);
+  const [fiscalYears, setFiscalYears] = useState<number[]>([]);
+  const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
+
+  useEffect(() => {
+    const fetchFiscalYears = async () => {
+      const { data } = await supabase
+        .from('assessments')
+        .select('fiscal_year')
+        .order('fiscal_year', { ascending: false });
+
+      if (data) {
+        const uniqueYears = [...new Set(data.map(a => a.fiscal_year))];
+        const currentYear = getCurrentFiscalYear();
+        if (!uniqueYears.includes(currentYear)) {
+          uniqueYears.unshift(currentYear);
+        }
+        setFiscalYears(uniqueYears.sort((a, b) => b - a));
+      }
+    };
+
+    fetchFiscalYears();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch all health regions
+        const { data: regions } = await supabase
+          .from('health_regions')
+          .select('id, region_number, name')
+          .order('region_number', { ascending: true });
+
+        if (!regions) {
+          setRegionStats([]);
+          return;
+        }
+
+        // Fetch all provinces with their region
+        const { data: provinces } = await supabase
+          .from('provinces')
+          .select('id, health_region_id');
+
+        // Fetch assessments with their hospital's province for the selected fiscal year
+        let assessmentQuery = supabase
+          .from('assessments')
+          .select(`
+            id,
+            assessment_period,
+            status,
+            hospital_id,
+            hospitals!inner(province_id, provinces!inner(health_region_id))
+          `)
+          .in('status', ['approved_provincial', 'approved_regional']);
+
+        if (selectedFiscalYear !== 'all') {
+          assessmentQuery = assessmentQuery.eq('fiscal_year', parseInt(selectedFiscalYear));
+        }
+
+        const { data: assessments } = await assessmentQuery;
+
+        // Calculate stats per region
+        const stats: RegionStats[] = regions.map(region => {
+          const regionProvinces = provinces?.filter(p => p.health_region_id === region.id) || [];
+          const provinceCount = regionProvinces.length;
+
+          // Count assessments by round for this region
+          const regionAssessments = assessments?.filter(a => {
+            const hospital = a.hospitals as any;
+            return hospital?.provinces?.health_region_id === region.id;
+          }) || [];
+
+          const round1Count = regionAssessments.filter(a => a.assessment_period === 'รอบที่ 1').length;
+          const round2Count = regionAssessments.filter(a => a.assessment_period === 'รอบที่ 2').length;
+
+          // Calculate percentage based on province count (assuming 1 assessment per province per round)
+          const round1Percentage = provinceCount > 0 ? (round1Count / provinceCount) * 100 : 0;
+          const round2Percentage = provinceCount > 0 ? (round2Count / provinceCount) * 100 : 0;
+
+          return {
+            regionId: region.id,
+            regionNumber: region.region_number,
+            regionName: region.name,
+            provinceCount,
+            round1Count,
+            round2Count,
+            round1Percentage,
+            round2Percentage
+          };
+        });
+
+        setRegionStats(stats);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [selectedFiscalYear]);
+
   return (
     <DashboardLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">รายงานผู้นิเทศ</h1>
-        <p className="text-muted-foreground">รายงานการตรวจราชการสำหรับผู้นิเทศ</p>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">รายงานผู้นิเทศ</h1>
+          <p className="text-muted-foreground">รายงานการตรวจราชการสำหรับผู้นิเทศ</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">ปีงบประมาณ:</span>
+          <Select value={selectedFiscalYear} onValueChange={setSelectedFiscalYear}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="เลือกปีงบประมาณ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">ทุกปีงบประมาณ</SelectItem>
+              {fiscalYears.map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  พ.ศ. {year + 543}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileSearch className="h-5 w-5" />
-            รายงานผู้นิเทศ
+            สถิติการนิเทศแยกตามเขตสุขภาพ
           </CardTitle>
           <CardDescription>
-            ข้อมูลรายงานการตรวจราชการสำหรับผู้นิเทศ
+            แสดงจำนวนจังหวัดและความก้าวหน้าการนิเทศในแต่ละรอบ
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">กำลังพัฒนา...</p>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>เขตสุขภาพ</TableHead>
+                  <TableHead className="text-center">จำนวนจังหวัด</TableHead>
+                  <TableHead className="text-center">รอบที่ 1</TableHead>
+                  <TableHead className="text-center">รอบที่ 2</TableHead>
+                  <TableHead className="text-center">ร้อยละรอบที่ 1</TableHead>
+                  <TableHead className="text-center">ร้อยละรอบที่ 2</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {regionStats.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      ไม่พบข้อมูลเขตสุขภาพ
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  regionStats.map((stat) => (
+                    <TableRow key={stat.regionId}>
+                      <TableCell className="font-medium">
+                        <span className="text-primary hover:underline cursor-pointer">
+                          เขตสุขภาพที่ {stat.regionNumber}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">{stat.provinceCount}</TableCell>
+                      <TableCell className="text-center">{stat.round1Count}</TableCell>
+                      <TableCell className="text-center">{stat.round2Count}</TableCell>
+                      <TableCell className="text-center">
+                        {stat.round1Percentage > 0 ? stat.round1Percentage.toFixed(2) : '-'}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {stat.round2Percentage > 0 ? stat.round2Percentage.toFixed(2) : '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </DashboardLayout>
