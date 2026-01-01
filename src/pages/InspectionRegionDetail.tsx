@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,17 +6,28 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, MapPin, Loader2, CheckCircle, Clock, XCircle, Upload, FileText, Presentation } from 'lucide-react';
+import { ArrowLeft, MapPin, Loader2, CheckCircle, XCircle, FileText, Presentation, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+
+interface InspectionFile {
+  id: string;
+  province_id: string;
+  fiscal_year: number;
+  assessment_round: string;
+  file_type: string;
+  file_name: string;
+  file_path: string;
+}
 
 interface ProvinceStats {
   provinceId: string;
   provinceName: string;
-  hospitalCount: number;
-  round1Status: 'completed' | 'pending' | 'not_started';
-  round2Status: 'completed' | 'pending' | 'not_started';
-  round1AssessmentId?: string;
-  round2AssessmentId?: string;
+  round1Report?: InspectionFile;
+  round1Slides?: InspectionFile;
+  round2Report?: InspectionFile;
+  round2Slides?: InspectionFile;
 }
 
 const getCurrentFiscalYear = () => {
@@ -29,11 +40,19 @@ const getCurrentFiscalYear = () => {
 export default function InspectionRegionDetail() {
   const { regionId } = useParams<{ regionId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState<string | null>(null);
   const [regionInfo, setRegionInfo] = useState<{ name: string; regionNumber: number } | null>(null);
   const [provinceStats, setProvinceStats] = useState<ProvinceStats[]>([]);
   const [fiscalYears, setFiscalYears] = useState<number[]>([]);
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingUpload, setPendingUpload] = useState<{
+    provinceId: string;
+    round: string;
+    fileType: 'report' | 'slides';
+  } | null>(null);
 
   useEffect(() => {
     const fetchFiscalYears = async () => {
@@ -55,130 +74,229 @@ export default function InspectionRegionDetail() {
     fetchFiscalYears();
   }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!regionId) return;
-      
-      setLoading(true);
-      try {
-        // Fetch region info
-        const { data: region } = await supabase
-          .from('health_regions')
-          .select('name, region_number')
-          .eq('id', regionId)
-          .maybeSingle();
+  const fetchData = async () => {
+    if (!regionId) return;
+    
+    setLoading(true);
+    try {
+      // Fetch region info
+      const { data: region } = await supabase
+        .from('health_regions')
+        .select('name, region_number')
+        .eq('id', regionId)
+        .maybeSingle();
 
-        if (region) {
-          setRegionInfo({ name: region.name, regionNumber: region.region_number });
-        }
-
-        // Fetch provinces in this region
-        const { data: provinces } = await supabase
-          .from('provinces')
-          .select('id, name')
-          .eq('health_region_id', regionId)
-          .order('name', { ascending: true });
-
-        if (!provinces) {
-          setProvinceStats([]);
-          return;
-        }
-
-        // Fetch hospitals to count per province
-        const { data: hospitals } = await supabase
-          .from('hospitals')
-          .select('id, province_id');
-
-        // Fetch assessments for provinces in this region
-        let assessmentQuery = supabase
-          .from('assessments')
-          .select(`
-            id,
-            assessment_period,
-            status,
-            hospitals!inner(province_id)
-          `)
-          .in('status', ['approved_provincial', 'approved_regional']);
-
-        if (selectedFiscalYear !== 'all') {
-          assessmentQuery = assessmentQuery.eq('fiscal_year', parseInt(selectedFiscalYear));
-        }
-
-        const { data: assessments } = await assessmentQuery;
-
-        // Calculate stats per province
-        const stats: ProvinceStats[] = provinces.map(province => {
-          const provinceAssessments = assessments?.filter(a => {
-            const hospital = a.hospitals as any;
-            return hospital?.province_id === province.id;
-          }) || [];
-
-          // Count hospitals in this province
-          const hospitalCount = hospitals?.filter(h => h.province_id === province.id).length || 0;
-
-          const round1Assessment = provinceAssessments.find(a => a.assessment_period === 'รอบที่ 1');
-          const round2Assessment = provinceAssessments.find(a => a.assessment_period === 'รอบที่ 2');
-
-          const getStatus = (assessment: any): 'completed' | 'pending' | 'not_started' => {
-            if (!assessment) return 'not_started';
-            if (assessment.status === 'approved_regional') return 'completed';
-            return 'pending';
-          };
-
-          return {
-            provinceId: province.id,
-            provinceName: province.name,
-            hospitalCount,
-            round1Status: getStatus(round1Assessment),
-            round2Status: getStatus(round2Assessment),
-            round1AssessmentId: round1Assessment?.id,
-            round2AssessmentId: round2Assessment?.id,
-          };
-        });
-
-        setProvinceStats(stats);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
+      if (region) {
+        setRegionInfo({ name: region.name, regionNumber: region.region_number });
       }
-    };
 
-    fetchData();
-  }, [regionId, selectedFiscalYear]);
+      // Fetch provinces in this region
+      const { data: provinces } = await supabase
+        .from('provinces')
+        .select('id, name')
+        .eq('health_region_id', regionId)
+        .order('name', { ascending: true });
 
-  const getStatusBadge = (status: 'completed' | 'pending' | 'not_started') => {
-    switch (status) {
-      case 'completed':
-        return (
-          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            นิเทศแล้ว
-          </Badge>
-        );
-      case 'pending':
-        return (
-          <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-            <Clock className="h-3 w-3 mr-1" />
-            รอดำเนินการ
-          </Badge>
-        );
-      case 'not_started':
-        return (
-          <Badge variant="outline" className="text-muted-foreground">
-            <XCircle className="h-3 w-3 mr-1" />
-            ยังไม่เริ่ม
-          </Badge>
-        );
+      if (!provinces) {
+        setProvinceStats([]);
+        return;
+      }
+
+      // Fetch inspection files for this region and fiscal year
+      let inspectionQuery = supabase
+        .from('inspection_files')
+        .select('*')
+        .eq('health_region_id', regionId);
+
+      if (selectedFiscalYear !== 'all') {
+        inspectionQuery = inspectionQuery.eq('fiscal_year', parseInt(selectedFiscalYear));
+      }
+
+      const { data: inspectionFiles } = await inspectionQuery;
+
+      // Calculate stats per province
+      const stats: ProvinceStats[] = provinces.map(province => {
+        const provinceFiles = inspectionFiles?.filter(f => f.province_id === province.id) || [];
+
+        return {
+          provinceId: province.id,
+          provinceName: province.name,
+          round1Report: provinceFiles.find(f => f.assessment_round === 'รอบที่ 1' && f.file_type === 'report'),
+          round1Slides: provinceFiles.find(f => f.assessment_round === 'รอบที่ 1' && f.file_type === 'slides'),
+          round2Report: provinceFiles.find(f => f.assessment_round === 'รอบที่ 2' && f.file_type === 'report'),
+          round2Slides: provinceFiles.find(f => f.assessment_round === 'รอบที่ 2' && f.file_type === 'slides'),
+        };
+      });
+
+      setProvinceStats(stats);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const completedRound1 = provinceStats.filter(p => p.round1Status === 'completed').length;
-  const completedRound2 = provinceStats.filter(p => p.round2Status === 'completed').length;
+  useEffect(() => {
+    fetchData();
+  }, [regionId, selectedFiscalYear]);
+
+  const handleUploadClick = (provinceId: string, round: string, fileType: 'report' | 'slides') => {
+    setPendingUpload({ provinceId, round, fileType });
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !pendingUpload || !user || !regionId) return;
+
+    const { provinceId, round, fileType } = pendingUpload;
+    const fiscalYear = selectedFiscalYear === 'all' ? getCurrentFiscalYear() : parseInt(selectedFiscalYear);
+    
+    setUploading(`${provinceId}-${round}-${fileType}`);
+
+    try {
+      // Upload file to storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${regionId}/${provinceId}/${fiscalYear}/${round}/${fileType}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('inspection-files')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('inspection-files')
+        .getPublicUrl(fileName);
+
+      // Check if record exists
+      const { data: existing } = await supabase
+        .from('inspection_files')
+        .select('id')
+        .eq('province_id', provinceId)
+        .eq('fiscal_year', fiscalYear)
+        .eq('assessment_round', round)
+        .eq('file_type', fileType)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing record
+        const { error: updateError } = await supabase
+          .from('inspection_files')
+          .update({
+            file_name: file.name,
+            file_path: urlData.publicUrl,
+            file_size: file.size,
+          })
+          .eq('id', existing.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Insert new record
+        const { error: insertError } = await supabase
+          .from('inspection_files')
+          .insert({
+            province_id: provinceId,
+            health_region_id: regionId,
+            fiscal_year: fiscalYear,
+            assessment_round: round,
+            file_type: fileType,
+            file_name: file.name,
+            file_path: urlData.publicUrl,
+            file_size: file.size,
+            uploaded_by: user.id,
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      toast.success('อัพโหลดไฟล์สำเร็จ');
+      fetchData();
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error('เกิดข้อผิดพลาดในการอัพโหลด: ' + error.message);
+    } finally {
+      setUploading(null);
+      setPendingUpload(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const getStatusBadge = (hasReport?: InspectionFile, hasSlides?: InspectionFile) => {
+    if (hasReport || hasSlides) {
+      return (
+        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          นิเทศแล้ว
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="text-muted-foreground">
+        <XCircle className="h-3 w-3 mr-1" />
+        ยังไม่เริ่ม
+      </Badge>
+    );
+  };
+
+  const getUploadButton = (
+    provinceId: string,
+    round: string,
+    fileType: 'report' | 'slides',
+    existingFile?: InspectionFile
+  ) => {
+    const isUploading = uploading === `${provinceId}-${round}-${fileType}`;
+    const Icon = fileType === 'report' ? FileText : Presentation;
+
+    if (existingFile) {
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+          onClick={() => window.open(existingFile.file_path, '_blank')}
+        >
+          <Check className="h-3 w-3" />
+          ดูไฟล์
+        </Button>
+      );
+    }
+
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-1"
+        onClick={() => handleUploadClick(provinceId, round, fileType)}
+        disabled={isUploading}
+      >
+        {isUploading ? (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        ) : (
+          <Icon className="h-3 w-3" />
+        )}
+        อัพโหลด
+      </Button>
+    );
+  };
+
+  const completedRound1 = provinceStats.filter(p => p.round1Report || p.round1Slides).length;
+  const completedRound2 = provinceStats.filter(p => p.round2Report || p.round2Slides).length;
   const totalProvinces = provinceStats.length;
 
   return (
     <DashboardLayout>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        className="hidden"
+        accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+      />
+
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/inspection/supervisor')}>
@@ -263,62 +381,54 @@ export default function InspectionRegionDetail() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>จังหวัด</TableHead>
-                  <TableHead className="text-center">จำนวน รพ.</TableHead>
-                  <TableHead className="text-center">รอบที่ 1</TableHead>
-                  <TableHead className="text-center">อัพโหลดรายงาน</TableHead>
-                  <TableHead className="text-center">อัพโหลดสไลด์</TableHead>
-                  <TableHead className="text-center">รอบที่ 2</TableHead>
-                  <TableHead className="text-center">อัพโหลดรายงาน</TableHead>
-                  <TableHead className="text-center">อัพโหลดสไลด์</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {provinceStats.length === 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                      ไม่พบข้อมูลจังหวัด
-                    </TableCell>
+                    <TableHead>จังหวัด</TableHead>
+                    <TableHead className="text-center">รอบที่ 1</TableHead>
+                    <TableHead className="text-center">อัพโหลดรายงาน</TableHead>
+                    <TableHead className="text-center">อัพโหลดสไลด์</TableHead>
+                    <TableHead className="text-center">รอบที่ 2</TableHead>
+                    <TableHead className="text-center">อัพโหลดรายงาน</TableHead>
+                    <TableHead className="text-center">อัพโหลดสไลด์</TableHead>
                   </TableRow>
-                ) : (
-                  provinceStats.map((stat) => (
-                    <TableRow key={stat.provinceId}>
-                      <TableCell className="font-medium">{stat.provinceName}</TableCell>
-                      <TableCell className="text-center text-muted-foreground">{stat.hospitalCount}</TableCell>
-                      <TableCell className="text-center">{getStatusBadge(stat.round1Status)}</TableCell>
-                      <TableCell className="text-center">
-                        <Button variant="outline" size="sm" className="gap-1">
-                          <FileText className="h-3 w-3" />
-                          อัพโหลด
-                        </Button>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Button variant="outline" size="sm" className="gap-1">
-                          <Presentation className="h-3 w-3" />
-                          อัพโหลด
-                        </Button>
-                      </TableCell>
-                      <TableCell className="text-center">{getStatusBadge(stat.round2Status)}</TableCell>
-                      <TableCell className="text-center">
-                        <Button variant="outline" size="sm" className="gap-1">
-                          <FileText className="h-3 w-3" />
-                          อัพโหลด
-                        </Button>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Button variant="outline" size="sm" className="gap-1">
-                          <Presentation className="h-3 w-3" />
-                          อัพโหลด
-                        </Button>
+                </TableHeader>
+                <TableBody>
+                  {provinceStats.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        ไม่พบข้อมูลจังหวัด
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    provinceStats.map((stat) => (
+                      <TableRow key={stat.provinceId}>
+                        <TableCell className="font-medium">{stat.provinceName}</TableCell>
+                        <TableCell className="text-center">
+                          {getStatusBadge(stat.round1Report, stat.round1Slides)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getUploadButton(stat.provinceId, 'รอบที่ 1', 'report', stat.round1Report)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getUploadButton(stat.provinceId, 'รอบที่ 1', 'slides', stat.round1Slides)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getStatusBadge(stat.round2Report, stat.round2Slides)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getUploadButton(stat.provinceId, 'รอบที่ 2', 'report', stat.round2Report)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getUploadButton(stat.provinceId, 'รอบที่ 2', 'slides', stat.round2Slides)}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
