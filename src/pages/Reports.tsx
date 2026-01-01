@@ -298,7 +298,7 @@ export default function Reports() {
         </div>
 
         {/* Score Chart */}
-        <ScoreChart healthRegions={healthRegions} provinces={provinces} hospitals={hospitals} assessments={filteredAssessments} onDrillChange={handleDrillChange} selectedFiscalYear={selectedFiscalYear} />
+        <ScoreChart healthRegions={healthRegions} provinces={provinces} hospitals={hospitals} healthOffices={healthOffices} assessments={filteredAssessments} onDrillChange={handleDrillChange} selectedFiscalYear={selectedFiscalYear} />
 
         {/* Dynamic Reports Table based on drill level */}
         <Card>
