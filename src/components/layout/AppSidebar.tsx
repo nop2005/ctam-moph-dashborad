@@ -30,6 +30,7 @@ import {
   ClipboardCheck,
   FileSearch,
   FileCheck,
+  BookOpen,
 } from 'lucide-react';
 
 const menuItems = [
@@ -56,6 +57,7 @@ const reportSubItems = [
 const inspectionSubItems = [
   { title: 'รายงานผู้นิเทศ', url: '/inspection/supervisor', icon: FileSearch },
   { title: 'รายงานผู้รับนิเทศ', url: '/inspection/supervisee', icon: FileCheck },
+  { title: 'คู่มือเอกสารสำหรับการนิเทศ', url: '/inspection/manual', icon: BookOpen },
 ];
 
 const adminItems = [
