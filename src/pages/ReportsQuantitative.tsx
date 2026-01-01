@@ -744,7 +744,7 @@ export default function ReportsQuantitative() {
                     }}>
                           {selectedProvince !== 'all' ? <div className="flex flex-col items-center">
                               <span>ข้อที่ผ่าน</span>
-                              <span>ข้อที่ผ่าน</span>
+                              <span>(ร้อยละ)</span>
                             </div> : <div className="flex flex-col items-center">
                               <span>ร้อยละรพ.</span>
                               <span>ที่ผ่าน (เขียว)</span>
