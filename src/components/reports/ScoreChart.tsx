@@ -166,8 +166,9 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
 
     if (drillLevel === 'hospital' && selectedProvince) {
       const provinceHospitals = hospitals.filter(h => h.province_id === selectedProvince.id);
+      const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === selectedProvince.id);
       
-      return provinceHospitals.map((hospital, index) => {
+      const hospitalData = provinceHospitals.map((hospital, index) => {
         const assessment = latestAssessments.find(a => a.hospital_id === hospital.id);
         
         return {
@@ -177,6 +178,19 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
           color: COLORS[index % COLORS.length],
         };
       });
+
+      const healthOfficeData = provinceHealthOffices.map((office, index) => {
+        const assessment = latestAssessments.find(a => a.health_office_id === office.id);
+        
+        return {
+          id: office.id,
+          name: office.name,
+          score: assessment?.total_score || 0,
+          color: COLORS[(hospitalData.length + index) % COLORS.length],
+        };
+      });
+
+      return [...hospitalData, ...healthOfficeData];
     }
 
     return [];
