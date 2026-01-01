@@ -117,7 +117,7 @@ export type Database = {
           created_by: string
           fiscal_year: number
           health_office_id: string | null
-          hospital_id: string
+          hospital_id: string | null
           id: string
           impact_approved_at: string | null
           impact_approved_by: string | null
@@ -146,7 +146,7 @@ export type Database = {
           created_by: string
           fiscal_year: number
           health_office_id?: string | null
-          hospital_id: string
+          hospital_id?: string | null
           id?: string
           impact_approved_at?: string | null
           impact_approved_by?: string | null
@@ -175,7 +175,7 @@ export type Database = {
           created_by?: string
           fiscal_year?: number
           health_office_id?: string | null
-          hospital_id?: string
+          hospital_id?: string | null
           id?: string
           impact_approved_at?: string | null
           impact_approved_by?: string | null
