@@ -455,7 +455,13 @@ export default function ReportsImpact() {
 
         // Some health-office assessments may not have a row in `impact_scores`.
         // In that case, fall back to the summary impact_score stored on the assessment.
-        const computedScore = impactScore?.total_score ?? latestAssessment?.impact_score ?? null;
+        // The impact_score in assessments might be raw (0-3), so convert to scale 100 if needed
+        const rawScore = impactScore?.total_score ?? latestAssessment?.impact_score ?? null;
+        // If score is from impact_scores table (already 0-100) use as-is, 
+        // if from assessments.impact_score (raw 0-3), convert to percentage
+        const computedScore = rawScore !== null 
+          ? (impactScore?.total_score != null ? rawScore : (rawScore / 3) * 100)
+          : null;
 
         const levelFromImpactScores = getImpactLevel(impactScore?.total_score ?? null);
         const levelLabel =
