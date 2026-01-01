@@ -72,39 +72,36 @@ export default function InspectionSupervisor() {
           .from('provinces')
           .select('id, health_region_id');
 
-        // Fetch assessments with their hospital's province for the selected fiscal year
-        let assessmentQuery = supabase
-          .from('assessments')
-          .select(`
-            id,
-            assessment_period,
-            status,
-            hospital_id,
-            hospitals!inner(province_id, provinces!inner(health_region_id))
-          `)
-          .in('status', ['approved_provincial', 'approved_regional']);
+        // Fetch inspection files to count completed inspections
+        let inspectionQuery = supabase
+          .from('inspection_files')
+          .select('province_id, health_region_id, assessment_round');
 
         if (selectedFiscalYear !== 'all') {
-          assessmentQuery = assessmentQuery.eq('fiscal_year', parseInt(selectedFiscalYear));
+          inspectionQuery = inspectionQuery.eq('fiscal_year', parseInt(selectedFiscalYear));
         }
 
-        const { data: assessments } = await assessmentQuery;
+        const { data: inspectionFiles } = await inspectionQuery;
 
         // Calculate stats per region
         const stats: RegionStats[] = regions.map(region => {
           const regionProvinces = provinces?.filter(p => p.health_region_id === region.id) || [];
           const provinceCount = regionProvinces.length;
 
-          // Count assessments by round for this region
-          const regionAssessments = assessments?.filter(a => {
-            const hospital = a.hospitals as any;
-            return hospital?.provinces?.health_region_id === region.id;
-          }) || [];
+          // Count unique provinces that have at least one file uploaded per round
+          const regionFiles = inspectionFiles?.filter(f => f.health_region_id === region.id) || [];
+          
+          const round1Provinces = new Set(
+            regionFiles.filter(f => f.assessment_round === 'รอบที่ 1').map(f => f.province_id)
+          );
+          const round2Provinces = new Set(
+            regionFiles.filter(f => f.assessment_round === 'รอบที่ 2').map(f => f.province_id)
+          );
 
-          const round1Count = regionAssessments.filter(a => a.assessment_period === 'รอบที่ 1').length;
-          const round2Count = regionAssessments.filter(a => a.assessment_period === 'รอบที่ 2').length;
+          const round1Count = round1Provinces.size;
+          const round2Count = round2Provinces.size;
 
-          // Calculate percentage based on province count (assuming 1 assessment per province per round)
+          // Calculate percentage based on province count
           const round1Percentage = provinceCount > 0 ? (round1Count / provinceCount) * 100 : 0;
           const round2Percentage = provinceCount > 0 ? (round2Count / provinceCount) * 100 : 0;
 
