@@ -97,16 +97,17 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments, o
   // Get latest assessments only
   const latestAssessments = getLatestAssessmentPerHospital(assessments);
 
-  // Calculate score for a set of hospital IDs (using latest assessments)
-  const calculateTotalScore = (hospitalIds: string[]): number => {
+  // Calculate average score for a set of hospital IDs (using latest assessments)
+  const calculateAverageScore = (hospitalIds: string[]): number => {
     const relevantAssessments = latestAssessments.filter(a => 
       hospitalIds.includes(a.hospital_id) && a.total_score !== null
     );
     
     if (relevantAssessments.length === 0) return 0;
     
-    // Return sum of latest scores
-    return relevantAssessments.reduce((sum, a) => sum + (a.total_score || 0), 0);
+    // Return average of latest scores
+    const sum = relevantAssessments.reduce((acc, a) => acc + (a.total_score || 0), 0);
+    return sum / relevantAssessments.length;
   };
 
   // Get data based on drill level
@@ -122,7 +123,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments, o
         return {
           id: region.id,
           name: `เขต ${region.region_number}`,
-          score: calculateTotalScore(hospitalIds),
+          score: calculateAverageScore(hospitalIds),
           color: COLORS[index % COLORS.length],
         };
       });
@@ -138,7 +139,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, assessments, o
         return {
           id: province.id,
           name: province.name,
-          score: calculateTotalScore(hospitalIds),
+          score: calculateAverageScore(hospitalIds),
           color: COLORS[index % COLORS.length],
         };
       });
