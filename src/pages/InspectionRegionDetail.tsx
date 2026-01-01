@@ -155,9 +155,10 @@ export default function InspectionRegionDetail() {
     setUploading(`${provinceId}-${round}-${fileType}`);
 
     try {
-      // Upload file to storage
+      // Upload file to storage - convert Thai round to English for valid file path
+      const roundPath = round === 'รอบที่ 1' ? 'round_1' : 'round_2';
       const fileExt = file.name.split('.').pop();
-      const fileName = `${regionId}/${provinceId}/${fiscalYear}/${round}/${fileType}.${fileExt}`;
+      const fileName = `${regionId}/${provinceId}/${fiscalYear}/${roundPath}/${fileType}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from('inspection-files')
