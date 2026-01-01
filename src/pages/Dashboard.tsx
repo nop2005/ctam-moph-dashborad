@@ -5,6 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { 
   FileText, 
   CheckCircle2, 
   Clock, 
@@ -21,6 +28,14 @@ interface AssessmentStats {
   returned: number;
 }
 
+// คำนวณปีงบประมาณปัจจุบัน (ถ้าเดือน >= ตุลาคม จะเป็นปีงบถัดไป)
+const getCurrentFiscalYear = () => {
+  const now = new Date();
+  const month = now.getMonth(); // 0-11
+  const year = now.getFullYear();
+  return month >= 9 ? year + 1 : year; // ตุลาคมขึ้นไป = ปีงบถัดไป
+};
+
 export default function Dashboard() {
   const { user, profile } = useAuth();
   const [stats, setStats] = useState<AssessmentStats>({
@@ -32,16 +47,43 @@ export default function Dashboard() {
     returned: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(
+    getCurrentFiscalYear().toString()
+  );
+  const [fiscalYears, setFiscalYears] = useState<number[]>([]);
+
+  // Fetch available fiscal years
+  useEffect(() => {
+    const fetchFiscalYears = async () => {
+      const { data, error } = await supabase
+        .from('assessments')
+        .select('fiscal_year');
+
+      if (!error && data) {
+        const uniqueYears = [...new Set(data.map(a => a.fiscal_year))].sort((a, b) => b - a);
+        setFiscalYears(uniqueYears);
+      }
+    };
+
+    fetchFiscalYears();
+  }, []);
 
   useEffect(() => {
     const fetchStats = async () => {
       if (!profile) return;
       
       try {
-        // Fetch all assessments the user can see
-        const { data: assessments, error } = await supabase
+        // Build query
+        let query = supabase
           .from('assessments')
-          .select('id, status');
+          .select('id, status, fiscal_year');
+
+        // Filter by fiscal year if not "all"
+        if (selectedFiscalYear !== 'all') {
+          query = query.eq('fiscal_year', parseInt(selectedFiscalYear));
+        }
+
+        const { data: assessments, error } = await query;
 
         if (error) {
           console.error('Error fetching assessments:', error);
@@ -76,7 +118,7 @@ export default function Dashboard() {
     };
 
     fetchStats();
-  }, [profile]);
+  }, [profile, selectedFiscalYear]);
 
   const statsDisplay = [
     { 
@@ -112,7 +154,7 @@ export default function Dashboard() {
       href: '/assessments'
     },
     { 
-      label: 'ผ่านการประเมิน', 
+      label: 'อนุมัติแล้ว', 
       value: loading ? '-' : stats.approved.toString(), 
       icon: CheckCircle2, 
       color: 'text-success',
@@ -132,13 +174,31 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       {/* Welcome Section */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-2">
-          สวัสดี, {profile?.full_name || 'ผู้ใช้งาน'}
-        </h2>
-        <p className="text-muted-foreground">
-          ยินดีต้อนรับสู่ระบบประเมินความปลอดภัยไซเบอร์ CTAM+
-        </p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold mb-2">
+            สวัสดี, {profile?.full_name || 'ผู้ใช้งาน'}
+          </h2>
+          <p className="text-muted-foreground">
+            ยินดีต้อนรับสู่ระบบประเมินความปลอดภัยไซเบอร์ CTAM+
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground whitespace-nowrap">ปีงบประมาณ:</span>
+          <Select value={selectedFiscalYear} onValueChange={setSelectedFiscalYear}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="เลือกปีงบ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">ทุกปีงบประมาณ</SelectItem>
+              {fiscalYears.map(year => (
+                <SelectItem key={year} value={year.toString()}>
+                  พ.ศ. {year + 543}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Stats Grid */}
