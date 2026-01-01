@@ -448,11 +448,24 @@ export default function ReportsImpact() {
         };
       });
       
-      const allHealthOffices = provinceHealthOffices.map(office => {
-        const officeAssessments = filteredAssessments.filter(a => a.health_office_id === office.id);
+      const allHealthOffices = provinceHealthOffices.map((office) => {
+        const officeAssessments = filteredAssessments.filter((a) => a.health_office_id === office.id);
         const latestAssessment = officeAssessments[officeAssessments.length - 1];
         const impactScore = latestAssessment ? getImpactScoreForAssessment(latestAssessment.id) : undefined;
-        const level = getImpactLevel(impactScore?.total_score ?? null);
+
+        // Some health-office assessments may not have a row in `impact_scores`.
+        // In that case, fall back to the summary impact_score stored on the assessment.
+        const computedScore = impactScore?.total_score ?? latestAssessment?.impact_score ?? null;
+
+        const levelFromImpactScores = getImpactLevel(impactScore?.total_score ?? null);
+        const levelLabel =
+          impactScore?.total_score != null
+            ? levelFromImpactScores.level
+            : computedScore != null
+              ? 'ประเมินแล้ว'
+              : levelFromImpactScores.level;
+        const levelColor = impactScore?.total_score != null ? levelFromImpactScores.color : 'text-muted-foreground';
+
         const issues = unitHasIssue(office.id, true);
 
         return {
@@ -460,9 +473,9 @@ export default function ReportsImpact() {
           name: office.name,
           code: office.code,
           type: 'health_office' as const,
-          impactScore: impactScore?.total_score ?? null,
-          level: level.level,
-          levelColor: level.color,
+          impactScore: computedScore,
+          level: levelLabel,
+          levelColor,
           hadIncident: impactScore?.had_incident ?? null,
           hadBreach: impactScore?.had_data_breach ?? null,
           incidentScore: impactScore?.incident_score ?? null,
@@ -794,59 +807,64 @@ export default function ReportsImpact() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tableData.map((row) => (
-                      <TableRow 
-                        key={row.id}
-                        className={row.type !== 'hospital' ? 'cursor-pointer hover:bg-muted/50' : ''}
-                        onClick={() => row.type !== 'hospital' && handleRowClick(row)}
-                      >
-                        <TableCell className="font-medium">{row.name}</TableCell>
-                        {row.type === 'hospital' ? (
-                          <>
-                            <TableCell className="text-center text-muted-foreground">
-                              {'code' in row ? row.code : '-'}
-                            </TableCell>
-                            <TableCell className="text-center font-medium">
-                              {'impactScore' in row ? (row.impactScore !== null ? row.impactScore : '-') : '-'}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {'level' in row && (
-                                <span className={row.levelColor}>{row.level}</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {'hadIncident' in row && (
-                                row.hadIncident === true ? (
-                                  <span className="text-orange-600">มี</span>
-                                ) : row.hadIncident === false ? (
-                                  <span className="text-green-600">ไม่มี</span>
-                                ) : '-'
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {'hadBreach' in row && (
-                                row.hadBreach === true ? (
-                                  <span className="text-red-600">มี</span>
-                                ) : row.hadBreach === false ? (
-                                  <span className="text-green-600">ไม่มี</span>
-                                ) : '-'
-                              )}
-                            </TableCell>
-                          </>
-                        ) : (
-                          <>
-                            <TableCell className="text-center">{row.total}</TableCell>
-                            <TableCell className="text-center text-green-600 font-medium">{row.highSafety}</TableCell>
-                            <TableCell className="text-center text-yellow-600">{row.mediumSafety}</TableCell>
-                            <TableCell className="text-center text-orange-600">{row.lowRisk}</TableCell>
-                            <TableCell className="text-center text-red-600">{row.highRisk}</TableCell>
-                            <TableCell className="text-center text-muted-foreground">{row.notAssessed}</TableCell>
-                            <TableCell className="text-center text-orange-600">{row.totalIncidents}</TableCell>
-                            <TableCell className="text-center text-red-600">{row.totalBreaches}</TableCell>
-                          </>
-                        )}
-                      </TableRow>
-                    ))}
+                    {tableData.map((row) => {
+                      const isDrillRow = row.type === 'region' || row.type === 'province';
+                      const isUnitRow = row.type === 'hospital' || row.type === 'health_office';
+
+                      return (
+                        <TableRow
+                          key={row.id}
+                          className={isDrillRow ? 'cursor-pointer hover:bg-muted/50' : ''}
+                          onClick={() => isDrillRow && handleRowClick(row)}
+                        >
+                          <TableCell className="font-medium">{row.name}</TableCell>
+                          {isUnitRow ? (
+                            <>
+                              <TableCell className="text-center text-muted-foreground">
+                                {'code' in row ? row.code : '-'}
+                              </TableCell>
+                              <TableCell className="text-center font-medium">
+                                {'impactScore' in row ? (row.impactScore !== null ? row.impactScore : '-') : '-'}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {'level' in row && <span className={row.levelColor}>{row.level}</span>}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {'hadIncident' in row &&
+                                  (row.hadIncident === true ? (
+                                    <span className="text-orange-600">มี</span>
+                                  ) : row.hadIncident === false ? (
+                                    <span className="text-green-600">ไม่มี</span>
+                                  ) : (
+                                    '-'
+                                  ))}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {'hadBreach' in row &&
+                                  (row.hadBreach === true ? (
+                                    <span className="text-red-600">มี</span>
+                                  ) : row.hadBreach === false ? (
+                                    <span className="text-green-600">ไม่มี</span>
+                                  ) : (
+                                    '-'
+                                  ))}
+                              </TableCell>
+                            </>
+                          ) : (
+                            <>
+                              <TableCell className="text-center">{row.total}</TableCell>
+                              <TableCell className="text-center text-green-600 font-medium">{row.highSafety}</TableCell>
+                              <TableCell className="text-center text-yellow-600">{row.mediumSafety}</TableCell>
+                              <TableCell className="text-center text-orange-600">{row.lowRisk}</TableCell>
+                              <TableCell className="text-center text-red-600">{row.highRisk}</TableCell>
+                              <TableCell className="text-center text-muted-foreground">{row.notAssessed}</TableCell>
+                              <TableCell className="text-center text-orange-600">{row.totalIncidents}</TableCell>
+                              <TableCell className="text-center text-red-600">{row.totalBreaches}</TableCell>
+                            </>
+                          )}
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
