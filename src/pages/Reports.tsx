@@ -344,7 +344,7 @@ export default function Reports() {
                           <TableCell className="text-right">{regionLatestAssessments.length}</TableCell>
                           <TableCell className="text-right">{completedCount}</TableCell>
                           <TableCell className="text-right font-medium">
-                            {scoreCount > 0 ? totalScoreSum.toFixed(2) : '-'}
+                            {scoreCount > 0 ? (totalScoreSum / scoreCount).toFixed(2) : '-'}
                           </TableCell>
                         </TableRow>;
                 })}
@@ -385,7 +385,7 @@ export default function Reports() {
                           <TableCell className="text-right">{provinceLatestAssessments.length}</TableCell>
                           <TableCell className="text-right">{completedCount}</TableCell>
                           <TableCell className="text-right font-medium">
-                            {scoreCount > 0 ? totalScoreSum.toFixed(2) : '-'}
+                            {scoreCount > 0 ? (totalScoreSum / scoreCount).toFixed(2) : '-'}
                           </TableCell>
                         </TableRow>;
                 })}
