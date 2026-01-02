@@ -105,9 +105,9 @@ export function AppSidebar() {
   const isReportsActive = currentPath.startsWith('/reports');
   const isInspectionActive = currentPath.startsWith('/inspection') && currentPath !== '/inspection/manual';
 
-  // State for collapsible menus - start closed, open only when user clicks
-  const [reportsOpen, setReportsOpen] = useState(false);
-  const [inspectionOpen, setInspectionOpen] = useState(false);
+  // State for collapsible menus
+  const [reportsOpen, setReportsOpen] = useState(isReportsActive);
+  const [inspectionOpen, setInspectionOpen] = useState(isInspectionActive);
 
   const filterByRole = (items: typeof menuItems) => {
     if (!profile?.role) return items;
@@ -166,12 +166,7 @@ export function AppSidebar() {
               {/* Reports with Submenu - Always visible */}
               <Collapsible
                 open={reportsOpen}
-                onOpenChange={(open) => {
-                  setReportsOpen(open);
-                  if (open && !collapsed) {
-                    navigate('/reports');
-                  }
-                }}
+                onOpenChange={setReportsOpen}
                 className="group/collapsible"
               >
                 <SidebarMenuItem>
@@ -181,6 +176,9 @@ export function AppSidebar() {
                       isActive={false}
                       onClick={() => {
                         if (collapsed) {
+                          navigate('/reports');
+                        } else if (!reportsOpen) {
+                          setReportsOpen(true);
                           navigate('/reports');
                         }
                       }}
@@ -218,12 +216,7 @@ export function AppSidebar() {
               {/* Inspection Reports with Submenu */}
               <Collapsible
                 open={inspectionOpen}
-                onOpenChange={(open) => {
-                  setInspectionOpen(open);
-                  if (open && !collapsed) {
-                    navigate('/inspection/supervisor');
-                  }
-                }}
+                onOpenChange={setInspectionOpen}
                 className="group/collapsible"
               >
                 <SidebarMenuItem>
@@ -233,6 +226,9 @@ export function AppSidebar() {
                       isActive={false}
                       onClick={() => {
                         if (collapsed) {
+                          navigate('/inspection/supervisor');
+                        } else if (!inspectionOpen) {
+                          setInspectionOpen(true);
                           navigate('/inspection/supervisor');
                         }
                       }}
