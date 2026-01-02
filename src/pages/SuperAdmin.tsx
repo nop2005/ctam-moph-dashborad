@@ -13,22 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { 
-  Users, 
-  Building2,
-  MapPin,
-  Edit,
-  Search,
-  RefreshCw,
-  UserCheck,
-  UserX,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Phone,
-  UserPlus
-} from 'lucide-react';
-
+import { Users, Building2, MapPin, Edit, Search, RefreshCw, UserCheck, UserX, Clock, CheckCircle, XCircle, Phone, UserPlus } from 'lucide-react';
 interface Profile {
   id: string;
   user_id: string;
@@ -42,30 +27,27 @@ interface Profile {
   is_active: boolean;
   created_at: string;
 }
-
 interface Province {
   id: string;
   name: string;
   code: string;
   health_region_id: string;
 }
-
 interface HealthRegion {
   id: string;
   name: string;
   region_number: number;
 }
-
 interface Hospital {
   id: string;
   name: string;
   code: string;
   province_id: string;
 }
-
 export default function SuperAdmin() {
-  const { profile: currentUserProfile } = useAuth();
-  
+  const {
+    profile: currentUserProfile
+  } = useAuth();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [healthRegions, setHealthRegions] = useState<HealthRegion[]>([]);
@@ -73,7 +55,7 @@ export default function SuperAdmin() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('pending');
-  
+
   // Dialog states
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
@@ -84,25 +66,25 @@ export default function SuperAdmin() {
   const [editHospitalId, setEditHospitalId] = useState<string>('');
   const [editFullName, setEditFullName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Bulk create dialog for hospitals
   const [isBulkCreateDialogOpen, setIsBulkCreateDialogOpen] = useState(false);
   const [bulkCreateProvinceId, setBulkCreateProvinceId] = useState('');
   const [isBulkCreating, setIsBulkCreating] = useState(false);
   const [bulkCreateResults, setBulkCreateResults] = useState<any[]>([]);
-  
+
   // Bulk create dialog for health offices
   const [isHealthOfficeBulkDialogOpen, setIsHealthOfficeBulkDialogOpen] = useState(false);
   const [bulkHealthOfficeRegionId, setBulkHealthOfficeRegionId] = useState('');
   const [isBulkCreatingHealthOffice, setIsBulkCreatingHealthOffice] = useState(false);
   const [healthOfficeBulkResults, setHealthOfficeBulkResults] = useState<any[]>([]);
-  
+
   // Bulk create dialog for provincial users (regional admin feature)
   const [isProvincialBulkDialogOpen, setIsProvincialBulkDialogOpen] = useState(false);
   const [bulkProvincialRegionId, setBulkProvincialRegionId] = useState('');
   const [isBulkCreatingProvincial, setIsBulkCreatingProvincial] = useState(false);
   const [provincialBulkResults, setProvincialBulkResults] = useState<any[]>([]);
-  
+
   // Create supervisor dialog (regional admin feature)
   const [isSupervisorDialogOpen, setIsSupervisorDialogOpen] = useState(false);
   const [supervisorEmail, setSupervisorEmail] = useState('');
@@ -111,30 +93,24 @@ export default function SuperAdmin() {
   const [supervisorPosition, setSupervisorPosition] = useState('');
   const [supervisorOrganization, setSupervisorOrganization] = useState('');
   const [isCreatingSupervisor, setIsCreatingSupervisor] = useState(false);
-  
+
   // Card filter state
   type CardFilter = 'all' | 'pending' | 'active' | 'central_admin' | 'regional' | 'provincial';
   const [cardFilter, setCardFilter] = useState<CardFilter>('all');
-  
+
   // Role filter state for pending/active tabs
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [regionFilter, setRegionFilter] = useState<string>('all');
   const [provinceFilter, setProvinceFilter] = useState<string>('all');
-
   useEffect(() => {
     fetchData();
   }, []);
-
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [profilesRes, provincesRes, regionsRes, hospitalsRes] = await Promise.all([
-        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-        supabase.from('provinces').select('*').order('name'),
-        supabase.from('health_regions').select('*').order('region_number'),
-        supabase.from('hospitals').select('*').order('name'),
-      ]);
-
+      const [profilesRes, provincesRes, regionsRes, hospitalsRes] = await Promise.all([supabase.from('profiles').select('*').order('created_at', {
+        ascending: false
+      }), supabase.from('provinces').select('*').order('name'), supabase.from('health_regions').select('*').order('region_number'), supabase.from('hospitals').select('*').order('name')]);
       if (profilesRes.data) setProfiles(profilesRes.data as Profile[]);
       if (provincesRes.data) setProvinces(provincesRes.data);
       if (regionsRes.data) setHealthRegions(regionsRes.data);
@@ -146,7 +122,6 @@ export default function SuperAdmin() {
       setIsLoading(false);
     }
   };
-
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
       hospital_it: 'IT โรงพยาบาล',
@@ -154,11 +129,10 @@ export default function SuperAdmin() {
       regional: 'ผู้ประเมินระดับเขตสุขภาพ',
       central_admin: 'ส่วนกลาง (Super Admin)',
       health_office: 'สำนักงาน สสจ./เขตสุขภาพ',
-      supervisor: 'ผู้นิเทศ',
+      supervisor: 'ผู้นิเทศ'
     };
     return labels[role] || role;
   };
-
   const getRoleBadgeVariant = (role: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
       hospital_it: 'secondary',
@@ -166,29 +140,25 @@ export default function SuperAdmin() {
       regional: 'default',
       central_admin: 'destructive',
       health_office: 'outline',
-      supervisor: 'default',
+      supervisor: 'default'
     };
     return variants[role] || 'secondary';
   };
-
   const getProvinceName = (provinceId: string | null) => {
     if (!provinceId) return '-';
     const province = provinces.find(p => p.id === provinceId);
     return province?.name || '-';
   };
-
   const getRegionName = (regionId: string | null) => {
     if (!regionId) return '-';
     const region = healthRegions.find(r => r.id === regionId);
     return region ? `เขต ${region.region_number}` : '-';
   };
-
   const getHospitalName = (hospitalId: string | null) => {
     if (!hospitalId) return '-';
     const hospital = hospitals.find(h => h.id === hospitalId);
     return hospital?.name || '-';
   };
-
   const handleEditProfile = (profileToEdit: Profile) => {
     setSelectedProfile(profileToEdit);
     setEditRole(profileToEdit.role);
@@ -198,10 +168,9 @@ export default function SuperAdmin() {
     setEditFullName(profileToEdit.full_name || '');
     setIsEditDialogOpen(true);
   };
-
   const handleApproveClick = (profileToApprove: Profile) => {
     setSelectedProfile(profileToApprove);
-    
+
     // Pre-fill based on existing data (for bulk created users)
     if (profileToApprove.hospital_id) {
       // User was created via bulk - pre-fill hospital_it role
@@ -241,10 +210,8 @@ export default function SuperAdmin() {
     setEditFullName(profileToApprove.full_name || '');
     setIsApproveDialogOpen(true);
   };
-
   const handleApproveUser = async () => {
     if (!selectedProfile) return;
-    
     setIsSaving(true);
     try {
       const updateData: Partial<Profile> = {
@@ -253,7 +220,7 @@ export default function SuperAdmin() {
         province_id: editProvinceId || null,
         health_region_id: editRegionId || null,
         hospital_id: editHospitalId || null,
-        is_active: true,
+        is_active: true
       };
 
       // Clear irrelevant fields based on role
@@ -270,14 +237,10 @@ export default function SuperAdmin() {
       } else if (editRole === 'hospital_it') {
         updateData.health_region_id = null;
       }
-
-      const { error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', selectedProfile.id);
-
+      const {
+        error
+      } = await supabase.from('profiles').update(updateData).eq('id', selectedProfile.id);
       if (error) throw error;
-
       toast.success('อนุมัติผู้ใช้สำเร็จ');
       setIsApproveDialogOpen(false);
       fetchData();
@@ -288,10 +251,8 @@ export default function SuperAdmin() {
       setIsSaving(false);
     }
   };
-
   const handleRejectUser = async (profileToReject: Profile) => {
     if (!confirm('คุณต้องการปฏิเสธผู้ใช้นี้หรือไม่?')) return;
-    
     try {
       // We can't delete auth users, so we just keep is_active = false
       // Optionally mark them as rejected somehow
@@ -301,38 +262,35 @@ export default function SuperAdmin() {
       toast.error('ไม่สามารถปฏิเสธผู้ใช้ได้');
     }
   };
-
   const handleBulkCreateUsers = async () => {
     if (!bulkCreateProvinceId) {
       toast.error('กรุณาเลือกจังหวัด');
       return;
     }
-
     setIsBulkCreating(true);
     setBulkCreateResults([]);
-
     try {
       // Get current session token
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: {
+          session
+        }
+      } = await supabase.auth.getSession();
       if (!session?.access_token) {
         toast.error('กรุณาเข้าสู่ระบบใหม่');
         return;
       }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-hospital-users`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ province_id: bulkCreateProvinceId }),
-        }
-      );
-
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-hospital-users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          province_id: bulkCreateProvinceId
+        })
+      });
       const data = await response.json();
-
       if (data.success) {
         setBulkCreateResults(data.results);
         const successCount = data.results.filter((r: any) => r.status === 'success').length;
@@ -349,38 +307,35 @@ export default function SuperAdmin() {
       setIsBulkCreating(false);
     }
   };
-
   const handleBulkCreateHealthOfficeUsers = async () => {
     if (!bulkHealthOfficeRegionId) {
       toast.error('กรุณาเลือกเขตสุขภาพ');
       return;
     }
-
     setIsBulkCreatingHealthOffice(true);
     setHealthOfficeBulkResults([]);
-
     try {
       // Get current session token
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: {
+          session
+        }
+      } = await supabase.auth.getSession();
       if (!session?.access_token) {
         toast.error('กรุณาเข้าสู่ระบบใหม่');
         return;
       }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-health-office-users`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ health_region_id: bulkHealthOfficeRegionId }),
-        }
-      );
-
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-health-office-users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          health_region_id: bulkHealthOfficeRegionId
+        })
+      });
       const data = await response.json();
-
       if (data.success) {
         setHealthOfficeBulkResults(data.results);
         const successCount = data.results.filter((r: any) => r.status === 'success').length;
@@ -401,39 +356,34 @@ export default function SuperAdmin() {
   // Create provincial users for a health region (regional admin can use this)
   const handleBulkCreateProvincialUsers = async () => {
     // For regional users, use their own region; for central_admin, use selected region
-    const regionId = currentUserProfile?.role === 'regional' 
-      ? currentUserProfile.health_region_id 
-      : bulkProvincialRegionId;
-
+    const regionId = currentUserProfile?.role === 'regional' ? currentUserProfile.health_region_id : bulkProvincialRegionId;
     if (!regionId) {
       toast.error('กรุณาเลือกเขตสุขภาพ');
       return;
     }
-
     setIsBulkCreatingProvincial(true);
     setProvincialBulkResults([]);
-
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: {
+          session
+        }
+      } = await supabase.auth.getSession();
       if (!session?.access_token) {
         toast.error('กรุณาเข้าสู่ระบบใหม่');
         return;
       }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-provincial-users`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ health_region_id: regionId }),
-        }
-      );
-
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-provincial-users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          health_region_id: regionId
+        })
+      });
       const data = await response.json();
-
       if (data.success) {
         setProvincialBulkResults(data.results);
         const successCount = data.results.filter((r: any) => r.status === 'success').length;
@@ -464,40 +414,36 @@ export default function SuperAdmin() {
       toast.error('รูปแบบอีเมลไม่ถูกต้อง กรุณาตรวจสอบว่าไม่มีตัวอักษรภาษาไทยในอีเมล');
       return;
     }
-
     if (supervisorPassword.length < 6) {
       toast.error('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
       return;
     }
-
     setIsCreatingSupervisor(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: {
+          session
+        }
+      } = await supabase.auth.getSession();
       if (!session?.access_token) {
         toast.error('กรุณาเข้าสู่ระบบใหม่');
         return;
       }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-supervisor-users`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ 
-            email: supervisorEmail, 
-            password: supervisorPassword,
-            full_name: supervisorFullName,
-            position: supervisorPosition,
-            organization: supervisorOrganization 
-          }),
-        }
-      );
-
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-supervisor-users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          email: supervisorEmail,
+          password: supervisorPassword,
+          full_name: supervisorFullName,
+          position: supervisorPosition,
+          organization: supervisorOrganization
+        })
+      });
       const data = await response.json();
-
       if (data.success) {
         toast.success('สร้างผู้นิเทศสำเร็จ');
         setIsSupervisorDialogOpen(false);
@@ -517,10 +463,8 @@ export default function SuperAdmin() {
       setIsCreatingSupervisor(false);
     }
   };
-
   const handleSaveProfile = async () => {
     if (!selectedProfile) return;
-    
     setIsSaving(true);
     try {
       const updateData: Partial<Profile> = {
@@ -528,7 +472,7 @@ export default function SuperAdmin() {
         full_name: editFullName || null,
         province_id: editProvinceId || null,
         health_region_id: editRegionId || null,
-        hospital_id: editHospitalId || null,
+        hospital_id: editHospitalId || null
       };
 
       // Clear irrelevant fields based on role
@@ -545,14 +489,10 @@ export default function SuperAdmin() {
       } else if (editRole === 'hospital_it') {
         updateData.health_region_id = null;
       }
-
-      const { error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', selectedProfile.id);
-
+      const {
+        error
+      } = await supabase.from('profiles').update(updateData).eq('id', selectedProfile.id);
       if (error) throw error;
-
       toast.success('บันทึกข้อมูลสำเร็จ');
       setIsEditDialogOpen(false);
       fetchData();
@@ -563,7 +503,6 @@ export default function SuperAdmin() {
       setIsSaving(false);
     }
   };
-
   const pendingProfiles = profiles.filter(p => !p.is_active);
   const activeProfiles = profiles.filter(p => p.is_active);
 
@@ -584,24 +523,19 @@ export default function SuperAdmin() {
         return profileList;
     }
   };
-
   const cardFilteredProfiles = getFilteredByCard(profiles);
-  
-  // Get provinces filtered by region
-  const filteredProvincesByRegion = regionFilter !== 'all'
-    ? provinces.filter(p => p.health_region_id === regionFilter)
-    : provinces;
 
+  // Get provinces filtered by region
+  const filteredProvincesByRegion = regionFilter !== 'all' ? provinces.filter(p => p.health_region_id === regionFilter) : provinces;
 
   // Unified filtered profiles based on cardFilter and other filters
   const filteredProfiles = cardFilteredProfiles.filter(p => {
     // Search filter
-    const matchesSearch = p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-    
+    const matchesSearch = p.email.toLowerCase().includes(searchTerm.toLowerCase()) || (p.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+
     // Role filter
     const matchesRole = roleFilter === 'all' || p.role === roleFilter;
-    
+
     // Region filter
     let matchesRegion = true;
     if (regionFilter !== 'all') {
@@ -618,7 +552,7 @@ export default function SuperAdmin() {
         matchesRegion = false;
       }
     }
-    
+
     // Province filter
     let matchesProvince = true;
     if (provinceFilter !== 'all') {
@@ -631,16 +565,12 @@ export default function SuperAdmin() {
         matchesProvince = false;
       }
     }
-    
     return matchesSearch && matchesRole && matchesRegion && matchesProvince;
   });
-  
+
   // Keep filteredActiveProfiles for backward compatibility (uses the same as filteredProfiles when not pending)
   const filteredActiveProfiles = filteredProfiles;
-
-  const filteredHospitals = editProvinceId 
-    ? hospitals.filter(h => h.province_id === editProvinceId)
-    : hospitals;
+  const filteredHospitals = editProvinceId ? hospitals.filter(h => h.province_id === editProvinceId) : hospitals;
 
   // Stats
   const stats = {
@@ -649,9 +579,8 @@ export default function SuperAdmin() {
     active: activeProfiles.length,
     centralAdmin: profiles.filter(p => p.role === 'central_admin' && p.is_active).length,
     regional: profiles.filter(p => p.role === 'regional' && p.is_active).length,
-    provincial: profiles.filter(p => p.role === 'provincial' && p.is_active).length,
+    provincial: profiles.filter(p => p.role === 'provincial' && p.is_active).length
   };
-
   const handleCardClick = (filter: CardFilter) => {
     setCardFilter(filter);
     // Auto switch to appropriate tab
@@ -661,19 +590,16 @@ export default function SuperAdmin() {
       setActiveTab('active');
     }
   };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('th-TH', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit',
+      minute: '2-digit'
     });
   };
-
-  return (
-    <DashboardLayout>
+  return <DashboardLayout>
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
@@ -684,35 +610,22 @@ export default function SuperAdmin() {
         </div>
         <div className="flex gap-2 flex-wrap">
           {/* Regional admin can create supervisor */}
-          {currentUserProfile?.role === 'regional' && (
-            <Button 
-              onClick={() => setIsSupervisorDialogOpen(true)} 
-              variant="default" 
-              className="gap-2"
-            >
+          {currentUserProfile?.role === 'regional' && <Button onClick={() => setIsSupervisorDialogOpen(true)} variant="default" className="gap-2">
               <UserPlus className="h-4 w-4" />
               สร้างผู้นิเทศ
-            </Button>
-          )}
+            </Button>}
           {/* Regional admin can create provincial users for their region */}
-          {(currentUserProfile?.role === 'regional' || currentUserProfile?.role === 'central_admin') && (
-            <Button 
-              onClick={() => {
-                // For regional, auto-fill their region
-                if (currentUserProfile?.role === 'regional') {
-                  setBulkProvincialRegionId(currentUserProfile.health_region_id || '');
-                }
-                setIsProvincialBulkDialogOpen(true);
-              }} 
-              variant="outline" 
-              className="gap-2"
-            >
+          {(currentUserProfile?.role === 'regional' || currentUserProfile?.role === 'central_admin') && <Button onClick={() => {
+          // For regional, auto-fill their region
+          if (currentUserProfile?.role === 'regional') {
+            setBulkProvincialRegionId(currentUserProfile.health_region_id || '');
+          }
+          setIsProvincialBulkDialogOpen(true);
+        }} variant="outline" className="gap-2">
               <MapPin className="h-4 w-4" />
               สร้างแอดมินระดับจังหวัด
-            </Button>
-          )}
-          {currentUserProfile?.role === 'central_admin' && (
-            <>
+            </Button>}
+          {currentUserProfile?.role === 'central_admin' && <>
               <Button onClick={() => setIsHealthOfficeBulkDialogOpen(true)} variant="outline" className="gap-2">
                 <Building2 className="h-4 w-4" />
                 สร้างผู้ใช้งาน สสจ./เขตสุขภาพ แบบ Bulk
@@ -721,62 +634,43 @@ export default function SuperAdmin() {
                 <UserPlus className="h-4 w-4" />
                 สร้างผู้ใช้ รพ. แบบ Bulk
               </Button>
-            </>
-          )}
+            </>}
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'all' ? 'ring-2 ring-primary' : ''}`}
-          onClick={() => handleCardClick('all')}
-        >
+        <Card className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'all' ? 'ring-2 ring-primary' : ''}`} onClick={() => handleCardClick('all')}>
           <CardContent className="p-4">
             <div className="text-2xl font-bold">{stats.total}</div>
             <div className="text-sm text-muted-foreground">ทั้งหมด</div>
           </CardContent>
         </Card>
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'pending' ? 'ring-2 ring-warning' : ''} ${stats.pending > 0 ? 'border-warning' : ''}`}
-          onClick={() => handleCardClick('pending')}
-        >
+        <Card className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'pending' ? 'ring-2 ring-warning' : ''} ${stats.pending > 0 ? 'border-warning' : ''}`} onClick={() => handleCardClick('pending')}>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-warning">{stats.pending}</div>
             <div className="text-sm text-muted-foreground">รอการอนุมัติ</div>
           </CardContent>
         </Card>
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'active' ? 'ring-2 ring-success' : ''}`}
-          onClick={() => handleCardClick('active')}
-        >
+        <Card className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'active' ? 'ring-2 ring-success' : ''}`} onClick={() => handleCardClick('active')}>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-success">{stats.active}</div>
-            <div className="text-sm text-muted-foreground">ใช้งาน</div>
+            <div className="text-sm text-muted-foreground">อนุมัติเเล้ว</div>
           </CardContent>
         </Card>
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'central_admin' ? 'ring-2 ring-destructive' : ''}`}
-          onClick={() => handleCardClick('central_admin')}
-        >
+        <Card className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'central_admin' ? 'ring-2 ring-destructive' : ''}`} onClick={() => handleCardClick('central_admin')}>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-destructive">{stats.centralAdmin}</div>
             <div className="text-sm text-muted-foreground">Super Admin</div>
           </CardContent>
         </Card>
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'regional' ? 'ring-2 ring-primary' : ''}`}
-          onClick={() => handleCardClick('regional')}
-        >
+        <Card className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'regional' ? 'ring-2 ring-primary' : ''}`} onClick={() => handleCardClick('regional')}>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-primary">{stats.regional}</div>
             <div className="text-sm text-muted-foreground">เขตสุขภาพ</div>
           </CardContent>
         </Card>
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'provincial' ? 'ring-2 ring-accent' : ''}`}
-          onClick={() => handleCardClick('provincial')}
-        >
+        <Card className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'provincial' ? 'ring-2 ring-accent' : ''}`} onClick={() => handleCardClick('provincial')}>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-accent">{stats.provincial}</div>
             <div className="text-sm text-muted-foreground">สสจ.</div>
@@ -801,20 +695,18 @@ export default function SuperAdmin() {
               <SelectItem value="central_admin">Super Admin</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={regionFilter} onValueChange={(val) => {
-            setRegionFilter(val);
-            setProvinceFilter('all');
-          }}>
+          <Select value={regionFilter} onValueChange={val => {
+          setRegionFilter(val);
+          setProvinceFilter('all');
+        }}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="เขตสุขภาพ" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">ทุกเขต</SelectItem>
-              {healthRegions.map(region => (
-                <SelectItem key={region.id} value={region.id}>
+              {healthRegions.map(region => <SelectItem key={region.id} value={region.id}>
                   เขต {region.region_number}
-                </SelectItem>
-              ))}
+                </SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={provinceFilter} onValueChange={setProvinceFilter}>
@@ -823,23 +715,16 @@ export default function SuperAdmin() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">ทุกจังหวัด</SelectItem>
-              {filteredProvincesByRegion.map(province => (
-                <SelectItem key={province.id} value={province.id}>
+              {filteredProvincesByRegion.map(province => <SelectItem key={province.id} value={province.id}>
                   {province.name}
-                </SelectItem>
-              ))}
+                </SelectItem>)}
             </SelectContent>
           </Select>
         </div>
         <div className="flex gap-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="ค้นหาผู้ใช้..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 w-[200px]"
-            />
+            <Input placeholder="ค้นหาผู้ใช้..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 w-[200px]" />
           </div>
           <Button variant="outline" size="icon" onClick={fetchData}>
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -856,11 +741,7 @@ export default function SuperAdmin() {
                 {cardFilter === 'pending' ? 'ผู้ใช้รอการอนุมัติ' : 'รายชื่อผู้ใช้งาน'}
               </CardTitle>
               <CardDescription>
-                {cardFilter === 'pending' 
-                  ? 'ตรวจสอบและอนุมัติผู้ใช้ใหม่ พร้อมกำหนดบทบาทและหน่วยงาน' 
-                  : cardFilter === 'all' 
-                    ? 'ผู้ใช้ทั้งหมดในระบบ'
-                    : 'ผู้ใช้ที่ได้รับการอนุมัติแล้ว'}
+                {cardFilter === 'pending' ? 'ตรวจสอบและอนุมัติผู้ใช้ใหม่ พร้อมกำหนดบทบาทและหน่วยงาน' : cardFilter === 'all' ? 'ผู้ใช้ทั้งหมดในระบบ' : 'ผู้ใช้ที่ได้รับการอนุมัติแล้ว'}
               </CardDescription>
             </div>
           </div>
@@ -880,21 +761,15 @@ export default function SuperAdmin() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
-                  <TableRow>
+                {isLoading ? <TableRow>
                     <TableCell colSpan={7} className="text-center py-8">
                       <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                     </TableCell>
-                  </TableRow>
-                ) : filteredProfiles.length === 0 ? (
-                  <TableRow>
+                  </TableRow> : filteredProfiles.length === 0 ? <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       ไม่พบข้อมูลผู้ใช้
                     </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredProfiles.map((p) => (
-                    <TableRow key={p.id}>
+                  </TableRow> : filteredProfiles.map(p => <TableRow key={p.id}>
                       <TableCell className="font-medium">{p.email}</TableCell>
                       <TableCell>{p.full_name || '-'}</TableCell>
                       <TableCell>{p.phone || '-'}</TableCell>
@@ -904,80 +779,46 @@ export default function SuperAdmin() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {p.role === 'hospital_it' && (
-                          <div className="flex items-center gap-1 text-sm">
+                        {p.role === 'hospital_it' && <div className="flex items-center gap-1 text-sm">
                             <Building2 className="h-3 w-3" />
                             {getHospitalName(p.hospital_id)}
-                          </div>
-                        )}
-                        {p.role === 'provincial' && (
-                          <div className="flex items-center gap-1 text-sm">
+                          </div>}
+                        {p.role === 'provincial' && <div className="flex items-center gap-1 text-sm">
                             <MapPin className="h-3 w-3" />
                             {getProvinceName(p.province_id)}
-                          </div>
-                        )}
-                        {p.role === 'regional' && (
-                          <div className="flex items-center gap-1 text-sm">
+                          </div>}
+                        {p.role === 'regional' && <div className="flex items-center gap-1 text-sm">
                             <MapPin className="h-3 w-3" />
                             {getRegionName(p.health_region_id)}
-                          </div>
-                        )}
-                        {p.role === 'supervisor' && (
-                          <div className="flex items-center gap-1 text-sm">
+                          </div>}
+                        {p.role === 'supervisor' && <div className="flex items-center gap-1 text-sm">
                             <MapPin className="h-3 w-3" />
                             {getRegionName(p.health_region_id)}
-                          </div>
-                        )}
-                        {p.role === 'central_admin' && (
-                          <span className="text-sm text-muted-foreground">ส่วนกลาง</span>
-                        )}
+                          </div>}
+                        {p.role === 'central_admin' && <span className="text-sm text-muted-foreground">ส่วนกลาง</span>}
                       </TableCell>
                       <TableCell>
-                        {p.is_active ? (
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        {p.is_active ? <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                             อนุมัติแล้ว
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                          </Badge> : <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
                             รออนุมัติ
-                          </Badge>
-                        )}
+                          </Badge>}
                       </TableCell>
                       <TableCell className="text-right">
-                        {p.is_active ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditProfile(p)}
-                          >
+                        {p.is_active ? <Button variant="ghost" size="icon" onClick={() => handleEditProfile(p)}>
                             <Edit className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <div className="flex gap-1 justify-end">
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => handleApproveClick(p)}
-                              className="gap-1"
-                            >
+                          </Button> : <div className="flex gap-1 justify-end">
+                            <Button variant="default" size="sm" onClick={() => handleApproveClick(p)} className="gap-1">
                               <CheckCircle className="h-4 w-4" />
                               อนุมัติ
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRejectUser(p)}
-                              className="gap-1 text-destructive hover:text-destructive"
-                            >
+                            <Button variant="outline" size="sm" onClick={() => handleRejectUser(p)} className="gap-1 text-destructive hover:text-destructive">
                               <XCircle className="h-4 w-4" />
                               ปฏิเสธ
                             </Button>
-                          </div>
-                        )}
+                          </div>}
                       </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                    </TableRow>)}
               </TableBody>
             </Table>
           </div>
@@ -997,11 +838,7 @@ export default function SuperAdmin() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>ชื่อ-นามสกุล</Label>
-              <Input
-                value={editFullName}
-                onChange={(e) => setEditFullName(e.target.value)}
-                placeholder="ระบุชื่อ-นามสกุล"
-              />
+              <Input value={editFullName} onChange={e => setEditFullName(e.target.value)} placeholder="ระบุชื่อ-นามสกุล" />
             </div>
 
             <div className="space-y-2">
@@ -1019,69 +856,48 @@ export default function SuperAdmin() {
               </Select>
             </div>
 
-            {editRole === 'regional' && (
-              <div className="space-y-2">
+            {editRole === 'regional' && <div className="space-y-2">
                 <Label>เขตสุขภาพ</Label>
                 <Select value={editRegionId} onValueChange={setEditRegionId}>
                   <SelectTrigger>
                     <SelectValue placeholder="เลือกเขตสุขภาพ" />
                   </SelectTrigger>
                   <SelectContent>
-                    {healthRegions.map((region) => (
-                      <SelectItem key={region.id} value={region.id}>
+                    {healthRegions.map(region => <SelectItem key={region.id} value={region.id}>
                         เขตสุขภาพที่ {region.region_number}
-                      </SelectItem>
-                    ))}
+                      </SelectItem>)}
                   </SelectContent>
                 </Select>
-              </div>
-            )}
+              </div>}
 
-            {editRole === 'provincial' && (
-              <div className="space-y-2">
+            {editRole === 'provincial' && <div className="space-y-2">
                 <Label>จังหวัด</Label>
-                <SearchableSelect
-                  options={provinces.map(p => ({ value: p.id, label: p.name }))}
-                  value={editProvinceId}
-                  onValueChange={setEditProvinceId}
-                  placeholder="เลือกจังหวัด"
-                  searchPlaceholder="พิมพ์ชื่อจังหวัด..."
-                  emptyMessage="ไม่พบจังหวัด"
-                />
-              </div>
-            )}
+                <SearchableSelect options={provinces.map(p => ({
+              value: p.id,
+              label: p.name
+            }))} value={editProvinceId} onValueChange={setEditProvinceId} placeholder="เลือกจังหวัด" searchPlaceholder="พิมพ์ชื่อจังหวัด..." emptyMessage="ไม่พบจังหวัด" />
+              </div>}
 
-            {editRole === 'hospital_it' && (
-              <>
+            {editRole === 'hospital_it' && <>
                 <div className="space-y-2">
                   <Label>จังหวัด</Label>
-                  <SearchableSelect
-                    options={provinces.map(p => ({ value: p.id, label: p.name }))}
-                    value={editProvinceId}
-                    onValueChange={(v) => {
-                      setEditProvinceId(v);
-                      setEditHospitalId('');
-                    }}
-                    placeholder="เลือกจังหวัด"
-                    searchPlaceholder="พิมพ์ชื่อจังหวัด..."
-                    emptyMessage="ไม่พบจังหวัด"
-                  />
+                  <SearchableSelect options={provinces.map(p => ({
+                value: p.id,
+                label: p.name
+              }))} value={editProvinceId} onValueChange={v => {
+                setEditProvinceId(v);
+                setEditHospitalId('');
+              }} placeholder="เลือกจังหวัด" searchPlaceholder="พิมพ์ชื่อจังหวัด..." emptyMessage="ไม่พบจังหวัด" />
                 </div>
 
                 <div className="space-y-2">
                   <Label>โรงพยาบาล</Label>
-                  <SearchableSelect
-                    options={filteredHospitals.map(h => ({ value: h.id, label: h.name }))}
-                    value={editHospitalId}
-                    onValueChange={setEditHospitalId}
-                    placeholder="เลือกโรงพยาบาล"
-                    searchPlaceholder="พิมพ์ชื่อโรงพยาบาล..."
-                    emptyMessage="ไม่พบโรงพยาบาล"
-                    disabled={!editProvinceId}
-                  />
+                  <SearchableSelect options={filteredHospitals.map(h => ({
+                value: h.id,
+                label: h.name
+              }))} value={editHospitalId} onValueChange={setEditHospitalId} placeholder="เลือกโรงพยาบาล" searchPlaceholder="พิมพ์ชื่อโรงพยาบาล..." emptyMessage="ไม่พบโรงพยาบาล" disabled={!editProvinceId} />
                 </div>
-              </>
-            )}
+              </>}
           </div>
 
           <DialogFooter>
@@ -1108,11 +924,7 @@ export default function SuperAdmin() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>ชื่อ-นามสกุล</Label>
-              <Input
-                value={editFullName}
-                onChange={(e) => setEditFullName(e.target.value)}
-                placeholder="ระบุชื่อ-นามสกุล"
-              />
+              <Input value={editFullName} onChange={e => setEditFullName(e.target.value)} placeholder="ระบุชื่อ-นามสกุล" />
             </div>
 
             <div className="space-y-2">
@@ -1130,69 +942,48 @@ export default function SuperAdmin() {
               </Select>
             </div>
 
-            {editRole === 'regional' && (
-              <div className="space-y-2">
+            {editRole === 'regional' && <div className="space-y-2">
                 <Label>เขตสุขภาพ</Label>
                 <Select value={editRegionId} onValueChange={setEditRegionId}>
                   <SelectTrigger>
                     <SelectValue placeholder="เลือกเขตสุขภาพ" />
                   </SelectTrigger>
                   <SelectContent>
-                    {healthRegions.map((region) => (
-                      <SelectItem key={region.id} value={region.id}>
+                    {healthRegions.map(region => <SelectItem key={region.id} value={region.id}>
                         เขตสุขภาพที่ {region.region_number}
-                      </SelectItem>
-                    ))}
+                      </SelectItem>)}
                   </SelectContent>
                 </Select>
-              </div>
-            )}
+              </div>}
 
-            {editRole === 'provincial' && (
-              <div className="space-y-2">
+            {editRole === 'provincial' && <div className="space-y-2">
                 <Label>จังหวัด</Label>
-                <SearchableSelect
-                  options={provinces.map(p => ({ value: p.id, label: p.name }))}
-                  value={editProvinceId}
-                  onValueChange={setEditProvinceId}
-                  placeholder="เลือกจังหวัด"
-                  searchPlaceholder="พิมพ์ชื่อจังหวัด..."
-                  emptyMessage="ไม่พบจังหวัด"
-                />
-              </div>
-            )}
+                <SearchableSelect options={provinces.map(p => ({
+              value: p.id,
+              label: p.name
+            }))} value={editProvinceId} onValueChange={setEditProvinceId} placeholder="เลือกจังหวัด" searchPlaceholder="พิมพ์ชื่อจังหวัด..." emptyMessage="ไม่พบจังหวัด" />
+              </div>}
 
-            {editRole === 'hospital_it' && (
-              <>
+            {editRole === 'hospital_it' && <>
                 <div className="space-y-2">
                   <Label>จังหวัด</Label>
-                  <SearchableSelect
-                    options={provinces.map(p => ({ value: p.id, label: p.name }))}
-                    value={editProvinceId}
-                    onValueChange={(v) => {
-                      setEditProvinceId(v);
-                      setEditHospitalId('');
-                    }}
-                    placeholder="เลือกจังหวัด"
-                    searchPlaceholder="พิมพ์ชื่อจังหวัด..."
-                    emptyMessage="ไม่พบจังหวัด"
-                  />
+                  <SearchableSelect options={provinces.map(p => ({
+                value: p.id,
+                label: p.name
+              }))} value={editProvinceId} onValueChange={v => {
+                setEditProvinceId(v);
+                setEditHospitalId('');
+              }} placeholder="เลือกจังหวัด" searchPlaceholder="พิมพ์ชื่อจังหวัด..." emptyMessage="ไม่พบจังหวัด" />
                 </div>
 
                 <div className="space-y-2">
                   <Label>โรงพยาบาล</Label>
-                  <SearchableSelect
-                    options={filteredHospitals.map(h => ({ value: h.id, label: h.name }))}
-                    value={editHospitalId}
-                    onValueChange={setEditHospitalId}
-                    placeholder="เลือกโรงพยาบาล"
-                    searchPlaceholder="พิมพ์ชื่อโรงพยาบาล..."
-                    emptyMessage="ไม่พบโรงพยาบาล"
-                    disabled={!editProvinceId}
-                  />
+                  <SearchableSelect options={filteredHospitals.map(h => ({
+                value: h.id,
+                label: h.name
+              }))} value={editHospitalId} onValueChange={setEditHospitalId} placeholder="เลือกโรงพยาบาล" searchPlaceholder="พิมพ์ชื่อโรงพยาบาล..." emptyMessage="ไม่พบโรงพยาบาล" disabled={!editProvinceId} />
                 </div>
-              </>
-            )}
+              </>}
           </div>
 
           <DialogFooter>
@@ -1221,57 +1012,35 @@ export default function SuperAdmin() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>เลือกจังหวัด</Label>
-              <SearchableSelect
-                options={provinces.map(p => ({ value: p.id, label: p.name }))}
-                value={bulkCreateProvinceId}
-                onValueChange={setBulkCreateProvinceId}
-                placeholder="เลือกจังหวัด"
-                searchPlaceholder="พิมพ์ชื่อจังหวัด..."
-                emptyMessage="ไม่พบจังหวัด"
-              />
+              <SearchableSelect options={provinces.map(p => ({
+              value: p.id,
+              label: p.name
+            }))} value={bulkCreateProvinceId} onValueChange={setBulkCreateProvinceId} placeholder="เลือกจังหวัด" searchPlaceholder="พิมพ์ชื่อจังหวัด..." emptyMessage="ไม่พบจังหวัด" />
             </div>
 
-            {bulkCreateResults.length > 0 && (
-              <div className="space-y-2">
+            {bulkCreateResults.length > 0 && <div className="space-y-2">
                 <Label>ผลลัพธ์การสร้างผู้ใช้</Label>
                 <div className="max-h-60 overflow-y-auto border rounded-md p-2 space-y-1">
-                  {bulkCreateResults.map((result, index) => (
-                    <div 
-                      key={index} 
-                      className={`text-sm p-2 rounded ${
-                        result.status === 'success' 
-                          ? 'bg-success/10 text-success' 
-                          : result.status === 'skipped' 
-                          ? 'bg-warning/10 text-warning' 
-                          : 'bg-destructive/10 text-destructive'
-                      }`}
-                    >
+                  {bulkCreateResults.map((result, index) => <div key={index} className={`text-sm p-2 rounded ${result.status === 'success' ? 'bg-success/10 text-success' : result.status === 'skipped' ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'}`}>
                       <span className="font-medium">{result.hospital_code}</span> - {result.hospital_name}
                       <br />
                       <span className="text-xs">{result.message}</span>
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
-              </div>
-            )}
+              </div>}
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => {
-              setIsBulkCreateDialogOpen(false);
-              setBulkCreateResults([]);
-              setBulkCreateProvinceId('');
-            }}>
+            setIsBulkCreateDialogOpen(false);
+            setBulkCreateResults([]);
+            setBulkCreateProvinceId('');
+          }}>
               ปิด
             </Button>
-            {bulkCreateResults.length === 0 && (
-              <Button 
-                onClick={handleBulkCreateUsers} 
-                disabled={isBulkCreating || !bulkCreateProvinceId}
-              >
+            {bulkCreateResults.length === 0 && <Button onClick={handleBulkCreateUsers} disabled={isBulkCreating || !bulkCreateProvinceId}>
                 {isBulkCreating ? 'กำลังสร้าง...' : 'สร้างผู้ใช้'}
-              </Button>
-            )}
+              </Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1296,56 +1065,36 @@ export default function SuperAdmin() {
                   <SelectValue placeholder="เลือกเขตสุขภาพ" />
                 </SelectTrigger>
                 <SelectContent>
-                  {healthRegions.map((region) => (
-                    <SelectItem key={region.id} value={region.id}>
+                  {healthRegions.map(region => <SelectItem key={region.id} value={region.id}>
                       เขตสุขภาพที่ {region.region_number}
-                    </SelectItem>
-                  ))}
+                    </SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
 
-            {healthOfficeBulkResults.length > 0 && (
-              <div className="space-y-2">
+            {healthOfficeBulkResults.length > 0 && <div className="space-y-2">
                 <Label>ผลลัพธ์การสร้างผู้ใช้</Label>
                 <div className="max-h-60 overflow-y-auto border rounded-md p-2 space-y-1">
-                  {healthOfficeBulkResults.map((result, index) => (
-                    <div 
-                      key={index} 
-                      className={`text-sm p-2 rounded ${
-                        result.status === 'success' 
-                          ? 'bg-success/10 text-success' 
-                          : result.status === 'skipped' 
-                          ? 'bg-warning/10 text-warning' 
-                          : 'bg-destructive/10 text-destructive'
-                      }`}
-                    >
+                  {healthOfficeBulkResults.map((result, index) => <div key={index} className={`text-sm p-2 rounded ${result.status === 'success' ? 'bg-success/10 text-success' : result.status === 'skipped' ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'}`}>
                       <span className="font-medium">{result.office_code}</span> - {result.office_name}
                       {result.email && <span className="text-xs block">Email: {result.email} | Password: {result.password}</span>}
                       <span className="text-xs block">{result.message}</span>
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
-              </div>
-            )}
+              </div>}
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => {
-              setIsHealthOfficeBulkDialogOpen(false);
-              setHealthOfficeBulkResults([]);
-              setBulkHealthOfficeRegionId('');
-            }}>
+            setIsHealthOfficeBulkDialogOpen(false);
+            setHealthOfficeBulkResults([]);
+            setBulkHealthOfficeRegionId('');
+          }}>
               ปิด
             </Button>
-            {healthOfficeBulkResults.length === 0 && (
-              <Button 
-                onClick={handleBulkCreateHealthOfficeUsers} 
-                disabled={isBulkCreatingHealthOffice || !bulkHealthOfficeRegionId}
-              >
+            {healthOfficeBulkResults.length === 0 && <Button onClick={handleBulkCreateHealthOfficeUsers} disabled={isBulkCreatingHealthOffice || !bulkHealthOfficeRegionId}>
                 {isBulkCreatingHealthOffice ? 'กำลังสร้าง...' : 'สร้างผู้ใช้'}
-              </Button>
-            )}
+              </Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1364,77 +1113,53 @@ export default function SuperAdmin() {
           
           <div className="space-y-4 py-4">
             {/* Only show region selector for central_admin */}
-            {currentUserProfile?.role === 'central_admin' && (
-              <div className="space-y-2">
+            {currentUserProfile?.role === 'central_admin' && <div className="space-y-2">
                 <Label>เลือกเขตสุขภาพ</Label>
                 <Select value={bulkProvincialRegionId} onValueChange={setBulkProvincialRegionId}>
                   <SelectTrigger>
                     <SelectValue placeholder="เลือกเขตสุขภาพ" />
                   </SelectTrigger>
                   <SelectContent>
-                    {healthRegions.map((region) => (
-                      <SelectItem key={region.id} value={region.id}>
+                    {healthRegions.map(region => <SelectItem key={region.id} value={region.id}>
                         เขตสุขภาพที่ {region.region_number}
-                      </SelectItem>
-                    ))}
+                      </SelectItem>)}
                   </SelectContent>
                 </Select>
-              </div>
-            )}
+              </div>}
 
             {/* For regional admin, show their assigned region */}
-            {currentUserProfile?.role === 'regional' && (
-              <div className="space-y-2">
+            {currentUserProfile?.role === 'regional' && <div className="space-y-2">
                 <Label>เขตสุขภาพของคุณ</Label>
                 <div className="p-3 bg-muted rounded-md">
                   <span className="font-medium">
                     {getRegionName(currentUserProfile.health_region_id)}
                   </span>
                 </div>
-              </div>
-            )}
+              </div>}
 
-            {provincialBulkResults.length > 0 && (
-              <div className="space-y-2">
+            {provincialBulkResults.length > 0 && <div className="space-y-2">
                 <Label>ผลลัพธ์การสร้างผู้ใช้</Label>
                 <div className="max-h-60 overflow-y-auto border rounded-md p-2 space-y-1">
-                  {provincialBulkResults.map((result, index) => (
-                    <div 
-                      key={index} 
-                      className={`text-sm p-2 rounded ${
-                        result.status === 'success' 
-                          ? 'bg-success/10 text-success' 
-                          : result.status === 'skipped' 
-                          ? 'bg-warning/10 text-warning' 
-                          : 'bg-destructive/10 text-destructive'
-                      }`}
-                    >
+                  {provincialBulkResults.map((result, index) => <div key={index} className={`text-sm p-2 rounded ${result.status === 'success' ? 'bg-success/10 text-success' : result.status === 'skipped' ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'}`}>
                       <span className="font-medium">{result.health_office_code || result.province_code}</span> - {result.province_name}
                       {result.email && <span className="text-xs block">Email: {result.email}</span>}
                       <span className="text-xs block">{result.message}</span>
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
-              </div>
-            )}
+              </div>}
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => {
-              setIsProvincialBulkDialogOpen(false);
-              setProvincialBulkResults([]);
-              setBulkProvincialRegionId('');
-            }}>
+            setIsProvincialBulkDialogOpen(false);
+            setProvincialBulkResults([]);
+            setBulkProvincialRegionId('');
+          }}>
               ปิด
             </Button>
-            {provincialBulkResults.length === 0 && (
-              <Button 
-                onClick={handleBulkCreateProvincialUsers} 
-                disabled={isBulkCreatingProvincial || (currentUserProfile?.role === 'central_admin' && !bulkProvincialRegionId)}
-              >
+            {provincialBulkResults.length === 0 && <Button onClick={handleBulkCreateProvincialUsers} disabled={isBulkCreatingProvincial || currentUserProfile?.role === 'central_admin' && !bulkProvincialRegionId}>
                 {isBulkCreatingProvincial ? 'กำลังสร้าง...' : 'สร้างผู้ใช้'}
-              </Button>
-            )}
+              </Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1452,88 +1177,52 @@ export default function SuperAdmin() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="supervisor-email">อีเมล *</Label>
-              <Input
-                id="supervisor-email"
-                type="email"
-                value={supervisorEmail}
-                onChange={(e) => setSupervisorEmail(e.target.value)}
-                placeholder="example@email.com"
-              />
+              <Input id="supervisor-email" type="email" value={supervisorEmail} onChange={e => setSupervisorEmail(e.target.value)} placeholder="example@email.com" />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="supervisor-password">รหัสผ่าน *</Label>
-              <Input
-                id="supervisor-password"
-                type="password"
-                value={supervisorPassword}
-                onChange={(e) => setSupervisorPassword(e.target.value)}
-                placeholder="อย่างน้อย 6 ตัวอักษร"
-              />
+              <Input id="supervisor-password" type="password" value={supervisorPassword} onChange={e => setSupervisorPassword(e.target.value)} placeholder="อย่างน้อย 6 ตัวอักษร" />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="supervisor-fullname">ชื่อ-นามสกุล</Label>
-              <Input
-                id="supervisor-fullname"
-                type="text"
-                value={supervisorFullName}
-                onChange={(e) => setSupervisorFullName(e.target.value)}
-                placeholder="ชื่อ นามสกุล"
-              />
+              <Input id="supervisor-fullname" type="text" value={supervisorFullName} onChange={e => setSupervisorFullName(e.target.value)} placeholder="ชื่อ นามสกุล" />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="supervisor-position">ตำแหน่ง</Label>
-              <Input
-                id="supervisor-position"
-                type="text"
-                value={supervisorPosition}
-                onChange={(e) => setSupervisorPosition(e.target.value)}
-                placeholder="เช่น นักวิชาการสาธารณสุขชำนาญการพิเศษ"
-              />
+              <Input id="supervisor-position" type="text" value={supervisorPosition} onChange={e => setSupervisorPosition(e.target.value)} placeholder="เช่น นักวิชาการสาธารณสุขชำนาญการพิเศษ" />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="supervisor-organization">หน่วยงาน</Label>
-              <Input
-                id="supervisor-organization"
-                type="text"
-                value={supervisorOrganization}
-                onChange={(e) => setSupervisorOrganization(e.target.value)}
-                placeholder="เช่น สำนักงานเขตสุขภาพที่ 1"
-              />
+              <Input id="supervisor-organization" type="text" value={supervisorOrganization} onChange={e => setSupervisorOrganization(e.target.value)} placeholder="เช่น สำนักงานเขตสุขภาพที่ 1" />
             </div>
 
-            {currentUserProfile?.role === 'regional' && (
-              <div className="p-3 bg-muted rounded-md">
+            {currentUserProfile?.role === 'regional' && <div className="p-3 bg-muted rounded-md">
                 <span className="text-sm text-muted-foreground">
                   ผู้นิเทศจะถูกกำหนดให้อยู่ใน: <strong>{getRegionName(currentUserProfile.health_region_id)}</strong>
                 </span>
-              </div>
-            )}
+              </div>}
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => {
-              setIsSupervisorDialogOpen(false);
-              setSupervisorEmail('');
-              setSupervisorPassword('');
-              setSupervisorFullName('');
-              setSupervisorPosition('');
-              setSupervisorOrganization('');
-            }}>
+            setIsSupervisorDialogOpen(false);
+            setSupervisorEmail('');
+            setSupervisorPassword('');
+            setSupervisorFullName('');
+            setSupervisorPosition('');
+            setSupervisorOrganization('');
+          }}>
               ยกเลิก
             </Button>
-            <Button 
-              onClick={handleCreateSupervisor} 
-              disabled={isCreatingSupervisor || !supervisorEmail || !supervisorPassword}
-            >
+            <Button onClick={handleCreateSupervisor} disabled={isCreatingSupervisor || !supervisorEmail || !supervisorPassword}>
               {isCreatingSupervisor ? 'กำลังสร้าง...' : 'สร้างผู้นิเทศ'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
-  );
+    </DashboardLayout>;
 }
