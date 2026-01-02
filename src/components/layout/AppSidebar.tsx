@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -16,6 +17,11 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
   Shield,
   LayoutDashboard,
   FileText,
@@ -25,12 +31,12 @@ import {
   Settings,
   PieChart,
   TrendingUp,
-  Target,
   AlertTriangle,
   ClipboardCheck,
   FileSearch,
   FileCheck,
   BookOpen,
+  ChevronRight,
 } from 'lucide-react';
 
 const menuItems = [
@@ -100,6 +106,10 @@ export function AppSidebar() {
   const isReportsActive = currentPath.startsWith('/reports');
   const isInspectionActive = currentPath.startsWith('/inspection');
 
+  // State for collapsible menus
+  const [reportsOpen, setReportsOpen] = useState(isReportsActive);
+  const [inspectionOpen, setInspectionOpen] = useState(isInspectionActive);
+
   const filterByRole = (items: typeof menuItems) => {
     if (!profile?.role) return items;
     return items.filter(item => item.roles.includes(profile.role));
@@ -155,70 +165,100 @@ export function AppSidebar() {
               ))}
 
               {/* Reports with Submenu - Always visible */}
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  tooltip="รายงานและสถิติ"
-                  isActive={isReportsActive}
-                  onClick={() => collapsed && navigate('/reports')}
-                  className={`
-                    text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
-                    data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
-                  `}
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  <span>รายงานและสถิติ</span>
-                </SidebarMenuButton>
-                <SidebarMenuSub className="border-sidebar-border">
-                  {reportSubItems.map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton
-                        onClick={() => navigate(subItem.url)}
-                        isActive={currentPath === subItem.url}
-                        className={`
-                          text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
-                          data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
-                        `}
-                      >
-                        <subItem.icon className="h-3 w-3" />
-                        <span>{subItem.title}</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
-                </SidebarMenuSub>
-              </SidebarMenuItem>
+              <Collapsible
+                open={reportsOpen}
+                onOpenChange={setReportsOpen}
+                className="group/collapsible"
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton 
+                      tooltip="รายงานและสถิติ"
+                      isActive={isReportsActive}
+                      onClick={() => {
+                        if (collapsed) {
+                          navigate('/reports');
+                        }
+                      }}
+                      className={`
+                        text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                        data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                      `}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      <span>รายงานและสถิติ</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub className="border-sidebar-border">
+                      {reportSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton
+                            onClick={() => navigate(subItem.url)}
+                            isActive={currentPath === subItem.url}
+                            className={`
+                              text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
+                              data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                            `}
+                          >
+                            <subItem.icon className="h-3 w-3" />
+                            <span>{subItem.title}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
 
               {/* Inspection Reports with Submenu */}
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  tooltip="รายงานตรวจราชการ"
-                  isActive={isInspectionActive}
-                  onClick={() => collapsed && navigate('/inspection/supervisor')}
-                  className={`
-                    text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
-                    data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
-                  `}
-                >
-                  <ClipboardCheck className="h-4 w-4" />
-                  <span>รายงานตรวจราชการ</span>
-                </SidebarMenuButton>
-                <SidebarMenuSub className="border-sidebar-border">
-                  {inspectionSubItems.map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton
-                        onClick={() => navigate(subItem.url)}
-                        isActive={currentPath === subItem.url || currentPath.startsWith(subItem.url + '/')}
-                        className={`
-                          text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
-                          data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
-                        `}
-                      >
-                        <subItem.icon className="h-3 w-3" />
-                        <span>{subItem.title}</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
-                </SidebarMenuSub>
-              </SidebarMenuItem>
+              <Collapsible
+                open={inspectionOpen}
+                onOpenChange={setInspectionOpen}
+                className="group/collapsible"
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton 
+                      tooltip="รายงานตรวจราชการ"
+                      isActive={isInspectionActive}
+                      onClick={() => {
+                        if (collapsed) {
+                          navigate('/inspection/supervisor');
+                        }
+                      }}
+                      className={`
+                        text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                        data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                      `}
+                    >
+                      <ClipboardCheck className="h-4 w-4" />
+                      <span>รายงานตรวจราชการ</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub className="border-sidebar-border">
+                      {inspectionSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton
+                            onClick={() => navigate(subItem.url)}
+                            isActive={currentPath === subItem.url || currentPath.startsWith(subItem.url + '/')}
+                            className={`
+                              text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
+                              data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                            `}
+                          >
+                            <subItem.icon className="h-3 w-3" />
+                            <span>{subItem.title}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
