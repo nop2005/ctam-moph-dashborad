@@ -458,6 +458,18 @@ export default function SuperAdmin() {
       return;
     }
 
+    // Validate email format - must contain only ASCII characters and valid email format
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(supervisorEmail)) {
+      toast.error('รูปแบบอีเมลไม่ถูกต้อง กรุณาตรวจสอบว่าไม่มีตัวอักษรภาษาไทยในอีเมล');
+      return;
+    }
+
+    if (supervisorPassword.length < 6) {
+      toast.error('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+      return;
+    }
+
     setIsCreatingSupervisor(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
