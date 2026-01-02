@@ -907,6 +907,39 @@ export type Database = {
           },
         ]
       }
+      report_access_policies: {
+        Row: {
+          created_at: string | null
+          drill_to_hospital: string | null
+          drill_to_province: string | null
+          id: string
+          report_type: string
+          role: string
+          updated_at: string | null
+          view_region: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          drill_to_hospital?: string | null
+          drill_to_province?: string | null
+          id?: string
+          report_type: string
+          role: string
+          updated_at?: string | null
+          view_region?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          drill_to_hospital?: string | null
+          drill_to_province?: string | null
+          id?: string
+          report_type?: string
+          role?: string
+          updated_at?: string | null
+          view_region?: boolean | null
+        }
+        Relationships: []
+      }
       supervisee_inspection_files: {
         Row: {
           assessment_round: string
