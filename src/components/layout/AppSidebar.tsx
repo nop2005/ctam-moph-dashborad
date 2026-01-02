@@ -45,13 +45,13 @@ const menuItems = [
     title: 'หน้าหลัก', 
     url: '/dashboard', 
     icon: LayoutDashboard,
-    roles: ['hospital_it', 'provincial', 'regional', 'central_admin', 'health_office']
+    roles: ['hospital_it', 'provincial', 'regional', 'central_admin', 'health_office', 'supervisor']
   },
   { 
     title: 'แบบประเมิน CTAM+', 
     url: '/assessments', 
     icon: FileText,
-    roles: ['hospital_it', 'provincial', 'regional', 'central_admin', 'health_office']
+    roles: ['hospital_it', 'provincial', 'regional', 'central_admin', 'health_office', 'supervisor']
   },
 ];
 
@@ -124,6 +124,7 @@ export function AppSidebar() {
   const isCentralAdmin = profile?.role === 'central_admin';
   const isProvincialAdmin = profile?.role === 'provincial';
   const isRegionalAdmin = profile?.role === 'regional';
+  const isSupervisor = profile?.role === 'supervisor';
   const hasAdminMenu = isCentralAdmin || isProvincialAdmin || isRegionalAdmin;
 
   return (
