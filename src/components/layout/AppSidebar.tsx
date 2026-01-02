@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocalStorageState } from '@/hooks/useLocalStorageState';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Sidebar,
@@ -105,9 +106,15 @@ export function AppSidebar() {
   const isReportsActive = currentPath.startsWith('/reports');
   const isInspectionActive = currentPath.startsWith('/inspection') && currentPath !== '/inspection/manual';
 
-  // State for collapsible menus
-  const [reportsOpen, setReportsOpen] = useState(isReportsActive);
-  const [inspectionOpen, setInspectionOpen] = useState(isInspectionActive);
+  // State for collapsible menus (persist across route changes)
+  const [reportsOpen, setReportsOpen] = useLocalStorageState<boolean>(
+    'sidebar.reportsOpen',
+    isReportsActive
+  );
+  const [inspectionOpen, setInspectionOpen] = useLocalStorageState<boolean>(
+    'sidebar.inspectionOpen',
+    isInspectionActive
+  );
 
   const filterByRole = (items: typeof menuItems) => {
     if (!profile?.role) return items;
