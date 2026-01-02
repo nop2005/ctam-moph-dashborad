@@ -159,6 +159,7 @@ export function AppSidebar() {
                 <SidebarMenuButton 
                   tooltip="รายงานและสถิติ"
                   isActive={isReportsActive}
+                  onClick={() => collapsed && navigate('/reports')}
                   className={`
                     text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
                     data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
@@ -191,6 +192,7 @@ export function AppSidebar() {
                 <SidebarMenuButton 
                   tooltip="รายงานตรวจราชการ"
                   isActive={isInspectionActive}
+                  onClick={() => collapsed && navigate('/inspection/supervisor')}
                   className={`
                     text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
                     data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
