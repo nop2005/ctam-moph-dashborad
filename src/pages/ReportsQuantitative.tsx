@@ -8,6 +8,7 @@ import { TrendingUp, Filter, Building2, MapPin, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { useReportAccessPolicy } from '@/hooks/useReportAccessPolicy';
 interface HealthRegion {
   id: string;
   name: string;
@@ -100,6 +101,9 @@ export default function ReportsQuantitative() {
   // Check if user is provincial admin
   const isProvincialAdmin = profile?.role === 'provincial';
   const userProvinceId = profile?.province_id;
+
+  // Report access policy
+  const { canDrillToProvince, canDrillToHospital } = useReportAccessPolicy('quantitative', provinces, healthOffices);
 
   // Fetch data
   useEffect(() => {
