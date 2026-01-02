@@ -865,6 +865,7 @@ export default function SuperAdmin() {
                       <SelectItem value="health_office">IT สสจ.</SelectItem>
                       <SelectItem value="provincial">แอดมินจังหวัด</SelectItem>
                       <SelectItem value="regional">แอดมินเขตสุขภาพ</SelectItem>
+                      <SelectItem value="supervisor">ผู้นิเทศ</SelectItem>
                       <SelectItem value="central_admin">Super Admin</SelectItem>
                     </SelectContent>
                   </Select>
@@ -982,6 +983,7 @@ export default function SuperAdmin() {
                       <SelectItem value="health_office">IT สสจ.</SelectItem>
                       <SelectItem value="provincial">แอดมินจังหวัด</SelectItem>
                       <SelectItem value="regional">แอดมินเขตสุขภาพ</SelectItem>
+                      <SelectItem value="supervisor">ผู้นิเทศ</SelectItem>
                       <SelectItem value="central_admin">Super Admin</SelectItem>
                     </SelectContent>
                   </Select>
@@ -1068,6 +1070,12 @@ export default function SuperAdmin() {
                               </div>
                             )}
                             {p.role === 'regional' && (
+                              <div className="flex items-center gap-1 text-sm">
+                                <MapPin className="h-3 w-3" />
+                                {getRegionName(p.health_region_id)}
+                              </div>
+                            )}
+                            {p.role === 'supervisor' && (
                               <div className="flex items-center gap-1 text-sm">
                                 <MapPin className="h-3 w-3" />
                                 {getRegionName(p.health_region_id)}
