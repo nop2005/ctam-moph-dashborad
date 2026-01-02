@@ -173,7 +173,7 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton 
                       tooltip="รายงานและสถิติ"
-                      isActive={isReportsActive}
+                      isActive={false}
                       onClick={() => {
                         if (collapsed) {
                           navigate('/reports');
@@ -184,7 +184,6 @@ export function AppSidebar() {
                       }}
                       className={`
                         text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
-                        data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
                       `}
                     >
                       <BarChart3 className="h-4 w-4" />
@@ -224,7 +223,7 @@ export function AppSidebar() {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton 
                       tooltip="รายงานตรวจราชการ"
-                      isActive={isInspectionActive}
+                      isActive={false}
                       onClick={() => {
                         if (collapsed) {
                           navigate('/inspection/supervisor');
@@ -235,7 +234,6 @@ export function AppSidebar() {
                       }}
                       className={`
                         text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
-                        data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
                       `}
                     >
                       <ClipboardCheck className="h-4 w-4" />
