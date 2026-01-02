@@ -176,9 +176,8 @@ export function AppSidebar() {
                     onClick={() => {
                       if (collapsed) {
                         navigate('/reports');
-                      } else if (!reportsOpen) {
-                        setReportsOpen(true);
-                        navigate('/reports');
+                      } else {
+                        setReportsOpen(!reportsOpen);
                       }
                     }}
                     className={`
@@ -187,9 +186,7 @@ export function AppSidebar() {
                   >
                     <BarChart3 className="h-4 w-4" />
                     <span>รายงานและสถิติ</span>
-                    <CollapsibleTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 cursor-pointer hover:bg-sidebar-accent rounded group-data-[state=open]/collapsible:rotate-90" />
-                    </CollapsibleTrigger>
+                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                   <CollapsibleContent>
                     <SidebarMenuSub className="border-sidebar-border">
@@ -226,9 +223,8 @@ export function AppSidebar() {
                     onClick={() => {
                       if (collapsed) {
                         navigate('/inspection/supervisor');
-                      } else if (!inspectionOpen) {
-                        setInspectionOpen(true);
-                        navigate('/inspection/supervisor');
+                      } else {
+                        setInspectionOpen(!inspectionOpen);
                       }
                     }}
                     className={`
@@ -237,9 +233,7 @@ export function AppSidebar() {
                   >
                     <ClipboardCheck className="h-4 w-4" />
                     <span>รายงานตรวจราชการ</span>
-                    <CollapsibleTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 cursor-pointer hover:bg-sidebar-accent rounded group-data-[state=open]/collapsible:rotate-90" />
-                    </CollapsibleTrigger>
+                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                   <CollapsibleContent>
                     <SidebarMenuSub className="border-sidebar-border">
