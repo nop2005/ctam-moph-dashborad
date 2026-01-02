@@ -166,7 +166,6 @@ export function AppSidebar() {
               {/* Reports with Submenu - Always visible */}
               <Collapsible
                 open={reportsOpen}
-                onOpenChange={setReportsOpen}
                 className="group/collapsible"
               >
                 <SidebarMenuItem>
@@ -174,12 +173,16 @@ export function AppSidebar() {
                     <SidebarMenuButton 
                       tooltip="รายงานและสถิติ"
                       isActive={false}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
                         if (collapsed) {
                           navigate('/reports');
-                        } else if (!reportsOpen) {
-                          setReportsOpen(true);
-                          navigate('/reports');
+                        } else {
+                          const newState = !reportsOpen;
+                          setReportsOpen(newState);
+                          if (newState) {
+                            navigate('/reports');
+                          }
                         }
                       }}
                       className={`
@@ -216,7 +219,6 @@ export function AppSidebar() {
               {/* Inspection Reports with Submenu */}
               <Collapsible
                 open={inspectionOpen}
-                onOpenChange={setInspectionOpen}
                 className="group/collapsible"
               >
                 <SidebarMenuItem>
@@ -224,12 +226,16 @@ export function AppSidebar() {
                     <SidebarMenuButton 
                       tooltip="รายงานตรวจราชการ"
                       isActive={false}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
                         if (collapsed) {
                           navigate('/inspection/supervisor');
-                        } else if (!inspectionOpen) {
-                          setInspectionOpen(true);
-                          navigate('/inspection/supervisor');
+                        } else {
+                          const newState = !inspectionOpen;
+                          setInspectionOpen(newState);
+                          if (newState) {
+                            navigate('/inspection/supervisor');
+                          }
                         }
                       }}
                       className={`
