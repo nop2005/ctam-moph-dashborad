@@ -35,7 +35,9 @@ import {
   MapPin,
   Loader2,
   UserCheck,
-  UserX
+  UserX,
+  Trash2,
+  Edit
 } from 'lucide-react';
 
 interface Profile {
@@ -82,6 +84,7 @@ export default function UserManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -220,6 +223,36 @@ export default function UserManagement() {
     } catch (error) {
       console.error('Error rejecting user:', error);
       toast.error('ไม่สามารถปฏิเสธผู้ใช้ได้');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleDeleteClick = (profile: Profile) => {
+    setSelectedProfile(profile);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedProfile) return;
+
+    setProcessing(true);
+    try {
+      // Delete profile first
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', selectedProfile.id);
+
+      if (profileError) throw profileError;
+
+      toast.success('ลบผู้ใช้สำเร็จ');
+      setDeleteDialogOpen(false);
+      setSelectedProfile(null);
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error('ไม่สามารถลบผู้ใช้ได้');
     } finally {
       setProcessing(false);
     }
@@ -412,26 +445,37 @@ export default function UserManagement() {
                           ลงทะเบียนเมื่อ: {formatDate(profile.created_at)}
                         </p>
                       </div>
-                      {!profile.is_active && (
-                        <div className="flex gap-2">
+                      <div className="flex gap-2">
+                        {!profile.is_active ? (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRejectClick(profile)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              ปฏิเสธ
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleApproveClick(profile)}
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-1" />
+                              อนุมัติ
+                            </Button>
+                          </>
+                        ) : (
                           <Button
                             variant="outline"
-                            size="sm"
-                            onClick={() => handleRejectClick(profile)}
-                            className="text-destructive hover:text-destructive"
+                            size="icon"
+                            onClick={() => handleDeleteClick(profile)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
                           >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            ปฏิเสธ
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleApproveClick(profile)}
-                          >
-                            <CheckCircle2 className="h-4 w-4 mr-1" />
-                            อนุมัติ
-                          </Button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -498,6 +542,37 @@ export default function UserManagement() {
             >
               {processing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               ปฏิเสธ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>ยืนยันการลบผู้ใช้</DialogTitle>
+            <DialogDescription>
+              คุณต้องการลบผู้ใช้ {selectedProfile?.full_name || selectedProfile?.email} หรือไม่?
+              <br />
+              <span className="text-destructive font-medium">การดำเนินการนี้ไม่สามารถย้อนกลับได้</span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={processing}
+            >
+              ยกเลิก
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={processing}
+            >
+              {processing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              ลบผู้ใช้
             </Button>
           </DialogFooter>
         </DialogContent>
