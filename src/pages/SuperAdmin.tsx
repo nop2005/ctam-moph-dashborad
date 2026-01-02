@@ -592,52 +592,9 @@ export default function SuperAdmin() {
     ? provinces.filter(p => p.health_region_id === regionFilter)
     : provinces;
 
-  const filteredPendingProfiles = cardFilteredProfiles.filter(p => {
-    if (p.is_active) return false;
-    
-    // Search filter
-    const matchesSearch = p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-    
-    // Role filter
-    const matchesRole = roleFilter === 'all' || p.role === roleFilter;
-    
-    // Region filter
-    let matchesRegion = true;
-    if (regionFilter !== 'all') {
-      if (p.health_region_id) {
-        matchesRegion = p.health_region_id === regionFilter;
-      } else if (p.province_id) {
-        const province = provinces.find(prov => prov.id === p.province_id);
-        matchesRegion = province?.health_region_id === regionFilter;
-      } else if (p.hospital_id) {
-        const hospital = hospitals.find(h => h.id === p.hospital_id);
-        const province = provinces.find(prov => prov.id === hospital?.province_id);
-        matchesRegion = province?.health_region_id === regionFilter;
-      } else {
-        matchesRegion = false;
-      }
-    }
-    
-    // Province filter
-    let matchesProvince = true;
-    if (provinceFilter !== 'all') {
-      if (p.province_id) {
-        matchesProvince = p.province_id === provinceFilter;
-      } else if (p.hospital_id) {
-        const hospital = hospitals.find(h => h.id === p.hospital_id);
-        matchesProvince = hospital?.province_id === provinceFilter;
-      } else {
-        matchesProvince = false;
-      }
-    }
-    
-    return matchesSearch && matchesRole && matchesRegion && matchesProvince;
-  });
 
-  const filteredActiveProfiles = cardFilteredProfiles.filter(p => {
-    if (!p.is_active) return false;
-    
+  // Unified filtered profiles based on cardFilter and other filters
+  const filteredProfiles = cardFilteredProfiles.filter(p => {
     // Search filter
     const matchesSearch = p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (p.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase());
@@ -677,6 +634,9 @@ export default function SuperAdmin() {
     
     return matchesSearch && matchesRole && matchesRegion && matchesProvince;
   });
+  
+  // Keep filteredActiveProfiles for backward compatibility (uses the same as filteredProfiles when not pending)
+  const filteredActiveProfiles = filteredProfiles;
 
   const filteredHospitals = editProvinceId 
     ? hospitals.filter(h => h.province_id === editProvinceId)
@@ -887,103 +847,142 @@ export default function SuperAdmin() {
         </div>
       </div>
 
-      {/* Active Users Section */}
-      {(cardFilter !== 'pending') && (
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <CardTitle>
-                    รายชื่อผู้ใช้งาน
-                  </CardTitle>
-                  <CardDescription>ผู้ใช้ที่ได้รับการอนุมัติแล้ว</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>อีเมล</TableHead>
-                      <TableHead>ชื่อ-นามสกุล</TableHead>
-                      <TableHead>เบอร์โทร</TableHead>
-                      <TableHead>บทบาท</TableHead>
-                      <TableHead>หน่วยงาน</TableHead>
-                      <TableHead className="text-right">จัดการ</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8">
-                          <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-                        </TableCell>
-                      </TableRow>
-                    ) : filteredActiveProfiles.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          ไม่พบข้อมูลผู้ใช้
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredActiveProfiles.map((p) => (
-                        <TableRow key={p.id}>
-                          <TableCell className="font-medium">{p.email}</TableCell>
-                          <TableCell>{p.full_name || '-'}</TableCell>
-                          <TableCell>{p.phone || '-'}</TableCell>
-                          <TableCell>
-                            <Badge variant={getRoleBadgeVariant(p.role)}>
-                              {getRoleLabel(p.role)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {p.role === 'hospital_it' && (
-                              <div className="flex items-center gap-1 text-sm">
-                                <Building2 className="h-3 w-3" />
-                                {getHospitalName(p.hospital_id)}
-                              </div>
-                            )}
-                            {p.role === 'provincial' && (
-                              <div className="flex items-center gap-1 text-sm">
-                                <MapPin className="h-3 w-3" />
-                                {getProvinceName(p.province_id)}
-                              </div>
-                            )}
-                            {p.role === 'regional' && (
-                              <div className="flex items-center gap-1 text-sm">
-                                <MapPin className="h-3 w-3" />
-                                {getRegionName(p.health_region_id)}
-                              </div>
-                            )}
-                            {p.role === 'supervisor' && (
-                              <div className="flex items-center gap-1 text-sm">
-                                <MapPin className="h-3 w-3" />
-                                {getRegionName(p.health_region_id)}
-                              </div>
-                            )}
-                            {p.role === 'central_admin' && (
-                              <span className="text-sm text-muted-foreground">ส่วนกลาง</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
+      {/* Users Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <CardTitle>
+                {cardFilter === 'pending' ? 'ผู้ใช้รอการอนุมัติ' : 'รายชื่อผู้ใช้งาน'}
+              </CardTitle>
+              <CardDescription>
+                {cardFilter === 'pending' 
+                  ? 'ตรวจสอบและอนุมัติผู้ใช้ใหม่ พร้อมกำหนดบทบาทและหน่วยงาน' 
+                  : cardFilter === 'all' 
+                    ? 'ผู้ใช้ทั้งหมดในระบบ'
+                    : 'ผู้ใช้ที่ได้รับการอนุมัติแล้ว'}
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>อีเมล</TableHead>
+                  <TableHead>ชื่อ-นามสกุล</TableHead>
+                  <TableHead>เบอร์โทร</TableHead>
+                  <TableHead>บทบาท</TableHead>
+                  <TableHead>หน่วยงาน</TableHead>
+                  <TableHead>สถานะ</TableHead>
+                  <TableHead className="text-right">จัดการ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                    </TableCell>
+                  </TableRow>
+                ) : filteredProfiles.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      ไม่พบข้อมูลผู้ใช้
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredProfiles.map((p) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-medium">{p.email}</TableCell>
+                      <TableCell>{p.full_name || '-'}</TableCell>
+                      <TableCell>{p.phone || '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant={getRoleBadgeVariant(p.role)}>
+                          {getRoleLabel(p.role)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {p.role === 'hospital_it' && (
+                          <div className="flex items-center gap-1 text-sm">
+                            <Building2 className="h-3 w-3" />
+                            {getHospitalName(p.hospital_id)}
+                          </div>
+                        )}
+                        {p.role === 'provincial' && (
+                          <div className="flex items-center gap-1 text-sm">
+                            <MapPin className="h-3 w-3" />
+                            {getProvinceName(p.province_id)}
+                          </div>
+                        )}
+                        {p.role === 'regional' && (
+                          <div className="flex items-center gap-1 text-sm">
+                            <MapPin className="h-3 w-3" />
+                            {getRegionName(p.health_region_id)}
+                          </div>
+                        )}
+                        {p.role === 'supervisor' && (
+                          <div className="flex items-center gap-1 text-sm">
+                            <MapPin className="h-3 w-3" />
+                            {getRegionName(p.health_region_id)}
+                          </div>
+                        )}
+                        {p.role === 'central_admin' && (
+                          <span className="text-sm text-muted-foreground">ส่วนกลาง</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {p.is_active ? (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            อนุมัติแล้ว
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                            รออนุมัติ
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {p.is_active ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditProfile(p)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <div className="flex gap-1 justify-end">
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEditProfile(p)}
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleApproveClick(p)}
+                              className="gap-1"
                             >
-                              <Edit className="h-4 w-4" />
+                              <CheckCircle className="h-4 w-4" />
+                              อนุมัติ
                             </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-      )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRejectUser(p)}
+                              className="gap-1 text-destructive hover:text-destructive"
+                            >
+                              <XCircle className="h-4 w-4" />
+                              ปฏิเสธ
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Approve Dialog */}
       <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
