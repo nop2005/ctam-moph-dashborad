@@ -97,6 +97,12 @@ export default function SuperAdmin() {
   const [isBulkCreatingHealthOffice, setIsBulkCreatingHealthOffice] = useState(false);
   const [healthOfficeBulkResults, setHealthOfficeBulkResults] = useState<any[]>([]);
   
+  // Bulk create dialog for provincial users (regional admin feature)
+  const [isProvincialBulkDialogOpen, setIsProvincialBulkDialogOpen] = useState(false);
+  const [bulkProvincialRegionId, setBulkProvincialRegionId] = useState('');
+  const [isBulkCreatingProvincial, setIsBulkCreatingProvincial] = useState(false);
+  const [provincialBulkResults, setProvincialBulkResults] = useState<any[]>([]);
+  
   // Card filter state
   type CardFilter = 'all' | 'pending' | 'active' | 'central_admin' | 'regional' | 'provincial';
   const [cardFilter, setCardFilter] = useState<CardFilter>('all');
@@ -354,6 +360,59 @@ export default function SuperAdmin() {
     }
   };
 
+  // Create provincial users for a health region (regional admin can use this)
+  const handleBulkCreateProvincialUsers = async () => {
+    // For regional users, use their own region; for central_admin, use selected region
+    const regionId = currentUserProfile?.role === 'regional' 
+      ? currentUserProfile.health_region_id 
+      : bulkProvincialRegionId;
+
+    if (!regionId) {
+      toast.error('กรุณาเลือกเขตสุขภาพ');
+      return;
+    }
+
+    setIsBulkCreatingProvincial(true);
+    setProvincialBulkResults([]);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('กรุณาเข้าสู่ระบบใหม่');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-provincial-users`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ health_region_id: regionId }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setProvincialBulkResults(data.results);
+        const successCount = data.results.filter((r: any) => r.status === 'success').length;
+        const skippedCount = data.results.filter((r: any) => r.status === 'skipped').length;
+        toast.success(`สร้างผู้ใช้ระดับจังหวัดสำเร็จ ${successCount} ราย, ข้าม ${skippedCount} ราย`);
+        fetchData();
+      } else {
+        toast.error(data.error || 'เกิดข้อผิดพลาด');
+      }
+    } catch (error) {
+      console.error('Error creating provincial bulk users:', error);
+      toast.error('ไม่สามารถสร้างผู้ใช้ได้');
+    } finally {
+      setIsBulkCreatingProvincial(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     if (!selectedProfile) return;
     
@@ -479,15 +538,36 @@ export default function SuperAdmin() {
             อนุมัติผู้ใช้ใหม่และจัดการสิทธิ์ผู้ใช้งานทั้งหมดในระบบ
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setIsHealthOfficeBulkDialogOpen(true)} variant="outline" className="gap-2">
-            <Building2 className="h-4 w-4" />
-            สร้างผู้ใช้ สสจ. แบบ Bulk
-          </Button>
-          <Button onClick={() => setIsBulkCreateDialogOpen(true)} className="gap-2">
-            <UserPlus className="h-4 w-4" />
-            สร้างผู้ใช้ รพ. แบบ Bulk
-          </Button>
+        <div className="flex gap-2 flex-wrap">
+          {/* Regional admin can create provincial users for their region */}
+          {(currentUserProfile?.role === 'regional' || currentUserProfile?.role === 'central_admin') && (
+            <Button 
+              onClick={() => {
+                // For regional, auto-fill their region
+                if (currentUserProfile?.role === 'regional') {
+                  setBulkProvincialRegionId(currentUserProfile.health_region_id || '');
+                }
+                setIsProvincialBulkDialogOpen(true);
+              }} 
+              variant="outline" 
+              className="gap-2"
+            >
+              <MapPin className="h-4 w-4" />
+              สร้างผู้ใช้ระดับจังหวัด
+            </Button>
+          )}
+          {currentUserProfile?.role === 'central_admin' && (
+            <>
+              <Button onClick={() => setIsHealthOfficeBulkDialogOpen(true)} variant="outline" className="gap-2">
+                <Building2 className="h-4 w-4" />
+                สร้างผู้ใช้ สสจ. แบบ Bulk
+              </Button>
+              <Button onClick={() => setIsBulkCreateDialogOpen(true)} className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                สร้างผู้ใช้ รพ. แบบ Bulk
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -1105,6 +1185,95 @@ export default function SuperAdmin() {
                 disabled={isBulkCreatingHealthOffice || !bulkHealthOfficeRegionId}
               >
                 {isBulkCreatingHealthOffice ? 'กำลังสร้าง...' : 'สร้างผู้ใช้'}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Provincial Users Bulk Create Dialog (for regional admin) */}
+      <Dialog open={isProvincialBulkDialogOpen} onOpenChange={setIsProvincialBulkDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>สร้างผู้ใช้ระดับจังหวัด แบบ Bulk</DialogTitle>
+            <DialogDescription>
+              สร้างผู้ใช้ผู้ประเมินระดับจังหวัด (สสจ.) สำหรับทุกจังหวัดในเขตสุขภาพ
+              <br />
+              <span className="text-primary font-medium">Email: provincial.รหัสจังหวัด@ctam.moph | Password: provรหัสจังหวัด</span>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Only show region selector for central_admin */}
+            {currentUserProfile?.role === 'central_admin' && (
+              <div className="space-y-2">
+                <Label>เลือกเขตสุขภาพ</Label>
+                <Select value={bulkProvincialRegionId} onValueChange={setBulkProvincialRegionId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกเขตสุขภาพ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {healthRegions.map((region) => (
+                      <SelectItem key={region.id} value={region.id}>
+                        เขตสุขภาพที่ {region.region_number}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* For regional admin, show their assigned region */}
+            {currentUserProfile?.role === 'regional' && (
+              <div className="space-y-2">
+                <Label>เขตสุขภาพของคุณ</Label>
+                <div className="p-3 bg-muted rounded-md">
+                  <span className="font-medium">
+                    {getRegionName(currentUserProfile.health_region_id)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {provincialBulkResults.length > 0 && (
+              <div className="space-y-2">
+                <Label>ผลลัพธ์การสร้างผู้ใช้</Label>
+                <div className="max-h-60 overflow-y-auto border rounded-md p-2 space-y-1">
+                  {provincialBulkResults.map((result, index) => (
+                    <div 
+                      key={index} 
+                      className={`text-sm p-2 rounded ${
+                        result.status === 'success' 
+                          ? 'bg-success/10 text-success' 
+                          : result.status === 'skipped' 
+                          ? 'bg-warning/10 text-warning' 
+                          : 'bg-destructive/10 text-destructive'
+                      }`}
+                    >
+                      <span className="font-medium">{result.province_code}</span> - {result.province_name}
+                      {result.email && <span className="text-xs block">Email: {result.email}</span>}
+                      <span className="text-xs block">{result.message}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsProvincialBulkDialogOpen(false);
+              setProvincialBulkResults([]);
+              setBulkProvincialRegionId('');
+            }}>
+              ปิด
+            </Button>
+            {provincialBulkResults.length === 0 && (
+              <Button 
+                onClick={handleBulkCreateProvincialUsers} 
+                disabled={isBulkCreatingProvincial || (currentUserProfile?.role === 'central_admin' && !bulkProvincialRegionId)}
+              >
+                {isBulkCreatingProvincial ? 'กำลังสร้าง...' : 'สร้างผู้ใช้'}
               </Button>
             )}
           </DialogFooter>

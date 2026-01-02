@@ -126,7 +126,7 @@ const App = () => (
             <Route 
               path="/super-admin" 
               element={
-                <ProtectedRoute allowedRoles={['central_admin']}>
+                <ProtectedRoute allowedRoles={['central_admin', 'regional']}>
                   <SuperAdmin />
                 </ProtectedRoute>
               } 

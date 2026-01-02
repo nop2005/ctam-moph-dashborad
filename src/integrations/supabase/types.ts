@@ -970,6 +970,10 @@ export type Database = {
         Args: { _hospital_id: string }
         Returns: boolean
       }
+      can_regional_manage_pending_provincial: {
+        Args: { _province_id: string }
+        Returns: boolean
+      }
       can_regional_manage_provincial_user: {
         Args: { _province_id: string }
         Returns: boolean
