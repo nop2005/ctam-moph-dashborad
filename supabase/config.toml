@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.create-health-office-users]
 verify_jwt = false
+
+[functions.create-provincial-users]
+verify_jwt = false
