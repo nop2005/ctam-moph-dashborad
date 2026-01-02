@@ -77,25 +77,38 @@ export default function InspectionSupervisee() {
     
     setLoading(true);
     try {
-      // Determine which provinces to show based on user role
+      // Determine user's health_region_id based on their role
+      let userHealthRegionId: string | null = profile.health_region_id;
+
+      // For roles that don't have direct health_region_id, we need to look it up
+      if (!userHealthRegionId && profile.province_id) {
+        const { data: provinceData } = await supabase
+          .from('provinces')
+          .select('health_region_id')
+          .eq('id', profile.province_id)
+          .single();
+        userHealthRegionId = provinceData?.health_region_id || null;
+      }
+
+      // For hospital_it without province_id, get from hospital
+      if (!userHealthRegionId && profile.hospital_id) {
+        const { data: hospitalData } = await supabase
+          .from('hospitals')
+          .select('province_id, provinces!inner(health_region_id)')
+          .eq('id', profile.hospital_id)
+          .single();
+        userHealthRegionId = (hospitalData?.provinces as any)?.health_region_id || null;
+      }
+
+      // Build provinces query - filter by health region for non-central_admin users
       let provincesQuery = supabase
         .from('provinces')
         .select('id, name, health_region_id')
         .order('name', { ascending: true });
 
-      // Filter based on user role
-      if (profile.role === 'hospital_it' && profile.province_id) {
-        // Hospital IT sees their province
-        provincesQuery = provincesQuery.eq('id', profile.province_id);
-      } else if (profile.role === 'provincial' && profile.province_id) {
-        // Provincial sees their province
-        provincesQuery = provincesQuery.eq('id', profile.province_id);
-      } else if (profile.role === 'regional' && profile.health_region_id) {
-        // Regional sees all provinces in their region
-        provincesQuery = provincesQuery.eq('health_region_id', profile.health_region_id);
-      } else if (profile.role === 'health_office' && profile.province_id) {
-        // Health office sees their province
-        provincesQuery = provincesQuery.eq('id', profile.province_id);
+      // All roles except central_admin see only provinces in their health region
+      if (profile.role !== 'central_admin' && userHealthRegionId) {
+        provincesQuery = provincesQuery.eq('health_region_id', userHealthRegionId);
       }
       // central_admin sees all provinces
 
