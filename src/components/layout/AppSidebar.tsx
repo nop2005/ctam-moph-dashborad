@@ -63,7 +63,6 @@ const reportSubItems = [
 const inspectionSubItems = [
   { title: 'รายงานผู้นิเทศ', url: '/inspection/supervisor', icon: FileSearch },
   { title: 'รายงานผู้รับนิเทศ', url: '/inspection/supervisee', icon: FileCheck },
-  { title: 'คู่มือเอกสารสำหรับการนิเทศ', url: '/inspection/manual', icon: BookOpen },
 ];
 
 const adminItems = [
@@ -259,6 +258,22 @@ export function AppSidebar() {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
+
+              {/* Inspection Manual - Standalone menu item */}
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => navigate('/inspection/manual')}
+                  isActive={currentPath === '/inspection/manual'}
+                  tooltip="คู่มือเอกสารสำหรับการนิเทศ"
+                  className={`
+                    text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                    data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                  `}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span>คู่มือเอกสารสำหรับการนิเทศ</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
