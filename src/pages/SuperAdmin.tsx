@@ -750,7 +750,7 @@ export default function SuperAdmin() {
             </TabsTrigger>
             <TabsTrigger value="active" className="gap-2">
               <UserCheck className="h-4 w-4" />
-              ผู้ใช้งาน ({stats.active})
+              อนุมัติแล้ว ({stats.active})
             </TabsTrigger>
           </TabsList>
 
