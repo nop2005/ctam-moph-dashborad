@@ -840,6 +840,53 @@ export default function SuperAdmin() {
         </Button>
       </div>
 
+      {/* Central Filters */}
+      <div className="flex flex-wrap gap-2">
+        <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="บทบาท" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">ทุกบทบาท</SelectItem>
+            <SelectItem value="hospital_it">IT โรงพยาบาล</SelectItem>
+            <SelectItem value="health_office">IT สสจ.</SelectItem>
+            <SelectItem value="provincial">แอดมินจังหวัด</SelectItem>
+            <SelectItem value="regional">แอดมินเขตสุขภาพ</SelectItem>
+            <SelectItem value="supervisor">ผู้นิเทศ</SelectItem>
+            <SelectItem value="central_admin">Super Admin</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={regionFilter} onValueChange={(val) => {
+          setRegionFilter(val);
+          setProvinceFilter('all');
+        }}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="เขตสุขภาพ" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">ทุกเขต</SelectItem>
+            {healthRegions.map(region => (
+              <SelectItem key={region.id} value={region.id}>
+                เขต {region.region_number}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={provinceFilter} onValueChange={setProvinceFilter}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="จังหวัด" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">ทุกจังหวัด</SelectItem>
+            {filteredProvincesByRegion.map(province => (
+              <SelectItem key={province.id} value={province.id}>
+                {province.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Pending Users Section */}
       {(cardFilter === 'all' || cardFilter === 'pending') && (
           <Card>
@@ -853,51 +900,6 @@ export default function SuperAdmin() {
                   <CardDescription>
                     ตรวจสอบและอนุมัติผู้ใช้ใหม่ พร้อมกำหนดบทบาทและหน่วยงาน
                   </CardDescription>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Select value={roleFilter} onValueChange={setRoleFilter}>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="บทบาท" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">ทุกบทบาท</SelectItem>
-                      <SelectItem value="hospital_it">IT โรงพยาบาล</SelectItem>
-                      <SelectItem value="health_office">IT สสจ.</SelectItem>
-                      <SelectItem value="provincial">แอดมินจังหวัด</SelectItem>
-                      <SelectItem value="regional">แอดมินเขตสุขภาพ</SelectItem>
-                      <SelectItem value="supervisor">ผู้นิเทศ</SelectItem>
-                      <SelectItem value="central_admin">Super Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={regionFilter} onValueChange={(val) => {
-                    setRegionFilter(val);
-                    setProvinceFilter('all'); // Reset province when region changes
-                  }}>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="เขตสุขภาพ" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">ทุกเขต</SelectItem>
-                      {healthRegions.map(region => (
-                        <SelectItem key={region.id} value={region.id}>
-                          เขต {region.region_number}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={provinceFilter} onValueChange={setProvinceFilter}>
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="จังหวัด" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">ทุกจังหวัด</SelectItem>
-                      {filteredProvincesByRegion.map(province => (
-                        <SelectItem key={province.id} value={province.id}>
-                          {province.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
             </CardHeader>
@@ -966,56 +968,10 @@ export default function SuperAdmin() {
             <CardHeader>
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
+                  <CardTitle>
                     รายชื่อผู้ใช้งาน
                   </CardTitle>
                   <CardDescription>ผู้ใช้ที่ได้รับการอนุมัติแล้ว</CardDescription>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Select value={roleFilter} onValueChange={setRoleFilter}>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="บทบาท" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">ทุกบทบาท</SelectItem>
-                      <SelectItem value="hospital_it">IT โรงพยาบาล</SelectItem>
-                      <SelectItem value="health_office">IT สสจ.</SelectItem>
-                      <SelectItem value="provincial">แอดมินจังหวัด</SelectItem>
-                      <SelectItem value="regional">แอดมินเขตสุขภาพ</SelectItem>
-                      <SelectItem value="supervisor">ผู้นิเทศ</SelectItem>
-                      <SelectItem value="central_admin">Super Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={regionFilter} onValueChange={(val) => {
-                    setRegionFilter(val);
-                    setProvinceFilter('all');
-                  }}>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="เขตสุขภาพ" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">ทุกเขต</SelectItem>
-                      {healthRegions.map(region => (
-                        <SelectItem key={region.id} value={region.id}>
-                          เขต {region.region_number}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={provinceFilter} onValueChange={setProvinceFilter}>
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="จังหวัด" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">ทุกจังหวัด</SelectItem>
-                      {filteredProvincesByRegion.map(province => (
-                        <SelectItem key={province.id} value={province.id}>
-                          {province.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
             </CardHeader>
