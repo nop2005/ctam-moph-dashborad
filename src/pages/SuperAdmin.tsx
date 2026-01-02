@@ -793,8 +793,8 @@ export default function SuperAdmin() {
                       <SelectItem value="all">ทุกบทบาท</SelectItem>
                       <SelectItem value="hospital_it">IT โรงพยาบาล</SelectItem>
                       <SelectItem value="health_office">IT สสจ.</SelectItem>
-                      <SelectItem value="provincial">สสจ.</SelectItem>
-                      <SelectItem value="regional">เขตสุขภาพ</SelectItem>
+                      <SelectItem value="provincial">แอดมินจังหวัด</SelectItem>
+                      <SelectItem value="regional">แอดมินเขตสุขภาพ</SelectItem>
                       <SelectItem value="central_admin">Super Admin</SelectItem>
                     </SelectContent>
                   </Select>
@@ -910,8 +910,8 @@ export default function SuperAdmin() {
                       <SelectItem value="all">ทุกบทบาท</SelectItem>
                       <SelectItem value="hospital_it">IT โรงพยาบาล</SelectItem>
                       <SelectItem value="health_office">IT สสจ.</SelectItem>
-                      <SelectItem value="provincial">สสจ.</SelectItem>
-                      <SelectItem value="regional">เขตสุขภาพ</SelectItem>
+                      <SelectItem value="provincial">แอดมินจังหวัด</SelectItem>
+                      <SelectItem value="regional">แอดมินเขตสุขภาพ</SelectItem>
                       <SelectItem value="central_admin">Super Admin</SelectItem>
                     </SelectContent>
                   </Select>
