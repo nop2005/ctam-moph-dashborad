@@ -984,10 +984,6 @@ export type Database = {
         Args: { _province_id: string }
         Returns: boolean
       }
-      can_regional_view_supervisor: {
-        Args: { _health_region_id: string }
-        Returns: boolean
-      }
       is_central_admin: { Args: never; Returns: boolean }
       is_provincial_admin: { Args: never; Returns: boolean }
       is_regional_admin: { Args: never; Returns: boolean }
