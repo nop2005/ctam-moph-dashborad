@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Button } from '@/components/ui/button';
+import { useReportAccessPolicy } from '@/hooks/useReportAccessPolicy';
 
 interface HealthRegion {
   id: string;
@@ -125,6 +126,9 @@ export default function ReportsImpact() {
   // Check if user is provincial admin
   const isProvincialAdmin = profile?.role === 'provincial';
   const userProvinceId = profile?.province_id;
+
+  // Report access policy
+  const { canDrillToProvince, canDrillToHospital } = useReportAccessPolicy('impact', provinces, healthOffices);
 
   // Fetch data
   useEffect(() => {

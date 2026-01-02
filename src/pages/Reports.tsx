@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { BarChart3, FileText, Building2, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { useReportAccessPolicy } from '@/hooks/useReportAccessPolicy';
 interface HealthRegion {
   id: string;
   name: string;
@@ -153,7 +154,17 @@ export default function Reports() {
     if (selectedFiscalYear === 'all') return assessments;
     return assessments.filter(a => a.fiscal_year === parseInt(selectedFiscalYear));
   }, [assessments, selectedFiscalYear]);
+  // Report access policy
+  const { canDrillToProvince, canDrillToHospital } = useReportAccessPolicy('overview', provinces, healthOffices);
+
   const handleDrillChange = (level: DrillLevel, regionId: string | null, provinceId: string | null) => {
+    // Check permissions before drilling
+    if (level === 'province' && regionId && !canDrillToProvince(regionId)) {
+      return;
+    }
+    if (level === 'hospital' && provinceId && !canDrillToHospital(provinceId)) {
+      return;
+    }
     setChartDrillLevel(level);
     setChartRegionId(regionId);
     setChartProvinceId(provinceId);
@@ -298,7 +309,7 @@ export default function Reports() {
         </div>
 
         {/* Score Chart */}
-        <ScoreChart healthRegions={healthRegions} provinces={provinces} hospitals={hospitals} healthOffices={healthOffices} assessments={filteredAssessments} onDrillChange={handleDrillChange} selectedFiscalYear={selectedFiscalYear} />
+        <ScoreChart healthRegions={healthRegions} provinces={provinces} hospitals={hospitals} healthOffices={healthOffices} assessments={filteredAssessments} onDrillChange={handleDrillChange} selectedFiscalYear={selectedFiscalYear} canDrillToProvince={canDrillToProvince} canDrillToHospital={canDrillToHospital} />
 
         {/* Dynamic Reports Table based on drill level */}
         <Card>
@@ -336,8 +347,13 @@ export default function Reports() {
                   // Sum of latest scores (not average)
                   const totalScoreSum = regionLatestAssessments.filter(a => a.total_score !== null).reduce((sum, a) => sum + (a.total_score || 0), 0);
                   const scoreCount = regionLatestAssessments.filter(a => a.total_score !== null).length;
-                  return <TableRow key={region.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleDrillChange('province', region.id, null)}>
-                          <TableCell className="font-medium text-primary underline">
+                  const canDrill = canDrillToProvince(region.id);
+                  return <TableRow 
+                    key={region.id} 
+                    className={canDrill ? "cursor-pointer hover:bg-muted/50 transition-colors" : "opacity-50"}
+                    onClick={() => canDrill && handleDrillChange('province', region.id, null)}
+                  >
+                          <TableCell className={canDrill ? "font-medium text-primary underline" : "font-medium"}>
                             เขตสุขภาพที่ {region.region_number}
                           </TableCell>
                           <TableCell className="text-right">{totalUnits}</TableCell>
@@ -379,8 +395,13 @@ export default function Reports() {
                   // Sum of latest scores (not average)
                   const totalScoreSum = provinceLatestAssessments.filter(a => a.total_score !== null).reduce((sum, a) => sum + (a.total_score || 0), 0);
                   const scoreCount = provinceLatestAssessments.filter(a => a.total_score !== null).length;
-                  return <TableRow key={province.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleDrillChange('hospital', chartRegionId, province.id)}>
-                          <TableCell className="font-medium text-primary underline">{province.name}</TableCell>
+                  const canDrill = canDrillToHospital(province.id);
+                  return <TableRow 
+                    key={province.id} 
+                    className={canDrill ? "cursor-pointer hover:bg-muted/50 transition-colors" : "opacity-50"}
+                    onClick={() => canDrill && handleDrillChange('hospital', chartRegionId, province.id)}
+                  >
+                          <TableCell className={canDrill ? "font-medium text-primary underline" : "font-medium"}>{province.name}</TableCell>
                           <TableCell className="text-right">{totalUnits}</TableCell>
                           <TableCell className="text-right">{provinceLatestAssessments.length}</TableCell>
                           <TableCell className="text-right">{completedCount}</TableCell>

@@ -50,6 +50,8 @@ interface ScoreChartProps {
   assessments: Assessment[];
   onDrillChange?: (level: DrillLevel, regionId: string | null, provinceId: string | null) => void;
   selectedFiscalYear?: string;
+  canDrillToProvince?: (regionId: string) => boolean;
+  canDrillToHospital?: (provinceId: string) => boolean;
 }
 
 
@@ -58,6 +60,7 @@ interface ChartData {
   name: string;
   score: number;
   color: string;
+  canDrill: boolean;
 }
 
 const COLORS = [
@@ -76,7 +79,7 @@ const COLORS = [
   '#F59E0B', // amber
 ];
 
-export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices = [], assessments, onDrillChange, selectedFiscalYear }: ScoreChartProps) {
+export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices = [], assessments, onDrillChange, selectedFiscalYear, canDrillToProvince, canDrillToHospital }: ScoreChartProps) {
   const [drillLevel, setDrillLevel] = useState<DrillLevel>('region');
   const [selectedRegion, setSelectedRegion] = useState<HealthRegion | null>(null);
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
@@ -142,6 +145,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
           name: `เขต ${region.region_number}`,
           score: calculateAverageScore(hospitalIds, healthOfficeIds),
           color: COLORS[index % COLORS.length],
+          canDrill: canDrillToProvince ? canDrillToProvince(region.id) : true,
         };
       });
     }
@@ -160,6 +164,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
           name: province.name,
           score: calculateAverageScore(hospitalIds, healthOfficeIds),
           color: COLORS[index % COLORS.length],
+          canDrill: canDrillToHospital ? canDrillToHospital(province.id) : true,
         };
       });
     }
@@ -176,6 +181,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
           name: hospital.name,
           score: assessment?.total_score || 0,
           color: COLORS[index % COLORS.length],
+          canDrill: false, // Hospital level - no further drill
         };
       });
 
@@ -187,6 +193,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
           name: office.name,
           score: assessment?.total_score || 0,
           color: COLORS[(hospitalData.length + index) % COLORS.length],
+          canDrill: false, // Health office level - no further drill
         };
       });
 
@@ -197,6 +204,9 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
   };
 
   const handleBarClick = (data: ChartData) => {
+    // Check if drill is allowed
+    if (!data.canDrill) return;
+    
     if (drillLevel === 'region') {
       const region = healthRegions.find(r => r.id === data.id);
       if (region) {
@@ -248,7 +258,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
   // Custom tick component for clickable X-axis labels
   const CustomXAxisTick = ({ x, y, payload }: any) => {
     const dataItem = chartData.find(d => d.name === payload.value);
-    const isClickable = drillLevel !== 'hospital';
+    const isClickable = drillLevel !== 'hospital' && dataItem?.canDrill;
     
     return (
       <g transform={`translate(${x},${y})`}>
@@ -263,6 +273,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
           style={{ 
             cursor: isClickable ? 'pointer' : 'default',
             textDecoration: isClickable ? 'underline' : 'none',
+            opacity: dataItem?.canDrill === false && drillLevel !== 'hospital' ? 0.4 : 1,
           }}
           onClick={() => {
             if (isClickable && dataItem) {
@@ -348,10 +359,17 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
                 <Bar 
                   dataKey="score" 
                   radius={[4, 4, 0, 0]}
-                  cursor={drillLevel !== 'hospital' ? 'pointer' : 'default'}
+                  cursor="default"
                 >
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.color} 
+                      style={{ 
+                        cursor: entry.canDrill ? 'pointer' : 'default',
+                        opacity: entry.canDrill === false && drillLevel !== 'hospital' ? 0.4 : 1,
+                      }}
+                    />
                   ))}
                   <LabelList 
                     dataKey="score" 
