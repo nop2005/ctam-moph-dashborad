@@ -105,9 +105,9 @@ export function AppSidebar() {
   const isReportsActive = currentPath.startsWith('/reports');
   const isInspectionActive = currentPath.startsWith('/inspection') && currentPath !== '/inspection/manual';
 
-  // State for collapsible menus
-  const [reportsOpen, setReportsOpen] = useState(isReportsActive);
-  const [inspectionOpen, setInspectionOpen] = useState(isInspectionActive);
+  // State for collapsible menus - persist until user manually closes
+  const [reportsOpen, setReportsOpen] = useState(true);
+  const [inspectionOpen, setInspectionOpen] = useState(true);
 
   const filterByRole = (items: typeof menuItems) => {
     if (!profile?.role) return items;
