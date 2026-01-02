@@ -268,7 +268,7 @@ export default function InspectionManual() {
                   <TableHead className="w-8"></TableHead>
                   <TableHead>ชื่อเอกสาร</TableHead>
                   <TableHead>รายละเอียด</TableHead>
-                  <TableHead>ขนาดไฟล์</TableHead>
+                  {isCentralAdmin && <TableHead>ขนาดไฟล์</TableHead>}
                   <TableHead>วันที่อัปเดต</TableHead>
                   <TableHead className="text-right">ดำเนินการ</TableHead>
                 </TableRow>
@@ -283,7 +283,7 @@ export default function InspectionManual() {
                     <TableCell className="text-muted-foreground max-w-xs truncate">
                       {doc.description || '-'}
                     </TableCell>
-                    <TableCell>{formatFileSize(doc.file_size)}</TableCell>
+                    {isCentralAdmin && <TableCell>{formatFileSize(doc.file_size)}</TableCell>}
                     <TableCell>
                       {new Date(doc.updated_at).toLocaleDateString('th-TH')}
                     </TableCell>
