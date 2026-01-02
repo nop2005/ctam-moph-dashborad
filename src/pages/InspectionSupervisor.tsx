@@ -33,6 +33,7 @@ export default function InspectionSupervisor() {
   const [regionStats, setRegionStats] = useState<RegionStats[]>([]);
   const [fiscalYears, setFiscalYears] = useState<number[]>([]);
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
+  const [userHealthRegionId, setUserHealthRegionId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchFiscalYears = async () => {
@@ -61,7 +62,7 @@ export default function InspectionSupervisor() {
       setLoading(true);
       try {
         // Determine user's health region based on role
-        let userHealthRegionId: string | null = null;
+        let regionId: string | null = null;
         
         if (profile.role === 'hospital_it' && profile.hospital_id) {
           // Get hospital's province, then province's health region
@@ -77,7 +78,7 @@ export default function InspectionSupervisor() {
               .select('health_region_id')
               .eq('id', hospital.province_id)
               .maybeSingle();
-            userHealthRegionId = province?.health_region_id || null;
+            regionId = province?.health_region_id || null;
           }
         } else if ((profile.role === 'provincial' || profile.role === 'health_office') && profile.province_id) {
           // Get province's health region
@@ -86,23 +87,19 @@ export default function InspectionSupervisor() {
             .select('health_region_id')
             .eq('id', profile.province_id)
             .maybeSingle();
-          userHealthRegionId = province?.health_region_id || null;
+          regionId = province?.health_region_id || null;
         } else if (profile.role === 'regional' && profile.health_region_id) {
-          userHealthRegionId = profile.health_region_id;
+          regionId = profile.health_region_id;
         }
-        // central_admin sees all regions (userHealthRegionId stays null)
+        // central_admin sees all regions (regionId stays null)
+        
+        setUserHealthRegionId(regionId);
 
-        // Fetch health regions - filter if user has specific region
-        let regionsQuery = supabase
+        // Fetch ALL health regions for the overview table
+        const { data: regions } = await supabase
           .from('health_regions')
           .select('id, region_number, name')
           .order('region_number', { ascending: true });
-        
-        if (userHealthRegionId && profile.role !== 'central_admin') {
-          regionsQuery = regionsQuery.eq('id', userHealthRegionId);
-        }
-
-        const { data: regions } = await regionsQuery;
 
         if (!regions) {
           setRegionStats([]);
@@ -170,6 +167,19 @@ export default function InspectionSupervisor() {
     fetchData();
   }, [profile, selectedFiscalYear]);
 
+  // Check if user can access a specific region
+  const canAccessRegion = (regionId: string) => {
+    if (profile?.role === 'central_admin') return true;
+    if (!userHealthRegionId) return false;
+    return regionId === userHealthRegionId;
+  };
+
+  const handleRowClick = (regionId: string) => {
+    if (canAccessRegion(regionId)) {
+      navigate(`/inspection/supervisor/region/${regionId}`);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -230,24 +240,31 @@ export default function InspectionSupervisor() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  regionStats.map((stat) => (
-                    <TableRow key={stat.regionId} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/inspection/supervisor/region/${stat.regionId}`)}>
-                      <TableCell className="font-medium">
-                        <span className="text-primary hover:underline">
-                          เขตสุขภาพที่ {stat.regionNumber}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center">{stat.provinceCount}</TableCell>
-                      <TableCell className="text-center">{stat.round1Count}</TableCell>
-                      <TableCell className="text-center">{stat.round2Count}</TableCell>
-                      <TableCell className="text-center">
-                        {stat.round1Percentage > 0 ? stat.round1Percentage.toFixed(2) : '-'}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {stat.round2Percentage > 0 ? stat.round2Percentage.toFixed(2) : '-'}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  regionStats.map((stat) => {
+                    const isAccessible = canAccessRegion(stat.regionId);
+                    return (
+                      <TableRow 
+                        key={stat.regionId} 
+                        className={isAccessible ? "cursor-pointer hover:bg-muted/50" : "opacity-70"}
+                        onClick={() => handleRowClick(stat.regionId)}
+                      >
+                        <TableCell className="font-medium">
+                          <span className={isAccessible ? "text-primary hover:underline" : "text-muted-foreground"}>
+                            เขตสุขภาพที่ {stat.regionNumber}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">{stat.provinceCount}</TableCell>
+                        <TableCell className="text-center">{stat.round1Count}</TableCell>
+                        <TableCell className="text-center">{stat.round2Count}</TableCell>
+                        <TableCell className="text-center">
+                          {stat.round1Percentage > 0 ? stat.round1Percentage.toFixed(2) : '-'}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {stat.round2Percentage > 0 ? stat.round2Percentage.toFixed(2) : '-'}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
