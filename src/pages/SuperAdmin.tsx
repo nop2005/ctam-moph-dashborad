@@ -108,6 +108,8 @@ export default function SuperAdmin() {
   const [supervisorEmail, setSupervisorEmail] = useState('');
   const [supervisorPassword, setSupervisorPassword] = useState('');
   const [supervisorFullName, setSupervisorFullName] = useState('');
+  const [supervisorPosition, setSupervisorPosition] = useState('');
+  const [supervisorOrganization, setSupervisorOrganization] = useState('');
   const [isCreatingSupervisor, setIsCreatingSupervisor] = useState(false);
   
   // Card filter state
@@ -475,7 +477,9 @@ export default function SuperAdmin() {
           body: JSON.stringify({ 
             email: supervisorEmail, 
             password: supervisorPassword,
-            full_name: supervisorFullName 
+            full_name: supervisorFullName,
+            position: supervisorPosition,
+            organization: supervisorOrganization 
           }),
         }
       );
@@ -488,6 +492,8 @@ export default function SuperAdmin() {
         setSupervisorEmail('');
         setSupervisorPassword('');
         setSupervisorFullName('');
+        setSupervisorPosition('');
+        setSupervisorOrganization('');
         fetchData();
       } else {
         toast.error(data.error || 'เกิดข้อผิดพลาด');
@@ -1529,6 +1535,102 @@ export default function SuperAdmin() {
                 {isBulkCreatingProvincial ? 'กำลังสร้าง...' : 'สร้างผู้ใช้'}
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Supervisor Create Dialog */}
+      <Dialog open={isSupervisorDialogOpen} onOpenChange={setIsSupervisorDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>สร้างผู้นิเทศ</DialogTitle>
+            <DialogDescription>
+              กรอกข้อมูลเพื่อสร้างบัญชีผู้นิเทศใหม่สำหรับเขตสุขภาพของคุณ
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="supervisor-email">อีเมล *</Label>
+              <Input
+                id="supervisor-email"
+                type="email"
+                value={supervisorEmail}
+                onChange={(e) => setSupervisorEmail(e.target.value)}
+                placeholder="example@email.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="supervisor-password">รหัสผ่าน *</Label>
+              <Input
+                id="supervisor-password"
+                type="password"
+                value={supervisorPassword}
+                onChange={(e) => setSupervisorPassword(e.target.value)}
+                placeholder="อย่างน้อย 6 ตัวอักษร"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="supervisor-fullname">ชื่อ-นามสกุล</Label>
+              <Input
+                id="supervisor-fullname"
+                type="text"
+                value={supervisorFullName}
+                onChange={(e) => setSupervisorFullName(e.target.value)}
+                placeholder="ชื่อ นามสกุล"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="supervisor-position">ตำแหน่ง</Label>
+              <Input
+                id="supervisor-position"
+                type="text"
+                value={supervisorPosition}
+                onChange={(e) => setSupervisorPosition(e.target.value)}
+                placeholder="เช่น นักวิชาการสาธารณสุขชำนาญการพิเศษ"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="supervisor-organization">หน่วยงาน</Label>
+              <Input
+                id="supervisor-organization"
+                type="text"
+                value={supervisorOrganization}
+                onChange={(e) => setSupervisorOrganization(e.target.value)}
+                placeholder="เช่น สำนักงานเขตสุขภาพที่ 1"
+              />
+            </div>
+
+            {currentUserProfile?.role === 'regional' && (
+              <div className="p-3 bg-muted rounded-md">
+                <span className="text-sm text-muted-foreground">
+                  ผู้นิเทศจะถูกกำหนดให้อยู่ใน: <strong>{getRegionName(currentUserProfile.health_region_id)}</strong>
+                </span>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsSupervisorDialogOpen(false);
+              setSupervisorEmail('');
+              setSupervisorPassword('');
+              setSupervisorFullName('');
+              setSupervisorPosition('');
+              setSupervisorOrganization('');
+            }}>
+              ยกเลิก
+            </Button>
+            <Button 
+              onClick={handleCreateSupervisor} 
+              disabled={isCreatingSupervisor || !supervisorEmail || !supervisorPassword}
+            >
+              {isCreatingSupervisor ? 'กำลังสร้าง...' : 'สร้างผู้นิเทศ'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

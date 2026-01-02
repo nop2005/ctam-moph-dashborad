@@ -683,7 +683,9 @@ export type Database = {
           hospital_id: string | null
           id: string
           is_active: boolean
+          organization: string | null
           phone: string | null
+          position: string | null
           province_id: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
@@ -698,7 +700,9 @@ export type Database = {
           hospital_id?: string | null
           id?: string
           is_active?: boolean
+          organization?: string | null
           phone?: string | null
+          position?: string | null
           province_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
@@ -713,7 +717,9 @@ export type Database = {
           hospital_id?: string | null
           id?: string
           is_active?: boolean
+          organization?: string | null
           phone?: string | null
+          position?: string | null
           province_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
