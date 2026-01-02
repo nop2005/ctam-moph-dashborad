@@ -824,67 +824,67 @@ export default function SuperAdmin() {
         </Card>
       </div>
 
-      {/* Search and Refresh */}
-      <div className="flex justify-end gap-2 mb-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="ค้นหาผู้ใช้..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 w-[200px]"
-          />
+      {/* Filters and Search */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="บทบาท" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">ทุกบทบาท</SelectItem>
+              <SelectItem value="hospital_it">IT โรงพยาบาล</SelectItem>
+              <SelectItem value="health_office">IT สสจ.</SelectItem>
+              <SelectItem value="provincial">แอดมินจังหวัด</SelectItem>
+              <SelectItem value="regional">แอดมินเขตสุขภาพ</SelectItem>
+              <SelectItem value="supervisor">ผู้นิเทศ</SelectItem>
+              <SelectItem value="central_admin">Super Admin</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={regionFilter} onValueChange={(val) => {
+            setRegionFilter(val);
+            setProvinceFilter('all');
+          }}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="เขตสุขภาพ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">ทุกเขต</SelectItem>
+              {healthRegions.map(region => (
+                <SelectItem key={region.id} value={region.id}>
+                  เขต {region.region_number}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={provinceFilter} onValueChange={setProvinceFilter}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="จังหวัด" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">ทุกจังหวัด</SelectItem>
+              {filteredProvincesByRegion.map(province => (
+                <SelectItem key={province.id} value={province.id}>
+                  {province.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <Button variant="outline" size="icon" onClick={fetchData}>
-          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-        </Button>
-      </div>
-
-      {/* Central Filters */}
-      <div className="flex flex-wrap gap-2">
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="บทบาท" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">ทุกบทบาท</SelectItem>
-            <SelectItem value="hospital_it">IT โรงพยาบาล</SelectItem>
-            <SelectItem value="health_office">IT สสจ.</SelectItem>
-            <SelectItem value="provincial">แอดมินจังหวัด</SelectItem>
-            <SelectItem value="regional">แอดมินเขตสุขภาพ</SelectItem>
-            <SelectItem value="supervisor">ผู้นิเทศ</SelectItem>
-            <SelectItem value="central_admin">Super Admin</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={regionFilter} onValueChange={(val) => {
-          setRegionFilter(val);
-          setProvinceFilter('all');
-        }}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="เขตสุขภาพ" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">ทุกเขต</SelectItem>
-            {healthRegions.map(region => (
-              <SelectItem key={region.id} value={region.id}>
-                เขต {region.region_number}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={provinceFilter} onValueChange={setProvinceFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="จังหวัด" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">ทุกจังหวัด</SelectItem>
-            {filteredProvincesByRegion.map(province => (
-              <SelectItem key={province.id} value={province.id}>
-                {province.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="ค้นหาผู้ใช้..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 w-[200px]"
+            />
+          </div>
+          <Button variant="outline" size="icon" onClick={fetchData}>
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
       </div>
 
       {/* Active Users Section */}
