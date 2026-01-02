@@ -13,7 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Users, Building2, MapPin, Edit, Search, RefreshCw, UserCheck, UserX, Clock, CheckCircle, XCircle, Phone, UserPlus } from 'lucide-react';
+import { Users, Building2, MapPin, Edit, Search, RefreshCw, UserCheck, UserX, Clock, CheckCircle, XCircle, Phone, UserPlus, Shield } from 'lucide-react';
+import { ReportAccessPolicies } from '@/components/admin/ReportAccessPolicies';
 interface Profile {
   id: string;
   user_id: string;
@@ -55,6 +56,7 @@ export default function SuperAdmin() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('pending');
+  const [mainTab, setMainTab] = useState<'users' | 'policies'>('users');
 
   // Dialog states
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -601,42 +603,69 @@ export default function SuperAdmin() {
   };
   return <DashboardLayout>
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-bold mb-2">จัดการผู้ใช้งาน</h2>
+          <h2 className="text-2xl font-bold mb-2">ส่วนจัดการระบบ</h2>
           <p className="text-muted-foreground">
-            อนุมัติผู้ใช้ใหม่และจัดการสิทธิ์ผู้ใช้งานทั้งหมดในระบบ
+            จัดการผู้ใช้งานและนโยบายการเข้าถึงรายงาน
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          {/* Regional admin can create supervisor */}
-          {currentUserProfile?.role === 'regional' && <Button onClick={() => setIsSupervisorDialogOpen(true)} variant="default" className="gap-2">
-              <UserPlus className="h-4 w-4" />
-              สร้างผู้นิเทศ
-            </Button>}
-          {/* Regional admin can create provincial users for their region */}
-          {(currentUserProfile?.role === 'regional' || currentUserProfile?.role === 'central_admin') && <Button onClick={() => {
-          // For regional, auto-fill their region
-          if (currentUserProfile?.role === 'regional') {
-            setBulkProvincialRegionId(currentUserProfile.health_region_id || '');
-          }
-          setIsProvincialBulkDialogOpen(true);
-        }} variant="outline" className="gap-2">
-              <MapPin className="h-4 w-4" />
-              สร้างแอดมินระดับจังหวัด
-            </Button>}
-          {currentUserProfile?.role === 'central_admin' && <>
-              <Button onClick={() => setIsHealthOfficeBulkDialogOpen(true)} variant="outline" className="gap-2">
-                <Building2 className="h-4 w-4" />
-                สร้างผู้ใช้งาน สสจ./เขตสุขภาพ แบบ Bulk
-              </Button>
-              <Button onClick={() => setIsBulkCreateDialogOpen(true)} className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                สร้างผู้ใช้ รพ. แบบ Bulk
-              </Button>
-            </>}
-        </div>
       </div>
+
+      {/* Main Tabs */}
+      <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'users' | 'policies')} className="space-y-6">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="users" className="gap-2">
+            <Users className="h-4 w-4" />
+            จัดการผู้ใช้งาน
+          </TabsTrigger>
+          {currentUserProfile?.role === 'central_admin' && (
+            <TabsTrigger value="policies" className="gap-2">
+              <Shield className="h-4 w-4" />
+              นโยบายรายงาน
+            </TabsTrigger>
+          )}
+        </TabsList>
+
+        {/* Users Tab */}
+        <TabsContent value="users" className="space-y-6">
+          {/* User Management Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold">จัดการผู้ใช้งาน</h3>
+              <p className="text-sm text-muted-foreground">
+                อนุมัติผู้ใช้ใหม่และจัดการสิทธิ์ผู้ใช้งานทั้งหมดในระบบ
+              </p>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {/* Regional admin can create supervisor */}
+              {currentUserProfile?.role === 'regional' && <Button onClick={() => setIsSupervisorDialogOpen(true)} variant="default" className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  สร้างผู้นิเทศ
+                </Button>}
+              {/* Regional admin can create provincial users for their region */}
+              {(currentUserProfile?.role === 'regional' || currentUserProfile?.role === 'central_admin') && <Button onClick={() => {
+              // For regional, auto-fill their region
+              if (currentUserProfile?.role === 'regional') {
+                setBulkProvincialRegionId(currentUserProfile.health_region_id || '');
+              }
+              setIsProvincialBulkDialogOpen(true);
+            }} variant="outline" className="gap-2">
+                  <MapPin className="h-4 w-4" />
+                  สร้างแอดมินระดับจังหวัด
+                </Button>}
+              {currentUserProfile?.role === 'central_admin' && <>
+                  <Button onClick={() => setIsHealthOfficeBulkDialogOpen(true)} variant="outline" className="gap-2">
+                    <Building2 className="h-4 w-4" />
+                    สร้างผู้ใช้งาน สสจ./เขตสุขภาพ แบบ Bulk
+                  </Button>
+                  <Button onClick={() => setIsBulkCreateDialogOpen(true)} className="gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    สร้างผู้ใช้ รพ. แบบ Bulk
+                  </Button>
+                </>}
+            </div>
+          </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
@@ -824,6 +853,15 @@ export default function SuperAdmin() {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        {/* Policies Tab - Only for central_admin */}
+        {currentUserProfile?.role === 'central_admin' && (
+          <TabsContent value="policies">
+            <ReportAccessPolicies />
+          </TabsContent>
+        )}
+      </Tabs>
 
       {/* Approve Dialog */}
       <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
