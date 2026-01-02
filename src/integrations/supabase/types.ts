@@ -981,6 +981,7 @@ export type Database = {
       is_central_admin: { Args: never; Returns: boolean }
       is_provincial_admin: { Args: never; Returns: boolean }
       is_regional_admin: { Args: never; Returns: boolean }
+      is_supervisor: { Args: never; Returns: boolean }
     }
     Enums: {
       assessment_status:
@@ -997,6 +998,7 @@ export type Database = {
         | "regional"
         | "central_admin"
         | "health_office"
+        | "supervisor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1139,6 +1141,7 @@ export const Constants = {
         "regional",
         "central_admin",
         "health_office",
+        "supervisor",
       ],
     },
   },

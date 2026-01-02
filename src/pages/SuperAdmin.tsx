@@ -35,7 +35,7 @@ interface Profile {
   email: string;
   full_name: string | null;
   phone: string | null;
-  role: 'hospital_it' | 'provincial' | 'regional' | 'central_admin' | 'health_office';
+  role: 'hospital_it' | 'provincial' | 'regional' | 'central_admin' | 'health_office' | 'supervisor';
   hospital_id: string | null;
   province_id: string | null;
   health_region_id: string | null;
@@ -103,6 +103,13 @@ export default function SuperAdmin() {
   const [isBulkCreatingProvincial, setIsBulkCreatingProvincial] = useState(false);
   const [provincialBulkResults, setProvincialBulkResults] = useState<any[]>([]);
   
+  // Create supervisor dialog (regional admin feature)
+  const [isSupervisorDialogOpen, setIsSupervisorDialogOpen] = useState(false);
+  const [supervisorEmail, setSupervisorEmail] = useState('');
+  const [supervisorPassword, setSupervisorPassword] = useState('');
+  const [supervisorFullName, setSupervisorFullName] = useState('');
+  const [isCreatingSupervisor, setIsCreatingSupervisor] = useState(false);
+  
   // Card filter state
   type CardFilter = 'all' | 'pending' | 'active' | 'central_admin' | 'regional' | 'provincial';
   const [cardFilter, setCardFilter] = useState<CardFilter>('all');
@@ -145,6 +152,7 @@ export default function SuperAdmin() {
       regional: 'ผู้ประเมินระดับเขตสุขภาพ',
       central_admin: 'ส่วนกลาง (Super Admin)',
       health_office: 'สำนักงาน สสจ./เขตสุขภาพ',
+      supervisor: 'ผู้นิเทศ',
     };
     return labels[role] || role;
   };
@@ -156,6 +164,7 @@ export default function SuperAdmin() {
       regional: 'default',
       central_admin: 'destructive',
       health_office: 'outline',
+      supervisor: 'default',
     };
     return variants[role] || 'secondary';
   };
@@ -440,6 +449,57 @@ export default function SuperAdmin() {
     }
   };
 
+  // Create supervisor user
+  const handleCreateSupervisor = async () => {
+    if (!supervisorEmail || !supervisorPassword) {
+      toast.error('กรุณากรอกอีเมลและรหัสผ่าน');
+      return;
+    }
+
+    setIsCreatingSupervisor(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('กรุณาเข้าสู่ระบบใหม่');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-supervisor-users`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ 
+            email: supervisorEmail, 
+            password: supervisorPassword,
+            full_name: supervisorFullName 
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('สร้างผู้นิเทศสำเร็จ');
+        setIsSupervisorDialogOpen(false);
+        setSupervisorEmail('');
+        setSupervisorPassword('');
+        setSupervisorFullName('');
+        fetchData();
+      } else {
+        toast.error(data.error || 'เกิดข้อผิดพลาด');
+      }
+    } catch (error) {
+      console.error('Error creating supervisor:', error);
+      toast.error('ไม่สามารถสร้างผู้นิเทศได้');
+    } finally {
+      setIsCreatingSupervisor(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     if (!selectedProfile) return;
     
@@ -645,6 +705,17 @@ export default function SuperAdmin() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          {/* Regional admin can create supervisor */}
+          {currentUserProfile?.role === 'regional' && (
+            <Button 
+              onClick={() => setIsSupervisorDialogOpen(true)} 
+              variant="default" 
+              className="gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              สร้างผู้นิเทศ
+            </Button>
+          )}
           {/* Regional admin can create provincial users for their region */}
           {(currentUserProfile?.role === 'regional' || currentUserProfile?.role === 'central_admin') && (
             <Button 
