@@ -640,6 +640,7 @@ export type Database = {
           file_size: number | null
           file_type: string | null
           id: string
+          pinned: boolean
           title: string
           updated_at: string
           uploaded_by: string
@@ -652,6 +653,7 @@ export type Database = {
           file_size?: number | null
           file_type?: string | null
           id?: string
+          pinned?: boolean
           title: string
           updated_at?: string
           uploaded_by: string
@@ -664,6 +666,7 @@ export type Database = {
           file_size?: number | null
           file_type?: string | null
           id?: string
+          pinned?: boolean
           title?: string
           updated_at?: string
           uploaded_by?: string
