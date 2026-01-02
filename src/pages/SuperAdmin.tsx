@@ -575,7 +575,7 @@ export default function SuperAdmin() {
               className="gap-2"
             >
               <MapPin className="h-4 w-4" />
-              สร้างผู้ใช้ระดับจังหวัด
+              สร้างแอดมินระดับจังหวัด
             </Button>
           )}
           {currentUserProfile?.role === 'central_admin' && (
