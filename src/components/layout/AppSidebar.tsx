@@ -177,6 +177,9 @@ export function AppSidebar() {
                       onClick={() => {
                         if (collapsed) {
                           navigate('/reports');
+                        } else if (!reportsOpen) {
+                          setReportsOpen(true);
+                          navigate('/reports');
                         }
                       }}
                       className={`
@@ -224,6 +227,9 @@ export function AppSidebar() {
                       isActive={isInspectionActive}
                       onClick={() => {
                         if (collapsed) {
+                          navigate('/inspection/supervisor');
+                        } else if (!inspectionOpen) {
+                          setInspectionOpen(true);
                           navigate('/inspection/supervisor');
                         }
                       }}
