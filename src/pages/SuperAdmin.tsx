@@ -106,6 +106,11 @@ export default function SuperAdmin() {
   // Card filter state
   type CardFilter = 'all' | 'pending' | 'active' | 'central_admin' | 'regional' | 'provincial';
   const [cardFilter, setCardFilter] = useState<CardFilter>('all');
+  
+  // Role filter state for pending/active tabs
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [regionFilter, setRegionFilter] = useState<string>('all');
+  const [provinceFilter, setProvinceFilter] = useState<string>('all');
 
   useEffect(() => {
     fetchData();
@@ -504,17 +509,96 @@ export default function SuperAdmin() {
 
   const cardFilteredProfiles = getFilteredByCard(profiles);
   
-  const filteredPendingProfiles = cardFilteredProfiles.filter(p => 
-    !p.is_active &&
-    (p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()))
-  );
+  // Get provinces filtered by region
+  const filteredProvincesByRegion = regionFilter !== 'all'
+    ? provinces.filter(p => p.health_region_id === regionFilter)
+    : provinces;
 
-  const filteredActiveProfiles = cardFilteredProfiles.filter(p => 
-    p.is_active &&
-    (p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()))
-  );
+  const filteredPendingProfiles = cardFilteredProfiles.filter(p => {
+    if (p.is_active) return false;
+    
+    // Search filter
+    const matchesSearch = p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    
+    // Role filter
+    const matchesRole = roleFilter === 'all' || p.role === roleFilter;
+    
+    // Region filter
+    let matchesRegion = true;
+    if (regionFilter !== 'all') {
+      if (p.health_region_id) {
+        matchesRegion = p.health_region_id === regionFilter;
+      } else if (p.province_id) {
+        const province = provinces.find(prov => prov.id === p.province_id);
+        matchesRegion = province?.health_region_id === regionFilter;
+      } else if (p.hospital_id) {
+        const hospital = hospitals.find(h => h.id === p.hospital_id);
+        const province = provinces.find(prov => prov.id === hospital?.province_id);
+        matchesRegion = province?.health_region_id === regionFilter;
+      } else {
+        matchesRegion = false;
+      }
+    }
+    
+    // Province filter
+    let matchesProvince = true;
+    if (provinceFilter !== 'all') {
+      if (p.province_id) {
+        matchesProvince = p.province_id === provinceFilter;
+      } else if (p.hospital_id) {
+        const hospital = hospitals.find(h => h.id === p.hospital_id);
+        matchesProvince = hospital?.province_id === provinceFilter;
+      } else {
+        matchesProvince = false;
+      }
+    }
+    
+    return matchesSearch && matchesRole && matchesRegion && matchesProvince;
+  });
+
+  const filteredActiveProfiles = cardFilteredProfiles.filter(p => {
+    if (!p.is_active) return false;
+    
+    // Search filter
+    const matchesSearch = p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    
+    // Role filter
+    const matchesRole = roleFilter === 'all' || p.role === roleFilter;
+    
+    // Region filter
+    let matchesRegion = true;
+    if (regionFilter !== 'all') {
+      if (p.health_region_id) {
+        matchesRegion = p.health_region_id === regionFilter;
+      } else if (p.province_id) {
+        const province = provinces.find(prov => prov.id === p.province_id);
+        matchesRegion = province?.health_region_id === regionFilter;
+      } else if (p.hospital_id) {
+        const hospital = hospitals.find(h => h.id === p.hospital_id);
+        const province = provinces.find(prov => prov.id === hospital?.province_id);
+        matchesRegion = province?.health_region_id === regionFilter;
+      } else {
+        matchesRegion = false;
+      }
+    }
+    
+    // Province filter
+    let matchesProvince = true;
+    if (provinceFilter !== 'all') {
+      if (p.province_id) {
+        matchesProvince = p.province_id === provinceFilter;
+      } else if (p.hospital_id) {
+        const hospital = hospitals.find(h => h.id === p.hospital_id);
+        matchesProvince = hospital?.province_id === provinceFilter;
+      } else {
+        matchesProvince = false;
+      }
+    }
+    
+    return matchesSearch && matchesRole && matchesRegion && matchesProvince;
+  });
 
   const filteredHospitals = editProvinceId 
     ? hospitals.filter(h => h.province_id === editProvinceId)
@@ -690,13 +774,61 @@ export default function SuperAdmin() {
         <TabsContent value="pending">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-warning" />
-                ผู้ใช้รอการอนุมัติ
-              </CardTitle>
-              <CardDescription>
-                ตรวจสอบและอนุมัติผู้ใช้ใหม่ พร้อมกำหนดบทบาทและหน่วยงาน
-              </CardDescription>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-warning" />
+                    ผู้ใช้รอการอนุมัติ
+                  </CardTitle>
+                  <CardDescription>
+                    ตรวจสอบและอนุมัติผู้ใช้ใหม่ พร้อมกำหนดบทบาทและหน่วยงาน
+                  </CardDescription>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Select value={roleFilter} onValueChange={setRoleFilter}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="บทบาท" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">ทุกบทบาท</SelectItem>
+                      <SelectItem value="hospital_it">IT โรงพยาบาล</SelectItem>
+                      <SelectItem value="health_office">IT สสจ.</SelectItem>
+                      <SelectItem value="provincial">สสจ.</SelectItem>
+                      <SelectItem value="regional">เขตสุขภาพ</SelectItem>
+                      <SelectItem value="central_admin">Super Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={regionFilter} onValueChange={(val) => {
+                    setRegionFilter(val);
+                    setProvinceFilter('all'); // Reset province when region changes
+                  }}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="เขตสุขภาพ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">ทุกเขต</SelectItem>
+                      {healthRegions.map(region => (
+                        <SelectItem key={region.id} value={region.id}>
+                          เขต {region.region_number}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={provinceFilter} onValueChange={setProvinceFilter}>
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue placeholder="จังหวัด" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">ทุกจังหวัด</SelectItem>
+                      {filteredProvincesByRegion.map(province => (
+                        <SelectItem key={province.id} value={province.id}>
+                          {province.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
