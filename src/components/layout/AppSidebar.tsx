@@ -170,27 +170,27 @@ export function AppSidebar() {
                 className="group/collapsible"
               >
                 <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton 
-                      tooltip="รายงานและสถิติ"
-                      isActive={false}
-                      onClick={() => {
-                        if (collapsed) {
-                          navigate('/reports');
-                        } else if (!reportsOpen) {
-                          setReportsOpen(true);
-                          navigate('/reports');
-                        }
-                      }}
-                      className={`
-                        text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
-                      `}
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      <span>รายงานและสถิติ</span>
-                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
+                  <SidebarMenuButton 
+                    tooltip="รายงานและสถิติ"
+                    isActive={false}
+                    onClick={() => {
+                      if (collapsed) {
+                        navigate('/reports');
+                      } else if (!reportsOpen) {
+                        setReportsOpen(true);
+                        navigate('/reports');
+                      }
+                    }}
+                    className={`
+                      text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                    `}
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    <span>รายงานและสถิติ</span>
+                    <CollapsibleTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 cursor-pointer hover:bg-sidebar-accent rounded group-data-[state=open]/collapsible:rotate-90" />
+                    </CollapsibleTrigger>
+                  </SidebarMenuButton>
                   <CollapsibleContent>
                     <SidebarMenuSub className="border-sidebar-border">
                       {reportSubItems.map((subItem) => (
@@ -220,27 +220,27 @@ export function AppSidebar() {
                 className="group/collapsible"
               >
                 <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton 
-                      tooltip="รายงานตรวจราชการ"
-                      isActive={false}
-                      onClick={() => {
-                        if (collapsed) {
-                          navigate('/inspection/supervisor');
-                        } else if (!inspectionOpen) {
-                          setInspectionOpen(true);
-                          navigate('/inspection/supervisor');
-                        }
-                      }}
-                      className={`
-                        text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
-                      `}
-                    >
-                      <ClipboardCheck className="h-4 w-4" />
-                      <span>รายงานตรวจราชการ</span>
-                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
+                  <SidebarMenuButton 
+                    tooltip="รายงานตรวจราชการ"
+                    isActive={false}
+                    onClick={() => {
+                      if (collapsed) {
+                        navigate('/inspection/supervisor');
+                      } else if (!inspectionOpen) {
+                        setInspectionOpen(true);
+                        navigate('/inspection/supervisor');
+                      }
+                    }}
+                    className={`
+                      text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                    `}
+                  >
+                    <ClipboardCheck className="h-4 w-4" />
+                    <span>รายงานตรวจราชการ</span>
+                    <CollapsibleTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 cursor-pointer hover:bg-sidebar-accent rounded group-data-[state=open]/collapsible:rotate-90" />
+                    </CollapsibleTrigger>
+                  </SidebarMenuButton>
                   <CollapsibleContent>
                     <SidebarMenuSub className="border-sidebar-border">
                       {inspectionSubItems.map((subItem) => (
