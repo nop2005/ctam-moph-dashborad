@@ -689,7 +689,12 @@ export default function SuperAdmin() {
             <div className="text-sm text-muted-foreground">รอการอนุมัติ</div>
           </CardContent>
         </Card>
-        
+        <Card className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'active' ? 'ring-2 ring-success' : ''}`} onClick={() => handleCardClick('active')}>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-success">{stats.active}</div>
+            <div className="text-sm text-muted-foreground">อนุมัติเเล้ว</div>
+          </CardContent>
+        </Card>
         <Card className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'central_admin' ? 'ring-2 ring-destructive' : ''}`} onClick={() => handleCardClick('central_admin')}>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-destructive">{stats.centralAdmin}</div>
