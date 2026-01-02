@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { email, password, full_name } = await req.json();
+    const { email, password, full_name, position, organization } = await req.json();
 
     if (!email || !password) {
       return new Response(
@@ -118,6 +118,8 @@ Deno.serve(async (req) => {
         role: "supervisor",
         is_active: true, // Active immediately
         full_name: full_name || `ผู้นิเทศเขต ${profile.health_region_id}`,
+        position: position || null,
+        organization: organization || null,
       })
       .eq("user_id", authData.user.id);
 
