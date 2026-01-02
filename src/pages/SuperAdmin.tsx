@@ -1199,7 +1199,7 @@ export default function SuperAdmin() {
             <DialogDescription>
               สร้างผู้ใช้ผู้ประเมินระดับจังหวัด (สสจ.) สำหรับทุกจังหวัดในเขตสุขภาพ
               <br />
-              <span className="text-primary font-medium">Email: provincial.รหัสจังหวัด@ctam.moph | Password: provรหัสจังหวัด</span>
+              <span className="text-primary font-medium">Email: admin.รหัสจังหวัด@ctam.moph | Password: รหัสจังหวัด</span>
             </DialogDescription>
           </DialogHeader>
           

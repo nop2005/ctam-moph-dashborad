@@ -100,8 +100,8 @@ Deno.serve(async (req) => {
     const results = [];
 
     for (const province of provinces || []) {
-      const email = `provincial.${province.code}@ctam.moph`;
-      const password = `prov${province.code}`;
+      const email = `admin.${province.code}@ctam.moph`;
+      const password = province.code;
 
       // Check if user already exists
       const { data: existingProfile } = await supabase
