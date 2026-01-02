@@ -100,8 +100,25 @@ Deno.serve(async (req) => {
     const results = [];
 
     for (const province of provinces || []) {
-      const email = `admin.${province.code}@ctam.moph`;
-      const password = province.code;
+      // Get health office for this province
+      const { data: healthOffice, error: healthOfficeError } = await supabase
+        .from("health_offices")
+        .select("id, code, name")
+        .eq("province_id", province.id)
+        .single();
+
+      if (healthOfficeError || !healthOffice) {
+        results.push({
+          province_code: province.code,
+          province_name: province.name,
+          status: "error",
+          message: `ไม่พบสำนักงานสาธารณสุขจังหวัดสำหรับ ${province.name}`,
+        });
+        continue;
+      }
+
+      const email = `admin.${healthOffice.code}@ctam.moph`;
+      const password = healthOffice.code;
 
       // Check if user already exists
       const { data: existingProfile } = await supabase
@@ -114,6 +131,7 @@ Deno.serve(async (req) => {
         results.push({
           province_code: province.code,
           province_name: province.name,
+          health_office_code: healthOffice.code,
           status: "skipped",
           message: "User already exists",
         });
@@ -131,6 +149,7 @@ Deno.serve(async (req) => {
         results.push({
           province_code: province.code,
           province_name: province.name,
+          health_office_code: healthOffice.code,
           status: "error",
           message: authError.message,
         });
@@ -152,6 +171,7 @@ Deno.serve(async (req) => {
         results.push({
           province_code: province.code,
           province_name: province.name,
+          health_office_code: healthOffice.code,
           status: "partial",
           message: `User created but profile update failed: ${updateError.message}`,
         });
@@ -161,6 +181,7 @@ Deno.serve(async (req) => {
       results.push({
         province_code: province.code,
         province_name: province.name,
+        health_office_code: healthOffice.code,
         email,
         status: "success",
         message: "User created successfully (pending approval)",

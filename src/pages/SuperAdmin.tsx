@@ -1221,7 +1221,7 @@ export default function SuperAdmin() {
             <DialogDescription>
               สร้างผู้ใช้ผู้ประเมินระดับจังหวัด (สสจ.) สำหรับทุกจังหวัดในเขตสุขภาพ
               <br />
-              <span className="text-primary font-medium">Email: admin.รหัสจังหวัด@ctam.moph | Password: รหัสจังหวัด</span>
+              <span className="text-primary font-medium">Email: admin.รหัสสถานพยาบาลสสจ.@ctam.moph | Password: รหัสสถานพยาบาลสสจ.</span>
             </DialogDescription>
           </DialogHeader>
           
@@ -1272,7 +1272,7 @@ export default function SuperAdmin() {
                           : 'bg-destructive/10 text-destructive'
                       }`}
                     >
-                      <span className="font-medium">{result.province_code}</span> - {result.province_name}
+                      <span className="font-medium">{result.health_office_code || result.province_code}</span> - {result.province_name}
                       {result.email && <span className="text-xs block">Email: {result.email}</span>}
                       <span className="text-xs block">{result.message}</span>
                     </div>
