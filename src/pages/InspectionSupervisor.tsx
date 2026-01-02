@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileSearch, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface RegionStats {
   regionId: string;
@@ -27,6 +28,7 @@ const getCurrentFiscalYear = () => {
 
 export default function InspectionSupervisor() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [regionStats, setRegionStats] = useState<RegionStats[]>([]);
   const [fiscalYears, setFiscalYears] = useState<number[]>([]);
@@ -54,13 +56,53 @@ export default function InspectionSupervisor() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!profile) return;
+      
       setLoading(true);
       try {
-        // Fetch all health regions
-        const { data: regions } = await supabase
+        // Determine user's health region based on role
+        let userHealthRegionId: string | null = null;
+        
+        if (profile.role === 'hospital_it' && profile.hospital_id) {
+          // Get hospital's province, then province's health region
+          const { data: hospital } = await supabase
+            .from('hospitals')
+            .select('province_id')
+            .eq('id', profile.hospital_id)
+            .maybeSingle();
+          
+          if (hospital?.province_id) {
+            const { data: province } = await supabase
+              .from('provinces')
+              .select('health_region_id')
+              .eq('id', hospital.province_id)
+              .maybeSingle();
+            userHealthRegionId = province?.health_region_id || null;
+          }
+        } else if ((profile.role === 'provincial' || profile.role === 'health_office') && profile.province_id) {
+          // Get province's health region
+          const { data: province } = await supabase
+            .from('provinces')
+            .select('health_region_id')
+            .eq('id', profile.province_id)
+            .maybeSingle();
+          userHealthRegionId = province?.health_region_id || null;
+        } else if (profile.role === 'regional' && profile.health_region_id) {
+          userHealthRegionId = profile.health_region_id;
+        }
+        // central_admin sees all regions (userHealthRegionId stays null)
+
+        // Fetch health regions - filter if user has specific region
+        let regionsQuery = supabase
           .from('health_regions')
           .select('id, region_number, name')
           .order('region_number', { ascending: true });
+        
+        if (userHealthRegionId && profile.role !== 'central_admin') {
+          regionsQuery = regionsQuery.eq('id', userHealthRegionId);
+        }
+
+        const { data: regions } = await regionsQuery;
 
         if (!regions) {
           setRegionStats([]);
@@ -126,7 +168,7 @@ export default function InspectionSupervisor() {
     };
 
     fetchData();
-  }, [selectedFiscalYear]);
+  }, [profile, selectedFiscalYear]);
 
   return (
     <DashboardLayout>
