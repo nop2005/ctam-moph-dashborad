@@ -193,11 +193,33 @@ export default function SuperAdmin() {
       const hospital = hospitals.find(h => h.id === profileToApprove.hospital_id);
       setEditHospitalId(profileToApprove.hospital_id);
       setEditProvinceId(hospital?.province_id || profileToApprove.province_id || '');
-    } else {
-      // Regular user - default to provincial
+    } else if (profileToApprove.province_id) {
+      // User already has province - pre-fill provincial role
       setEditRole('provincial');
-      setEditProvinceId('');
+      setEditProvinceId(profileToApprove.province_id);
       setEditHospitalId('');
+    } else {
+      // Try to auto-match province from email pattern admin.{code}@ctam.moph
+      const emailMatch = profileToApprove.email.match(/^admin\.(\d+)@ctam\.moph$/);
+      if (emailMatch) {
+        const provinceCode = emailMatch[1];
+        const matchedProvince = provinces.find(p => p.code === provinceCode);
+        if (matchedProvince) {
+          setEditRole('provincial');
+          setEditProvinceId(matchedProvince.id);
+          setEditHospitalId('');
+        } else {
+          // Code not found - default
+          setEditRole('provincial');
+          setEditProvinceId('');
+          setEditHospitalId('');
+        }
+      } else {
+        // Regular user - default to provincial
+        setEditRole('provincial');
+        setEditProvinceId('');
+        setEditHospitalId('');
+      }
     }
     setEditRegionId('');
     setEditFullName(profileToApprove.full_name || '');
