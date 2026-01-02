@@ -582,7 +582,7 @@ export default function SuperAdmin() {
             <>
               <Button onClick={() => setIsHealthOfficeBulkDialogOpen(true)} variant="outline" className="gap-2">
                 <Building2 className="h-4 w-4" />
-                สร้างผู้ใช้ สสจ. แบบ Bulk
+                สร้างผู้ใช้งาน สสจ./เขตสุขภาพ แบบ Bulk
               </Button>
               <Button onClick={() => setIsBulkCreateDialogOpen(true)} className="gap-2">
                 <UserPlus className="h-4 w-4" />
