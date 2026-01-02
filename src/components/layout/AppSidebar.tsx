@@ -103,7 +103,7 @@ export function AppSidebar() {
 
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + '/');
   const isReportsActive = currentPath.startsWith('/reports');
-  const isInspectionActive = currentPath.startsWith('/inspection');
+  const isInspectionActive = currentPath.startsWith('/inspection') && currentPath !== '/inspection/manual';
 
   // State for collapsible menus
   const [reportsOpen, setReportsOpen] = useState(isReportsActive);
