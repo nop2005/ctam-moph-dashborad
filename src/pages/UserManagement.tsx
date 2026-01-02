@@ -37,8 +37,11 @@ import {
   UserCheck,
   UserX,
   Trash2,
-  Edit
+  Edit,
+  UserPlus
 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 interface Profile {
   id: string;
@@ -85,9 +88,12 @@ export default function UserManagement() {
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
+  const [createUserType, setCreateUserType] = useState<'hospital_it' | 'health_office'>('hospital_it');
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [creatingUsers, setCreatingUsers] = useState(false);
   const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'all'>('all');
 
   const isProvincialAdmin = currentUserProfile?.role === 'provincial';
@@ -258,6 +264,52 @@ export default function UserManagement() {
     }
   };
 
+  const handleCreateUsers = async () => {
+    setCreatingUsers(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast.error('กรุณาเข้าสู่ระบบ');
+        return;
+      }
+
+      const functionName = createUserType === 'hospital_it' 
+        ? 'create-hospital-users-provincial' 
+        : 'create-health-office-users-provincial';
+
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        if (createUserType === 'hospital_it') {
+          const successCount = data.results?.filter((r: any) => r.status === 'success').length || 0;
+          const skippedCount = data.results?.filter((r: any) => r.status === 'skipped').length || 0;
+          toast.success(`สร้างผู้ใช้ IT รพ. สำเร็จ ${successCount} คน, ข้าม ${skippedCount} คน`);
+        } else {
+          if (data.status === 'skipped') {
+            toast.info(`ผู้ใช้ IT สสจ. มีอยู่แล้ว: ${data.email || data.health_office_code}`);
+          } else {
+            toast.success(`สร้างผู้ใช้ IT สสจ. สำเร็จ: ${data.email}`);
+          }
+        }
+        setCreateUserDialogOpen(false);
+        fetchData();
+      } else {
+        toast.error(data.error || 'เกิดข้อผิดพลาด');
+      }
+    } catch (error) {
+      console.error('Error creating users:', error);
+      toast.error('ไม่สามารถสร้างผู้ใช้ได้');
+    } finally {
+      setCreatingUsers(false);
+    }
+  };
+
   // Filter profiles based on search
   const filteredProfiles = profiles.filter(p => {
     const matchesSearch = 
@@ -307,11 +359,19 @@ export default function UserManagement() {
   return (
     <DashboardLayout>
       {/* Page Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">จัดการผู้ใช้งาน</h1>
-        <p className="text-muted-foreground">
-          อนุมัติ{getManageableRoleLabel()}ใน{getLocationLabel()}
-        </p>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">จัดการผู้ใช้งาน</h1>
+          <p className="text-muted-foreground">
+            อนุมัติ{getManageableRoleLabel()}ใน{getLocationLabel()}
+          </p>
+        </div>
+        {isProvincialAdmin && (
+          <Button onClick={() => setCreateUserDialogOpen(true)}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            สร้างผู้ใช้งาน
+          </Button>
+        )}
       </div>
 
       {/* Stats Cards - Clickable */}
@@ -573,6 +633,68 @@ export default function UserManagement() {
             >
               {processing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               ลบผู้ใช้
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create User Dialog for Provincial Admin */}
+      <Dialog open={createUserDialogOpen} onOpenChange={setCreateUserDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>สร้างผู้ใช้งานใหม่</DialogTitle>
+            <DialogDescription>
+              เลือกประเภทผู้ใช้ที่ต้องการสร้างในจังหวัดของคุณ
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>ประเภทผู้ใช้</Label>
+              <Select 
+                value={createUserType} 
+                onValueChange={(value: 'hospital_it' | 'health_office') => setCreateUserType(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hospital_it">IT รพ. (สร้างทุก รพ. ในจังหวัด)</SelectItem>
+                  <SelectItem value="health_office">IT สสจ. (สร้าง 1 คน)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
+              {createUserType === 'hospital_it' ? (
+                <>
+                  <p className="font-medium mb-1">รูปแบบ Email/Password:</p>
+                  <p>Email: รหัสโรงพยาบาล@ctam.moph</p>
+                  <p>Password: รหัสโรงพยาบาล</p>
+                  <p className="mt-2 text-xs">เช่น 12345@ctam.moph / 12345</p>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium mb-1">รูปแบบ Email/Password:</p>
+                  <p>Email: รหัสสสจ@ctam.moph</p>
+                  <p>Password: รหัสสสจ</p>
+                  <p className="mt-2 text-xs">เช่น 00037@ctam.moph / 00037</p>
+                </>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setCreateUserDialogOpen(false)}
+              disabled={creatingUsers}
+            >
+              ยกเลิก
+            </Button>
+            <Button 
+              onClick={handleCreateUsers}
+              disabled={creatingUsers}
+            >
+              {creatingUsers && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              สร้างผู้ใช้งาน
             </Button>
           </DialogFooter>
         </DialogContent>
