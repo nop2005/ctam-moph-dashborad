@@ -519,12 +519,16 @@ export default function ReportsImpact() {
     }
   };
 
-  // Handle drill down
+  // Handle drill down with access policy check
   const handleRowClick = (row: typeof tableData[0]) => {
     if (row.type === 'region') {
-      setSelectedRegion(row.id);
+      if (canDrillToProvince(row.id)) {
+        setSelectedRegion(row.id);
+      }
     } else if (row.type === 'province') {
-      setSelectedProvince(row.id);
+      if (canDrillToHospital(row.id)) {
+        setSelectedProvince(row.id);
+      }
     }
   };
 
@@ -820,14 +824,19 @@ export default function ReportsImpact() {
                     {tableData.map((row) => {
                       const isDrillRow = row.type === 'region' || row.type === 'province';
                       const isUnitRow = row.type === 'hospital' || row.type === 'health_office';
+                      
+                      // Check if user can drill into this row
+                      const canDrill = isDrillRow && (
+                        row.type === 'region' ? canDrillToProvince(row.id) : canDrillToHospital(row.id)
+                      );
 
                       return (
                         <TableRow
                           key={row.id}
-                          className={isDrillRow ? 'cursor-pointer hover:bg-muted/50' : ''}
-                          onClick={() => isDrillRow && handleRowClick(row)}
+                          className={isDrillRow && canDrill ? 'cursor-pointer hover:bg-muted/50' : isDrillRow ? 'opacity-50' : ''}
+                          onClick={() => canDrill && handleRowClick(row)}
                         >
-                          <TableCell className={`font-medium ${isDrillRow ? 'text-primary hover:underline' : ''}`}>{row.name}</TableCell>
+                          <TableCell className={`font-medium ${isDrillRow && canDrill ? 'text-primary hover:underline' : isDrillRow ? 'text-muted-foreground' : ''}`}>{row.name}</TableCell>
                           {isUnitRow ? (
                             <>
                               <TableCell className="text-center text-muted-foreground">

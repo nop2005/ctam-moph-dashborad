@@ -781,13 +781,27 @@ export default function ReportsQuantitative() {
                         minWidth: sticky.name
                       }}>
                               <div className="flex flex-col">
-                                {row.type === 'region' && <button onClick={() => setSelectedRegion(row.id)} className="text-left text-primary hover:text-primary/80 hover:underline cursor-pointer font-medium">
-                                    {row.name}
-                                  </button>}
-                                {row.type === 'province' && <button onClick={() => setSelectedProvince(row.id)} className="text-left text-primary hover:text-primary/80 hover:underline cursor-pointer font-medium">
-                                    {row.name}
-                                  </button>}
-                                {row.type === 'hospital' && <>
+                                {row.type === 'region' && (() => {
+                                  const canDrill = canDrillToProvince(row.id);
+                                  return canDrill ? (
+                                    <button onClick={() => setSelectedRegion(row.id)} className="text-left text-primary hover:text-primary/80 hover:underline cursor-pointer font-medium">
+                                      {row.name}
+                                    </button>
+                                  ) : (
+                                    <span className="text-muted-foreground opacity-50">{row.name}</span>
+                                  );
+                                })()}
+                                {row.type === 'province' && (() => {
+                                  const canDrill = canDrillToHospital(row.id);
+                                  return canDrill ? (
+                                    <button onClick={() => setSelectedProvince(row.id)} className="text-left text-primary hover:text-primary/80 hover:underline cursor-pointer font-medium">
+                                      {row.name}
+                                    </button>
+                                  ) : (
+                                    <span className="text-muted-foreground opacity-50">{row.name}</span>
+                                  );
+                                })()}
+                                {(row.type === 'hospital' || row.type === 'health_office') && <>
                                     <span>{row.name}</span>
                                     {'code' in row && <span className="text-xs text-muted-foreground font-mono">{row.code}</span>}
                                   </>}
