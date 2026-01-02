@@ -735,43 +735,24 @@ export default function SuperAdmin() {
         </Card>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-          <TabsList>
-            <TabsTrigger value="pending" className="gap-2">
-              <Clock className="h-4 w-4" />
-              รอการอนุมัติ
-              {stats.pending > 0 && (
-                <Badge variant="destructive" className="ml-1">
-                  {stats.pending}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="active" className="gap-2">
-              <UserCheck className="h-4 w-4" />
-              อนุมัติแล้ว ({stats.active})
-            </TabsTrigger>
-          </TabsList>
-
-          <div className="flex gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="ค้นหาผู้ใช้..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 w-[200px]"
-              />
-            </div>
-            <Button variant="outline" size="icon" onClick={fetchData}>
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            </Button>
-          </div>
+      {/* Search and Refresh */}
+      <div className="flex justify-end gap-2 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="ค้นหาผู้ใช้..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 w-[200px]"
+          />
         </div>
+        <Button variant="outline" size="icon" onClick={fetchData}>
+          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+        </Button>
+      </div>
 
-        {/* Pending Users Tab */}
-        <TabsContent value="pending">
+      {/* Pending Users Section */}
+      {(cardFilter === 'all' || cardFilter === 'pending') && (
           <Card>
             <CardHeader>
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -887,10 +868,10 @@ export default function SuperAdmin() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+      )}
 
-        {/* Active Users Tab */}
-        <TabsContent value="active">
+      {/* Active Users Section */}
+      {(cardFilter !== 'pending') && (
           <Card>
             <CardHeader>
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1024,8 +1005,7 @@ export default function SuperAdmin() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+      )}
 
       {/* Approve Dialog */}
       <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
