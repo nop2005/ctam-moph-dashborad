@@ -673,7 +673,7 @@ export default function SuperAdmin() {
         <Card className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'provincial' ? 'ring-2 ring-accent' : ''}`} onClick={() => handleCardClick('provincial')}>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-accent">{stats.provincial}</div>
-            <div className="text-sm text-muted-foreground">สสจ.</div>
+            <div className="text-sm text-muted-foreground">เเอดมินจังหวัด</div>
           </CardContent>
         </Card>
       </div>
