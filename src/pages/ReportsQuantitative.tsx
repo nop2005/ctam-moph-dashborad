@@ -103,7 +103,7 @@ export default function ReportsQuantitative() {
   const userProvinceId = profile?.province_id;
 
   // Report access policy
-  const { canDrillToProvince, canDrillToHospital } = useReportAccessPolicy('quantitative', provinces, healthOffices);
+  const { canDrillToProvince, canDrillToHospital, canViewSameProvinceHospitals, userProvinceId: policyUserProvinceId } = useReportAccessPolicy('quantitative', provinces, healthOffices);
 
   // Fetch data
   useEffect(() => {
@@ -371,8 +371,21 @@ export default function ReportsQuantitative() {
       });
     } else {
       // Show hospitals and health offices in selected province
-      const provinceHospitals = hospitals.filter(h => h.province_id === selectedProvince);
-      const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === selectedProvince);
+      let provinceHospitals = hospitals.filter(h => h.province_id === selectedProvince);
+      let provinceHealthOffices = healthOffices.filter(ho => ho.province_id === selectedProvince);
+      
+      // Apply canViewSameProvinceHospitals policy
+      // If user is hospital_it and can't view same province hospitals, show only their own
+      if (profile?.role === 'hospital_it' && !canViewSameProvinceHospitals()) {
+        provinceHospitals = provinceHospitals.filter(h => h.id === profile.hospital_id);
+        provinceHealthOffices = []; // Hospital IT users can't see health offices
+      }
+      // If user is health_office and can't view same province hospitals, show only their own
+      if (profile?.role === 'health_office' && !canViewSameProvinceHospitals()) {
+        provinceHospitals = []; // Health office users can't see hospitals
+        provinceHealthOffices = provinceHealthOffices.filter(ho => ho.id === profile.health_office_id);
+      }
+      
       const hospitalRows = provinceHospitals.map(hospital => {
         const categoryAverages = calculateCategoryAverages([hospital.id], []);
         return {
@@ -397,7 +410,7 @@ export default function ReportsQuantitative() {
       });
       return [...hospitalRows, ...healthOfficeRows];
     }
-  }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, healthOffices, categories, filteredAssessments, filteredAssessmentItems]);
+  }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, healthOffices, categories, filteredAssessments, filteredAssessmentItems, profile, canViewSameProvinceHospitals]);
 
   // Get title based on filter state
   const getTitle = () => {

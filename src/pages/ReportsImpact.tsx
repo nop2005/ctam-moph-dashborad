@@ -128,7 +128,7 @@ export default function ReportsImpact() {
   const userProvinceId = profile?.province_id;
 
   // Report access policy
-  const { canDrillToProvince, canDrillToHospital } = useReportAccessPolicy('impact', provinces, healthOffices);
+  const { canDrillToProvince, canDrillToHospital, canViewSameProvinceHospitals, userProvinceId: policyUserProvinceId } = useReportAccessPolicy('impact', provinces, healthOffices);
 
   // Fetch data
   useEffect(() => {
@@ -425,8 +425,20 @@ export default function ReportsImpact() {
       return allProvinces;
     } else {
       // Show hospitals and health offices in selected province
-      const provinceHospitals = hospitals.filter(h => h.province_id === selectedProvince);
-      const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === selectedProvince);
+      let provinceHospitals = hospitals.filter(h => h.province_id === selectedProvince);
+      let provinceHealthOffices = healthOffices.filter(ho => ho.province_id === selectedProvince);
+      
+      // Apply canViewSameProvinceHospitals policy
+      // If user is hospital_it and can't view same province hospitals, show only their own
+      if (profile?.role === 'hospital_it' && !canViewSameProvinceHospitals()) {
+        provinceHospitals = provinceHospitals.filter(h => h.id === profile.hospital_id);
+        provinceHealthOffices = []; // Hospital IT users can't see health offices
+      }
+      // If user is health_office and can't view same province hospitals, show only their own
+      if (profile?.role === 'health_office' && !canViewSameProvinceHospitals()) {
+        provinceHospitals = []; // Health office users can't see hospitals
+        provinceHealthOffices = provinceHealthOffices.filter(ho => ho.id === profile.health_office_id);
+      }
       
       const allHospitals = provinceHospitals.map(hospital => {
         const hospitalAssessments = filteredAssessments.filter(a => a.hospital_id === hospital.id);
@@ -504,7 +516,7 @@ export default function ReportsImpact() {
       }
       return allUnits;
     }
-  }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, healthOffices, filteredAssessments, impactScores, filterByIssue]);
+  }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, healthOffices, filteredAssessments, impactScores, filterByIssue, profile, canViewSameProvinceHospitals]);
 
   // Get title based on filter state
   const getTitle = () => {

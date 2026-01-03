@@ -155,7 +155,7 @@ export default function Reports() {
     return assessments.filter(a => a.fiscal_year === parseInt(selectedFiscalYear));
   }, [assessments, selectedFiscalYear]);
   // Report access policy
-  const { canDrillToProvince, canDrillToHospital } = useReportAccessPolicy('overview', provinces, healthOffices);
+  const { canDrillToProvince, canDrillToHospital, canViewSameProvinceHospitals, userProvinceId } = useReportAccessPolicy('overview', provinces, healthOffices);
 
   const handleDrillChange = (level: DrillLevel, regionId: string | null, provinceId: string | null) => {
     // Check permissions before drilling
@@ -437,8 +437,19 @@ export default function Reports() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {/* Render hospitals */}
-                    {hospitals.filter(h => h.province_id === chartProvinceId).map(hospital => {
+                    {/* Render hospitals - filter by canViewSameProvinceHospitals policy */}
+                    {hospitals.filter(h => {
+                      // Must be in selected province
+                      if (h.province_id !== chartProvinceId) return false;
+                      
+                      // If user is hospital_it and can't view same province hospitals,
+                      // only show their own hospital
+                      if (profile?.role === 'hospital_it' && !canViewSameProvinceHospitals()) {
+                        return h.id === profile.hospital_id;
+                      }
+                      
+                      return true;
+                    }).map(hospital => {
                   const assessment = latestAssessments.find(a => a.hospital_id === hospital.id);
                   return <TableRow key={hospital.id}>
                           <TableCell className="font-mono text-sm">{hospital.code}</TableCell>
@@ -467,8 +478,19 @@ export default function Reports() {
                           </TableCell>
                         </TableRow>;
                 })}
-                    {/* Render health offices in this province */}
-                    {healthOffices.filter(ho => ho.province_id === chartProvinceId).map(office => {
+                    {/* Render health offices in this province - filter by canViewSameProvinceHospitals policy */}
+                    {healthOffices.filter(ho => {
+                      // Must be in selected province
+                      if (ho.province_id !== chartProvinceId) return false;
+                      
+                      // If user is health_office and can't view same province hospitals,
+                      // only show their own health office
+                      if (profile?.role === 'health_office' && !canViewSameProvinceHospitals()) {
+                        return ho.id === profile.health_office_id;
+                      }
+                      
+                      return true;
+                    }).map(office => {
                   const assessment = latestAssessments.find(a => a.health_office_id === office.id);
                   return <TableRow key={office.id}>
                           <TableCell className="font-mono text-sm">{office.code}</TableCell>
