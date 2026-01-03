@@ -337,9 +337,9 @@ export default function PublicReports() {
                     <TableRow>
                       <TableHead>เขตสุขภาพ</TableHead>
                       <TableHead className="text-right">จำนวนสถานบริการ</TableHead>
-                      <TableHead className="text-right">คะแนนเชิงคุณภาพ</TableHead>
                       <TableHead className="text-right">คะแนนเชิงปริมาณ</TableHead>
-                      <TableHead className="text-right">คะแนนเฉลี่ย</TableHead>
+                      <TableHead className="text-right">คะแนนเชิงผลกระทบ</TableHead>
+                      <TableHead className="text-right">คะแนนรวม</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -354,10 +354,10 @@ export default function PublicReports() {
                         </TableCell>
                         <TableCell className="text-right">{region.total_units}</TableCell>
                         <TableCell className="text-right">
-                          {region.avg_qualitative_score > 0 ? region.avg_qualitative_score.toFixed(2) : '-'}
+                          {region.avg_quantitative_score > 0 ? region.avg_quantitative_score.toFixed(2) : '-'}
                         </TableCell>
                         <TableCell className="text-right">
-                          {region.avg_quantitative_score > 0 ? region.avg_quantitative_score.toFixed(2) : '-'}
+                          {region.avg_qualitative_score > 0 ? region.avg_qualitative_score.toFixed(2) : '-'}
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {region.avg_score > 0 ? region.avg_score.toFixed(2) : '-'}
@@ -382,9 +382,9 @@ export default function PublicReports() {
                     <TableRow>
                       <TableHead>จังหวัด</TableHead>
                       <TableHead className="text-right">จำนวนสถานบริการ</TableHead>
-                      <TableHead className="text-right">คะแนนเชิงคุณภาพ</TableHead>
                       <TableHead className="text-right">คะแนนเชิงปริมาณ</TableHead>
-                      <TableHead className="text-right">คะแนนเฉลี่ย</TableHead>
+                      <TableHead className="text-right">คะแนนเชิงผลกระทบ</TableHead>
+                      <TableHead className="text-right">คะแนนรวม</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -397,10 +397,10 @@ export default function PublicReports() {
                           </TableCell>
                           <TableCell className="text-right">{province.total_units}</TableCell>
                           <TableCell className="text-right">
-                            {province.avg_qualitative_score > 0 ? province.avg_qualitative_score.toFixed(2) : '-'}
+                            {province.avg_quantitative_score > 0 ? province.avg_quantitative_score.toFixed(2) : '-'}
                           </TableCell>
                           <TableCell className="text-right">
-                            {province.avg_quantitative_score > 0 ? province.avg_quantitative_score.toFixed(2) : '-'}
+                            {province.avg_qualitative_score > 0 ? province.avg_qualitative_score.toFixed(2) : '-'}
                           </TableCell>
                           <TableCell className="text-right font-medium">
                             {province.avg_score > 0 ? province.avg_score.toFixed(2) : '-'}
