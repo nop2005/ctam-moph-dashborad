@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
 import { TrendingUp, Filter, Building2, MapPin, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -391,6 +392,7 @@ export default function PublicReportsQuantitative() {
                       </TableHead>
                       <TableHead className="text-center">จำนวนหน่วย</TableHead>
                       <TableHead className="text-center">ผ่านครบ 17 ข้อ</TableHead>
+                      <TableHead className="text-center min-w-[180px]">ร้อยละ</TableHead>
                       {categories.map(cat => (
                         <TableHead key={cat.id} className="text-center min-w-[80px]">
                           {cat.code}
@@ -410,6 +412,19 @@ export default function PublicReportsQuantitative() {
                         </TableCell>
                         <TableCell className="text-center">{row.hospitalCount}</TableCell>
                         <TableCell className="text-center">{row.hospitalsPassedAll17}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center gap-2">
+                            <Progress 
+                              value={row.hospitalCount > 0 ? (row.hospitalsPassedAll17 / row.hospitalCount) * 100 : 0} 
+                              className="h-4 flex-1" 
+                            />
+                            <span className="text-sm font-medium min-w-[50px] text-right">
+                              {row.hospitalCount > 0 
+                                ? `${((row.hospitalsPassedAll17 / row.hospitalCount) * 100).toFixed(1)}%` 
+                                : '-'}
+                            </span>
+                          </div>
+                        </TableCell>
                         {row.categoryAverages.map((catAvg) => (
                           <TableCell key={catAvg.categoryId} className="text-center">
                             {catAvg.average !== null ? `${catAvg.average.toFixed(1)}%` : '-'}
