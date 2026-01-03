@@ -730,7 +730,8 @@ export default function ReportsQuantitative() {
             if (tableData.length === 0) {
               return <div className="text-center py-12 text-muted-foreground">ไม่พบข้อมูล</div>;
             }
-            return <div className="w-full overflow-x-auto">
+            return <div className="space-y-4">
+                  <div className="w-full overflow-x-auto">
                   <Table className="min-w-max">
                     <TableHeader>
                       <TableRow className="bg-muted/50">
@@ -866,24 +867,25 @@ export default function ReportsQuantitative() {
                   })}
                     </TableBody>
                   </Table>
-                </div>;
-          
-            {/* Color Legend */}
-            <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-muted-foreground border border-primary/30 rounded-lg p-4 bg-primary/5">
-              <span className="font-medium text-orange-500">สัญลักษณ์ (ร้อยละรพ.ที่ผ่าน 17 ข้อ) :</span>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-red-500"></div>
-                <span>ผ่านน้อยกว่า 50%</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-yellow-500"></div>
-                <span>ผ่าน 50% - 99%</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-green-500"></div>
-                <span>ผ่าน 100%</span>
-              </div>
-            </div>
+                </div>
+
+                {/* Color Legend */}
+                <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground border border-primary/30 rounded-lg p-4 bg-primary/5">
+                  <span className="font-medium text-orange-500">สัญลักษณ์ (ร้อยละรพ.ที่ผ่าน 17 ข้อ) :</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-red-500"></div>
+                    <span>ผ่านน้อยกว่า 50%</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-yellow-500"></div>
+                    <span>ผ่าน 50% - 99%</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-green-500"></div>
+                    <span>ผ่าน 100%</span>
+                  </div>
+                </div>
+              </div>;
           })()}
           </CardContent>
         </Card>
