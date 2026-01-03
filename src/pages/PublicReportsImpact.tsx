@@ -80,8 +80,8 @@ const getImpactLevel = (totalScore: number | null): { level: string; color: stri
   if (totalScore === null) return { level: 'ยังไม่ประเมิน', color: 'text-muted-foreground', bgColor: 'bg-muted' };
   if (totalScore >= 100) return { level: 'ปลอดภัยสูง', color: 'text-green-600', bgColor: 'bg-green-100' };
   if (totalScore >= 80) return { level: 'ปลอดภัยปานกลาง', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
-  if (totalScore >= 70) return { level: 'ความเสี่ยงต่ำ', color: 'text-orange-600', bgColor: 'bg-orange-100' };
-  return { level: 'ความเสี่ยงสูง', color: 'text-red-600', bgColor: 'bg-red-100' };
+  if (totalScore >= 70) return { level: 'ความปลอดภัยต่ำ', color: 'text-orange-600', bgColor: 'bg-orange-100' };
+  return { level: 'ความปลอดภัยต่ำมาก', color: 'text-red-600', bgColor: 'bg-red-100' };
 };
 
 export default function PublicReportsImpact() {
@@ -191,8 +191,8 @@ export default function PublicReportsImpact() {
       const level = getImpactLevel(impactScore.total_score);
       if (level.level === 'ปลอดภัยสูง') highSafety++;
       else if (level.level === 'ปลอดภัยปานกลาง') mediumSafety++;
-      else if (level.level === 'ความเสี่ยงต่ำ') lowRisk++;
-      else if (level.level === 'ความเสี่ยงสูง') highRisk++;
+      else if (level.level === 'ความปลอดภัยต่ำ') lowRisk++;
+      else if (level.level === 'ความปลอดภัยต่ำมาก') highRisk++;
       if (impactScore.had_incident) totalIncidents++;
       if (impactScore.had_data_breach) totalBreaches++;
     });
@@ -206,8 +206,8 @@ export default function PublicReportsImpact() {
       const level = getImpactLevel(impactScore.total_score);
       if (level.level === 'ปลอดภัยสูง') highSafety++;
       else if (level.level === 'ปลอดภัยปานกลาง') mediumSafety++;
-      else if (level.level === 'ความเสี่ยงต่ำ') lowRisk++;
-      else if (level.level === 'ความเสี่ยงสูง') highRisk++;
+      else if (level.level === 'ความปลอดภัยต่ำ') lowRisk++;
+      else if (level.level === 'ความปลอดภัยต่ำมาก') highRisk++;
       if (impactScore.had_incident) totalIncidents++;
       if (impactScore.had_data_breach) totalBreaches++;
     });
@@ -233,8 +233,8 @@ export default function PublicReportsImpact() {
       data: [
         { name: 'ปลอดภัยสูง', value: stats.highSafety, color: '#22c55e' },
         { name: 'ปลอดภัยปานกลาง', value: stats.mediumSafety, color: '#eab308' },
-        { name: 'ความเสี่ยงต่ำ', value: stats.lowRisk, color: '#f97316' },
-        { name: 'ความเสี่ยงสูง', value: stats.highRisk, color: '#ef4444' },
+        { name: 'ความปลอดภัยต่ำ', value: stats.lowRisk, color: '#f97316' },
+        { name: 'ความปลอดภัยต่ำมาก', value: stats.highRisk, color: '#ef4444' },
         { name: 'ยังไม่ประเมิน', value: stats.notAssessed, color: '#94a3b8' },
       ].filter(d => d.value > 0),
       stats,
