@@ -104,7 +104,12 @@ export default function ReportsQuantitative() {
   const userProvinceId = profile?.province_id;
 
   // Report access policy
-  const { canDrillToProvince, canDrillToHospital, canViewSameProvinceHospitals, userProvinceId: policyUserProvinceId } = useReportAccessPolicy('quantitative', provinces, healthOffices);
+  const {
+    canDrillToProvince,
+    canDrillToHospital,
+    canViewSameProvinceHospitals,
+    userProvinceId: policyUserProvinceId
+  } = useReportAccessPolicy('quantitative', provinces, healthOffices);
 
   // Fetch data
   useEffect(() => {
@@ -374,7 +379,7 @@ export default function ReportsQuantitative() {
       // Show hospitals and health offices in selected province
       let provinceHospitals = hospitals.filter(h => h.province_id === selectedProvince);
       let provinceHealthOffices = healthOffices.filter(ho => ho.province_id === selectedProvince);
-      
+
       // Apply canViewSameProvinceHospitals policy
       // If user is hospital_it and can't view same province hospitals, show only their own
       if (profile?.role === 'hospital_it' && !canViewSameProvinceHospitals()) {
@@ -386,7 +391,6 @@ export default function ReportsQuantitative() {
         provinceHospitals = []; // Health office users can't see hospitals
         provinceHealthOffices = provinceHealthOffices.filter(ho => ho.id === profile.health_office_id);
       }
-      
       const hospitalRows = provinceHospitals.map(hospital => {
         const categoryAverages = calculateCategoryAverages([hospital.id], []);
         return {
@@ -658,19 +662,19 @@ export default function ReportsQuantitative() {
                     <div className="space-y-2">
                       <div className="flex items-center gap-3 p-2 rounded-lg bg-green-50 dark:bg-green-950/30 whitespace-nowrap">
                         <div className="w-3 h-3 rounded-full bg-green-500 shrink-0" />
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">ปลอดภัยสูง (100%)</span>
+                        <span className="text-sm font-medium text-green-700 dark:text-green-400">ปลอดภัยสูง (เขียว 100%)</span>
                         <span className="ml-auto text-sm font-bold">{greenCount}</span>
                         <span className="text-xs text-muted-foreground">({(greenCount / total * 100).toFixed(1)}%)</span>
                       </div>
                       <div className="flex items-center gap-3 p-2 rounded-lg bg-yellow-50 dark:bg-yellow-950/30 whitespace-nowrap">
                         <div className="w-3 h-3 rounded-full bg-yellow-500 shrink-0" />
-                        <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">ปลอดภัยต่ำ (50-99%)</span>
+                        <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">ปลอดภัยต่ำ (เขียว 50-99%)</span>
                         <span className="ml-auto text-sm font-bold">{yellowCount}</span>
                         <span className="text-xs text-muted-foreground">({(yellowCount / total * 100).toFixed(1)}%)</span>
                       </div>
                       <div className="flex items-center gap-3 p-2 rounded-lg bg-red-50 dark:bg-red-950/30 whitespace-nowrap">
                         <div className="w-3 h-3 rounded-full bg-red-500 shrink-0" />
-                        <span className="text-sm font-medium text-red-700 dark:text-red-400">ไม่ปลอดภัย (&lt;50%)</span>
+                        <span className="text-sm font-medium text-red-700 dark:text-red-400">ไม่ปลอดภัย (เขียว<50%)</span>
                         <span className="ml-auto text-sm font-bold">{redCount}</span>
                         <span className="text-xs text-muted-foreground">({(redCount / total * 100).toFixed(1)}%)</span>
                       </div>
@@ -736,20 +740,20 @@ export default function ReportsQuantitative() {
                     <TableHeader>
                       <TableRow className="bg-muted/50">
                         <TableHead className={`${stickyHeaderBase} bg-muted/50 min-w-[180px]`} style={{
-                      left: left.name
-                    }}>
+                        left: left.name
+                      }}>
                           {selectedProvince !== 'all' ? 'โรงพยาบาล' : selectedRegion !== 'all' ? 'จังหวัด' : 'เขตสุขภาพ'}
                         </TableHead>
 
                         {showSummaryCols && <TableHead className={`${stickyHeaderBase} bg-muted/50 text-center min-w-[80px]`} style={{
-                      left: left.hospitalCount
-                    }}>
+                        left: left.hospitalCount
+                      }}>
                             จำนวน รพ.
                           </TableHead>}
 
                         {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-green-100 dark:bg-green-900/30`} style={{
-                      left: left.passedAll17
-                    }}>
+                        left: left.passedAll17
+                      }}>
                             <div className="flex flex-col items-center">
                               <span>รพ.ผ่านครบ</span>
                               <span>17 ข้อ</span>
@@ -757,8 +761,8 @@ export default function ReportsQuantitative() {
                           </TableHead>}
 
                         <TableHead className={`${stickyHeaderBase} text-center min-w-[200px] bg-primary/10`} style={{
-                      left: left.percentGreen
-                    }}>
+                        left: left.percentGreen
+                      }}>
                           {selectedProvince !== 'all' ? <div className="flex flex-col items-center">
                               <span>ข้อที่ผ่าน</span>
                               <span>(ร้อยละ)</span>
@@ -778,35 +782,27 @@ export default function ReportsQuantitative() {
 
                     <TableBody>
                       {tableData.map(row => {
-                    const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
-                    const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
-                    const passedPercentage = totalCount > 0 ? passedCount / totalCount * 100 : null;
-                    return <TableRow key={row.id} className="hover:bg-muted/30">
+                      const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
+                      const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
+                      const passedPercentage = totalCount > 0 ? passedCount / totalCount * 100 : null;
+                      return <TableRow key={row.id} className="hover:bg-muted/30">
                             <TableCell className={`${stickyCellBase} font-medium`} style={{
-                        left: left.name,
-                        minWidth: sticky.name
-                      }}>
+                          left: left.name,
+                          minWidth: sticky.name
+                        }}>
                               <div className="flex flex-col">
                                 {row.type === 'region' && (() => {
-                                  const canDrill = canDrillToProvince(row.id);
-                                  return canDrill ? (
-                                    <button onClick={() => setSelectedRegion(row.id)} className="text-left text-primary hover:text-primary/80 hover:underline cursor-pointer font-medium">
+                              const canDrill = canDrillToProvince(row.id);
+                              return canDrill ? <button onClick={() => setSelectedRegion(row.id)} className="text-left text-primary hover:text-primary/80 hover:underline cursor-pointer font-medium">
                                       {row.name}
-                                    </button>
-                                  ) : (
-                                    <span className="text-muted-foreground opacity-50">{row.name}</span>
-                                  );
-                                })()}
+                                    </button> : <span className="text-muted-foreground opacity-50">{row.name}</span>;
+                            })()}
                                 {row.type === 'province' && (() => {
-                                  const canDrill = canDrillToHospital(row.id);
-                                  return canDrill ? (
-                                    <button onClick={() => setSelectedProvince(row.id)} className="text-left text-primary hover:text-primary/80 hover:underline cursor-pointer font-medium">
+                              const canDrill = canDrillToHospital(row.id);
+                              return canDrill ? <button onClick={() => setSelectedProvince(row.id)} className="text-left text-primary hover:text-primary/80 hover:underline cursor-pointer font-medium">
                                       {row.name}
-                                    </button>
-                                  ) : (
-                                    <span className="text-muted-foreground opacity-50">{row.name}</span>
-                                  );
-                                })()}
+                                    </button> : <span className="text-muted-foreground opacity-50">{row.name}</span>;
+                            })()}
                                 {(row.type === 'hospital' || row.type === 'health_office') && <>
                                     <span>{row.name}</span>
                                     {'code' in row && <span className="text-xs text-muted-foreground font-mono">{row.code}</span>}
@@ -815,56 +811,45 @@ export default function ReportsQuantitative() {
                             </TableCell>
 
                             {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium`} style={{
-                        left: left.hospitalCount,
-                        minWidth: sticky.hospitalCount
-                      }}>
+                          left: left.hospitalCount,
+                          minWidth: sticky.hospitalCount
+                        }}>
                                 {row.hospitalCount}
                               </TableCell>}
 
                             {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-green-50 dark:bg-green-900/20`} style={{
-                        left: left.passedAll17,
-                        minWidth: sticky.passedAll17
-                      }}>
+                          left: left.passedAll17,
+                          minWidth: sticky.passedAll17
+                        }}>
                                 {'hospitalsPassedAll17' in row ? row.hospitalsPassedAll17 : 0}
                               </TableCell>}
 
                             <TableCell className={`${stickyCellBase} text-center bg-primary/5`} style={{
-                        left: left.percentGreen,
-                        minWidth: 200
-                      }}>
+                          left: left.percentGreen,
+                          minWidth: 200
+                        }}>
                               {(() => {
-                                let percentage: number;
-                                if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
-                                  percentage = row.hospitalCount > 0 ? ((row.hospitalsPassedAll17 as number) / row.hospitalCount * 100) : 0;
-                                } else {
-                                  percentage = passedPercentage ?? 0;
-                                }
-                                const colorClass = percentage === 100 
-                                  ? '[&>div]:bg-green-500' 
-                                  : percentage >= 50 
-                                    ? '[&>div]:bg-yellow-500' 
-                                    : '[&>div]:bg-red-500';
-                                return (
-                                  <div className="flex items-center gap-2">
-                                    <Progress 
-                                      value={percentage} 
-                                      className={`h-4 flex-1 ${colorClass}`} 
-                                    />
+                            let percentage: number;
+                            if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
+                              percentage = row.hospitalCount > 0 ? (row.hospitalsPassedAll17 as number) / row.hospitalCount * 100 : 0;
+                            } else {
+                              percentage = passedPercentage ?? 0;
+                            }
+                            const colorClass = percentage === 100 ? '[&>div]:bg-green-500' : percentage >= 50 ? '[&>div]:bg-yellow-500' : '[&>div]:bg-red-500';
+                            return <div className="flex items-center gap-2">
+                                    <Progress value={percentage} className={`h-4 flex-1 ${colorClass}`} />
                                     <span className="text-sm font-medium min-w-[50px] text-right">
-                                      {row.hospitalCount > 0 || passedPercentage !== null
-                                        ? `${percentage.toFixed(1)}%` 
-                                        : '-'}
+                                      {row.hospitalCount > 0 || passedPercentage !== null ? `${percentage.toFixed(1)}%` : '-'}
                                     </span>
-                                  </div>
-                                );
-                              })()}
+                                  </div>;
+                          })()}
                             </TableCell>
 
                             {row.categoryAverages.map(catAvg => <TableCell key={catAvg.categoryId} className={`text-center ${getScoreColorClass(catAvg.average, row.type)}`}>
                                 {formatScore(catAvg, row.type)}
                               </TableCell>)}
                           </TableRow>;
-                  })}
+                    })}
                     </TableBody>
                   </Table>
                 </div>
