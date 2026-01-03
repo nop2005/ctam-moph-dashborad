@@ -40,7 +40,7 @@ const getCurrentFiscalYear = () => {
 export default function InspectionRegionDetail() {
   const { regionId } = useParams<{ regionId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
   const [regionInfo, setRegionInfo] = useState<{ name: string; regionNumber: number } | null>(null);
@@ -53,6 +53,9 @@ export default function InspectionRegionDetail() {
     round: string;
     fileType: 'report' | 'slides';
   } | null>(null);
+
+  // Only supervisor and regional roles can upload
+  const canUpload = profile?.role === 'supervisor' || profile?.role === 'regional' || profile?.role === 'central_admin';
 
   useEffect(() => {
     const fetchFiscalYears = async () => {
@@ -263,6 +266,13 @@ export default function InspectionRegionDetail() {
           <Check className="h-3 w-3" />
           ดูไฟล์
         </Button>
+      );
+    }
+
+    // Only show upload button for supervisor, regional, and central_admin roles
+    if (!canUpload) {
+      return (
+        <span className="text-muted-foreground text-sm">-</span>
       );
     }
 
