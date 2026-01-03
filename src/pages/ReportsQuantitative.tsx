@@ -690,41 +690,21 @@ export default function ReportsQuantitative() {
         {/* Data Table */}
         <Card>
           <CardHeader>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-3">
-                {/* Back button - show when drilling down */}
-                {(selectedRegion !== 'all' || selectedProvince !== 'all') && !isProvincialAdmin && <button onClick={() => {
-                if (selectedProvince !== 'all') {
-                  // Go back to province list
-                  setSelectedProvince('all');
-                } else if (selectedRegion !== 'all') {
-                  // Go back to region list
-                  setSelectedRegion('all');
-                }
-              }} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors">
-                    <ArrowLeft className="w-4 h-4" />
-                    ย้อนกลับ
-                  </button>}
-                <CardTitle className="text-lg">{getTitle()}</CardTitle>
-              </div>
-              {/* Legend - คำอธิบายสี */}
-              <div className="flex items-center gap-4 text-sm flex-wrap">
-                <span className="font-medium text-orange-500">
-                  สัญลักษณ์ (ร้อยละรพ.ที่ผ่าน 17 ข้อ) :
-                </span>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-red-500" />
-                  <span>ผ่านน้อยกว่า 50%</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-yellow-500" />
-                  <span>ผ่าน 50% - 99%</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-green-500" />
-                  <span>ผ่าน 100%</span>
-                </div>
-              </div>
+            <div className="flex items-center gap-3">
+              {/* Back button - show when drilling down */}
+              {(selectedRegion !== 'all' || selectedProvince !== 'all') && !isProvincialAdmin && <button onClick={() => {
+              if (selectedProvince !== 'all') {
+                // Go back to province list
+                setSelectedProvince('all');
+              } else if (selectedRegion !== 'all') {
+                // Go back to region list
+                setSelectedRegion('all');
+              }
+            }} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors">
+                  <ArrowLeft className="w-4 h-4" />
+                  ย้อนกลับ
+                </button>}
+              <CardTitle className="text-lg">{getTitle()}</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -890,18 +870,18 @@ export default function ReportsQuantitative() {
           
             {/* Color Legend */}
             <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-muted-foreground border border-primary/30 rounded-lg p-4 bg-primary/5">
-              <span className="font-medium text-primary">สัญลักษณ์:</span>
+              <span className="font-medium text-orange-500">สัญลักษณ์ (ร้อยละรพ.ที่ผ่าน 17 ข้อ) :</span>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-red-500"></div>
-                <span>น้อยกว่า 50%</span>
+                <span>ผ่านน้อยกว่า 50%</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-yellow-500"></div>
-                <span>50% - 99%</span>
+                <span>ผ่าน 50% - 99%</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-green-500"></div>
-                <span>100%</span>
+                <span>ผ่าน 100%</span>
               </div>
             </div>
           })()}
