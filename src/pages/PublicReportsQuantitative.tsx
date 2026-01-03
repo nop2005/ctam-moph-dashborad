@@ -390,9 +390,9 @@ export default function PublicReportsQuantitative() {
                       <TableHead className="sticky left-0 bg-background z-10">
                         {selectedRegion === 'all' ? 'เขตสุขภาพ' : 'จังหวัด'}
                       </TableHead>
-                      <TableHead className="text-center">จำนวนหน่วย</TableHead>
+                      <TableHead className="text-center">จำนวนหน่วยงานทั้งหมด</TableHead>
                       <TableHead className="text-center">ผ่านครบ 17 ข้อ</TableHead>
-                      <TableHead className="text-center min-w-[180px]">ร้อยละ</TableHead>
+                      <TableHead className="text-center min-w-[180px]">ผ่านร้อยละ</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
