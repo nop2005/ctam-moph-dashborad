@@ -155,8 +155,12 @@ export default function Reports() {
     return assessments.filter(a => a.fiscal_year === parseInt(selectedFiscalYear));
   }, [assessments, selectedFiscalYear]);
   // Report access policy
-  const { canDrillToProvince, canDrillToHospital, canViewSameProvinceHospitals, userProvinceId } = useReportAccessPolicy('overview', provinces, healthOffices);
-
+  const {
+    canDrillToProvince,
+    canDrillToHospital,
+    canViewSameProvinceHospitals,
+    userProvinceId
+  } = useReportAccessPolicy('overview', provinces, healthOffices);
   const handleDrillChange = (level: DrillLevel, regionId: string | null, provinceId: string | null) => {
     // Check permissions before drilling
     if (level === 'province' && regionId && !canDrillToProvince(regionId)) {
@@ -272,7 +276,7 @@ export default function Reports() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold">{drillStats.withAssessment}</p>
-                  <p className="text-sm text-muted-foreground">มีแบบประเมิน</p>
+                  <p className="text-sm text-muted-foreground">ส่งแบบประเมินเเล้ว</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
                   <FileText className="w-6 h-6 text-accent" />
@@ -348,11 +352,7 @@ export default function Reports() {
                   const totalScoreSum = regionLatestAssessments.filter(a => a.total_score !== null).reduce((sum, a) => sum + (a.total_score || 0), 0);
                   const scoreCount = regionLatestAssessments.filter(a => a.total_score !== null).length;
                   const canDrill = canDrillToProvince(region.id);
-                  return <TableRow 
-                    key={region.id} 
-                    className={canDrill ? "cursor-pointer hover:bg-muted/50 transition-colors" : "opacity-50"}
-                    onClick={() => canDrill && handleDrillChange('province', region.id, null)}
-                  >
+                  return <TableRow key={region.id} className={canDrill ? "cursor-pointer hover:bg-muted/50 transition-colors" : "opacity-50"} onClick={() => canDrill && handleDrillChange('province', region.id, null)}>
                           <TableCell className={canDrill ? "font-medium text-primary underline" : "font-medium"}>
                             เขตสุขภาพที่ {region.region_number}
                           </TableCell>
@@ -396,11 +396,7 @@ export default function Reports() {
                   const totalScoreSum = provinceLatestAssessments.filter(a => a.total_score !== null).reduce((sum, a) => sum + (a.total_score || 0), 0);
                   const scoreCount = provinceLatestAssessments.filter(a => a.total_score !== null).length;
                   const canDrill = canDrillToHospital(province.id);
-                  return <TableRow 
-                    key={province.id} 
-                    className={canDrill ? "cursor-pointer hover:bg-muted/50 transition-colors" : "opacity-50"}
-                    onClick={() => canDrill && handleDrillChange('hospital', chartRegionId, province.id)}
-                  >
+                  return <TableRow key={province.id} className={canDrill ? "cursor-pointer hover:bg-muted/50 transition-colors" : "opacity-50"} onClick={() => canDrill && handleDrillChange('hospital', chartRegionId, province.id)}>
                           <TableCell className={canDrill ? "font-medium text-primary underline" : "font-medium"}>{province.name}</TableCell>
                           <TableCell className="text-right">{totalUnits}</TableCell>
                           <TableCell className="text-right">{provinceLatestAssessments.length}</TableCell>
@@ -439,17 +435,16 @@ export default function Reports() {
                   <TableBody>
                     {/* Render hospitals - filter by canViewSameProvinceHospitals policy */}
                     {hospitals.filter(h => {
-                      // Must be in selected province
-                      if (h.province_id !== chartProvinceId) return false;
-                      
-                      // If user is hospital_it and can't view same province hospitals,
-                      // only show their own hospital
-                      if (profile?.role === 'hospital_it' && !canViewSameProvinceHospitals()) {
-                        return h.id === profile.hospital_id;
-                      }
-                      
-                      return true;
-                    }).map(hospital => {
+                  // Must be in selected province
+                  if (h.province_id !== chartProvinceId) return false;
+
+                  // If user is hospital_it and can't view same province hospitals,
+                  // only show their own hospital
+                  if (profile?.role === 'hospital_it' && !canViewSameProvinceHospitals()) {
+                    return h.id === profile.hospital_id;
+                  }
+                  return true;
+                }).map(hospital => {
                   const assessment = latestAssessments.find(a => a.hospital_id === hospital.id);
                   return <TableRow key={hospital.id}>
                           <TableCell className="font-mono text-sm">{hospital.code}</TableCell>
@@ -480,17 +475,16 @@ export default function Reports() {
                 })}
                     {/* Render health offices in this province - filter by canViewSameProvinceHospitals policy */}
                     {healthOffices.filter(ho => {
-                      // Must be in selected province
-                      if (ho.province_id !== chartProvinceId) return false;
-                      
-                      // If user is health_office and can't view same province hospitals,
-                      // only show their own health office
-                      if (profile?.role === 'health_office' && !canViewSameProvinceHospitals()) {
-                        return ho.id === profile.health_office_id;
-                      }
-                      
-                      return true;
-                    }).map(office => {
+                  // Must be in selected province
+                  if (ho.province_id !== chartProvinceId) return false;
+
+                  // If user is health_office and can't view same province hospitals,
+                  // only show their own health office
+                  if (profile?.role === 'health_office' && !canViewSameProvinceHospitals()) {
+                    return ho.id === profile.health_office_id;
+                  }
+                  return true;
+                }).map(office => {
                   const assessment = latestAssessments.find(a => a.health_office_id === office.id);
                   return <TableRow key={office.id}>
                           <TableCell className="font-mono text-sm">{office.code}</TableCell>
