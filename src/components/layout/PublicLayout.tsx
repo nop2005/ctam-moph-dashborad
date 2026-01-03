@@ -34,7 +34,11 @@ import {
   FileSearch,
   ChevronRight,
   LogIn,
+  BookOpen,
+  Building2,
+  Info,
 } from 'lucide-react';
+import { SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 
 const reportSubItems = [
@@ -45,6 +49,7 @@ const reportSubItems = [
 
 const inspectionSubItems = [
   { title: 'รายงานผู้นิเทศ', url: '/public/inspection/supervisor', icon: FileSearch },
+  { title: 'คู่มือเอกสาร', url: '/public/inspection/manual', icon: BookOpen },
 ];
 
 function PublicSidebar() {
@@ -86,6 +91,20 @@ function PublicSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-3 py-2">
+        {/* About System Section */}
+        {!collapsed && (
+          <div className="mb-4 p-3 rounded-lg bg-sidebar-accent/50 border border-sidebar-border">
+            <div className="flex items-center gap-2 mb-2">
+              <Info className="h-4 w-4 text-sidebar-primary" />
+              <span className="font-medium text-sm text-sidebar-foreground">เกี่ยวกับระบบ</span>
+            </div>
+            <p className="text-xs text-sidebar-foreground/70 leading-relaxed">
+              ระบบ CTAM+ เป็นระบบประเมินความมั่นคงปลอดภัยไซเบอร์สำหรับหน่วยบริการสุขภาพ 
+              ใช้สำหรับการประเมินและรายงานผลการดำเนินงานด้าน Cybersecurity ตามมาตรฐานกระทรวงสาธารณสุข
+            </p>
+          </div>
+        )}
+
         <SidebarGroup>
           <SidebarGroupLabel className={`text-sidebar-foreground/60 ${collapsed ? 'sr-only' : ''}`}>
             รายงานสาธารณะ
@@ -189,6 +208,29 @@ function PublicSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      {/* Footer with Agency Info */}
+      <SidebarFooter className="border-t border-sidebar-border p-4">
+        {!collapsed ? (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-sidebar-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Building2 className="w-5 h-5 text-sidebar-primary" />
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-xs font-medium text-sidebar-foreground leading-tight">
+                ศูนย์เทคโนโลยีสารสนเทศและการสื่อสาร
+              </p>
+              <p className="text-xs text-sidebar-foreground/60 truncate">
+                กระทรวงสาธารณสุข
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            <Building2 className="w-5 h-5 text-sidebar-primary" />
+          </div>
+        )}
+      </SidebarFooter>
     </Sidebar>
   );
 }

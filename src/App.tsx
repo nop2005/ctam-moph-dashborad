@@ -26,6 +26,7 @@ import PublicReports from "./pages/PublicReports";
 import PublicReportsQuantitative from "./pages/PublicReportsQuantitative";
 import PublicReportsImpact from "./pages/PublicReportsImpact";
 import PublicInspectionSupervisor from "./pages/PublicInspectionSupervisor";
+import PublicInspectionManual from "./pages/PublicInspectionManual";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/public/reports/quantitative" element={<PublicReportsQuantitative />} />
             <Route path="/public/reports/impact" element={<PublicReportsImpact />} />
             <Route path="/public/inspection/supervisor" element={<PublicInspectionSupervisor />} />
+            <Route path="/public/inspection/manual" element={<PublicInspectionManual />} />
             
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route 
