@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertTriangle, Filter, Building2, MapPin } from 'lucide-react';
+import { AlertTriangle, Filter, Building2, MapPin, Info } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { usePublicReportAccessPolicy } from '@/hooks/usePublicReportAccessPolicy';
@@ -360,6 +361,36 @@ export default function PublicReportsImpact() {
               ) : (
                 <><MapPin className="w-5 h-5" /> รายงานรายจังหวัด</>
               )}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="ml-1 text-muted-foreground hover:text-primary focus:outline-none">
+                    <Info className="w-5 h-5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <div className="space-y-3">
+                    <h4 className="font-semibold">ความหมายระดับความปลอดภัย</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                        <span><strong>ปลอดภัยสูง:</strong> คะแนน ≥ 100</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
+                        <span><strong>ปลอดภัยปานกลาง:</strong> คะแนน 80-99</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-orange-500"></span>
+                        <span><strong>ความปลอดภัยต่ำ:</strong> คะแนน 70-79</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-red-500"></span>
+                        <span><strong>ความปลอดภัยต่ำมาก:</strong> คะแนน &lt; 70</span>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </CardTitle>
           </CardHeader>
           <CardContent>
