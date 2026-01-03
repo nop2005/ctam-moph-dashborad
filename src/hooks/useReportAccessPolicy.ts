@@ -12,6 +12,7 @@ export interface ReportAccessPolicy {
   view_region: boolean;
   drill_to_province: DrillPermission;
   drill_to_hospital: DrillPermission;
+  view_same_province_hospitals: boolean;
 }
 
 interface Province {
@@ -30,6 +31,7 @@ interface UseReportAccessPolicyResult {
   loading: boolean;
   canDrillToProvince: (regionId: string) => boolean;
   canDrillToHospital: (provinceId: string) => boolean;
+  canViewSameProvinceHospitals: () => boolean;
   userProvinceId: string | null;
   userRegionId: string | null;
 }
@@ -56,6 +58,7 @@ export function useReportAccessPolicy(
           ...p,
           drill_to_province: p.drill_to_province as DrillPermission,
           drill_to_hospital: p.drill_to_hospital as DrillPermission,
+          view_same_province_hospitals: p.view_same_province_hospitals ?? false,
         })));
       } catch (error) {
         console.error('Error fetching report access policies:', error);
@@ -147,11 +150,18 @@ export function useReportAccessPolicy(
     }
   };
 
+  // Check if user can view other hospitals in same province
+  const canViewSameProvinceHospitals = (): boolean => {
+    if (!policy) return false;
+    return policy.view_same_province_hospitals === true;
+  };
+
   return {
     policy,
     loading,
     canDrillToProvince,
     canDrillToHospital,
+    canViewSameProvinceHospitals,
     userProvinceId,
     userRegionId,
   };
