@@ -16,6 +16,7 @@ interface ReportAccessPolicy {
   view_region: boolean;
   drill_to_province: string;
   drill_to_hospital: string;
+  view_same_province_hospitals: boolean;
 }
 
 const ROLES = [
@@ -71,7 +72,7 @@ export function ReportAccessPolicies() {
 
   const handlePolicyChange = (
     role: string,
-    field: 'view_region' | 'drill_to_province' | 'drill_to_hospital',
+    field: 'view_region' | 'drill_to_province' | 'drill_to_hospital' | 'view_same_province_hospitals',
     value: boolean | string
   ) => {
     setPolicies(prev => {
@@ -97,6 +98,7 @@ export function ReportAccessPolicies() {
             view_region: policy.view_region,
             drill_to_province: policy.drill_to_province,
             drill_to_hospital: policy.drill_to_hospital,
+            view_same_province_hospitals: policy.view_same_province_hospitals,
           })
           .eq('id', policy.id);
         
@@ -168,22 +170,23 @@ export function ReportAccessPolicies() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">บทบาท</TableHead>
+                <TableHead className="w-[180px]">บทบาท</TableHead>
                 <TableHead className="text-center">เห็นระดับเขต</TableHead>
                 <TableHead className="text-center">Drill ไประดับจังหวัด</TableHead>
                 <TableHead className="text-center">Drill ไประดับสถานบริการ</TableHead>
+                <TableHead className="text-center w-[140px]">เห็น รพ.อื่นในจังหวัด</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8">
+                  <TableCell colSpan={5} className="text-center py-8">
                     <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               ) : filteredPolicies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     ไม่พบข้อมูลนโยบาย
                   </TableCell>
                 </TableRow>
@@ -241,6 +244,14 @@ export function ReportAccessPolicies() {
                         </SelectContent>
                       </Select>
                     </TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={policy.view_same_province_hospitals}
+                        onCheckedChange={(checked) => 
+                          handlePolicyChange(policy.role, 'view_same_province_hospitals', checked as boolean)
+                        }
+                      />
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -268,6 +279,7 @@ export function ReportAccessPolicies() {
             <li><span className="font-medium">เฉพาะเขตตัวเอง:</span> ดูได้เฉพาะเขตสุขภาพที่ตนเองสังกัด</li>
             <li><span className="font-medium">เฉพาะจังหวัดตัวเอง:</span> ดูได้เฉพาะจังหวัดที่ตนเองสังกัด</li>
             <li><span className="font-medium">ไม่อนุญาต:</span> ไม่สามารถ drill-down ได้</li>
+            <li><span className="font-medium">เห็น รพ.อื่นในจังหวัด:</span> เมื่อเปิด IT รพ. จะสามารถเห็นคะแนนของ รพ.อื่นในจังหวัดเดียวกันได้</li>
           </ul>
         </div>
       </CardContent>

@@ -917,6 +917,7 @@ export type Database = {
           role: string
           updated_at: string | null
           view_region: boolean | null
+          view_same_province_hospitals: boolean | null
         }
         Insert: {
           created_at?: string | null
@@ -927,6 +928,7 @@ export type Database = {
           role: string
           updated_at?: string | null
           view_region?: boolean | null
+          view_same_province_hospitals?: boolean | null
         }
         Update: {
           created_at?: string | null
@@ -937,6 +939,7 @@ export type Database = {
           role?: string
           updated_at?: string | null
           view_region?: boolean | null
+          view_same_province_hospitals?: boolean | null
         }
         Relationships: []
       }
