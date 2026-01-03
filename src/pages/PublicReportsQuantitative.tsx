@@ -436,6 +436,23 @@ export default function PublicReportsQuantitative() {
                 </Table>
               </div>
             )}
+            
+            {/* Legend */}
+            <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
+              <span className="font-medium">สัญลักษณ์:</span>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-red-500"></div>
+                <span>น้อยกว่า 50%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-yellow-500"></div>
+                <span>50% - 99%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-green-500"></div>
+                <span>100%</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
