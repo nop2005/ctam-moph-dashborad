@@ -1,92 +1,56 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useLocalStorageState } from '@/hooks/useLocalStorageState';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarHeader,
-  SidebarProvider,
-  SidebarTrigger,
-  SidebarInset,
-  useSidebar,
-} from '@/components/ui/sidebar';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import {
-  Shield,
-  BarChart3,
-  PieChart,
-  TrendingUp,
-  AlertTriangle,
-  ClipboardCheck,
-  FileSearch,
-  ChevronRight,
-  LogIn,
-  BookOpen,
-  Building2,
-  Info,
-} from 'lucide-react';
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarHeader, SidebarProvider, SidebarTrigger, SidebarInset, useSidebar } from '@/components/ui/sidebar';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Shield, BarChart3, PieChart, TrendingUp, AlertTriangle, ClipboardCheck, FileSearch, ChevronRight, LogIn, BookOpen, Building2, Info } from 'lucide-react';
 import { SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-
-const reportSubItems = [
-  { title: 'รายงานภาพรวม', url: '/public/reports', icon: PieChart },
-  { title: 'เชิงปริมาณ', url: '/public/reports/quantitative', icon: TrendingUp },
-  { title: 'เชิงผลกระทบ', url: '/public/reports/impact', icon: AlertTriangle },
-];
-
-const inspectionSubItems = [
-  { title: 'รายงานผู้นิเทศ', url: '/public/inspection/supervisor', icon: FileSearch },
-  { title: 'คู่มือเอกสาร', url: '/public/inspection/manual', icon: BookOpen },
-];
-
+const reportSubItems = [{
+  title: 'รายงานภาพรวม',
+  url: '/public/reports',
+  icon: PieChart
+}, {
+  title: 'เชิงปริมาณ',
+  url: '/public/reports/quantitative',
+  icon: TrendingUp
+}, {
+  title: 'เชิงผลกระทบ',
+  url: '/public/reports/impact',
+  icon: AlertTriangle
+}];
+const inspectionSubItems = [{
+  title: 'รายงานผู้นิเทศ',
+  url: '/public/inspection/supervisor',
+  icon: FileSearch
+}, {
+  title: 'คู่มือเอกสาร',
+  url: '/public/inspection/manual',
+  icon: BookOpen
+}];
 function PublicSidebar() {
-  const { state, toggleSidebar } = useSidebar();
+  const {
+    state,
+    toggleSidebar
+  } = useSidebar();
   const collapsed = state === 'collapsed';
   const location = useLocation();
   const navigate = useNavigate();
-  
   const currentPath = location.pathname;
   const isReportsActive = currentPath.startsWith('/public/reports');
   const isInspectionActive = currentPath.startsWith('/public/inspection');
-
-  const [reportsOpen, setReportsOpen] = useLocalStorageState<boolean>(
-    'sidebar.publicReportsOpen',
-    isReportsActive
-  );
-  const [inspectionOpen, setInspectionOpen] = useLocalStorageState<boolean>(
-    'sidebar.publicInspectionOpen',
-    isInspectionActive
-  );
-
-  return (
-    <Sidebar 
-      collapsible="icon" 
-      className="border-r bg-sidebar text-sidebar-foreground"
-    >
+  const [reportsOpen, setReportsOpen] = useLocalStorageState<boolean>('sidebar.publicReportsOpen', isReportsActive);
+  const [inspectionOpen, setInspectionOpen] = useLocalStorageState<boolean>('sidebar.publicInspectionOpen', isInspectionActive);
+  return <Sidebar collapsible="icon" className="border-r bg-sidebar text-sidebar-foreground">
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-sidebar-primary rounded-xl flex items-center justify-center flex-shrink-0">
             <Shield className="w-6 h-6 text-sidebar-primary-foreground" />
           </div>
-          {!collapsed && (
-            <div className="overflow-hidden">
+          {!collapsed && <div className="overflow-hidden">
               <h1 className="font-bold text-lg leading-tight text-sidebar-primary">CTAM+</h1>
               <p className="text-xs text-sidebar-foreground/70 truncate">Cybersecurity Assessment</p>
-            </div>
-          )}
+            </div>}
         </div>
       </SidebarHeader>
 
@@ -95,98 +59,68 @@ function PublicSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {/* Reports with Submenu */}
-              <Collapsible
-                open={reportsOpen}
-                onOpenChange={setReportsOpen}
-                className="group/collapsible"
-              >
+              <Collapsible open={reportsOpen} onOpenChange={setReportsOpen} className="group/collapsible">
                 <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    tooltip="รายงานและสถิติ"
-                    isActive={false}
-                    onClick={() => {
-                      if (collapsed) {
-                        toggleSidebar();
-                        setReportsOpen(true);
-                        if (!isReportsActive) navigate('/public/reports');
-                        return;
-                      }
-                      setReportsOpen(!reportsOpen);
-                    }}
-                    className={`
+                  <SidebarMenuButton tooltip="รายงานและสถิติ" isActive={false} onClick={() => {
+                  if (collapsed) {
+                    toggleSidebar();
+                    setReportsOpen(true);
+                    if (!isReportsActive) navigate('/public/reports');
+                    return;
+                  }
+                  setReportsOpen(!reportsOpen);
+                }} className={`
                       text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
-                    `}
-                  >
+                    `}>
                     <BarChart3 className="h-4 w-4" />
                     <span>รายงานและสถิติ</span>
                     <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                   <CollapsibleContent>
                     <SidebarMenuSub className="border-sidebar-border">
-                      {reportSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton
-                            onClick={() => navigate(subItem.url)}
-                            isActive={currentPath === subItem.url}
-                            className={`
+                      {reportSubItems.map(subItem => <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton onClick={() => navigate(subItem.url)} isActive={currentPath === subItem.url} className={`
                               text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
                               data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
-                            `}
-                          >
+                            `}>
                             <subItem.icon className="h-3 w-3" />
                             <span>{subItem.title}</span>
                           </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
+                        </SidebarMenuSubItem>)}
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
 
               {/* Inspection Reports with Submenu */}
-              <Collapsible
-                open={inspectionOpen}
-                onOpenChange={setInspectionOpen}
-                className="group/collapsible"
-              >
+              <Collapsible open={inspectionOpen} onOpenChange={setInspectionOpen} className="group/collapsible">
                 <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    tooltip="รายงานตรวจราชการ"
-                    isActive={false}
-                    onClick={() => {
-                      if (collapsed) {
-                        toggleSidebar();
-                        setInspectionOpen(true);
-                        if (!isInspectionActive) navigate('/public/inspection/supervisor');
-                        return;
-                      }
-                      setInspectionOpen(!inspectionOpen);
-                    }}
-                    className={`
+                  <SidebarMenuButton tooltip="รายงานตรวจราชการ" isActive={false} onClick={() => {
+                  if (collapsed) {
+                    toggleSidebar();
+                    setInspectionOpen(true);
+                    if (!isInspectionActive) navigate('/public/inspection/supervisor');
+                    return;
+                  }
+                  setInspectionOpen(!inspectionOpen);
+                }} className={`
                       text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
-                    `}
-                  >
+                    `}>
                     <ClipboardCheck className="h-4 w-4" />
                     <span>รายงานตรวจราชการ</span>
                     <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                   <CollapsibleContent>
                     <SidebarMenuSub className="border-sidebar-border">
-                      {inspectionSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton
-                            onClick={() => navigate(subItem.url)}
-                            isActive={currentPath === subItem.url || currentPath.startsWith(subItem.url + '/')}
-                            className={`
+                      {inspectionSubItems.map(subItem => <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton onClick={() => navigate(subItem.url)} isActive={currentPath === subItem.url || currentPath.startsWith(subItem.url + '/')} className={`
                               text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
                               data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
-                            `}
-                          >
+                            `}>
                             <subItem.icon className="h-3 w-3" />
                             <span>{subItem.title}</span>
                           </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
+                        </SidebarMenuSubItem>)}
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
@@ -198,47 +132,36 @@ function PublicSidebar() {
 
       {/* Footer with About System and Agency Info */}
       <SidebarFooter className="border-t border-sidebar-border p-3">
-        {!collapsed && (
-          <div className="mb-3 p-3 rounded-lg bg-sidebar-accent/50 border border-sidebar-border">
+        {!collapsed && <div className="mb-3 p-3 rounded-lg bg-sidebar-accent/50 border border-sidebar-border">
             <p className="text-xs text-sidebar-foreground/70 leading-relaxed">
               ระบบ CTAM+ เป็นระบบประเมินความมั่นคงปลอดภัยไซเบอร์สำหรับหน่วยบริการสุขภาพ 
               ใช้สำหรับการประเมินและรายงานผลการดำเนินงานด้าน Cybersecurity ตามมาตรฐานกระทรวงสาธารณสุข
             </p>
-          </div>
-        )}
-        {!collapsed ? (
-          <div className="flex items-center gap-3">
+          </div>}
+        {!collapsed ? <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-sidebar-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
               <Building2 className="w-5 h-5 text-sidebar-primary" />
             </div>
             <div className="overflow-hidden">
-              <p className="text-xs font-medium text-sidebar-foreground leading-tight">
-                ศูนย์เทคโนโลยีสารสนเทศและการสื่อสาร
-              </p>
+              <p className="text-xs font-medium text-sidebar-foreground leading-tight">ศูนย์เฝ้าระวังความมั่นคงปลอดภัยไซเบอร์เขตสุขภาพที่ 1 (CISO)</p>
               <p className="text-xs text-sidebar-foreground/60 truncate">
                 กระทรวงสาธารณสุข
               </p>
             </div>
-          </div>
-        ) : (
-          <div className="flex justify-center">
+          </div> : <div className="flex justify-center">
             <Building2 className="w-5 h-5 text-sidebar-primary" />
-          </div>
-        )}
+          </div>}
       </SidebarFooter>
-    </Sidebar>
-  );
+    </Sidebar>;
 }
-
 interface PublicLayoutProps {
   children: React.ReactNode;
 }
-
-export function PublicLayout({ children }: PublicLayoutProps) {
+export function PublicLayout({
+  children
+}: PublicLayoutProps) {
   const navigate = useNavigate();
-
-  return (
-    <SidebarProvider>
+  return <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <PublicSidebar />
         <SidebarInset className="flex-1">
@@ -250,12 +173,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
               </span>
             </div>
             
-            <Button
-              variant="outline" 
-              size="sm" 
-              onClick={() => navigate('/login')}
-              className="gap-2"
-            >
+            <Button variant="outline" size="sm" onClick={() => navigate('/login')} className="gap-2">
               <LogIn className="h-4 w-4" />
               เข้าสู่ระบบ
             </Button>
@@ -265,6 +183,5 @@ export function PublicLayout({ children }: PublicLayoutProps) {
           </main>
         </SidebarInset>
       </div>
-    </SidebarProvider>
-  );
+    </SidebarProvider>;
 }
