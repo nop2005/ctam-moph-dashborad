@@ -674,7 +674,7 @@ export default function ReportsQuantitative() {
                       </div>
                       <div className="flex items-center gap-3 p-2 rounded-lg bg-red-50 dark:bg-red-950/30 whitespace-nowrap">
                         <div className="w-3 h-3 rounded-full bg-red-500 shrink-0" />
-                        <span className="text-sm font-medium text-red-700 dark:text-red-400">ไม่ปลอดภัย (เขียว<50%)</span>
+                        <span className="text-sm font-medium text-red-700 dark:text-red-400">ไม่ปลอดภัย (เขียว &lt;50%)</span>
                         <span className="ml-auto text-sm font-bold">{redCount}</span>
                         <span className="text-xs text-muted-foreground">({(redCount / total * 100).toFixed(1)}%)</span>
                       </div>
