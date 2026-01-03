@@ -17,7 +17,6 @@ import {
   SidebarProvider,
   SidebarTrigger,
   SidebarInset,
-  SidebarRail,
   useSidebar,
 } from '@/components/ui/sidebar';
 import {
@@ -223,7 +222,6 @@ function PublicSidebar() {
           </div>
         )}
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
   );
 }
