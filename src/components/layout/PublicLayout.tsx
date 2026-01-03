@@ -23,10 +23,6 @@ const inspectionSubItems = [{
   title: 'รายงานผู้นิเทศ',
   url: '/public/inspection/supervisor',
   icon: FileSearch
-}, {
-  title: 'คู่มือเอกสาร',
-  url: '/public/inspection/manual',
-  icon: BookOpen
 }];
 function PublicSidebar() {
   const {
@@ -125,6 +121,22 @@ function PublicSidebar() {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
+
+              {/* คู่มือเอกสาร - Main Menu Item */}
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  tooltip="คู่มือเอกสาร" 
+                  isActive={currentPath === '/public/inspection/manual'}
+                  onClick={() => navigate('/public/inspection/manual')}
+                  className={`
+                    text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                    data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                  `}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span>คู่มือเอกสาร</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
