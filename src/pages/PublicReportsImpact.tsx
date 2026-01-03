@@ -374,8 +374,8 @@ export default function PublicReportsImpact() {
                       <TableHead className="text-center">จำนวนหน่วย</TableHead>
                       <TableHead className="text-center text-green-600">ปลอดภัยสูง</TableHead>
                       <TableHead className="text-center text-yellow-600">ปลอดภัยปานกลาง</TableHead>
-                      <TableHead className="text-center text-orange-600">ความเสี่ยงต่ำ</TableHead>
-                      <TableHead className="text-center text-red-600">ความเสี่ยงสูง</TableHead>
+                      <TableHead className="text-center text-orange-600">ความปลอดภัยต่ำ</TableHead>
+                      <TableHead className="text-center text-red-600">ความปลอดภัยต่ำมาก</TableHead>
                       <TableHead className="text-center">ยังไม่ประเมิน</TableHead>
                     </TableRow>
                   </TableHeader>
