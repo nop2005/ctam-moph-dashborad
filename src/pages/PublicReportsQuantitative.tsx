@@ -409,10 +409,20 @@ export default function PublicReportsQuantitative() {
                         <TableCell className="text-center">{row.hospitalsPassedAll17}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center gap-2">
-                            <Progress 
-                              value={row.hospitalCount > 0 ? (row.hospitalsPassedAll17 / row.hospitalCount) * 100 : 0} 
-                              className="h-4 flex-1" 
-                            />
+                            {(() => {
+                              const percentage = row.hospitalCount > 0 ? (row.hospitalsPassedAll17 / row.hospitalCount) * 100 : 0;
+                              const colorClass = percentage === 100 
+                                ? '[&>div]:bg-green-500' 
+                                : percentage >= 50 
+                                  ? '[&>div]:bg-yellow-500' 
+                                  : '[&>div]:bg-red-500';
+                              return (
+                                <Progress 
+                                  value={percentage} 
+                                  className={`h-4 flex-1 ${colorClass}`} 
+                                />
+                              );
+                            })()}
                             <span className="text-sm font-medium min-w-[50px] text-right">
                               {row.hospitalCount > 0 
                                 ? `${((row.hospitalsPassedAll17 / row.hospitalCount) * 100).toFixed(1)}%` 
