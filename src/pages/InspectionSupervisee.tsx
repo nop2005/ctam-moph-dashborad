@@ -52,6 +52,9 @@ export default function InspectionSupervisee() {
     regionId: string;
   } | null>(null);
 
+  // Only provincial admin can upload
+  const canUpload = profile?.role === 'provincial';
+
   useEffect(() => {
     const fetchFiscalYears = async () => {
       const { data } = await supabase
@@ -276,6 +279,7 @@ export default function InspectionSupervisee() {
     const isUploading = uploading === `${provinceId}-${round}-${fileType}`;
     const Icon = fileType === 'report' ? FileText : Presentation;
 
+    // If file exists, show view button (all roles can view)
     if (existingFile) {
       return (
         <Button
@@ -287,6 +291,13 @@ export default function InspectionSupervisee() {
           <Check className="h-3 w-3" />
           ดูไฟล์
         </Button>
+      );
+    }
+
+    // Only provincial role can upload
+    if (!canUpload) {
+      return (
+        <span className="text-muted-foreground text-sm">-</span>
       );
     }
 
