@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TrendingUp, Filter, Building2, MapPin, ArrowLeft } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -713,15 +714,13 @@ export default function ReportsQuantitative() {
               name: 180,
               hospitalCount: 80,
               passedAll17: 100,
-              percentGreen: 80,
-              level: 60
+              percentGreen: 200
             } as const;
             const left = {
               name: 0,
               hospitalCount: sticky.name,
               passedAll17: sticky.name + sticky.hospitalCount,
-              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.passedAll17 : 0),
-              level: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.passedAll17 + sticky.percentGreen : sticky.percentGreen)
+              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.passedAll17 : 0)
             } as const;
             const stickyHeaderBase = "sticky z-30 border-r border-border/60";
             const stickyCellBase = "sticky z-20 border-r border-border/60 bg-background";
@@ -756,22 +755,15 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        <TableHead className={`${stickyHeaderBase} text-center min-w-[80px] bg-primary/10`} style={{
+                        <TableHead className={`${stickyHeaderBase} text-center min-w-[200px] bg-primary/10`} style={{
                       left: left.percentGreen
                     }}>
                           {selectedProvince !== 'all' ? <div className="flex flex-col items-center">
                               <span>ข้อที่ผ่าน</span>
                               <span>(ร้อยละ)</span>
                             </div> : <div className="flex flex-col items-center">
-                              <span>ร้อยละรพ.</span>
-                              <span>ที่ผ่าน (เขียว)</span>
+                              <span>ผ่านร้อยละ</span>
                             </div>}
-                        </TableHead>
-
-                        <TableHead className={`${stickyHeaderBase} text-center min-w-[60px] ${showSummaryCols ? 'bg-green-100 dark:bg-green-900/30' : 'bg-primary/10'}`} style={{
-                      left: left.level
-                    }}>
-                          ระดับ
                         </TableHead>
 
                         {categories.map((cat, index) => <TableHead key={cat.id} className="text-center min-w-[80px] text-xs" title={cat.name_th}>
@@ -835,27 +827,36 @@ export default function ReportsQuantitative() {
                                 {'hospitalsPassedAll17' in row ? row.hospitalsPassedAll17 : 0}
                               </TableCell>}
 
-                            <TableCell className={`${stickyCellBase} text-center bg-primary/5 font-bold`} style={{
+                            <TableCell className={`${stickyCellBase} text-center bg-primary/5`} style={{
                         left: left.percentGreen,
-                        minWidth: sticky.percentGreen
-                      }}>
-                              {(row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row ? <span className={row.hospitalsPassedAll17 as number > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                                  {row.hospitalCount > 0 ? ((row.hospitalsPassedAll17 as number) / row.hospitalCount * 100).toFixed(2) : 0}
-                                  %
-                                </span> : passedPercentage !== null ? `${passedPercentage.toFixed(0)}%` : '-'}
-                            </TableCell>
-
-                            <TableCell className={`${stickyCellBase} text-center ${showSummaryCols ? 'bg-green-50 dark:bg-green-900/20' : ''}`} style={{
-                        left: left.level,
-                        minWidth: sticky.level
+                        minWidth: 200
                       }}>
                               {(() => {
-                          if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
-                            const greenPercentage = row.hospitalCount > 0 ? (row.hospitalsPassedAll17 as number) / row.hospitalCount * 100 : 0;
-                            return <div className={`w-6 h-6 rounded-full mx-auto ${greenPercentage === 100 ? 'bg-green-500' : greenPercentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} />;
-                          }
-                          return passedPercentage !== null ? <div className={`w-6 h-6 rounded-full mx-auto ${passedPercentage === 100 ? 'bg-green-500' : passedPercentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} /> : '-';
-                        })()}
+                                let percentage: number;
+                                if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
+                                  percentage = row.hospitalCount > 0 ? ((row.hospitalsPassedAll17 as number) / row.hospitalCount * 100) : 0;
+                                } else {
+                                  percentage = passedPercentage ?? 0;
+                                }
+                                const colorClass = percentage === 100 
+                                  ? '[&>div]:bg-green-500' 
+                                  : percentage >= 50 
+                                    ? '[&>div]:bg-yellow-500' 
+                                    : '[&>div]:bg-red-500';
+                                return (
+                                  <div className="flex items-center gap-2">
+                                    <Progress 
+                                      value={percentage} 
+                                      className={`h-4 flex-1 ${colorClass}`} 
+                                    />
+                                    <span className="text-sm font-medium min-w-[50px] text-right">
+                                      {row.hospitalCount > 0 || passedPercentage !== null
+                                        ? `${percentage.toFixed(1)}%` 
+                                        : '-'}
+                                    </span>
+                                  </div>
+                                );
+                              })()}
                             </TableCell>
 
                             {row.categoryAverages.map(catAvg => <TableCell key={catAvg.categoryId} className={`text-center ${getScoreColorClass(catAvg.average, row.type)}`}>
@@ -866,6 +867,23 @@ export default function ReportsQuantitative() {
                     </TableBody>
                   </Table>
                 </div>;
+          
+            {/* Color Legend */}
+            <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-muted-foreground border border-primary/30 rounded-lg p-4 bg-primary/5">
+              <span className="font-medium text-primary">สัญลักษณ์:</span>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-red-500"></div>
+                <span>น้อยกว่า 50%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-yellow-500"></div>
+                <span>50% - 99%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-green-500"></div>
+                <span>100%</span>
+              </div>
+            </div>
           })()}
           </CardContent>
         </Card>
