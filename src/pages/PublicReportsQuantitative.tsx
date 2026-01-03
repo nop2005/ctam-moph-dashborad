@@ -393,11 +393,6 @@ export default function PublicReportsQuantitative() {
                       <TableHead className="text-center">จำนวนหน่วย</TableHead>
                       <TableHead className="text-center">ผ่านครบ 17 ข้อ</TableHead>
                       <TableHead className="text-center min-w-[180px]">ร้อยละ</TableHead>
-                      {categories.map(cat => (
-                        <TableHead key={cat.id} className="text-center min-w-[80px]">
-                          {cat.code}
-                        </TableHead>
-                      ))}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -425,11 +420,6 @@ export default function PublicReportsQuantitative() {
                             </span>
                           </div>
                         </TableCell>
-                        {row.categoryAverages.map((catAvg) => (
-                          <TableCell key={catAvg.categoryId} className="text-center">
-                            {catAvg.average !== null ? `${catAvg.average.toFixed(1)}%` : '-'}
-                          </TableCell>
-                        ))}
                       </TableRow>
                     ))}
                   </TableBody>
