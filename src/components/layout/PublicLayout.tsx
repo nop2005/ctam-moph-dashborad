@@ -17,6 +17,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
   SidebarInset,
+  SidebarRail,
   useSidebar,
 } from '@/components/ui/sidebar';
 import {
@@ -222,6 +223,7 @@ function PublicSidebar() {
           </div>
         )}
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }
@@ -238,7 +240,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       <div className="min-h-screen flex w-full">
         <PublicSidebar />
         <SidebarInset className="flex-1">
-          <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b bg-background px-4">
+          <header className="sticky top-0 z-[60] flex h-14 items-center justify-between border-b bg-background px-4">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
               <span className="text-sm font-medium text-muted-foreground">
