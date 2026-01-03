@@ -21,6 +21,11 @@ import InspectionManual from "./pages/InspectionManual";
 import ProfileSettings from "./pages/ProfileSettings";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
+// Public pages (no login required)
+import PublicReports from "./pages/PublicReports";
+import PublicReportsQuantitative from "./pages/PublicReportsQuantitative";
+import PublicReportsImpact from "./pages/PublicReportsImpact";
+import PublicInspectionSupervisor from "./pages/PublicInspectionSupervisor";
 
 const queryClient = new QueryClient();
 
@@ -32,8 +37,16 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            {/* Default route redirects to public reports */}
+            <Route path="/" element={<Navigate to="/public/reports" replace />} />
             <Route path="/login" element={<Login />} />
+            
+            {/* Public routes - no login required */}
+            <Route path="/public/reports" element={<PublicReports />} />
+            <Route path="/public/reports/quantitative" element={<PublicReportsQuantitative />} />
+            <Route path="/public/reports/impact" element={<PublicReportsImpact />} />
+            <Route path="/public/inspection/supervisor" element={<PublicInspectionSupervisor />} />
+            
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route 
               path="/dashboard" 
