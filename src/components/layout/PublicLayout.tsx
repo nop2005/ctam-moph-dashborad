@@ -91,24 +91,7 @@ function PublicSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-3 py-2">
-        {/* About System Section */}
-        {!collapsed && (
-          <div className="mb-4 p-3 rounded-lg bg-sidebar-accent/50 border border-sidebar-border">
-            <div className="flex items-center gap-2 mb-2">
-              <Info className="h-4 w-4 text-sidebar-primary" />
-              <span className="font-medium text-sm text-sidebar-foreground">เกี่ยวกับระบบ</span>
-            </div>
-            <p className="text-xs text-sidebar-foreground/70 leading-relaxed">
-              ระบบ CTAM+ เป็นระบบประเมินความมั่นคงปลอดภัยไซเบอร์สำหรับหน่วยบริการสุขภาพ 
-              ใช้สำหรับการประเมินและรายงานผลการดำเนินงานด้าน Cybersecurity ตามมาตรฐานกระทรวงสาธารณสุข
-            </p>
-          </div>
-        )}
-
         <SidebarGroup>
-          <SidebarGroupLabel className={`text-sidebar-foreground/60 ${collapsed ? 'sr-only' : ''}`}>
-            รายงานสาธารณะ
-          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {/* Reports with Submenu */}
