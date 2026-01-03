@@ -323,15 +323,14 @@ export default function PublicInspectionSupervisor() {
               <TableHeader>
                 <TableRow>
                   <TableHead>จังหวัด</TableHead>
-                  <TableHead className="text-center">จำนวนไฟล์รอบที่ 1</TableHead>
-                  <TableHead className="text-center">จำนวนไฟล์รอบที่ 2</TableHead>
-                  <TableHead className="text-center">สถานะ</TableHead>
+                  <TableHead className="text-center">รายงานรอบที่ 1</TableHead>
+                  <TableHead className="text-center">รายงานรอบที่ 2</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {provinceStats.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
                       ไม่พบข้อมูลจังหวัด
                     </TableCell>
                   </TableRow>
@@ -348,12 +347,6 @@ export default function PublicInspectionSupervisor() {
                       </TableCell>
                       <TableCell className="text-center">{stat.round1Count}</TableCell>
                       <TableCell className="text-center">{stat.round2Count}</TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Lock className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-muted-foreground text-sm">เข้าสู่ระบบเพื่อดู</span>
-                        </div>
-                      </TableCell>
                     </TableRow>
                   ))
                 )}
