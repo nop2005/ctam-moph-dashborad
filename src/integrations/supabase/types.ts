@@ -1024,6 +1024,10 @@ export type Database = {
         Args: { _health_region_id: string }
         Returns: boolean
       }
+      get_public_report_summary: {
+        Args: { p_fiscal_year?: number }
+        Returns: Json
+      }
       is_central_admin: { Args: never; Returns: boolean }
       is_provincial_admin: { Args: never; Returns: boolean }
       is_regional_admin: { Args: never; Returns: boolean }

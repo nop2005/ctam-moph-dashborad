@@ -2,12 +2,12 @@ import { useEffect, useState, useMemo } from 'react';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { ScoreChart, DrillLevel } from '@/components/reports/ScoreChart';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart3, FileText, Building2, Filter } from 'lucide-react';
+import { BarChart3, FileText, Building2, Filter, ChevronLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { usePublicReportAccessPolicy } from '@/hooks/usePublicReportAccessPolicy';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from 'recharts';
+import { Button } from '@/components/ui/button';
 
 interface HealthRegion {
   id: string;
@@ -21,34 +21,34 @@ interface Province {
   health_region_id: string;
 }
 
-interface Hospital {
+interface RegionStats {
   id: string;
   name: string;
-  code: string;
-  province_id: string;
+  region_number: number;
+  total_units: number;
+  with_assessment: number;
+  completed: number;
+  pending: number;
+  avg_score: number;
 }
 
-interface HealthOffice {
+interface ProvinceStats {
   id: string;
   name: string;
-  code: string;
-  province_id: string | null;
   health_region_id: string;
-  office_type: string;
+  total_units: number;
+  with_assessment: number;
+  completed: number;
+  pending: number;
+  avg_score: number;
 }
 
-interface Assessment {
-  id: string;
-  hospital_id: string | null;
-  health_office_id: string | null;
-  status: string;
-  fiscal_year: number;
-  assessment_period: string;
-  total_score: number | null;
-  quantitative_score: number | null;
-  qualitative_score: number | null;
-  impact_score: number | null;
-  created_at: string;
+interface PublicReportData {
+  health_regions: HealthRegion[];
+  provinces: Province[];
+  region_stats: RegionStats[];
+  province_stats: ProvinceStats[];
+  fiscal_years: number[];
 }
 
 const getCurrentFiscalYear = (): number => {
@@ -58,88 +58,41 @@ const getCurrentFiscalYear = (): number => {
   return month >= 9 ? year + 1 : year;
 };
 
-const generateFiscalYears = (assessments: Assessment[]): number[] => {
-  const years = new Set<number>();
-  const currentFiscalYear = getCurrentFiscalYear();
-  years.add(currentFiscalYear);
-  assessments.forEach(a => {
-    if (a.fiscal_year) years.add(a.fiscal_year);
-  });
-  return Array.from(years).sort((a, b) => b - a);
-};
+const CHART_COLORS = [
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
+];
 
-const getLatestAssessmentPerUnit = (allAssessments: Assessment[]): Assessment[] => {
-  const latestMap = new Map<string, Assessment>();
-  for (const assessment of allAssessments) {
-    const unitId = assessment.hospital_id || assessment.health_office_id;
-    if (!unitId) continue;
-    const existing = latestMap.get(unitId);
-    if (!existing) {
-      latestMap.set(unitId, assessment);
-    } else {
-      if (assessment.fiscal_year > existing.fiscal_year || 
-          (assessment.fiscal_year === existing.fiscal_year && assessment.assessment_period > existing.assessment_period)) {
-        latestMap.set(unitId, assessment);
-      }
-    }
-  }
-  return Array.from(latestMap.values());
-};
+type DrillLevel = 'region' | 'province';
 
 export default function PublicReports() {
   const [loading, setLoading] = useState(true);
-  const [healthRegions, setHealthRegions] = useState<HealthRegion[]>([]);
-  const [provinces, setProvinces] = useState<Province[]>([]);
-  const [hospitals, setHospitals] = useState<Hospital[]>([]);
-  const [healthOffices, setHealthOffices] = useState<HealthOffice[]>([]);
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [reportData, setReportData] = useState<PublicReportData | null>(null);
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
-  const [chartDrillLevel, setChartDrillLevel] = useState<DrillLevel>('region');
-  const [chartRegionId, setChartRegionId] = useState<string | null>(null);
-  const [chartProvinceId, setChartProvinceId] = useState<string | null>(null);
+  const [drillLevel, setDrillLevel] = useState<DrillLevel>('region');
+  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
 
-  const fiscalYears = useMemo(() => generateFiscalYears(assessments), [assessments]);
-
-  const filteredAssessments = useMemo(() => {
-    if (selectedFiscalYear === 'all') return assessments;
-    return assessments.filter(a => a.fiscal_year === parseInt(selectedFiscalYear));
-  }, [assessments, selectedFiscalYear]);
-
-  const { canDrillToProvince, canDrillToHospital } = usePublicReportAccessPolicy('overview');
-
-  const handleDrillChange = (level: DrillLevel, regionId: string | null, provinceId: string | null) => {
-    // Public users cannot drill to hospital level
-    if (level === 'hospital') {
-      toast.info('กรุณาเข้าสู่ระบบเพื่อดูรายละเอียดรายโรงพยาบาล');
-      return;
-    }
-    setChartDrillLevel(level);
-    setChartRegionId(regionId);
-    setChartProvinceId(provinceId);
-  };
+  const fiscalYears = useMemo(() => {
+    if (!reportData?.fiscal_years) return [getCurrentFiscalYear()];
+    const years = new Set([getCurrentFiscalYear(), ...reportData.fiscal_years]);
+    return Array.from(years).sort((a, b) => b - a);
+  }, [reportData]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [regionsRes, provincesRes, hospitalsRes, healthOfficesRes, assessmentsRes] = await Promise.all([
-          supabase.from('health_regions').select('*').order('region_number'),
-          supabase.from('provinces').select('*').order('name'),
-          supabase.from('hospitals').select('*').order('name'),
-          supabase.from('health_offices').select('*').order('name'),
-          supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, assessment_period, total_score, quantitative_score, qualitative_score, impact_score, created_at')
-        ]);
+        setLoading(true);
+        const fiscalYear = selectedFiscalYear === 'all' ? null : parseInt(selectedFiscalYear);
         
-        if (regionsRes.error) throw regionsRes.error;
-        if (provincesRes.error) throw provincesRes.error;
-        if (hospitalsRes.error) throw hospitalsRes.error;
-        if (healthOfficesRes.error) throw healthOfficesRes.error;
-        if (assessmentsRes.error) throw assessmentsRes.error;
+        const { data, error } = await supabase.rpc('get_public_report_summary', {
+          p_fiscal_year: fiscalYear
+        });
         
-        setHealthRegions(regionsRes.data || []);
-        setProvinces(provincesRes.data || []);
-        setHospitals(hospitalsRes.data || []);
-        setHealthOffices(healthOfficesRes.data || []);
-        setAssessments(assessmentsRes.data || []);
+        if (error) throw error;
+        setReportData(data as unknown as PublicReportData);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
@@ -148,37 +101,63 @@ export default function PublicReports() {
       }
     };
     fetchData();
-  }, []);
+  }, [selectedFiscalYear]);
 
-  const latestAssessments = useMemo(() => getLatestAssessmentPerUnit(filteredAssessments), [filteredAssessments]);
+  const handleDrillToProvince = (regionId: string) => {
+    setSelectedRegionId(regionId);
+    setDrillLevel('province');
+  };
 
-  const drillStats = (() => {
-    let filteredHospitals: Hospital[] = [];
-    let filteredHealthOffices: HealthOffice[] = [];
-    let filteredAssessmentsLocal: Assessment[] = [];
+  const handleBackToRegion = () => {
+    setSelectedRegionId(null);
+    setDrillLevel('region');
+  };
+
+  const currentStats = useMemo(() => {
+    if (!reportData) return { totalUnits: 0, withAssessment: 0, completed: 0, pending: 0 };
     
-    if (chartDrillLevel === 'region') {
-      filteredHospitals = hospitals;
-      filteredHealthOffices = healthOffices;
-      filteredAssessmentsLocal = latestAssessments;
-    } else if (chartDrillLevel === 'province' && chartRegionId) {
-      const regionProvinces = provinces.filter(p => p.health_region_id === chartRegionId);
-      filteredHospitals = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id));
-      filteredHealthOffices = healthOffices.filter(ho => ho.health_region_id === chartRegionId);
-      filteredAssessmentsLocal = latestAssessments.filter(a => 
-        filteredHospitals.some(h => h.id === a.hospital_id) || 
-        filteredHealthOffices.some(ho => ho.id === a.health_office_id)
-      );
+    if (drillLevel === 'region') {
+      return reportData.region_stats.reduce((acc, r) => ({
+        totalUnits: acc.totalUnits + r.total_units,
+        withAssessment: acc.withAssessment + r.with_assessment,
+        completed: acc.completed + r.completed,
+        pending: acc.pending + r.pending,
+      }), { totalUnits: 0, withAssessment: 0, completed: 0, pending: 0 });
+    } else {
+      const regionProvinces = reportData.province_stats.filter(p => p.health_region_id === selectedRegionId);
+      return regionProvinces.reduce((acc, p) => ({
+        totalUnits: acc.totalUnits + p.total_units,
+        withAssessment: acc.withAssessment + p.with_assessment,
+        completed: acc.completed + p.completed,
+        pending: acc.pending + p.pending,
+      }), { totalUnits: 0, withAssessment: 0, completed: 0, pending: 0 });
     }
+  }, [reportData, drillLevel, selectedRegionId]);
+
+  const chartData = useMemo(() => {
+    if (!reportData) return [];
     
-    const totalUnits = filteredHospitals.length + filteredHealthOffices.length;
-    return {
-      totalHospitals: totalUnits,
-      withAssessment: filteredAssessmentsLocal.length,
-      completed: filteredAssessmentsLocal.filter(a => a.status === 'approved_regional' || a.status === 'completed').length,
-      pending: filteredAssessmentsLocal.filter(a => a.status === 'submitted' || a.status === 'approved_provincial').length
-    };
-  })();
+    if (drillLevel === 'region') {
+      return reportData.region_stats.map(r => ({
+        id: r.id,
+        name: `เขต ${r.region_number}`,
+        score: Number(r.avg_score?.toFixed(2)) || 0,
+      }));
+    } else {
+      return reportData.province_stats
+        .filter(p => p.health_region_id === selectedRegionId)
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          score: Number(p.avg_score?.toFixed(2)) || 0,
+        }));
+    }
+  }, [reportData, drillLevel, selectedRegionId]);
+
+  const selectedRegion = useMemo(() => {
+    if (!selectedRegionId || !reportData) return null;
+    return reportData.region_stats.find(r => r.id === selectedRegionId);
+  }, [selectedRegionId, reportData]);
 
   return (
     <PublicLayout>
@@ -213,7 +192,7 @@ export default function PublicReports() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold">{drillStats.totalHospitals}</p>
+                  <p className="text-2xl font-bold">{currentStats.totalUnits}</p>
                   <p className="text-sm text-muted-foreground">สถานบริการทั้งหมด</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -226,8 +205,8 @@ export default function PublicReports() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold">{drillStats.withAssessment}</p>
-                  <p className="text-sm text-muted-foreground">ส่งแบบประเมินเเล้ว</p>
+                  <p className="text-2xl font-bold">{currentStats.withAssessment}</p>
+                  <p className="text-sm text-muted-foreground">ส่งแบบประเมินแล้ว</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
                   <FileText className="w-6 h-6 text-accent" />
@@ -239,8 +218,8 @@ export default function PublicReports() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold">{drillStats.completed}</p>
-                  <p className="text-sm text-muted-foreground">ตรวจสอบเเล้ว</p>
+                  <p className="text-2xl font-bold">{currentStats.completed}</p>
+                  <p className="text-sm text-muted-foreground">ตรวจสอบแล้ว</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center">
                   <BarChart3 className="w-6 h-6 text-success" />
@@ -252,7 +231,7 @@ export default function PublicReports() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold">{drillStats.pending}</p>
+                  <p className="text-2xl font-bold">{currentStats.pending}</p>
                   <p className="text-sm text-muted-foreground">รอตรวจสอบ</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center">
@@ -263,32 +242,91 @@ export default function PublicReports() {
           </Card>
         </div>
 
-        {/* Score Chart - Public users can only drill to province level */}
-        <ScoreChart 
-          healthRegions={healthRegions} 
-          provinces={provinces} 
-          hospitals={hospitals} 
-          healthOffices={healthOffices} 
-          assessments={filteredAssessments} 
-          onDrillChange={handleDrillChange} 
-          selectedFiscalYear={selectedFiscalYear} 
-          canDrillToProvince={canDrillToProvince} 
-          canDrillToHospital={canDrillToHospital} 
-        />
+        {/* Chart */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                {drillLevel === 'region' 
+                  ? `คะแนนรวมรายเขตสุขภาพ (ปีงบประมาณ ${selectedFiscalYear === 'all' ? 'ทั้งหมด' : parseInt(selectedFiscalYear) + 543})`
+                  : `คะแนนรวมรายจังหวัด - เขตสุขภาพที่ ${selectedRegion?.region_number || ''}`
+                }
+              </CardTitle>
+              {drillLevel === 'province' && (
+                <Button variant="ghost" size="sm" onClick={handleBackToRegion}>
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  กลับ
+                </Button>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {drillLevel === 'region' 
+                ? 'คลิกที่แท่งกราฟเพื่อดูรายละเอียดรายจังหวัด'
+                : 'แสดงคะแนนรวมเฉลี่ยของแต่ละจังหวัด (ไม่แสดงรายโรงพยาบาล)'
+              }
+            </p>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">กำลังโหลด...</div>
+            ) : chartData.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูล</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 12 }} 
+                    angle={-45} 
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12 }}
+                    domain={[0, 100]}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => [`${value.toFixed(2)} คะแนน`, 'คะแนนเฉลี่ย']}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="score" 
+                    radius={[4, 4, 0, 0]}
+                    cursor={drillLevel === 'region' ? 'pointer' : 'default'}
+                    onClick={(data) => {
+                      if (drillLevel === 'region' && data?.id) {
+                        handleDrillToProvince(data.id);
+                      }
+                    }}
+                  >
+                    {chartData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Table */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5" />
-              {chartDrillLevel === 'region' && 'รายงานสรุปรายเขตสุขภาพ'}
-              {chartDrillLevel === 'province' && `รายงานสรุปรายจังหวัด - เขตสุขภาพที่ ${healthRegions.find(r => r.id === chartRegionId)?.region_number || ''}`}
+              {drillLevel === 'region' && 'รายงานสรุปรายเขตสุขภาพ'}
+              {drillLevel === 'province' && `รายงานสรุปรายจังหวัด - เขตสุขภาพที่ ${selectedRegion?.region_number || ''}`}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">กำลังโหลด...</div>
-            ) : chartDrillLevel === 'region' ? (
+            ) : drillLevel === 'region' ? (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -301,45 +339,31 @@ export default function PublicReports() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {healthRegions.map(region => {
-                      const regionProvinces = provinces.filter(p => p.health_region_id === region.id);
-                      const regionHospitals = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id));
-                      const regionHealthOffices = healthOffices.filter(ho => ho.health_region_id === region.id);
-                      const totalUnits = regionHospitals.length + regionHealthOffices.length;
-                      const regionLatestAssessments = latestAssessments.filter(a => 
-                        regionHospitals.some(h => h.id === a.hospital_id) || 
-                        regionHealthOffices.some(ho => ho.id === a.health_office_id)
-                      );
-                      const completedCount = regionLatestAssessments.filter(a => a.status === 'approved_regional' || a.status === 'completed').length;
-                      const totalScoreSum = regionLatestAssessments.filter(a => a.total_score !== null).reduce((sum, a) => sum + (a.total_score || 0), 0);
-                      const scoreCount = regionLatestAssessments.filter(a => a.total_score !== null).length;
-                      
-                      return (
-                        <TableRow 
-                          key={region.id} 
-                          className="cursor-pointer hover:bg-muted/50 transition-colors"
-                          onClick={() => handleDrillChange('province', region.id, null)}
-                        >
-                          <TableCell className="font-medium text-primary underline">
-                            เขตสุขภาพที่ {region.region_number}
-                          </TableCell>
-                          <TableCell className="text-right">{totalUnits}</TableCell>
-                          <TableCell className="text-right">{regionLatestAssessments.length}</TableCell>
-                          <TableCell className="text-right">{completedCount}</TableCell>
-                          <TableCell className="text-right font-medium">
-                            {scoreCount > 0 ? (totalScoreSum / scoreCount).toFixed(2) : '-'}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {reportData?.region_stats.map(region => (
+                      <TableRow 
+                        key={region.id} 
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleDrillToProvince(region.id)}
+                      >
+                        <TableCell className="font-medium text-primary underline">
+                          เขตสุขภาพที่ {region.region_number}
+                        </TableCell>
+                        <TableCell className="text-right">{region.total_units}</TableCell>
+                        <TableCell className="text-right">{region.with_assessment}</TableCell>
+                        <TableCell className="text-right">{region.completed}</TableCell>
+                        <TableCell className="text-right font-medium">
+                          {region.avg_score > 0 ? region.avg_score.toFixed(2) : '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
-            ) : chartDrillLevel === 'province' && chartRegionId ? (
+            ) : (
               <div className="overflow-x-auto">
                 <div className="mb-4">
                   <button
-                    onClick={() => handleDrillChange('region', null, null)}
+                    onClick={handleBackToRegion}
                     className="text-sm text-primary hover:underline"
                   >
                     ← กลับไปยังเขตสุขภาพ
@@ -356,36 +380,29 @@ export default function PublicReports() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {provinces
-                      .filter(p => p.health_region_id === chartRegionId)
-                      .map(province => {
-                        const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
-                        const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === province.id);
-                        const totalUnits = provinceHospitals.length + provinceHealthOffices.length;
-                        const provinceLatestAssessments = latestAssessments.filter(a => 
-                          provinceHospitals.some(h => h.id === a.hospital_id) || 
-                          provinceHealthOffices.some(ho => ho.id === a.health_office_id)
-                        );
-                        const completedCount = provinceLatestAssessments.filter(a => a.status === 'approved_regional' || a.status === 'completed').length;
-                        const totalScoreSum = provinceLatestAssessments.filter(a => a.total_score !== null).reduce((sum, a) => sum + (a.total_score || 0), 0);
-                        const scoreCount = provinceLatestAssessments.filter(a => a.total_score !== null).length;
-                        
-                        return (
-                          <TableRow key={province.id} className="opacity-50">
-                            <TableCell className="font-medium">{province.name}</TableCell>
-                            <TableCell className="text-right">{totalUnits}</TableCell>
-                            <TableCell className="text-right">{provinceLatestAssessments.length}</TableCell>
-                            <TableCell className="text-right">{completedCount}</TableCell>
-                            <TableCell className="text-right font-medium">
-                              {scoreCount > 0 ? (totalScoreSum / scoreCount).toFixed(2) : '-'}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
+                    {reportData?.province_stats
+                      .filter(p => p.health_region_id === selectedRegionId)
+                      .map(province => (
+                        <TableRow key={province.id}>
+                          <TableCell className="font-medium">
+                            {province.name}
+                          </TableCell>
+                          <TableCell className="text-right">{province.total_units}</TableCell>
+                          <TableCell className="text-right">{province.with_assessment}</TableCell>
+                          <TableCell className="text-right">{province.completed}</TableCell>
+                          <TableCell className="text-right font-medium">
+                            {province.avg_score > 0 ? province.avg_score.toFixed(2) : '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
                 </Table>
+                <div className="mt-4 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+                  <p>💡 รายงานสาธารณะแสดงข้อมูลเฉพาะระดับเขตสุขภาพและจังหวัดเท่านั้น</p>
+                  <p>หากต้องการดูรายละเอียดรายโรงพยาบาล กรุณาเข้าสู่ระบบ</p>
+                </div>
               </div>
-            ) : null}
+            )}
           </CardContent>
         </Card>
       </div>
