@@ -4,7 +4,8 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileSearch, Loader2 } from 'lucide-react';
+import { FileSearch, Loader2, Eye } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -225,6 +226,7 @@ export default function InspectionSupervisor() {
               <TableHeader>
                 <TableRow>
                   <TableHead>เขตสุขภาพ</TableHead>
+                  <TableHead className="text-center">รายงาน</TableHead>
                   <TableHead className="text-center">จำนวนจังหวัด</TableHead>
                   <TableHead className="text-center">รอบที่ 1</TableHead>
                   <TableHead className="text-center">รอบที่ 2</TableHead>
@@ -235,7 +237,7 @@ export default function InspectionSupervisor() {
               <TableBody>
                 {regionStats.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                       ไม่พบข้อมูลเขตสุขภาพ
                     </TableCell>
                   </TableRow>
@@ -252,6 +254,23 @@ export default function InspectionSupervisor() {
                           <span className={isAccessible ? "text-primary hover:underline" : "text-muted-foreground"}>
                             เขตสุขภาพที่ {stat.regionNumber}
                           </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {isAccessible ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRowClick(stat.regionId);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 text-primary" />
+                            </Button>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-center">{stat.provinceCount}</TableCell>
                         <TableCell className="text-center">{stat.round1Count}</TableCell>
