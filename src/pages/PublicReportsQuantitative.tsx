@@ -9,26 +9,22 @@ import { TrendingUp, Filter, Building2, MapPin, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { usePublicReportAccessPolicy } from '@/hooks/usePublicReportAccessPolicy';
-
 interface HealthRegion {
   id: string;
   name: string;
   region_number: number;
 }
-
 interface Province {
   id: string;
   name: string;
   health_region_id: string;
 }
-
 interface Hospital {
   id: string;
   name: string;
   code: string;
   province_id: string;
 }
-
 interface HealthOffice {
   id: string;
   name: string;
@@ -37,7 +33,6 @@ interface HealthOffice {
   health_region_id: string;
   office_type: string;
 }
-
 interface CTAMCategory {
   id: string;
   code: string;
@@ -45,14 +40,12 @@ interface CTAMCategory {
   name_en: string;
   order_number: number;
 }
-
 interface AssessmentItem {
   id: string;
   assessment_id: string;
   category_id: string;
   score: number | string | null;
 }
-
 interface Assessment {
   id: string;
   hospital_id: string | null;
@@ -61,14 +54,12 @@ interface Assessment {
   fiscal_year: number;
   quantitative_score: number | string | null;
 }
-
 const getCurrentFiscalYear = (): number => {
   const now = new Date();
   const month = now.getMonth();
   const year = now.getFullYear();
   return month >= 9 ? year + 1 : year;
 };
-
 const generateFiscalYears = (assessments: Assessment[]): number[] => {
   const years = new Set<number>();
   const currentFiscalYear = getCurrentFiscalYear();
@@ -78,7 +69,6 @@ const generateFiscalYears = (assessments: Assessment[]): number[] => {
   });
   return Array.from(years).sort((a, b) => b - a);
 };
-
 export default function PublicReportsQuantitative() {
   const [loading, setLoading] = useState(true);
   const [healthRegions, setHealthRegions] = useState<HealthRegion[]>([]);
@@ -88,20 +78,22 @@ export default function PublicReportsQuantitative() {
   const [categories, setCategories] = useState<CTAMCategory[]>([]);
   const [assessmentItems, setAssessmentItems] = useState<AssessmentItem[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
-
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
-
-  const { canDrillToHospital } = usePublicReportAccessPolicy('quantitative');
-
+  const {
+    canDrillToHospital
+  } = usePublicReportAccessPolicy('quantitative');
   useEffect(() => {
     const fetchAll = async <T,>(query: any): Promise<T[]> => {
       const pageSize = 1000;
       let from = 0;
       const all: T[] = [];
       while (true) {
-        const { data, error } = await query.range(from, from + pageSize - 1);
+        const {
+          data,
+          error
+        } = await query.range(from, from + pageSize - 1);
         if (error) throw error;
         const chunk = (data || []) as T[];
         all.push(...chunk);
@@ -110,36 +102,25 @@ export default function PublicReportsQuantitative() {
       }
       return all;
     };
-
     const fetchData = async () => {
       try {
-        const [regionsRes, provincesRes, hospitalsRes, healthOfficesRes, categoriesRes] = await Promise.all([
-          supabase.from('health_regions').select('*').order('region_number'),
-          supabase.from('provinces').select('*').order('name'),
-          supabase.from('hospitals').select('*').order('name'),
-          supabase.from('health_offices').select('*').order('name'),
-          supabase.from('ctam_categories').select('*').order('order_number')
-        ]);
-
+        const [regionsRes, provincesRes, hospitalsRes, healthOfficesRes, categoriesRes] = await Promise.all([supabase.from('health_regions').select('*').order('region_number'), supabase.from('provinces').select('*').order('name'), supabase.from('hospitals').select('*').order('name'), supabase.from('health_offices').select('*').order('name'), supabase.from('ctam_categories').select('*').order('order_number')]);
         if (regionsRes.error) throw regionsRes.error;
         if (provincesRes.error) throw provincesRes.error;
         if (hospitalsRes.error) throw hospitalsRes.error;
         if (healthOfficesRes.error) throw healthOfficesRes.error;
         if (categoriesRes.error) throw categoriesRes.error;
-
         setHealthRegions(regionsRes.data || []);
         setProvinces(provincesRes.data || []);
         setHospitals(hospitalsRes.data || []);
         setHealthOffices(healthOfficesRes.data || []);
         setCategories(categoriesRes.data || []);
-
-        const assessmentsAll = await fetchAll<Assessment>(
-          supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, quantitative_score, created_at').order('created_at', { ascending: true })
-        );
-        const itemsAll = await fetchAll<AssessmentItem>(
-          supabase.from('assessment_items').select('id, assessment_id, category_id, score, created_at').order('created_at', { ascending: true })
-        );
-
+        const assessmentsAll = await fetchAll<Assessment>(supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, quantitative_score, created_at').order('created_at', {
+          ascending: true
+        }));
+        const itemsAll = await fetchAll<AssessmentItem>(supabase.from('assessment_items').select('id, assessment_id, category_id, score, created_at').order('created_at', {
+          ascending: true
+        }));
         setAssessments(assessmentsAll);
         setAssessmentItems(itemsAll);
       } catch (error) {
@@ -151,67 +132,60 @@ export default function PublicReportsQuantitative() {
     };
     fetchData();
   }, []);
-
   const filteredProvinces = useMemo(() => {
     if (selectedRegion === 'all') return [];
     return provinces.filter(p => p.health_region_id === selectedRegion);
   }, [selectedRegion, provinces]);
-
   useEffect(() => {
     setSelectedProvince('all');
   }, [selectedRegion]);
-
   const fiscalYears = useMemo(() => generateFiscalYears(assessments), [assessments]);
-
   const filteredAssessments = useMemo(() => {
     if (selectedFiscalYear === 'all') return assessments;
     return assessments.filter(a => a.fiscal_year === parseInt(selectedFiscalYear));
   }, [assessments, selectedFiscalYear]);
-
   const filteredAssessmentItems = useMemo(() => {
     const filteredAssessmentIds = new Set(filteredAssessments.map(a => a.id));
     return assessmentItems.filter(item => filteredAssessmentIds.has(item.assessment_id));
   }, [assessmentItems, filteredAssessments]);
-
   const calculateCategoryAverages = (hospitalIds: string[], healthOfficeIds: string[] = []) => {
-    const relevantAssessments = filteredAssessments.filter(a =>
-      (a.hospital_id && hospitalIds.includes(a.hospital_id)) ||
-      (a.health_office_id && healthOfficeIds.includes(a.health_office_id))
-    );
+    const relevantAssessments = filteredAssessments.filter(a => a.hospital_id && hospitalIds.includes(a.hospital_id) || a.health_office_id && healthOfficeIds.includes(a.health_office_id));
     const totalUnitsInScope = hospitalIds.length + healthOfficeIds.length;
-
     return categories.map(cat => {
       let passedCount = 0;
-
       hospitalIds.forEach(hospitalId => {
         const unitAssessments = relevantAssessments.filter(a => a.hospital_id === hospitalId);
         if (unitAssessments.length === 0) return;
         const assessmentIds = unitAssessments.map(a => a.id);
-        const catItems = filteredAssessmentItems.filter(item =>
-          assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
-        );
+        const catItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id);
         if (catItems.length > 0) {
           const hasPassed = catItems.some(item => Number(item.score) === 1);
           if (hasPassed) passedCount++;
         }
       });
-
       healthOfficeIds.forEach(officeId => {
         const unitAssessments = relevantAssessments.filter(a => a.health_office_id === officeId);
         if (unitAssessments.length === 0) return;
         const assessmentIds = unitAssessments.map(a => a.id);
-        const catItems = filteredAssessmentItems.filter(item =>
-          assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
-        );
+        const catItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id);
         if (catItems.length > 0) {
           const hasPassed = catItems.some(item => Number(item.score) === 1);
           if (hasPassed) passedCount++;
         }
       });
-
-      if (totalUnitsInScope === 0) return { categoryId: cat.id, average: null, passedCount: 0, totalCount: 0 };
-      const percentage = (passedCount / totalUnitsInScope) * 100;
-      return { categoryId: cat.id, average: percentage, passedCount, totalCount: totalUnitsInScope };
+      if (totalUnitsInScope === 0) return {
+        categoryId: cat.id,
+        average: null,
+        passedCount: 0,
+        totalCount: 0
+      };
+      const percentage = passedCount / totalUnitsInScope * 100;
+      return {
+        categoryId: cat.id,
+        average: percentage,
+        passedCount,
+        totalCount: totalUnitsInScope
+      };
     });
   };
 
@@ -225,7 +199,6 @@ export default function PublicReportsQuantitative() {
         const hospitalIds = regionHospitals.map(h => h.id);
         const healthOfficeIds = regionHealthOffices.map(ho => ho.id);
         const categoryAverages = calculateCategoryAverages(hospitalIds, healthOfficeIds);
-
         let unitsPassedAll17 = 0;
         hospitalIds.forEach(hospitalId => {
           const unitAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
@@ -251,7 +224,6 @@ export default function PublicReportsQuantitative() {
           });
           if (passedAllCategories) unitsPassedAll17++;
         });
-
         return {
           id: region.id,
           name: `เขตสุขภาพที่ ${region.region_number}`,
@@ -269,7 +241,6 @@ export default function PublicReportsQuantitative() {
         const hospitalIds = provinceHospitals.map(h => h.id);
         const healthOfficeIds = provinceHealthOffices.map(ho => ho.id);
         const categoryAverages = calculateCategoryAverages(hospitalIds, healthOfficeIds);
-
         let unitsPassedAll17 = 0;
         hospitalIds.forEach(hospitalId => {
           const unitAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
@@ -295,7 +266,6 @@ export default function PublicReportsQuantitative() {
           });
           if (passedAllCategories) unitsPassedAll17++;
         });
-
         return {
           id: province.id,
           name: province.name,
@@ -308,7 +278,6 @@ export default function PublicReportsQuantitative() {
     }
     return [];
   }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, healthOffices, categories, filteredAssessments, filteredAssessmentItems]);
-
   const handleRowClick = (id: string, type: string) => {
     if (type === 'region') {
       setSelectedRegion(id);
@@ -317,9 +286,7 @@ export default function PublicReportsQuantitative() {
       toast.info('กรุณาเข้าสู่ระบบเพื่อดูรายละเอียดรายโรงพยาบาล');
     }
   };
-
-  return (
-    <PublicLayout>
+  return <PublicLayout>
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -337,11 +304,9 @@ export default function PublicReportsQuantitative() {
               </SelectTrigger>
               <SelectContent className="bg-background z-50">
                 <SelectItem value="all">ทุกปีงบประมาณ</SelectItem>
-                {fiscalYears.map(year => (
-                  <SelectItem key={year} value={year.toString()}>
+                {fiscalYears.map(year => <SelectItem key={year} value={year.toString()}>
                     ปีงบประมาณ {year + 543}
-                  </SelectItem>
-                ))}
+                  </SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -349,41 +314,29 @@ export default function PublicReportsQuantitative() {
 
         {/* Breadcrumb navigation */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <button
-            onClick={() => { setSelectedRegion('all'); setSelectedProvince('all'); }}
-            className={`hover:text-primary ${selectedRegion === 'all' ? 'font-medium text-foreground' : ''}`}
-          >
+          <button onClick={() => {
+          setSelectedRegion('all');
+          setSelectedProvince('all');
+        }} className={`hover:text-primary ${selectedRegion === 'all' ? 'font-medium text-foreground' : ''}`}>
             ทุกเขตสุขภาพ
           </button>
-          {selectedRegion !== 'all' && (
-            <>
+          {selectedRegion !== 'all' && <>
               <span>/</span>
-              <button
-                onClick={() => setSelectedProvince('all')}
-                className={`hover:text-primary ${selectedProvince === 'all' ? 'font-medium text-foreground' : ''}`}
-              >
+              <button onClick={() => setSelectedProvince('all')} className={`hover:text-primary ${selectedProvince === 'all' ? 'font-medium text-foreground' : ''}`}>
                 {healthRegions.find(r => r.id === selectedRegion)?.name || 'เขตสุขภาพ'}
               </button>
-            </>
-          )}
+            </>}
         </div>
 
         {/* Table */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {selectedRegion === 'all' ? (
-                <><Building2 className="w-5 h-5" /> รายงานรายเขตสุขภาพ</>
-              ) : (
-                <><MapPin className="w-5 h-5" /> รายงานรายจังหวัด</>
-              )}
+              {selectedRegion === 'all' ? <><Building2 className="w-5 h-5" /> รายงานรายเขตสุขภาพ</> : <><MapPin className="w-5 h-5" /> รายงานรายจังหวัด</>}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">กำลังโหลด...</div>
-            ) : (
-              <div className="overflow-x-auto">
+            {loading ? <div className="text-center py-8 text-muted-foreground">กำลังโหลด...</div> : <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -396,12 +349,7 @@ export default function PublicReportsQuantitative() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tableData.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleRowClick(row.id, row.type)}
-                      >
+                    {tableData.map(row => <TableRow key={row.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleRowClick(row.id, row.type)}>
                         <TableCell className="font-medium sticky left-0 bg-background z-10 text-primary hover:underline">
                           {row.name}
                         </TableCell>
@@ -410,52 +358,38 @@ export default function PublicReportsQuantitative() {
                         <TableCell className="text-center">
                           <div className="flex items-center gap-2">
                             {(() => {
-                              const percentage = row.hospitalCount > 0 ? (row.hospitalsPassedAll17 / row.hospitalCount) * 100 : 0;
-                              const colorClass = percentage === 100 
-                                ? '[&>div]:bg-green-500' 
-                                : percentage >= 50 
-                                  ? '[&>div]:bg-yellow-500' 
-                                  : '[&>div]:bg-red-500';
-                              return (
-                                <Progress 
-                                  value={percentage} 
-                                  className={`h-4 flex-1 ${colorClass}`} 
-                                />
-                              );
-                            })()}
+                        const percentage = row.hospitalCount > 0 ? row.hospitalsPassedAll17 / row.hospitalCount * 100 : 0;
+                        const colorClass = percentage === 100 ? '[&>div]:bg-green-500' : percentage >= 50 ? '[&>div]:bg-yellow-500' : '[&>div]:bg-red-500';
+                        return <Progress value={percentage} className={`h-4 flex-1 ${colorClass}`} />;
+                      })()}
                             <span className="text-sm font-medium min-w-[50px] text-right">
-                              {row.hospitalCount > 0 
-                                ? `${((row.hospitalsPassedAll17 / row.hospitalCount) * 100).toFixed(1)}%` 
-                                : '-'}
+                              {row.hospitalCount > 0 ? `${(row.hospitalsPassedAll17 / row.hospitalCount * 100).toFixed(1)}%` : '-'}
                             </span>
                           </div>
                         </TableCell>
-                      </TableRow>
-                    ))}
+                      </TableRow>)}
                   </TableBody>
                 </Table>
-              </div>
-            )}
+              </div>}
             
             {/* Legend */}
             <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
-              <span className="font-medium">สัญลักษณ์:</span>
+              <span className="font-medium">สัญลักษณ์ (ร้อยละรพ.ที่ผ่าน 17 ข้อ) :</span>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-red-500"></div>
-                <span>น้อยกว่า 50%</span>
+                <span>ผ่านน้อยกว่า 50%</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-yellow-500"></div>
-                <span>50% - 99%</span>
+                <span>ผ่าน 50% - 99%</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-green-500"></div>
-                <span>100%</span>
+                <span>ผ่าน 100%</span>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
-    </PublicLayout>
-  );
+    </PublicLayout>;
 }
