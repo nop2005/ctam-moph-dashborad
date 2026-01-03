@@ -52,8 +52,14 @@ export default function InspectionSupervisee() {
     regionId: string;
   } | null>(null);
 
-  // Only provincial admin can upload
-  const canUpload = profile?.role === 'provincial';
+  // Check if user can upload for a specific province
+  // Provincial can only upload for their own province
+  const canUploadForProvince = (provinceId: string) => {
+    if (profile?.role === 'provincial') {
+      return profile.province_id === provinceId;
+    }
+    return false;
+  };
 
   useEffect(() => {
     const fetchFiscalYears = async () => {
@@ -294,8 +300,8 @@ export default function InspectionSupervisee() {
       );
     }
 
-    // Only provincial role can upload
-    if (!canUpload) {
+    // Only provincial role can upload for their own province
+    if (!canUploadForProvince(provinceId)) {
       return (
         <span className="text-muted-foreground text-sm">-</span>
       );
