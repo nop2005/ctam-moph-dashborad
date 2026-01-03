@@ -36,8 +36,8 @@ export default function PublicInspectionManual() {
   });
 
   const handleDownload = async (file: ManualFile) => {
-    const { data } = await supabase.storage
-      .from('inspection-manuals')
+    const { data } = supabase.storage
+      .from('inspection-manual')
       .getPublicUrl(file.file_path);
     
     if (data?.publicUrl) {
