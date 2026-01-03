@@ -78,7 +78,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/login', { replace: true });
+    navigate('/public/reports', { replace: true });
   };
 
   return (
