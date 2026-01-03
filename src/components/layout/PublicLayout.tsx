@@ -53,7 +53,7 @@ const inspectionSubItems = [
 ];
 
 function PublicSidebar() {
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const collapsed = state === 'collapsed';
   const location = useLocation();
   const navigate = useNavigate();
@@ -106,10 +106,12 @@ function PublicSidebar() {
                     isActive={false}
                     onClick={() => {
                       if (collapsed) {
-                        navigate('/public/reports');
-                      } else {
-                        setReportsOpen(!reportsOpen);
+                        toggleSidebar();
+                        setReportsOpen(true);
+                        if (!isReportsActive) navigate('/public/reports');
+                        return;
                       }
+                      setReportsOpen(!reportsOpen);
                     }}
                     className={`
                       text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
@@ -153,10 +155,12 @@ function PublicSidebar() {
                     isActive={false}
                     onClick={() => {
                       if (collapsed) {
-                        navigate('/public/inspection/supervisor');
-                      } else {
-                        setInspectionOpen(!inspectionOpen);
+                        toggleSidebar();
+                        setInspectionOpen(true);
+                        if (!isInspectionActive) navigate('/public/inspection/supervisor');
+                        return;
                       }
+                      setInspectionOpen(!inspectionOpen);
                     }}
                     className={`
                       text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
