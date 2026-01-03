@@ -239,9 +239,14 @@ export function PublicLayout({ children }: PublicLayoutProps) {
         <PublicSidebar />
         <SidebarInset className="flex-1">
           <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b bg-background px-4">
-            <SidebarTrigger />
+            <div className="flex items-center gap-4">
+              <SidebarTrigger />
+              <span className="text-sm font-medium text-muted-foreground">
+                ระบบประเมินความมั่นคงปลอดภัยไซเบอร์และรายงานการตรวจราชการ
+              </span>
+            </div>
             
-            <Button 
+            <Button
               variant="outline" 
               size="sm" 
               onClick={() => navigate('/login')}
