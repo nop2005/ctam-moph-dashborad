@@ -818,11 +818,11 @@ export default function ReportsImpact() {
                         // Region/Province level columns
                         <>
                           <TableHead className="text-center">รพ. ทั้งหมด</TableHead>
+                          <TableHead className="text-center">รพ. ประเมินแล้ว</TableHead>
                           <TableHead className="text-center text-green-600">ปลอดภัยสูง</TableHead>
                           <TableHead className="text-center text-yellow-600">ปานกลาง</TableHead>
                           <TableHead className="text-center text-orange-600">เสี่ยงต่ำ</TableHead>
                           <TableHead className="text-center text-red-600">เสี่ยงสูง</TableHead>
-                          <TableHead className="text-center">ยังไม่ประเมิน</TableHead>
                           <TableHead className="text-center">มีเหตุการณ์</TableHead>
                           <TableHead className="text-center">ละเมิดข้อมูล</TableHead>
                         </>
@@ -881,11 +881,11 @@ export default function ReportsImpact() {
                           ) : (
                             <>
                               <TableCell className="text-center">{row.total}</TableCell>
+                              <TableCell className="text-center">{row.total - row.notAssessed}</TableCell>
                               <TableCell className="text-center text-green-600 font-medium">{row.highSafety}</TableCell>
                               <TableCell className="text-center text-yellow-600">{row.mediumSafety}</TableCell>
                               <TableCell className="text-center text-orange-600">{row.lowRisk}</TableCell>
                               <TableCell className="text-center text-red-600">{row.highRisk}</TableCell>
-                              <TableCell className="text-center text-muted-foreground">{row.notAssessed}</TableCell>
                               <TableCell className="text-center text-orange-600">{row.totalIncidents}</TableCell>
                               <TableCell className="text-center text-red-600">{row.totalBreaches}</TableCell>
                             </>
