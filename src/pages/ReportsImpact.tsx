@@ -72,6 +72,7 @@ interface Assessment {
   health_office_id: string | null;
   status: string;
   fiscal_year: number;
+  assessment_period: string;
   impact_score: number | null;
   created_at?: string;
 }
@@ -175,7 +176,7 @@ export default function ReportsImpact() {
         const assessmentsAll = await fetchAll<Assessment>(
           supabase
             .from('assessments')
-            .select('id, hospital_id, health_office_id, status, fiscal_year, impact_score, created_at')
+            .select('id, hospital_id, health_office_id, status, fiscal_year, assessment_period, impact_score, created_at')
             .order('created_at', { ascending: true })
         );
 
