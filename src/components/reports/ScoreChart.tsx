@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { BarChart3, ChevronLeft } from 'lucide-react';
+import { getLatestAssessmentsByUnit, isApprovedAssessmentStatus } from '@/lib/assessment-latest';
 
 interface HealthRegion {
   id: string;
@@ -30,6 +31,8 @@ interface Assessment {
   total_score: number | null;
   fiscal_year: number;
   assessment_period: string;
+  status?: string;
+  created_at?: string;
 }
 
 interface HealthOffice {
@@ -84,34 +87,13 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
   const [selectedRegion, setSelectedRegion] = useState<HealthRegion | null>(null);
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
 
-  // Helper function to get the latest assessment for each unit (hospital or health office)
-  const getLatestAssessmentPerUnit = (allAssessments: Assessment[]): Assessment[] => {
-    const latestMap = new Map<string, Assessment>();
-    
-    for (const assessment of allAssessments) {
-      const unitId = assessment.hospital_id || assessment.health_office_id;
-      if (!unitId) continue;
-      
-      const existing = latestMap.get(unitId);
-      if (!existing) {
-        latestMap.set(unitId, assessment);
-      } else {
-        // Compare by fiscal_year first, then by assessment_period
-        if (
-          assessment.fiscal_year > existing.fiscal_year ||
-          (assessment.fiscal_year === existing.fiscal_year && 
-           assessment.assessment_period > existing.assessment_period)
-        ) {
-          latestMap.set(unitId, assessment);
-        }
-      }
-    }
-    
-    return Array.from(latestMap.values());
-  };
+  const latestApprovedByUnit = useMemo(() => {
+    const approved = assessments.filter(a => isApprovedAssessmentStatus(a.status));
+    return getLatestAssessmentsByUnit(approved);
+  }, [assessments]);
 
-  // Get latest assessments only
-  const latestAssessments = getLatestAssessmentPerUnit(assessments);
+  // Get latest *approved* assessments only
+  const latestAssessments = useMemo(() => Array.from(latestApprovedByUnit.values()), [latestApprovedByUnit]);
 
   // Calculate average score for a set of hospital IDs and health office IDs
   const calculateAverageScore = (hospitalIds: string[], healthOfficeIds: string[] = []): number => {
@@ -174,7 +156,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
       const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === selectedProvince.id);
       
       const hospitalData = provinceHospitals.map((hospital, index) => {
-        const assessment = latestAssessments.find(a => a.hospital_id === hospital.id);
+        const assessment = latestApprovedByUnit.get(hospital.id);
         
         return {
           id: hospital.id,
@@ -186,7 +168,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
       });
 
       const healthOfficeData = provinceHealthOffices.map((office, index) => {
-        const assessment = latestAssessments.find(a => a.health_office_id === office.id);
+        const assessment = latestApprovedByUnit.get(office.id);
         
         return {
           id: office.id,

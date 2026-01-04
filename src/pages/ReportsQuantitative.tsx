@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useReportAccessPolicy } from '@/hooks/useReportAccessPolicy';
+import { getLatestAssessmentsByUnit, isApprovedAssessmentStatus } from '@/lib/assessment-latest';
 interface HealthRegion {
   id: string;
   name: string;
@@ -203,6 +204,13 @@ export default function ReportsQuantitative() {
     return assessments.filter(a => a.fiscal_year === parseInt(selectedFiscalYear));
   }, [assessments, selectedFiscalYear]);
 
+  const approvedAssessments = useMemo(
+    () => filteredAssessments.filter(a => isApprovedAssessmentStatus(a.status)),
+    [filteredAssessments]
+  );
+
+  const latestApprovedByUnit = useMemo(() => getLatestAssessmentsByUnit(approvedAssessments), [approvedAssessments]);
+
   // Filter assessment items by filtered assessments
   const filteredAssessmentItems = useMemo(() => {
     const filteredAssessmentIds = new Set(filteredAssessments.map(a => a.id));
@@ -214,64 +222,66 @@ export default function ReportsQuantitative() {
   // totalCount = ALL units in scope (including those without assessments)
   // For unit level: returns the actual score (1 = pass, 0 = fail)
   const calculateCategoryAverages = (hospitalIds: string[], healthOfficeIds: string[] = [], isProvinceLevel: boolean = false) => {
-    const relevantAssessments = filteredAssessments.filter(a => a.hospital_id && hospitalIds.includes(a.hospital_id) || a.health_office_id && healthOfficeIds.includes(a.health_office_id));
     const totalUnitsInScope = hospitalIds.length + healthOfficeIds.length;
+
+    const unitIds = [...hospitalIds, ...healthOfficeIds];
+    const latestAssessmentIds = unitIds
+      .map(unitId => latestApprovedByUnit.get(unitId)?.id)
+      .filter((id): id is string => Boolean(id));
+
     return categories.map(cat => {
       if (isProvinceLevel) {
-        // For province level: calculate percentage of units that passed this category
+        // For province/region level: % of units that passed this category (based on latest approved assessment only)
         let passedCount = 0;
 
-        // Check hospitals
-        hospitalIds.forEach(hospitalId => {
-          const unitAssessments = relevantAssessments.filter(a => a.hospital_id === hospitalId);
-          if (unitAssessments.length === 0) return;
-          const assessmentIds = unitAssessments.map(a => a.id);
-          const catItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id);
-          if (catItems.length > 0) {
-            const hasPassed = catItems.some(item => Number(item.score) === 1);
-            if (hasPassed) passedCount++;
-          }
+        unitIds.forEach(unitId => {
+          const assessmentId = latestApprovedByUnit.get(unitId)?.id;
+          if (!assessmentId) return;
+
+          const catItems = filteredAssessmentItems.filter(
+            item => item.assessment_id === assessmentId && item.category_id === cat.id
+          );
+
+          if (catItems.length === 0) return;
+
+          const hasPassed = catItems.some(item => Number(item.score) === 1);
+          if (hasPassed) passedCount++;
         });
 
-        // Check health offices
-        healthOfficeIds.forEach(officeId => {
-          const unitAssessments = relevantAssessments.filter(a => a.health_office_id === officeId);
-          if (unitAssessments.length === 0) return;
-          const assessmentIds = unitAssessments.map(a => a.id);
-          const catItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id);
-          if (catItems.length > 0) {
-            const hasPassed = catItems.some(item => Number(item.score) === 1);
-            if (hasPassed) passedCount++;
-          }
-        });
-        if (totalUnitsInScope === 0) return {
-          categoryId: cat.id,
-          average: null,
-          passedCount: 0,
-          totalCount: 0
-        };
-        const percentage = passedCount / totalUnitsInScope * 100;
+        if (totalUnitsInScope === 0) {
+          return {
+            categoryId: cat.id,
+            average: null,
+            passedCount: 0,
+            totalCount: 0,
+          };
+        }
+
+        const percentage = (passedCount / totalUnitsInScope) * 100;
         return {
           categoryId: cat.id,
           average: percentage,
           passedCount,
-          totalCount: totalUnitsInScope
-        };
-      } else {
-        // For unit level: use original average calculation
-        const assessmentIds = relevantAssessments.map(a => a.id);
-        const relevantItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id));
-        const catItems = relevantItems.filter(item => item.category_id === cat.id);
-        if (catItems.length === 0) return {
-          categoryId: cat.id,
-          average: null
-        };
-        const avg = catItems.reduce((sum, item) => sum + Number(item.score), 0) / catItems.length;
-        return {
-          categoryId: cat.id,
-          average: avg
+          totalCount: totalUnitsInScope,
         };
       }
+
+      // Unit-level (or unit-list view): use latest approved assessment(s) only
+      if (latestAssessmentIds.length === 0) {
+        return { categoryId: cat.id, average: null };
+      }
+
+      const catItems = filteredAssessmentItems.filter(
+        item => latestAssessmentIds.includes(item.assessment_id) && item.category_id === cat.id
+      );
+
+      if (catItems.length === 0) {
+        return { categoryId: cat.id, average: null };
+      }
+
+      // Average over selected units (normally 1 unit at hospital level)
+      const avg = catItems.reduce((sum, item) => sum + Number(item.score), 0) / catItems.length;
+      return { categoryId: cat.id, average: avg };
     });
   };
 
@@ -290,31 +300,33 @@ export default function ReportsQuantitative() {
         // Calculate units that passed all 17 items (green)
         let unitsPassedAll17 = 0;
 
-        // Check hospitals
+        // Check hospitals (latest approved assessment only)
         hospitalIds.forEach(hospitalId => {
-          const unitAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
-          if (unitAssessments.length === 0) return;
-          const assessmentIds = unitAssessments.map(a => a.id);
-          let passedAllCategories = true;
-          categories.forEach(cat => {
-            const catItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id);
-            const hasPassed = catItems.some(item => Number(item.score) === 1);
-            if (!hasPassed) passedAllCategories = false;
+          const latestAssessmentId = latestApprovedByUnit.get(hospitalId)?.id;
+          if (!latestAssessmentId) return;
+
+          const passedAllCategories = categories.every(cat => {
+            const catItems = filteredAssessmentItems.filter(
+              item => item.assessment_id === latestAssessmentId && item.category_id === cat.id
+            );
+            return catItems.some(item => Number(item.score) === 1);
           });
+
           if (passedAllCategories) unitsPassedAll17++;
         });
 
-        // Check health offices
+        // Check health offices (latest approved assessment only)
         healthOfficeIds.forEach(officeId => {
-          const unitAssessments = filteredAssessments.filter(a => a.health_office_id === officeId);
-          if (unitAssessments.length === 0) return;
-          const assessmentIds = unitAssessments.map(a => a.id);
-          let passedAllCategories = true;
-          categories.forEach(cat => {
-            const catItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id);
-            const hasPassed = catItems.some(item => Number(item.score) === 1);
-            if (!hasPassed) passedAllCategories = false;
+          const latestAssessmentId = latestApprovedByUnit.get(officeId)?.id;
+          if (!latestAssessmentId) return;
+
+          const passedAllCategories = categories.every(cat => {
+            const catItems = filteredAssessmentItems.filter(
+              item => item.assessment_id === latestAssessmentId && item.category_id === cat.id
+            );
+            return catItems.some(item => Number(item.score) === 1);
           });
+
           if (passedAllCategories) unitsPassedAll17++;
         });
         return {
@@ -339,31 +351,33 @@ export default function ReportsQuantitative() {
         // Calculate units that passed all 17 items
         let unitsPassedAll17 = 0;
 
-        // Check hospitals
+        // Check hospitals (latest approved assessment only)
         hospitalIds.forEach(hospitalId => {
-          const unitAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
-          if (unitAssessments.length === 0) return;
-          const assessmentIds = unitAssessments.map(a => a.id);
-          let passedAllCategories = true;
-          categories.forEach(cat => {
-            const catItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id);
-            const hasPassed = catItems.some(item => Number(item.score) === 1);
-            if (!hasPassed) passedAllCategories = false;
+          const latestAssessmentId = latestApprovedByUnit.get(hospitalId)?.id;
+          if (!latestAssessmentId) return;
+
+          const passedAllCategories = categories.every(cat => {
+            const catItems = filteredAssessmentItems.filter(
+              item => item.assessment_id === latestAssessmentId && item.category_id === cat.id
+            );
+            return catItems.some(item => Number(item.score) === 1);
           });
+
           if (passedAllCategories) unitsPassedAll17++;
         });
 
-        // Check health offices
+        // Check health offices (latest approved assessment only)
         healthOfficeIds.forEach(officeId => {
-          const unitAssessments = filteredAssessments.filter(a => a.health_office_id === officeId);
-          if (unitAssessments.length === 0) return;
-          const assessmentIds = unitAssessments.map(a => a.id);
-          let passedAllCategories = true;
-          categories.forEach(cat => {
-            const catItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id);
-            const hasPassed = catItems.some(item => Number(item.score) === 1);
-            if (!hasPassed) passedAllCategories = false;
+          const latestAssessmentId = latestApprovedByUnit.get(officeId)?.id;
+          if (!latestAssessmentId) return;
+
+          const passedAllCategories = categories.every(cat => {
+            const catItems = filteredAssessmentItems.filter(
+              item => item.assessment_id === latestAssessmentId && item.category_id === cat.id
+            );
+            return catItems.some(item => Number(item.score) === 1);
           });
+
           if (passedAllCategories) unitsPassedAll17++;
         });
         return {

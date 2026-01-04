@@ -23,6 +23,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { useReportAccessPolicy } from '@/hooks/useReportAccessPolicy';
+import { getLatestAssessmentsByUnit, isApprovedAssessmentStatus } from '@/lib/assessment-latest';
 
 interface HealthRegion {
   id: string;
@@ -72,6 +73,7 @@ interface Assessment {
   status: string;
   fiscal_year: number;
   impact_score: number | null;
+  created_at?: string;
 }
 
 // Helper function to get current fiscal year (Oct 1 - Sep 30)
@@ -236,6 +238,13 @@ export default function ReportsImpact() {
     return assessments.filter(a => a.fiscal_year === parseInt(selectedFiscalYear));
   }, [assessments, selectedFiscalYear]);
 
+  const approvedAssessments = useMemo(
+    () => filteredAssessments.filter(a => isApprovedAssessmentStatus(a.status)),
+    [filteredAssessments]
+  );
+
+  const latestApprovedByUnit = useMemo(() => getLatestAssessmentsByUnit(approvedAssessments), [approvedAssessments]);
+
   // Get impact score for an assessment
   const getImpactScoreForAssessment = (assessmentId: string): ImpactScore | undefined => {
     return impactScores.find(is => is.assessment_id === assessmentId);
@@ -243,11 +252,6 @@ export default function ReportsImpact() {
 
   // Calculate impact statistics for a set of hospital IDs and health office IDs
   const calculateImpactStats = (hospitalIds: string[], healthOfficeIds: string[] = []) => {
-    const relevantAssessments = filteredAssessments.filter(a => 
-      (a.hospital_id && hospitalIds.includes(a.hospital_id)) ||
-      (a.health_office_id && healthOfficeIds.includes(a.health_office_id))
-    );
-    
     let highSafety = 0;
     let mediumSafety = 0;
     let lowRisk = 0;
@@ -258,15 +262,13 @@ export default function ReportsImpact() {
 
     // Process hospitals
     hospitalIds.forEach(hospitalId => {
-      const unitAssessments = relevantAssessments.filter(a => a.hospital_id === hospitalId);
-      if (unitAssessments.length === 0) {
+      const latestAssessment = latestApprovedByUnit.get(hospitalId);
+      if (!latestAssessment) {
         notAssessed++;
         return;
       }
 
-      const latestAssessment = unitAssessments[unitAssessments.length - 1];
       const impactScore = getImpactScoreForAssessment(latestAssessment.id);
-
       if (!impactScore || impactScore.total_score === null) {
         notAssessed++;
         return;
@@ -284,15 +286,13 @@ export default function ReportsImpact() {
 
     // Process health offices
     healthOfficeIds.forEach(officeId => {
-      const unitAssessments = relevantAssessments.filter(a => a.health_office_id === officeId);
-      if (unitAssessments.length === 0) {
+      const latestAssessment = latestApprovedByUnit.get(officeId);
+      if (!latestAssessment) {
         notAssessed++;
         return;
       }
 
-      const latestAssessment = unitAssessments[unitAssessments.length - 1];
       const impactScore = getImpactScoreForAssessment(latestAssessment.id);
-
       if (!impactScore || impactScore.total_score === null) {
         notAssessed++;
         return;
@@ -357,19 +357,14 @@ export default function ReportsImpact() {
   const tableData = useMemo(() => {
     // Helper to check if a unit has incident/breach
     const unitHasIssue = (unitId: string, isHealthOffice: boolean = false): { hasIncident: boolean; hasBreach: boolean } => {
-      const unitAssessments = filteredAssessments.filter(a => 
-        isHealthOffice ? a.health_office_id === unitId : a.hospital_id === unitId
-      );
-      let hasIncident = false;
-      let hasBreach = false;
-      
-      unitAssessments.forEach(assessment => {
-        const impactScore = getImpactScoreForAssessment(assessment.id);
-        if (impactScore?.had_incident) hasIncident = true;
-        if (impactScore?.had_data_breach) hasBreach = true;
-      });
-      
-      return { hasIncident, hasBreach };
+      const latestAssessment = latestApprovedByUnit.get(unitId);
+      if (!latestAssessment) return { hasIncident: false, hasBreach: false };
+
+      const impactScore = getImpactScoreForAssessment(latestAssessment.id);
+      return {
+        hasIncident: Boolean(impactScore?.had_incident),
+        hasBreach: Boolean(impactScore?.had_data_breach),
+      };
     };
 
     if (selectedRegion === 'all') {
@@ -441,8 +436,7 @@ export default function ReportsImpact() {
       }
       
       const allHospitals = provinceHospitals.map(hospital => {
-        const hospitalAssessments = filteredAssessments.filter(a => a.hospital_id === hospital.id);
-        const latestAssessment = hospitalAssessments[hospitalAssessments.length - 1];
+        const latestAssessment = latestApprovedByUnit.get(hospital.id);
         const impactScore = latestAssessment ? getImpactScoreForAssessment(latestAssessment.id) : undefined;
         const level = getImpactLevel(impactScore?.total_score ?? null);
         const issues = unitHasIssue(hospital.id, false);
@@ -465,8 +459,7 @@ export default function ReportsImpact() {
       });
       
       const allHealthOffices = provinceHealthOffices.map((office) => {
-        const officeAssessments = filteredAssessments.filter((a) => a.health_office_id === office.id);
-        const latestAssessment = officeAssessments[officeAssessments.length - 1];
+        const latestAssessment = latestApprovedByUnit.get(office.id);
         const impactScore = latestAssessment ? getImpactScoreForAssessment(latestAssessment.id) : undefined;
 
         // Some health-office assessments may not have a row in `impact_scores`.
