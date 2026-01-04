@@ -239,41 +239,44 @@ export default function ReportsQuantitativeDetail() {
            (a.health_office_id && healthOfficeIds.includes(a.health_office_id))
     );
 
+    // Create a map to get the latest assessment for each unit
+    const latestAssessmentByUnit = new Map<string, Assessment>();
+    relevantAssessments.forEach(a => {
+      const unitKey = a.hospital_id || a.health_office_id;
+      if (unitKey) {
+        const existing = latestAssessmentByUnit.get(unitKey);
+        // Keep the assessment (since they're already sorted by created_at ascending, last one is latest)
+        latestAssessmentByUnit.set(unitKey, a);
+      }
+    });
+
+    const latestAssessmentIds = new Set(Array.from(latestAssessmentByUnit.values()).map(a => a.id));
+
     return categories.map(cat => {
       let passedCount = 0;
       let failedCount = 0;
+      let assessedCount = 0;
 
-      // Check hospitals
-      hospitalIds.forEach(hospitalId => {
-        const unitAssessments = relevantAssessments.filter(a => a.hospital_id === hospitalId);
-        if (unitAssessments.length === 0) return;
-        const assessmentIds = unitAssessments.map(a => a.id);
-        const catItems = filteredAssessmentItems.filter(
-          item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
-        );
-        if (catItems.length > 0) {
-          const hasPassed = catItems.some(item => Number(item.score) === 1);
-          if (hasPassed) passedCount++;
-          else failedCount++;
+      // Get all assessment items for this category from the latest assessments
+      const categoryItems = filteredAssessmentItems.filter(
+        item => latestAssessmentIds.has(item.assessment_id) && item.category_id === cat.id
+      );
+
+      // Count pass/fail for each unique assessment (unit)
+      const processedAssessments = new Set<string>();
+      categoryItems.forEach(item => {
+        if (processedAssessments.has(item.assessment_id)) return;
+        processedAssessments.add(item.assessment_id);
+        
+        const score = Number(item.score);
+        if (score === 1) {
+          passedCount++;
+        } else {
+          failedCount++;
         }
+        assessedCount++;
       });
 
-      // Check health offices
-      healthOfficeIds.forEach(officeId => {
-        const unitAssessments = relevantAssessments.filter(a => a.health_office_id === officeId);
-        if (unitAssessments.length === 0) return;
-        const assessmentIds = unitAssessments.map(a => a.id);
-        const catItems = filteredAssessmentItems.filter(
-          item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
-        );
-        if (catItems.length > 0) {
-          const hasPassed = catItems.some(item => Number(item.score) === 1);
-          if (hasPassed) passedCount++;
-          else failedCount++;
-        }
-      });
-
-      const assessedCount = passedCount + failedCount;
       const passPercentage = assessedCount > 0 ? (passedCount / assessedCount) * 100 : 0;
 
       return {
