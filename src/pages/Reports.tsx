@@ -336,6 +336,7 @@ export default function Reports() {
                       <TableHead className="text-right">จำนวนสถานบริการ</TableHead>
                       <TableHead className="text-right">คะแนนเชิงปริมาณ</TableHead>
                       <TableHead className="text-right">คะแนนเชิงผลกระทบ</TableHead>
+                      <TableHead className="text-right">อนุมัติแล้ว</TableHead>
                       <TableHead className="text-right">คะแนนรวม</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -347,6 +348,7 @@ export default function Reports() {
                   const totalUnits = regionHospitals.length + regionHealthOffices.length;
                   // Use latest assessments only (include both hospitals and health offices)
                   const regionLatestAssessments = latestAssessments.filter(a => regionHospitals.some(h => h.id === a.hospital_id) || regionHealthOffices.some(ho => ho.id === a.health_office_id));
+                  const completedCount = regionLatestAssessments.filter(a => a.status === 'approved_regional' || a.status === 'completed').length;
                   // Calculate average scores
                   const quantitativeScores = regionLatestAssessments.filter(a => a.quantitative_score !== null);
                   const avgQuantitative = quantitativeScores.length > 0 
@@ -370,6 +372,7 @@ export default function Reports() {
                           <TableCell className="text-right">
                             {avgImpact !== null ? avgImpact.toFixed(2) : '-'}
                           </TableCell>
+                          <TableCell className="text-right">{completedCount}</TableCell>
                           <TableCell className="text-right font-medium">
                             {scoreCount > 0 ? (totalScoreSum / scoreCount).toFixed(2) : '-'}
                           </TableCell>
