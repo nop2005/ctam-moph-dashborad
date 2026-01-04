@@ -878,11 +878,29 @@ export default function ReportsQuantitative() {
                               percentage = passedPercentage ?? 0;
                             }
                             const colorClass = percentage === 100 ? '[&>div]:bg-green-500' : percentage >= 50 ? '[&>div]:bg-yellow-500' : '[&>div]:bg-red-500';
-                            return <div className="flex items-center gap-2">
-                                    <Progress value={percentage} className={`h-4 flex-1 ${colorClass}`} />
-                                    <span className="text-sm font-medium min-w-[50px] text-right">
-                                      {row.hospitalCount > 0 || passedPercentage !== null ? `${percentage.toFixed(1)}%` : '-'}
-                                    </span>
+                            
+                            // Calculate quantitative score for hospital/health_office level (score out of 7)
+                            const isUnitLevel = row.type === 'hospital' || row.type === 'health_office';
+                            let quantitativeScore: number | null = null;
+                            if (isUnitLevel) {
+                              const latestAssessment = latestApprovedByUnit.get(row.id);
+                              if (latestAssessment && latestAssessment.quantitative_score !== null) {
+                                quantitativeScore = Number(latestAssessment.quantitative_score);
+                              }
+                            }
+                            
+                            return <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2">
+                                      <Progress value={percentage} className={`h-4 flex-1 ${colorClass}`} />
+                                      <span className="text-sm font-medium min-w-[50px] text-right">
+                                        {row.hospitalCount > 0 || passedPercentage !== null ? `${percentage.toFixed(1)}%` : '-'}
+                                      </span>
+                                    </div>
+                                    {isUnitLevel && quantitativeScore !== null && (
+                                      <span className="text-xs text-muted-foreground">
+                                        ({quantitativeScore.toFixed(2)}/7)
+                                      </span>
+                                    )}
                                   </div>;
                           })()}
                             </TableCell>
