@@ -134,10 +134,10 @@ export default function Dashboard() {
       try {
         setLoading(true);
 
-        // Build query for stats
+        // Build query for stats - include hospital/health_office for filtering
         let statsQuery = supabase
           .from('assessments')
-          .select('id, status, fiscal_year');
+          .select('id, status, fiscal_year, hospital_id, health_office_id, hospitals(province_id, provinces(health_region_id)), health_offices(province_id, health_region_id)');
 
         // Filter by fiscal year if not "all"
         if (selectedFiscalYear !== 'all') {
@@ -149,12 +149,63 @@ export default function Dashboard() {
         if (statsError) {
           console.error('Error fetching stats:', statsError);
         } else if (statsData) {
-          const total = statsData.length;
-          const draft = statsData.filter(a => a.status === 'draft').length;
-          const waitingProvincial = statsData.filter(a => a.status === 'submitted').length;
-          const waitingRegional = statsData.filter(a => a.status === 'approved_provincial').length;
-          const approved = statsData.filter(a => a.status === 'approved_regional' || a.status === 'completed').length;
-          const returned = statsData.filter(a => a.status === 'returned').length;
+          // Filter stats based on user role and scope
+          let filteredStats = statsData;
+          
+          if (profile?.role === 'provincial' && profile.province_id) {
+            // Provincial: only count assessments from their province
+            filteredStats = statsData.filter(a => {
+              if (a.hospital_id && a.hospitals) {
+                return (a.hospitals as any).province_id === profile.province_id;
+              }
+              if (a.health_office_id && a.health_offices) {
+                return (a.health_offices as any).province_id === profile.province_id;
+              }
+              return false;
+            });
+          } else if (profile?.role === 'regional' && profile.health_region_id) {
+            // Regional: count all assessments from their region
+            filteredStats = statsData.filter(a => {
+              if (a.hospital_id && a.hospitals && (a.hospitals as any).provinces) {
+                return (a.hospitals as any).provinces.health_region_id === profile.health_region_id;
+              }
+              if (a.health_office_id && a.health_offices) {
+                return (a.health_offices as any).health_region_id === profile.health_region_id;
+              }
+              return false;
+            });
+          } else if (profile?.role === 'supervisor' && profile.health_region_id) {
+            // Supervisor: same as regional
+            filteredStats = statsData.filter(a => {
+              if (a.hospital_id && a.hospitals && (a.hospitals as any).provinces) {
+                return (a.hospitals as any).provinces.health_region_id === profile.health_region_id;
+              }
+              if (a.health_office_id && a.health_offices) {
+                return (a.health_offices as any).health_region_id === profile.health_region_id;
+              }
+              return false;
+            });
+          } else if (profile?.role === 'hospital_it' && profile.hospital_id) {
+            // Hospital IT: only their hospital
+            filteredStats = statsData.filter(a => a.hospital_id === profile.hospital_id);
+          } else if (profile?.role === 'health_office' && profile.health_office_id) {
+            // Health office: only their office + hospitals in their province
+            filteredStats = statsData.filter(a => {
+              if (a.health_office_id === profile.health_office_id) return true;
+              if (a.hospital_id && a.hospitals) {
+                return (a.hospitals as any).province_id === profile.province_id;
+              }
+              return false;
+            });
+          }
+          // central_admin sees everything (no filter)
+
+          const total = filteredStats.length;
+          const draft = filteredStats.filter(a => a.status === 'draft').length;
+          const waitingProvincial = filteredStats.filter(a => a.status === 'submitted').length;
+          const waitingRegional = filteredStats.filter(a => a.status === 'approved_provincial').length;
+          const approved = filteredStats.filter(a => a.status === 'approved_regional' || a.status === 'completed').length;
+          const returned = filteredStats.filter(a => a.status === 'returned').length;
           setStats({ total, draft, waitingProvincial, waitingRegional, approved, returned });
         }
 
