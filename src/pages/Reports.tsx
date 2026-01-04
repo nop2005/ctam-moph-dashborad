@@ -11,7 +11,7 @@ import { BarChart3, FileText, Building2, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useReportAccessPolicy } from '@/hooks/useReportAccessPolicy';
-import { isApprovedAssessmentStatus } from '@/lib/assessment-latest';
+import { getLatestAssessmentsByUnit, isApprovedAssessmentStatus } from '@/lib/assessment-latest';
 interface HealthRegion {
   id: string;
   name: string;
@@ -80,25 +80,6 @@ interface HospitalReport {
   assessment: Assessment | null;
 }
 
-// Helper function to get the latest assessment for each hospital or health office
-const getLatestAssessmentPerUnit = (allAssessments: Assessment[]): Assessment[] => {
-  const latestMap = new Map<string, Assessment>();
-  for (const assessment of allAssessments) {
-    // Use hospital_id or health_office_id as key
-    const unitId = assessment.hospital_id || assessment.health_office_id;
-    if (!unitId) continue;
-    const existing = latestMap.get(unitId);
-    if (!existing) {
-      latestMap.set(unitId, assessment);
-    } else {
-      // Compare by fiscal_year first, then by assessment_period
-      if (assessment.fiscal_year > existing.fiscal_year || assessment.fiscal_year === existing.fiscal_year && assessment.assessment_period > existing.assessment_period) {
-        latestMap.set(unitId, assessment);
-      }
-    }
-  }
-  return Array.from(latestMap.values());
-};
 const statusLabels: Record<string, {
   label: string;
   variant: 'default' | 'secondary' | 'destructive' | 'outline';
@@ -201,12 +182,21 @@ export default function Reports() {
   }, [profile]);
 
   // Get latest assessments only (one per hospital/health_office) from filtered assessments
-  const latestAssessments = useMemo(() => getLatestAssessmentPerUnit(filteredAssessments), [filteredAssessments]);
+  const latestByUnit = useMemo(() => getLatestAssessmentsByUnit(filteredAssessments), [filteredAssessments]);
+  const latestAssessments = useMemo(() => Array.from(latestByUnit.values()), [latestByUnit]);
 
   // Latest assessments per unit, but only counting the most recent *approved* one
-  const latestApprovedAssessments = useMemo(
-    () => getLatestAssessmentPerUnit(filteredAssessments.filter(a => isApprovedAssessmentStatus(a.status))),
+  const approvedAssessments = useMemo(
+    () => filteredAssessments.filter(a => isApprovedAssessmentStatus(a.status)),
     [filteredAssessments]
+  );
+  const latestApprovedByUnit = useMemo(
+    () => getLatestAssessmentsByUnit(approvedAssessments),
+    [approvedAssessments]
+  );
+  const latestApprovedAssessments = useMemo(
+    () => Array.from(latestApprovedByUnit.values()),
+    [latestApprovedByUnit]
   );
 
   // Calculate statistics based on drill level (including health offices)
@@ -473,7 +463,7 @@ export default function Reports() {
                   }
                   return true;
                 }).map(hospital => {
-                  const assessment = latestApprovedAssessments.find(a => a.hospital_id === hospital.id) || latestAssessments.find(a => a.hospital_id === hospital.id);
+                  const assessment = latestApprovedByUnit.get(hospital.id) ?? latestByUnit.get(hospital.id) ?? null;
                   return <TableRow key={hospital.id}>
                           <TableCell className="font-mono text-sm">{hospital.code}</TableCell>
                           <TableCell className="font-medium">{hospital.name}</TableCell>
@@ -513,7 +503,7 @@ export default function Reports() {
                   }
                   return true;
                 }).map(office => {
-                  const assessment = latestApprovedAssessments.find(a => a.health_office_id === office.id) || latestAssessments.find(a => a.health_office_id === office.id);
+                  const assessment = latestApprovedByUnit.get(office.id) ?? latestByUnit.get(office.id) ?? null;
                   return <TableRow key={office.id}>
                           <TableCell className="font-mono text-sm">{office.code}</TableCell>
                           <TableCell className="font-medium">{office.name}</TableCell>
