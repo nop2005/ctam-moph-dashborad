@@ -394,7 +394,6 @@ export default function ReportsQuantitativeDetail() {
                     {!isProvincialAdmin && <SelectItem value="country" className="text-sm">ภาพรวมประเทศ</SelectItem>}
                     {!isProvincialAdmin && <SelectItem value="region" className="text-sm">รายเขตสุขภาพ</SelectItem>}
                     <SelectItem value="province" className="text-sm">รายจังหวัด</SelectItem>
-                    <SelectItem value="hospital" className="text-sm">รายโรงพยาบาล</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
