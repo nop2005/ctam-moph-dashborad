@@ -467,10 +467,12 @@ export function QuantitativeSection({
                         {category.description}
                       </div>
 
-                      {/* Sub-options - Only show when status is 'pass' (มี) */}
+                      {/* Sub-options - Only show when status is 'pass' (มี) - Required */}
                       {showFileUpload && (
                         <div className="space-y-2">
-                          <Label className="font-medium">การจัดการ Admin Account</Label>
+                          <Label className="font-medium">
+                            การจัดการ Admin Account <span className="text-destructive">*</span>
+                          </Label>
                           <div className="flex flex-wrap gap-2">
                             {subOptions.map((option) => (
                               <button
@@ -488,6 +490,9 @@ export function QuantitativeSection({
                               </button>
                             ))}
                           </div>
+                          {!subOptionSelections[category.id] && !readOnly && (
+                            <p className="text-sm text-destructive">กรุณาเลือกตัวเลือกข้อใดข้อหนึ่ง</p>
+                          )}
                         </div>
                       )}
 
