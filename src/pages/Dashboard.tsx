@@ -218,9 +218,14 @@ export default function Dashboard() {
         if (assessError) {
           console.error('Error loading assessments:', assessError);
         } else {
-          // Filter assessments for provincial users to only show their province
+          // Filter assessments based on user role
           let filtered = assessmentsData || [];
-          if (profile?.role === 'provincial' && profile.province_id) {
+          
+          if (profile?.role === 'hospital_it' && profile.hospital_id) {
+            // Hospital IT: only show their hospital's assessments
+            filtered = (assessmentsData || []).filter(a => a.hospital_id === profile.hospital_id);
+          } else if (profile?.role === 'provincial' && profile.province_id) {
+            // Provincial: show assessments from their province
             filtered = (assessmentsData || []).filter(a => {
               // Filter hospital assessments by province
               if (a.hospital_id && a.hospitals) {
@@ -232,7 +237,11 @@ export default function Dashboard() {
               }
               return false;
             });
+          } else if (profile?.role === 'health_office' && profile.health_office_id) {
+            // Health office: only show their health office's assessments
+            filtered = (assessmentsData || []).filter(a => a.health_office_id === profile.health_office_id);
           }
+          // central_admin, regional, supervisor see all
           setAssessments(filtered);
         }
 
