@@ -43,7 +43,7 @@ import {
 
 const menuItems = [
   { 
-    title: 'หน้าหลัก', 
+    title: 'หน้าหลักแบบประเมิน', 
     url: '/dashboard', 
     icon: LayoutDashboard,
     roles: ['hospital_it', 'provincial', 'regional', 'central_admin', 'health_office', 'supervisor']
