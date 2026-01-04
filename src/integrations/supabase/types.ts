@@ -115,6 +115,7 @@ export type Database = {
           assessment_period: string
           created_at: string
           created_by: string
+          data_updated: boolean
           fiscal_year: number
           health_office_id: string | null
           hospital_id: string | null
@@ -144,6 +145,7 @@ export type Database = {
           assessment_period: string
           created_at?: string
           created_by: string
+          data_updated?: boolean
           fiscal_year: number
           health_office_id?: string | null
           hospital_id?: string | null
@@ -173,6 +175,7 @@ export type Database = {
           assessment_period?: string
           created_at?: string
           created_by?: string
+          data_updated?: boolean
           fiscal_year?: number
           health_office_id?: string | null
           hospital_id?: string | null

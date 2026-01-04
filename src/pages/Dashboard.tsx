@@ -38,6 +38,7 @@ import {
   Loader2,
   RotateCcw,
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
 import type { Database } from '@/integrations/supabase/types';
@@ -713,6 +714,9 @@ export default function Dashboard() {
                   <TableHead>สถานะ</TableHead>
                   <TableHead>คะแนนรวม (10)</TableHead>
                   <TableHead>วันที่สร้าง</TableHead>
+                  {profile?.role === 'central_admin' && (
+                    <TableHead className="text-center">อัพเดดข้อมูลเเล้ว</TableHead>
+                  )}
                   <TableHead className="text-right">การดำเนินการ</TableHead>
                 </TableRow>
               </TableHeader>
@@ -738,6 +742,39 @@ export default function Dashboard() {
                       <TableCell>
                         {format(new Date(assessment.created_at), 'd MMM yyyy', { locale: th })}
                       </TableCell>
+                      {profile?.role === 'central_admin' && (
+                        <TableCell className="text-center">
+                          <Switch
+                            checked={assessment.data_updated || false}
+                            onCheckedChange={async (checked) => {
+                              try {
+                                const { error } = await supabase
+                                  .from('assessments')
+                                  .update({ data_updated: checked })
+                                  .eq('id', assessment.id);
+                                
+                                if (error) throw error;
+                                
+                                setAssessments(prev => prev.map(a => 
+                                  a.id === assessment.id 
+                                    ? { ...a, data_updated: checked }
+                                    : a
+                                ));
+                                
+                                toast({
+                                  title: checked ? 'เปิดสถานะอัพเดดข้อมูลเเล้ว' : 'ปิดสถานะอัพเดดข้อมูล',
+                                });
+                              } catch (error: any) {
+                                toast({
+                                  title: 'เกิดข้อผิดพลาด',
+                                  description: error.message,
+                                  variant: 'destructive',
+                                });
+                              }
+                            }}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button
