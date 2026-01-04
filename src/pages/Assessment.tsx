@@ -13,7 +13,18 @@ import { AssessmentSummary } from '@/components/assessment/AssessmentSummary';
 import { ApprovalWorkflow } from '@/components/assessment/ApprovalWorkflow';
 import { SectionApproval } from '@/components/assessment/SectionApproval';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Loader2, Send } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
 type Assessment = Database['public']['Tables']['assessments']['Row'];
@@ -23,6 +34,7 @@ type QualitativeScore = Database['public']['Tables']['qualitative_scores']['Row'
 type ImpactScore = Database['public']['Tables']['impact_scores']['Row'];
 type Hospital = Database['public']['Tables']['hospitals']['Row'];
 type HealthOffice = Database['public']['Tables']['health_offices']['Row'];
+type Province = Database['public']['Tables']['provinces']['Row'];
 
 export default function Assessment() {
   const { id } = useParams<{ id: string }>();
@@ -38,7 +50,10 @@ export default function Assessment() {
   const [impactScore, setImpactScore] = useState<ImpactScore | null>(null);
   const [hospital, setHospital] = useState<Hospital | null>(null);
   const [healthOffice, setHealthOffice] = useState<HealthOffice | null>(null);
+  const [province, setProvince] = useState<Province | null>(null);
   const [activeTab, setActiveTab] = useState('quantitative');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
 
   const isReadOnly = assessment?.status !== 'draft' && assessment?.status !== 'returned';
   // Health office users can edit their own assessments just like hospital_it
@@ -46,6 +61,18 @@ export default function Assessment() {
   const canReview = (profile?.role === 'provincial' && assessment?.status === 'submitted') ||
                    (profile?.role === 'regional' && assessment?.status === 'approved_provincial');
   const canApprove = profile?.role === 'central_admin';
+
+  // Check if all items are answered (have pass/fail status)
+  const allItemsAnswered = items.length === categories.length && items.length > 0;
+  
+  // Check if all "pass" items have sub-option selected
+  const allSubOptionsSelected = items.every(item => {
+    if (item.status !== 'pass') return true;
+    // Check if description contains sub-option format [xxx]
+    return item.description && /^\[\w+\]/.test(item.description);
+  });
+
+  const canSubmit = canEdit && allItemsAnswered && allSubOptionsSelected;
 
   // Calculate scores for tabs
   const calculateQuantitativeScore = () => {
@@ -119,6 +146,16 @@ export default function Assessment() {
           .eq('id', assessmentData.hospital_id)
           .maybeSingle();
         setHospital(hospitalData);
+
+        // Load province info for the hospital
+        if (hospitalData?.province_id) {
+          const { data: provinceData } = await supabase
+            .from('provinces')
+            .select('*')
+            .eq('id', hospitalData.province_id)
+            .maybeSingle();
+          setProvince(provinceData);
+        }
       }
 
       // Load health office info if health_office_id exists
@@ -129,6 +166,16 @@ export default function Assessment() {
           .eq('id', assessmentData.health_office_id)
           .maybeSingle();
         setHealthOffice(healthOfficeData);
+
+        // Load province info for the health office
+        if (healthOfficeData?.province_id) {
+          const { data: provinceData } = await supabase
+            .from('provinces')
+            .select('*')
+            .eq('id', healthOfficeData.province_id)
+            .maybeSingle();
+          setProvince(provinceData);
+        }
       }
 
       // Load assessment items
@@ -161,6 +208,47 @@ export default function Assessment() {
       toast({ title: 'เกิดข้อผิดพลาด', description: error.message, variant: 'destructive' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    try {
+      setSubmitting(true);
+
+      // Update assessment status to submitted
+      const { error: updateError } = await supabase
+        .from('assessments')
+        .update({
+          status: 'submitted',
+          submitted_by: profile?.id,
+          submitted_at: new Date().toISOString(),
+        })
+        .eq('id', assessment.id);
+
+      if (updateError) throw updateError;
+
+      // Add approval history
+      const { error: historyError } = await supabase
+        .from('approval_history')
+        .insert({
+          assessment_id: assessment.id,
+          from_status: assessment.status,
+          to_status: 'submitted',
+          action: 'submit',
+          performed_by: profile?.id!,
+        });
+
+      if (historyError) throw historyError;
+
+      toast({ title: 'ส่งแบบประเมินสำเร็จ', description: `รอการตรวจสอบจาก สสจ.${province?.name || ''}` });
+      setSubmitDialogOpen(false);
+      loadAssessmentData();
+
+    } catch (error: any) {
+      console.error('Error submitting assessment:', error);
+      toast({ title: 'เกิดข้อผิดพลาด', description: error.message, variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -216,6 +304,32 @@ export default function Assessment() {
               onItemsChange={setItems}
               readOnly={!canEdit}
             />
+            
+            {/* Submit button at the bottom of quantitative section */}
+            {canEdit && (assessment.status === 'draft' || assessment.status === 'returned') && (
+              <div className="flex justify-center pt-4">
+                <Button 
+                  size="lg"
+                  onClick={() => setSubmitDialogOpen(true)}
+                  disabled={!canSubmit}
+                  className="min-w-[300px]"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  ส่งประเมินให้ สสจ.{province?.name || ''}
+                </Button>
+              </div>
+            )}
+            {canEdit && !allItemsAnswered && (
+              <p className="text-center text-sm text-muted-foreground">
+                กรุณาตอบคำถามให้ครบทุกข้อก่อนส่งประเมิน
+              </p>
+            )}
+            {canEdit && allItemsAnswered && !allSubOptionsSelected && (
+              <p className="text-center text-sm text-destructive">
+                กรุณาเลือกประเภทของระบบ/เครื่องมือที่ใช้ให้ครบทุกข้อที่ตอบ "มี"
+              </p>
+            )}
+            
             {/* Section-level approval for quantitative */}
             <SectionApproval 
               assessment={assessment} 
@@ -252,6 +366,28 @@ export default function Assessment() {
             />
           </TabsContent>
         </Tabs>
+
+        {/* Submit Confirmation Dialog */}
+        <AlertDialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>ยืนยันการส่งแบบประเมิน</AlertDialogTitle>
+              <AlertDialogDescription>
+                คุณกำลังจะส่งแบบประเมินไปยัง สสจ.{province?.name || ''} 
+                <br />
+                เมื่อส่งแบบประเมินแล้ว คุณจะไม่สามารถแก้ไขได้จนกว่าจะถูกตีกลับ
+                กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนส่ง
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+              <AlertDialogAction onClick={handleSubmit} disabled={submitting}>
+                {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                ยืนยันส่ง
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
