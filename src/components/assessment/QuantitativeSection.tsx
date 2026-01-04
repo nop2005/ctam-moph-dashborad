@@ -116,6 +116,14 @@ const statusOptions: { value: ItemStatus; label: string; icon: React.ReactNode; 
   { value: 'fail', label: 'ไม่มี (No)', icon: <XCircle className="w-4 h-4" />, color: 'text-destructive' },
 ];
 
+// Sub-options when "มี (Yes)" is selected
+const subOptions = [
+  { value: 'private', label: 'เอกชน' },
+  { value: 'opensource', label: 'Open Source/Freeware' },
+  { value: 'mixed', label: 'ใช้รวมกัน Open Source+เอกชน' },
+  { value: 'other', label: 'อื่นๆ' },
+];
+
 export function QuantitativeSection({
   assessmentId,
   categories,
@@ -127,15 +135,25 @@ export function QuantitativeSection({
   const [savingId, setSavingId] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [localDescriptions, setLocalDescriptions] = useState<Record<string, string>>({});
+  const [subOptionSelections, setSubOptionSelections] = useState<Record<string, string>>({});
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
-  // Initialize local descriptions from items
+  // Initialize local descriptions and sub-option selections from items
   useEffect(() => {
     const descriptions: Record<string, string> = {};
+    const selections: Record<string, string> = {};
     items.forEach(item => {
       descriptions[item.category_id] = item.description || '';
+      // Parse sub-option from description if exists (format: "[sub_option]rest of description")
+      if (item.description) {
+        const match = item.description.match(/^\[(\w+)\]/);
+        if (match) {
+          selections[item.category_id] = match[1];
+        }
+      }
     });
     setLocalDescriptions(descriptions);
+    setSubOptionSelections(selections);
   }, [items]);
 
   const getItemForCategory = (categoryId: string) => {
@@ -221,6 +239,35 @@ export function QuantitativeSection({
       saveDescription(categoryId, description);
     }, 800);
   }, [saveDescription]);
+
+  const handleSubOptionChange = useCallback(async (categoryId: string, subOption: string) => {
+    setSubOptionSelections(prev => ({ ...prev, [categoryId]: subOption }));
+
+    const item = getItemForCategory(categoryId);
+    if (!item) return;
+
+    try {
+      // Get current description without the sub-option prefix
+      const currentDesc = localDescriptions[categoryId] || '';
+      const cleanDesc = currentDesc.replace(/^\[\w+\]\s*/, '');
+      const newDescription = `[${subOption}] ${cleanDesc}`.trim();
+
+      const { error } = await supabase
+        .from('assessment_items')
+        .update({ description: newDescription })
+        .eq('id', item.id);
+
+      if (error) throw error;
+
+      setLocalDescriptions(prev => ({ ...prev, [categoryId]: newDescription }));
+      onItemsChange(
+        items.map(i => i.id === item.id ? { ...i, description: newDescription } : i)
+      );
+    } catch (error: any) {
+      console.error('Error updating sub-option:', error);
+      toast({ title: 'เกิดข้อผิดพลาด', description: error.message, variant: 'destructive' });
+    }
+  }, [items, onItemsChange, toast, localDescriptions]);
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -419,6 +466,30 @@ export function QuantitativeSection({
                       <div className="text-sm text-muted-foreground mb-4">
                         {category.description}
                       </div>
+
+                      {/* Sub-options - Only show when status is 'pass' (มี) */}
+                      {showFileUpload && (
+                        <div className="space-y-2">
+                          <Label className="font-medium">การจัดการ Admin Account</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {subOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => !readOnly && handleSubOptionChange(category.id, option.value)}
+                                disabled={readOnly}
+                                className={`px-4 py-2 rounded-lg border-2 transition-all text-sm ${
+                                  subOptionSelections[category.id] === option.value
+                                    ? 'border-primary bg-primary/10 text-primary font-medium'
+                                    : 'border-muted hover:border-muted-foreground/50 text-muted-foreground'
+                                } ${readOnly ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Description/Notes */}
                       <div className="space-y-2">
