@@ -8,7 +8,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import SuperAdmin from "./pages/SuperAdmin";
-import AssessmentList from "./pages/AssessmentList";
+// AssessmentList removed - functionality moved to Dashboard
 import Assessment from "./pages/Assessment";
 import UserManagement from "./pages/UserManagement";
 import Reports from "./pages/Reports";
@@ -58,14 +58,8 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="/assessments" 
-              element={
-                <ProtectedRoute>
-                  <AssessmentList />
-                </ProtectedRoute>
-              } 
-            />
+            {/* Redirect /assessments to /dashboard */}
+            <Route path="/assessments" element={<Navigate to="/dashboard" replace />} />
             <Route 
               path="/assessment/:id" 
               element={
