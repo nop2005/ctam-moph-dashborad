@@ -1027,6 +1027,10 @@ export type Database = {
         Args: { _health_region_id: string }
         Returns: boolean
       }
+      get_public_quantitative_summary: {
+        Args: { p_fiscal_year?: number }
+        Returns: Json
+      }
       get_public_report_summary: {
         Args: { p_fiscal_year?: number }
         Returns: Json

@@ -36,28 +36,11 @@ interface HealthOffice {
   office_type: string;
 }
 
-interface CTAMCategory {
-  id: string;
-  code: string;
-  name_th: string;
-  name_en: string;
-  order_number: number;
-}
-
-interface AssessmentItem {
-  id: string;
-  assessment_id: string;
-  category_id: string;
-  score: number | string | null;
-}
-
-interface Assessment {
-  id: string;
-  hospital_id: string | null;
-  health_office_id: string | null;
-  status: string;
-  fiscal_year: number;
-  quantitative_score: number | null;
+interface PublicQuantitativeSummary {
+  fiscal_years: number[];
+  region_passed_all_17: { health_region_id: string; passed_all_17: number }[];
+  province_passed_all_17: { province_id: string; passed_all_17: number }[];
+  province_avg_quantitative_score: { province_id: string; avg_quantitative_score: number | null }[];
 }
 
 const getCurrentFiscalYear = (): number => {
@@ -67,155 +50,118 @@ const getCurrentFiscalYear = (): number => {
   return month >= 9 ? year + 1 : year;
 };
 
-const generateFiscalYears = (assessments: Assessment[]): number[] => {
-  const years = new Set<number>();
-  const currentFiscalYear = getCurrentFiscalYear();
-  years.add(currentFiscalYear);
-  assessments.forEach(a => {
-    if (a.fiscal_year) years.add(a.fiscal_year);
-  });
-  return Array.from(years).sort((a, b) => b - a);
-};
-
 export default function PublicReportsQuantitative() {
-  const [loading, setLoading] = useState(true);
+  const [baseLoading, setBaseLoading] = useState(true);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const loading = baseLoading || summaryLoading;
+
   const [healthRegions, setHealthRegions] = useState<HealthRegion[]>([]);
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [healthOffices, setHealthOffices] = useState<HealthOffice[]>([]);
-  const [categories, setCategories] = useState<CTAMCategory[]>([]);
-  const [assessmentItems, setAssessmentItems] = useState<AssessmentItem[]>([]);
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [summary, setSummary] = useState<PublicQuantitativeSummary | null>(null);
+
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
 
   useEffect(() => {
-    const fetchAll = async <T,>(query: any): Promise<T[]> => {
-      const pageSize = 1000;
-      let from = 0;
-      const all: T[] = [];
-      while (true) {
-        const { data, error } = await query.range(from, from + pageSize - 1);
-        if (error) throw error;
-        const chunk = (data || []) as T[];
-        all.push(...chunk);
-        if (chunk.length < pageSize) break;
-        from += pageSize;
-      }
-      return all;
-    };
-
-    const fetchData = async () => {
+    const fetchBaseData = async () => {
       try {
-        const [regionsRes, provincesRes, hospitalsRes, healthOfficesRes, categoriesRes] = await Promise.all([
+        setBaseLoading(true);
+        const [regionsRes, provincesRes, hospitalsRes, healthOfficesRes] = await Promise.all([
           supabase.from('health_regions').select('*').order('region_number'),
           supabase.from('provinces').select('*').order('name'),
           supabase.from('hospitals').select('*').order('name'),
           supabase.from('health_offices').select('*').order('name'),
-          supabase.from('ctam_categories').select('*').order('order_number')
         ]);
 
         if (regionsRes.error) throw regionsRes.error;
         if (provincesRes.error) throw provincesRes.error;
         if (hospitalsRes.error) throw hospitalsRes.error;
         if (healthOfficesRes.error) throw healthOfficesRes.error;
-        if (categoriesRes.error) throw categoriesRes.error;
 
         setHealthRegions(regionsRes.data || []);
         setProvinces(provincesRes.data || []);
         setHospitals(hospitalsRes.data || []);
         setHealthOffices(healthOfficesRes.data || []);
-        setCategories(categoriesRes.data || []);
-
-        const assessmentsAll = await fetchAll<Assessment>(
-          supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, quantitative_score, created_at').order('created_at', { ascending: true })
-        );
-        const itemsAll = await fetchAll<AssessmentItem>(
-          supabase.from('assessment_items').select('id, assessment_id, category_id, score, created_at').order('created_at', { ascending: true })
-        );
-
-        setAssessments(assessmentsAll);
-        setAssessmentItems(itemsAll);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
       } finally {
-        setLoading(false);
+        setBaseLoading(false);
       }
     };
-    fetchData();
+
+    fetchBaseData();
   }, []);
 
-  const fiscalYears = useMemo(() => generateFiscalYears(assessments), [assessments]);
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        setSummaryLoading(true);
+        const fiscalYear = selectedFiscalYear === 'all' ? null : parseInt(selectedFiscalYear);
 
-  // Filter assessments by fiscal year
-  const filteredAssessments = useMemo(() => {
-    if (selectedFiscalYear === 'all') return assessments;
-    return assessments.filter(a => a.fiscal_year === parseInt(selectedFiscalYear));
-  }, [assessments, selectedFiscalYear]);
+        const { data, error } = await supabase.rpc('get_public_quantitative_summary', {
+          p_fiscal_year: fiscalYear,
+        });
 
-  // Filter assessment items by filtered assessments
-  const filteredAssessmentItems = useMemo(() => {
-    const filteredAssessmentIds = new Set(filteredAssessments.map(a => a.id));
-    return assessmentItems.filter(item => filteredAssessmentIds.has(item.assessment_id));
-  }, [assessmentItems, filteredAssessments]);
+        if (error) throw error;
+        setSummary(data as unknown as PublicQuantitativeSummary);
+      } catch (error) {
+        console.error('Error fetching summary:', error);
+        toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูลสรุป');
+      } finally {
+        setSummaryLoading(false);
+      }
+    };
 
-  // Region level table data - using same logic as ReportsQuantitative
+    fetchSummary();
+  }, [selectedFiscalYear]);
+
+  const fiscalYears = useMemo(() => {
+    const currentFiscalYear = getCurrentFiscalYear();
+    const years = new Set<number>([currentFiscalYear]);
+    (summary?.fiscal_years || []).forEach(y => years.add(y));
+    return Array.from(years).sort((a, b) => b - a);
+  }, [summary]);
+
+  const regionPassedAll17Map = useMemo(() => {
+    const map = new Map<string, number>();
+    (summary?.region_passed_all_17 || []).forEach(r => {
+      map.set(r.health_region_id, Number(r.passed_all_17) || 0);
+    });
+    return map;
+  }, [summary]);
+
+  const provinceAvgQuantitativeMap = useMemo(() => {
+    const map = new Map<string, number | null>();
+    (summary?.province_avg_quantitative_score || []).forEach(p => {
+      const val = p.avg_quantitative_score;
+      const num = val === null ? null : Number(val);
+      map.set(p.province_id, Number.isFinite(num as number) ? (num as number) : null);
+    });
+    return map;
+  }, [summary]);
+
   const regionTableData = useMemo(() => {
     return healthRegions.map(region => {
       const regionProvinces = provinces.filter(p => p.health_region_id === region.id);
       const regionHospitals = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id));
       const regionHealthOffices = healthOffices.filter(ho => ho.health_region_id === region.id);
-      const hospitalIds = regionHospitals.map(h => h.id);
-      const healthOfficeIds = regionHealthOffices.map(ho => ho.id);
       const totalUnits = regionHospitals.length + regionHealthOffices.length;
 
-      // Calculate units that passed all 17 items (same logic as ReportsQuantitative)
-      let unitsPassedAll17 = 0;
-
-      // Check hospitals
-      hospitalIds.forEach(hospitalId => {
-        const unitAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
-        if (unitAssessments.length === 0) return;
-        const assessmentIds = unitAssessments.map(a => a.id);
-        let passedAllCategories = true;
-        categories.forEach(cat => {
-          const catItems = filteredAssessmentItems.filter(
-            item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
-          );
-          const hasPassed = catItems.some(item => Number(item.score) === 1);
-          if (!hasPassed) passedAllCategories = false;
-        });
-        if (passedAllCategories) unitsPassedAll17++;
-      });
-
-      // Check health offices
-      healthOfficeIds.forEach(officeId => {
-        const unitAssessments = filteredAssessments.filter(a => a.health_office_id === officeId);
-        if (unitAssessments.length === 0) return;
-        const assessmentIds = unitAssessments.map(a => a.id);
-        let passedAllCategories = true;
-        categories.forEach(cat => {
-          const catItems = filteredAssessmentItems.filter(
-            item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id
-          );
-          const hasPassed = catItems.some(item => Number(item.score) === 1);
-          if (!hasPassed) passedAllCategories = false;
-        });
-        if (passedAllCategories) unitsPassedAll17++;
-      });
+      const unitsPassedAll17 = regionPassedAll17Map.get(region.id) ?? 0;
 
       return {
         id: region.id,
         name: `เขตสุขภาพที่ ${region.region_number}`,
         totalUnits,
         passedAll17: unitsPassedAll17,
-        percentage: totalUnits > 0 ? (unitsPassedAll17 / totalUnits) * 100 : 0
+        percentage: totalUnits > 0 ? (unitsPassedAll17 / totalUnits) * 100 : 0,
       };
     });
-  }, [healthRegions, provinces, hospitals, healthOffices, categories, filteredAssessments, filteredAssessmentItems]);
+  }, [healthRegions, provinces, hospitals, healthOffices, regionPassedAll17Map]);
 
-  // Province level table data - same logic as Reports.tsx (overview page)
   const provinceTableData = useMemo(() => {
     if (selectedRegion === 'all') return [];
 
@@ -223,30 +169,18 @@ export default function PublicReportsQuantitative() {
     return regionProvinces.map(province => {
       const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
       const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === province.id);
-      const hospitalIds = provinceHospitals.map(h => h.id);
-      const healthOfficeIds = provinceHealthOffices.map(ho => ho.id);
       const totalUnits = provinceHospitals.length + provinceHealthOffices.length;
 
-      // Get assessments for this province
-      const provinceAssessments = filteredAssessments.filter(a =>
-        provinceHospitals.some(h => h.id === a.hospital_id) ||
-        provinceHealthOffices.some(ho => ho.id === a.health_office_id)
-      );
-
-      // Calculate average quantitative score
-      const quantitativeScores = provinceAssessments.filter(a => a.quantitative_score !== null);
-      const avgQuantitative = quantitativeScores.length > 0
-        ? quantitativeScores.reduce((sum, a) => sum + (a.quantitative_score || 0), 0) / quantitativeScores.length
-        : null;
+      const avgQuantitative = provinceAvgQuantitativeMap.get(province.id) ?? null;
 
       return {
         id: province.id,
         name: province.name,
         totalUnits,
-        avgQuantitative
+        avgQuantitative,
       };
     });
-  }, [selectedRegion, provinces, hospitals, healthOffices, filteredAssessments]);
+  }, [selectedRegion, provinces, hospitals, healthOffices, provinceAvgQuantitativeMap]);
 
   const handleRegionClick = (regionId: string) => {
     setSelectedRegion(regionId);
@@ -354,10 +288,10 @@ export default function PublicReportsQuantitative() {
                               const percentage = row.percentage;
                               const colorClass =
                                 percentage === 100
-                                  ? '[&>div]:bg-green-500'
+                                  ? '[&>div]:bg-success'
                                   : percentage >= 50
-                                  ? '[&>div]:bg-yellow-500'
-                                  : '[&>div]:bg-red-500';
+                                  ? '[&>div]:bg-warning'
+                                  : '[&>div]:bg-destructive';
                               return <Progress value={percentage} className={`h-4 flex-1 ${colorClass}`} />;
                             })()}
                             <span className="w-14 text-right text-sm font-medium">
@@ -408,15 +342,15 @@ export default function PublicReportsQuantitative() {
         {selectedRegion === 'all' && (
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-500 rounded"></div>
+              <div className="w-4 h-4 bg-success rounded"></div>
               <span>100% (ผ่านทั้งหมด)</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+              <div className="w-4 h-4 bg-warning rounded"></div>
               <span>50-99%</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-500 rounded"></div>
+              <div className="w-4 h-4 bg-destructive rounded"></div>
               <span>ต่ำกว่า 50%</span>
             </div>
           </div>
