@@ -336,7 +336,7 @@ export default function Reports() {
                       <TableHead className="text-right">จำนวนสถานบริการ</TableHead>
                       <TableHead className="text-right">คะแนนเชิงปริมาณ</TableHead>
                       <TableHead className="text-right">คะแนนเชิงผลกระทบ</TableHead>
-                      <TableHead className="text-right">อนุมัติแล้ว</TableHead>
+                      <TableHead className="text-right">ประเมินแล้ว</TableHead>
                       <TableHead className="text-right">คะแนนรวม</TableHead>
                     </TableRow>
                   </TableHeader>
