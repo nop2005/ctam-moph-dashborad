@@ -13,6 +13,7 @@ import Assessment from "./pages/Assessment";
 import UserManagement from "./pages/UserManagement";
 import Reports from "./pages/Reports";
 import ReportsQuantitative from "./pages/ReportsQuantitative";
+import ReportsQuantitativeDetail from "./pages/ReportsQuantitativeDetail";
 import ReportsImpact from "./pages/ReportsImpact";
 import InspectionSupervisor from "./pages/InspectionSupervisor";
 import InspectionSupervisee from "./pages/InspectionSupervisee";
@@ -89,6 +90,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ReportsQuantitative />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/reports/quantitative-detail" 
+              element={
+                <ProtectedRoute>
+                  <ReportsQuantitativeDetail />
                 </ProtectedRoute>
               } 
             />
