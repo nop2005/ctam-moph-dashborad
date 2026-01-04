@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { TrendingUp, Filter, Building2, MapPin, ArrowLeft } from 'lucide-react';
+import { TrendingUp, Filter, Building2, MapPin, ArrowLeft, UserCircle, Briefcase } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -94,6 +94,7 @@ export default function ReportsQuantitative() {
   const [categories, setCategories] = useState<CTAMCategory[]>([]);
   const [assessmentItems, setAssessmentItems] = useState<AssessmentItem[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [organizationName, setOrganizationName] = useState<string | null>(null);
 
   // Filters
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
@@ -175,6 +176,48 @@ export default function ReportsQuantitative() {
       }
     }
   }, [isProvincialAdmin, userProvinceId, provinces]);
+
+  // Fetch organization name based on role
+  useEffect(() => {
+    const fetchOrganizationName = async () => {
+      if (!profile) return;
+
+      if (profile.health_office_id) {
+        const { data } = await supabase
+          .from('health_offices')
+          .select('name')
+          .eq('id', profile.health_office_id)
+          .maybeSingle();
+        if (data) setOrganizationName(data.name);
+      } else if (profile.hospital_id) {
+        const { data } = await supabase
+          .from('hospitals')
+          .select('name')
+          .eq('id', profile.hospital_id)
+          .maybeSingle();
+        if (data) setOrganizationName(data.name);
+      } else if (profile.province_id) {
+        const { data } = await supabase
+          .from('provinces')
+          .select('name')
+          .eq('id', profile.province_id)
+          .maybeSingle();
+        if (data) setOrganizationName(`สสจ.${data.name}`);
+      } else if (profile.health_region_id) {
+        const { data } = await supabase
+          .from('health_regions')
+          .select('region_number')
+          .eq('id', profile.health_region_id)
+          .maybeSingle();
+        if (data) setOrganizationName(`เขตสุขภาพที่ ${data.region_number}`);
+      } else if (profile.role === 'central_admin') {
+        setOrganizationName('กระทรวงสาธารณสุข');
+      } else if (profile.role === 'supervisor') {
+        setOrganizationName('ผู้ตรวจราชการ');
+      }
+    };
+    fetchOrganizationName();
+  }, [profile]);
 
   // Filter provinces based on selected region
   const filteredProvinces = useMemo(() => {
@@ -507,6 +550,38 @@ export default function ReportsQuantitative() {
             </h1>
             <p className="text-muted-foreground">คะแนนการประเมินเชิงปริมาณ 17 ข้อ CTAM</p>
           </div>
+          
+          {/* User Info Box */}
+          {profile && (
+            <Card className="min-w-[200px] border-primary/30">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <UserCircle className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-medium text-sm truncate">
+                      {profile.full_name || profile.email}
+                    </span>
+                    {organizationName && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                        <Briefcase className="w-3 h-3 flex-shrink-0" />
+                        {organizationName}
+                      </span>
+                    )}
+                    <span className="text-xs text-primary font-medium mt-0.5">
+                      {profile.role === 'hospital_it' && 'IT รพ.'}
+                      {profile.role === 'provincial' && 'สสจ.'}
+                      {profile.role === 'regional' && 'เขตสุขภาพ'}
+                      {profile.role === 'central_admin' && 'Super Admin'}
+                      {profile.role === 'health_office' && 'สสจ./สนข.'}
+                      {profile.role === 'supervisor' && 'ผู้ตรวจราชการ'}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Filters */}
