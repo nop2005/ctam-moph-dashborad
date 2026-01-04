@@ -26,16 +26,19 @@ const compareRecency = (a: AssessmentLike, b: AssessmentLike): number => {
 
   const ap = parsePeriodNumber(a.assessment_period);
   const bp = parsePeriodNumber(b.assessment_period);
+  
+  // If both have parseable period numbers, compare them
   if (ap != null && bp != null && ap !== bp) return ap - bp;
 
-  // fallback to string compare when period isn't numeric
-  if (a.assessment_period && b.assessment_period && a.assessment_period !== b.assessment_period) {
-    return a.assessment_period.localeCompare(b.assessment_period);
-  }
-
+  // If period numbers are equal or unparseable, use created_at as the tiebreaker
   const at = a.created_at ? Date.parse(a.created_at) : NaN;
   const bt = b.created_at ? Date.parse(b.created_at) : NaN;
   if (!Number.isNaN(at) && !Number.isNaN(bt) && at !== bt) return at - bt;
+
+  // Last resort: string compare when nothing else works
+  if (a.assessment_period && b.assessment_period && a.assessment_period !== b.assessment_period) {
+    return a.assessment_period.localeCompare(b.assessment_period);
+  }
 
   return 0;
 };
