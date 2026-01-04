@@ -445,9 +445,9 @@ export default function Reports() {
                       <TableHead>ประเภท</TableHead>
                       <TableHead>ครั้งที่ประเมิน</TableHead>
                       <TableHead>สถานะ</TableHead>
-                      <TableHead className="text-right">คะแนนรวม</TableHead>
                       <TableHead className="text-right">เชิงปริมาณ</TableHead>
                       <TableHead className="text-right">ผลกระทบ</TableHead>
+                      <TableHead className="text-right">คะแนนรวม</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -480,14 +480,14 @@ export default function Reports() {
                                 {statusLabels[assessment.status]?.label || assessment.status}
                               </Badge> : <Badge variant="outline">ยังไม่มีข้อมูล</Badge>}
                           </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {assessment?.total_score?.toFixed(2) || '-'}
-                          </TableCell>
                           <TableCell className="text-right">
                             {assessment?.quantitative_score?.toFixed(2) || '-'}
                           </TableCell>
                           <TableCell className="text-right">
                             {assessment?.impact_score?.toFixed(2) || '-'}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {assessment?.total_score?.toFixed(2) || '-'}
                           </TableCell>
                         </TableRow>;
                 })}
@@ -520,14 +520,14 @@ export default function Reports() {
                                 {statusLabels[assessment.status]?.label || assessment.status}
                               </Badge> : <Badge variant="outline">ยังไม่มีข้อมูล</Badge>}
                           </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {assessment?.total_score?.toFixed(2) || '-'}
-                          </TableCell>
                           <TableCell className="text-right">
                             {assessment?.quantitative_score?.toFixed(2) || '-'}
                           </TableCell>
                           <TableCell className="text-right">
                             {assessment?.impact_score?.toFixed(2) || '-'}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {assessment?.total_score?.toFixed(2) || '-'}
                           </TableCell>
                         </TableRow>;
                 })}
