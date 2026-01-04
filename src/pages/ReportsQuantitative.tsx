@@ -572,37 +572,48 @@ export default function ReportsQuantitative() {
         {/* Safety Level Donut Chart - shows all data based on filters (no access policy restriction) */}
         <Card className="max-w-5xl">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">สัดส่วนระดับความปลอดภัยไซเบอร์ของโรงพยาบาล</CardTitle>
+            <CardTitle className="text-base">สัดส่วนระดับความปลอดภัยไซเบอร์ของหน่วยบริการ (รพ. + สสจ./สำนักเขต)</CardTitle>
           </CardHeader>
           <CardContent>
             {(() => {
-            // Get all hospitals in selected province (if selected), otherwise all hospitals
+            // Get all hospitals and health offices in scope based on filters
             // This is based ONLY on filters, NOT on access policy
             let allHospitalsInScope: Hospital[] = [];
+            let allHealthOfficesInScope: HealthOffice[] = [];
+            
             if (selectedProvince !== 'all') {
               allHospitalsInScope = hospitals.filter(h => h.province_id === selectedProvince);
+              allHealthOfficesInScope = healthOffices.filter(ho => ho.province_id === selectedProvince);
             } else if (selectedRegion !== 'all') {
               const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
               allHospitalsInScope = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id));
+              allHealthOfficesInScope = healthOffices.filter(ho => ho.health_region_id === selectedRegion);
             } else {
               allHospitalsInScope = hospitals;
+              allHealthOfficesInScope = healthOffices;
             }
 
-            // Calculate safety level distribution from ALL hospitals in scope (not just tableData)
+            // Combine all units (hospitals + health offices)
+            const allUnitsInScope = [
+              ...allHospitalsInScope.map(h => ({ id: h.id, type: 'hospital' as const })),
+              ...allHealthOfficesInScope.map(ho => ({ id: ho.id, type: 'health_office' as const }))
+            ];
+
+            // Calculate safety level distribution from ALL units in scope
             let greenCount = 0;
             let yellowCount = 0;
             let redCount = 0;
             let grayCount = 0;
 
-            // Calculate for each hospital in scope
-            const assessedHospitalIds = new Set<string>();
-            allHospitalsInScope.forEach(hospital => {
-              // Get latest approved assessment for this hospital
-              const latestAssessment = latestApprovedByUnit.get(hospital.id);
+            // Calculate for each unit in scope
+            const assessedUnitIds = new Set<string>();
+            allUnitsInScope.forEach(unit => {
+              // Get latest approved assessment for this unit
+              const latestAssessment = latestApprovedByUnit.get(unit.id);
               if (!latestAssessment) return;
 
               // Get category items for this assessment
-              const hospitalCategoryAverages = categories.map(cat => {
+              const unitCategoryAverages = categories.map(cat => {
                 const catItems = filteredAssessmentItems.filter(
                   item => item.assessment_id === latestAssessment.id && item.category_id === cat.id
                 );
@@ -611,23 +622,23 @@ export default function ReportsQuantitative() {
                 return { categoryId: cat.id, average: avg };
               });
 
-              const passedCount = hospitalCategoryAverages.filter(c => c.average === 1).length;
-              const totalCount = hospitalCategoryAverages.filter(c => c.average !== null).length;
+              const passedCount = unitCategoryAverages.filter(c => c.average === 1).length;
+              const totalCount = unitCategoryAverages.filter(c => c.average !== null).length;
               const passedPercentage = totalCount > 0 ? passedCount / totalCount * 100 : null;
 
               if (passedPercentage !== null) {
-                assessedHospitalIds.add(hospital.id);
+                assessedUnitIds.add(unit.id);
                 if (passedPercentage === 100) greenCount++;
                 else if (passedPercentage >= 50) yellowCount++;
                 else redCount++;
               }
             });
 
-            // Count unassessed hospitals
-            grayCount = allHospitalsInScope.filter(h => !assessedHospitalIds.has(h.id)).length;
+            // Count unassessed units
+            grayCount = allUnitsInScope.filter(u => !assessedUnitIds.has(u.id)).length;
             const total = greenCount + yellowCount + redCount + grayCount;
             if (total === 0) {
-              return <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูลโรงพยาบาล (กรุณาเลือกจังหวัดเพื่อดูข้อมูล)</div>;
+              return <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูลหน่วยบริการ (กรุณาเลือกจังหวัดเพื่อดูข้อมูล)</div>;
             }
             const pieData = [{
               name: 'ปลอดภัยไซเบอร์สูง',
@@ -671,7 +682,7 @@ export default function ReportsQuantitative() {
               const x = cx + radius * Math.cos(-midAngle * RADIAN);
               const y = cy + radius * Math.sin(-midAngle * RADIAN);
               return <text x={x} y={y} fill="currentColor" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs fill-foreground">
-                    {`${shortName} ${value} รพ. (${percentage}%)`}
+                    {`${shortName} ${value} แห่ง (${percentage}%)`}
                   </text>;
             };
             return <div className="flex flex-col md:flex-row items-start gap-4">
@@ -681,14 +692,14 @@ export default function ReportsQuantitative() {
                         <Pie data={pieData} cx="50%" cy="50%" labelLine={true} label={renderCustomLabel} innerRadius={50} outerRadius={80} fill="#8884d8" dataKey="value" paddingAngle={2}>
                           {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.color} />)}
                         </Pie>
-                        <Tooltip formatter={(value: number, name: string) => [`${value} รพ.`, name]} />
+                        <Tooltip formatter={(value: number, name: string) => [`${value} แห่ง`, name]} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
                   <div className="space-y-3 w-fit">
                     <div>
                       <span className="text-xl font-bold">{total}</span>
-                      <span className="text-muted-foreground ml-2 text-sm">โรงพยาบาลทั้งหมด</span>
+                      <span className="text-muted-foreground ml-2 text-sm">หน่วยบริการทั้งหมด (รพ. {allHospitalsInScope.length} + สสจ./สำนักเขต {allHealthOfficesInScope.length})</span>
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center gap-3 p-2 rounded-lg bg-green-50 dark:bg-green-950/30 whitespace-nowrap">
