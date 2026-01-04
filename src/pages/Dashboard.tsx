@@ -740,7 +740,7 @@ export default function Dashboard() {
                   <TableHead>คะแนนรวม (10)</TableHead>
                   <TableHead>วันที่สร้าง</TableHead>
                   {profile?.role === 'central_admin' && (
-                    <TableHead className="text-center">อัพเดดข้อมูลเเล้ว</TableHead>
+                    <TableHead className="text-center">ศทส.อัพเดดเเดชบอร์ดกลางเเล้ว</TableHead>
                   )}
                   <TableHead className="text-right">การดำเนินการ</TableHead>
                 </TableRow>
