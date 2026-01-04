@@ -14,10 +14,6 @@ const reportSubItems = [{
   title: 'เชิงปริมาณ ( 17 ข้อ )',
   url: '/public/reports/quantitative',
   icon: TrendingUp
-}, {
-  title: 'เชิงผลกระทบ ( Incident & Recovery )',
-  url: '/public/reports/impact',
-  icon: AlertTriangle
 }];
 const inspectionSubItems = [{
   title: 'รายงานผู้นิเทศ',
