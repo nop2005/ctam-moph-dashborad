@@ -30,6 +30,23 @@ const formatFileSize = (bytes: number | null) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
+// Sanitize file name to remove special characters for Supabase Storage
+const sanitizeFileName = (fileName: string): string => {
+  // Get file extension
+  const lastDot = fileName.lastIndexOf('.');
+  const ext = lastDot > 0 ? fileName.substring(lastDot) : '';
+  const name = lastDot > 0 ? fileName.substring(0, lastDot) : fileName;
+  
+  // Replace non-ASCII and special characters with underscores, keep alphanumeric and basic punctuation
+  const sanitized = name
+    .replace(/[^\w\s.-]/g, '_') // Replace special chars with underscore
+    .replace(/\s+/g, '_')       // Replace spaces with underscore
+    .replace(/_+/g, '_')        // Collapse multiple underscores
+    .replace(/^_|_$/g, '');     // Remove leading/trailing underscores
+  
+  return (sanitized || 'file') + ext;
+};
+
 export function FileUpload({ assessmentId, assessmentItemId, readOnly }: FileUploadProps) {
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -76,8 +93,9 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly }: FileUpl
           continue;
         }
 
-        // Upload to storage
-        const filePath = `${assessmentId}/${assessmentItemId}/${Date.now()}_${file.name}`;
+        // Upload to storage - sanitize file name for Supabase Storage
+        const safeFileName = sanitizeFileName(file.name);
+        const filePath = `${assessmentId}/${assessmentItemId}/${Date.now()}_${safeFileName}`;
         const { error: uploadError } = await supabase.storage
           .from('evidence-files')
           .upload(filePath, file);
