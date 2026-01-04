@@ -246,9 +246,53 @@ export default function ReportsImpact() {
 
   const latestApprovedByUnit = useMemo(() => getLatestAssessmentsByUnit(approvedAssessments), [approvedAssessments]);
 
-  // Get impact score for an assessment
-  const getImpactScoreForAssessment = (assessmentId: string): ImpactScore | undefined => {
-    return impactScores.find(is => is.assessment_id === assessmentId);
+  const impactScoreByAssessmentId = useMemo(() => {
+    const map = new Map<string, ImpactScore>();
+    for (const s of impactScores) map.set(s.assessment_id, s);
+    return map;
+  }, [impactScores]);
+
+  const MAX_IMPACT_SCORE = 3;
+
+  type ImpactSnapshot = {
+    rawScore: number | null;
+    percentScore: number | null;
+    hadIncident: boolean | null;
+    hadBreach: boolean | null;
+    impactScore?: ImpactScore;
+  };
+
+  const getImpactSnapshot = (assessment?: Assessment): ImpactSnapshot => {
+    if (!assessment) {
+      return {
+        rawScore: null,
+        percentScore: null,
+        hadIncident: null,
+        hadBreach: null,
+        impactScore: undefined,
+      };
+    }
+
+    const impactScore = impactScoreByAssessmentId.get(assessment.id);
+
+    // impact_scores.total_score is stored as percent (0-100)
+    // assessments.impact_score is stored as raw (0-3)
+    const percentScore =
+      impactScore?.total_score ??
+      (assessment.impact_score != null
+        ? (assessment.impact_score / MAX_IMPACT_SCORE) * 100
+        : null);
+
+    const rawScore =
+      assessment.impact_score ??
+      (impactScore?.total_score != null
+        ? (impactScore.total_score / 100) * MAX_IMPACT_SCORE
+        : null);
+
+    const hadIncident = impactScore?.had_incident ?? (percentScore != null ? false : null);
+    const hadBreach = impactScore?.had_data_breach ?? (percentScore != null ? false : null);
+
+    return { rawScore, percentScore, hadIncident, hadBreach, impactScore };
   };
 
   // Calculate impact statistics for a set of hospital IDs and health office IDs
@@ -261,53 +305,31 @@ export default function ReportsImpact() {
     let totalIncidents = 0;
     let totalBreaches = 0;
 
-    // Process hospitals
-    hospitalIds.forEach(hospitalId => {
-      const latestAssessment = latestApprovedByUnit.get(hospitalId);
+    const processUnit = (unitId: string) => {
+      const latestAssessment = latestApprovedByUnit.get(unitId);
       if (!latestAssessment) {
         notAssessed++;
         return;
       }
 
-      const impactScore = getImpactScoreForAssessment(latestAssessment.id);
-      if (!impactScore || impactScore.total_score === null) {
+      const snap = getImpactSnapshot(latestAssessment);
+      if (snap.percentScore === null) {
         notAssessed++;
         return;
       }
 
-      const level = getImpactLevel(impactScore.total_score);
+      const level = getImpactLevel(snap.percentScore);
       if (level.level === 'ปลอดภัยสูง') highSafety++;
       else if (level.level === 'ปลอดภัยปานกลาง') mediumSafety++;
       else if (level.level === 'ความเสี่ยงต่ำ') lowRisk++;
       else if (level.level === 'ความเสี่ยงสูง') highRisk++;
 
-      if (impactScore.had_incident) totalIncidents++;
-      if (impactScore.had_data_breach) totalBreaches++;
-    });
+      if (snap.hadIncident) totalIncidents++;
+      if (snap.hadBreach) totalBreaches++;
+    };
 
-    // Process health offices
-    healthOfficeIds.forEach(officeId => {
-      const latestAssessment = latestApprovedByUnit.get(officeId);
-      if (!latestAssessment) {
-        notAssessed++;
-        return;
-      }
-
-      const impactScore = getImpactScoreForAssessment(latestAssessment.id);
-      if (!impactScore || impactScore.total_score === null) {
-        notAssessed++;
-        return;
-      }
-
-      const level = getImpactLevel(impactScore.total_score);
-      if (level.level === 'ปลอดภัยสูง') highSafety++;
-      else if (level.level === 'ปลอดภัยปานกลาง') mediumSafety++;
-      else if (level.level === 'ความเสี่ยงต่ำ') lowRisk++;
-      else if (level.level === 'ความเสี่ยงสูง') highRisk++;
-
-      if (impactScore.had_incident) totalIncidents++;
-      if (impactScore.had_data_breach) totalBreaches++;
-    });
+    hospitalIds.forEach(processUnit);
+    healthOfficeIds.forEach(processUnit);
 
     return {
       total: hospitalIds.length + healthOfficeIds.length,
@@ -357,14 +379,14 @@ export default function ReportsImpact() {
   // Table data based on drill-down level
   const tableData = useMemo(() => {
     // Helper to check if a unit has incident/breach
-    const unitHasIssue = (unitId: string, isHealthOffice: boolean = false): { hasIncident: boolean; hasBreach: boolean } => {
+    const unitHasIssue = (unitId: string): { hasIncident: boolean; hasBreach: boolean } => {
       const latestAssessment = latestApprovedByUnit.get(unitId);
       if (!latestAssessment) return { hasIncident: false, hasBreach: false };
 
-      const impactScore = getImpactScoreForAssessment(latestAssessment.id);
+      const snap = getImpactSnapshot(latestAssessment);
       return {
-        hasIncident: Boolean(impactScore?.had_incident),
-        hasBreach: Boolean(impactScore?.had_data_breach),
+        hasIncident: Boolean(snap.hadIncident),
+        hasBreach: Boolean(snap.hadBreach),
       };
     };
 
@@ -438,22 +460,22 @@ export default function ReportsImpact() {
       
       const allHospitals = provinceHospitals.map(hospital => {
         const latestAssessment = latestApprovedByUnit.get(hospital.id);
-        const impactScore = latestAssessment ? getImpactScoreForAssessment(latestAssessment.id) : undefined;
-        const level = getImpactLevel(impactScore?.total_score ?? null);
-        const issues = unitHasIssue(hospital.id, false);
+        const snap = getImpactSnapshot(latestAssessment);
+        const level = getImpactLevel(snap.percentScore);
+        const issues = unitHasIssue(hospital.id);
 
         return {
           id: hospital.id,
           name: hospital.name,
           code: hospital.code,
           type: 'hospital' as const,
-          impactScore: impactScore?.total_score ?? null,
+          impactScore: snap.rawScore,
           level: level.level,
           levelColor: level.color,
-          hadIncident: impactScore?.had_incident ?? null,
-          hadBreach: impactScore?.had_data_breach ?? null,
-          incidentScore: impactScore?.incident_score ?? null,
-          breachScore: impactScore?.breach_score ?? null,
+          hadIncident: snap.hadIncident,
+          hadBreach: snap.hadBreach,
+          incidentScore: snap.impactScore?.incident_score ?? null,
+          breachScore: snap.impactScore?.breach_score ?? null,
           hasAnyIncident: issues.hasIncident,
           hasAnyBreach: issues.hasBreach,
         };
@@ -461,41 +483,22 @@ export default function ReportsImpact() {
       
       const allHealthOffices = provinceHealthOffices.map((office) => {
         const latestAssessment = latestApprovedByUnit.get(office.id);
-        const impactScore = latestAssessment ? getImpactScoreForAssessment(latestAssessment.id) : undefined;
-
-        // Some health-office assessments may not have a row in `impact_scores`.
-        // In that case, fall back to the summary impact_score stored on the assessment.
-        // The impact_score in assessments might be raw (0-3), so convert to scale 100 if needed
-        const rawScore = impactScore?.total_score ?? latestAssessment?.impact_score ?? null;
-        // If score is from impact_scores table (already 0-100) use as-is, 
-        // if from assessments.impact_score (raw 0-3), convert to percentage
-        const computedScore = rawScore !== null 
-          ? (impactScore?.total_score != null ? rawScore : (rawScore / 3) * 100)
-          : null;
-
-        const levelFromImpactScores = getImpactLevel(impactScore?.total_score ?? null);
-        const levelLabel =
-          impactScore?.total_score != null
-            ? levelFromImpactScores.level
-            : computedScore != null
-              ? 'ประเมินแล้ว'
-              : levelFromImpactScores.level;
-        const levelColor = impactScore?.total_score != null ? levelFromImpactScores.color : 'text-muted-foreground';
-
-        const issues = unitHasIssue(office.id, true);
+        const snap = getImpactSnapshot(latestAssessment);
+        const level = getImpactLevel(snap.percentScore);
+        const issues = unitHasIssue(office.id);
 
         return {
           id: office.id,
           name: office.name,
           code: office.code,
           type: 'health_office' as const,
-          impactScore: computedScore,
-          level: levelLabel,
-          levelColor,
-          hadIncident: impactScore?.had_incident ?? null,
-          hadBreach: impactScore?.had_data_breach ?? null,
-          incidentScore: impactScore?.incident_score ?? null,
-          breachScore: impactScore?.breach_score ?? null,
+          impactScore: snap.rawScore,
+          level: level.level,
+          levelColor: level.color,
+          hadIncident: snap.hadIncident,
+          hadBreach: snap.hadBreach,
+          incidentScore: snap.impactScore?.incident_score ?? null,
+          breachScore: snap.impactScore?.breach_score ?? null,
           hasAnyIncident: issues.hasIncident,
           hasAnyBreach: issues.hasBreach,
         };
