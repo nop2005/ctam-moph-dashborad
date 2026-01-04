@@ -569,7 +569,7 @@ export default function ReportsQuantitative() {
           </CardContent>
         </Card>
 
-        {/* Safety Level Donut Chart */}
+        {/* Safety Level Donut Chart - shows all data based on filters (no access policy restriction) */}
         <Card className="max-w-5xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">สัดส่วนระดับความปลอดภัยไซเบอร์ของโรงพยาบาล</CardTitle>
@@ -577,6 +577,7 @@ export default function ReportsQuantitative() {
           <CardContent>
             {(() => {
             // Get all hospitals in selected province (if selected), otherwise all hospitals
+            // This is based ONLY on filters, NOT on access policy
             let allHospitalsInScope: Hospital[] = [];
             if (selectedProvince !== 'all') {
               allHospitalsInScope = hospitals.filter(h => h.province_id === selectedProvince);
@@ -587,22 +588,38 @@ export default function ReportsQuantitative() {
               allHospitalsInScope = hospitals;
             }
 
-            // Calculate safety level distribution from all hospitals
-            const hospitalRows = tableData.filter(row => row.type === 'hospital');
+            // Calculate safety level distribution from ALL hospitals in scope (not just tableData)
             let greenCount = 0;
             let yellowCount = 0;
             let redCount = 0;
             let grayCount = 0;
 
-            // Assessed hospitals
+            // Calculate for each hospital in scope
             const assessedHospitalIds = new Set<string>();
-            hospitalRows.forEach(row => {
-              const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
-              const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
+            allHospitalsInScope.forEach(hospital => {
+              // Get latest approved assessment for this hospital
+              const latestAssessment = latestApprovedByUnit.get(hospital.id);
+              if (!latestAssessment) return;
+
+              // Get category items for this assessment
+              const hospitalCategoryAverages = categories.map(cat => {
+                const catItems = filteredAssessmentItems.filter(
+                  item => item.assessment_id === latestAssessment.id && item.category_id === cat.id
+                );
+                if (catItems.length === 0) return { categoryId: cat.id, average: null };
+                const avg = catItems.reduce((sum, item) => sum + Number(item.score), 0) / catItems.length;
+                return { categoryId: cat.id, average: avg };
+              });
+
+              const passedCount = hospitalCategoryAverages.filter(c => c.average === 1).length;
+              const totalCount = hospitalCategoryAverages.filter(c => c.average !== null).length;
               const passedPercentage = totalCount > 0 ? passedCount / totalCount * 100 : null;
+
               if (passedPercentage !== null) {
-                assessedHospitalIds.add(row.id);
-                if (passedPercentage === 100) greenCount++;else if (passedPercentage >= 50) yellowCount++;else redCount++;
+                assessedHospitalIds.add(hospital.id);
+                if (passedPercentage === 100) greenCount++;
+                else if (passedPercentage >= 50) yellowCount++;
+                else redCount++;
               }
             });
 
