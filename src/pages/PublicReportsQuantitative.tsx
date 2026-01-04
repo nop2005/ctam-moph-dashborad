@@ -5,26 +5,28 @@ import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
-import { TrendingUp, Filter, Building2, MapPin, ArrowLeft } from 'lucide-react';
+import { TrendingUp, Filter, Building2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { usePublicReportAccessPolicy } from '@/hooks/usePublicReportAccessPolicy';
+
 interface HealthRegion {
   id: string;
   name: string;
   region_number: number;
 }
+
 interface Province {
   id: string;
   name: string;
   health_region_id: string;
 }
+
 interface Hospital {
   id: string;
   name: string;
   code: string;
   province_id: string;
 }
+
 interface HealthOffice {
   id: string;
   name: string;
@@ -33,33 +35,26 @@ interface HealthOffice {
   health_region_id: string;
   office_type: string;
 }
-interface CTAMCategory {
-  id: string;
-  code: string;
-  name_th: string;
-  name_en: string;
-  order_number: number;
-}
-interface AssessmentItem {
-  id: string;
-  assessment_id: string;
-  category_id: string;
-  score: number | string | null;
-}
+
 interface Assessment {
   id: string;
   hospital_id: string | null;
   health_office_id: string | null;
   status: string;
   fiscal_year: number;
-  quantitative_score: number | string | null;
+  assessment_period: string;
+  quantitative_score: number | null;
+  total_score: number | null;
+  impact_score: number | null;
 }
+
 const getCurrentFiscalYear = (): number => {
   const now = new Date();
   const month = now.getMonth();
   const year = now.getFullYear();
   return month >= 9 ? year + 1 : year;
 };
+
 const generateFiscalYears = (assessments: Assessment[]): number[] => {
   const years = new Set<number>();
   const currentFiscalYear = getCurrentFiscalYear();
@@ -69,60 +64,60 @@ const generateFiscalYears = (assessments: Assessment[]): number[] => {
   });
   return Array.from(years).sort((a, b) => b - a);
 };
+
+// Helper function to get the latest assessment for each hospital or health office
+const getLatestAssessmentPerUnit = (allAssessments: Assessment[]): Assessment[] => {
+  const latestMap = new Map<string, Assessment>();
+  for (const assessment of allAssessments) {
+    const unitId = assessment.hospital_id || assessment.health_office_id;
+    if (!unitId) continue;
+    const existing = latestMap.get(unitId);
+    if (!existing) {
+      latestMap.set(unitId, assessment);
+    } else {
+      if (
+        assessment.fiscal_year > existing.fiscal_year ||
+        (assessment.fiscal_year === existing.fiscal_year && assessment.assessment_period > existing.assessment_period)
+      ) {
+        latestMap.set(unitId, assessment);
+      }
+    }
+  }
+  return Array.from(latestMap.values());
+};
+
 export default function PublicReportsQuantitative() {
   const [loading, setLoading] = useState(true);
   const [healthRegions, setHealthRegions] = useState<HealthRegion[]>([]);
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [healthOffices, setHealthOffices] = useState<HealthOffice[]>([]);
-  const [categories, setCategories] = useState<CTAMCategory[]>([]);
-  const [assessmentItems, setAssessmentItems] = useState<AssessmentItem[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
-  const [selectedProvince, setSelectedProvince] = useState<string>('all');
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
-  const {
-    canDrillToHospital
-  } = usePublicReportAccessPolicy('quantitative');
+
   useEffect(() => {
-    const fetchAll = async <T,>(query: any): Promise<T[]> => {
-      const pageSize = 1000;
-      let from = 0;
-      const all: T[] = [];
-      while (true) {
-        const {
-          data,
-          error
-        } = await query.range(from, from + pageSize - 1);
-        if (error) throw error;
-        const chunk = (data || []) as T[];
-        all.push(...chunk);
-        if (chunk.length < pageSize) break;
-        from += pageSize;
-      }
-      return all;
-    };
     const fetchData = async () => {
       try {
-        const [regionsRes, provincesRes, hospitalsRes, healthOfficesRes, categoriesRes] = await Promise.all([supabase.from('health_regions').select('*').order('region_number'), supabase.from('provinces').select('*').order('name'), supabase.from('hospitals').select('*').order('name'), supabase.from('health_offices').select('*').order('name'), supabase.from('ctam_categories').select('*').order('order_number')]);
+        const [regionsRes, provincesRes, hospitalsRes, healthOfficesRes, assessmentsRes] = await Promise.all([
+          supabase.from('health_regions').select('*').order('region_number'),
+          supabase.from('provinces').select('*').order('name'),
+          supabase.from('hospitals').select('*').order('name'),
+          supabase.from('health_offices').select('*').order('name'),
+          supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, assessment_period, quantitative_score, total_score, impact_score')
+        ]);
+
         if (regionsRes.error) throw regionsRes.error;
         if (provincesRes.error) throw provincesRes.error;
         if (hospitalsRes.error) throw hospitalsRes.error;
         if (healthOfficesRes.error) throw healthOfficesRes.error;
-        if (categoriesRes.error) throw categoriesRes.error;
+        if (assessmentsRes.error) throw assessmentsRes.error;
+
         setHealthRegions(regionsRes.data || []);
         setProvinces(provincesRes.data || []);
         setHospitals(hospitalsRes.data || []);
         setHealthOffices(healthOfficesRes.data || []);
-        setCategories(categoriesRes.data || []);
-        const assessmentsAll = await fetchAll<Assessment>(supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, quantitative_score, created_at').order('created_at', {
-          ascending: true
-        }));
-        const itemsAll = await fetchAll<AssessmentItem>(supabase.from('assessment_items').select('id, assessment_id, category_id, score, created_at').order('created_at', {
-          ascending: true
-        }));
-        setAssessments(assessmentsAll);
-        setAssessmentItems(itemsAll);
+        setAssessments(assessmentsRes.data || []);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
@@ -132,161 +127,103 @@ export default function PublicReportsQuantitative() {
     };
     fetchData();
   }, []);
-  const filteredProvinces = useMemo(() => {
-    if (selectedRegion === 'all') return [];
-    return provinces.filter(p => p.health_region_id === selectedRegion);
-  }, [selectedRegion, provinces]);
-  useEffect(() => {
-    setSelectedProvince('all');
-  }, [selectedRegion]);
+
   const fiscalYears = useMemo(() => generateFiscalYears(assessments), [assessments]);
+
+  // Filter assessments by fiscal year
   const filteredAssessments = useMemo(() => {
     if (selectedFiscalYear === 'all') return assessments;
     return assessments.filter(a => a.fiscal_year === parseInt(selectedFiscalYear));
   }, [assessments, selectedFiscalYear]);
-  const filteredAssessmentItems = useMemo(() => {
-    const filteredAssessmentIds = new Set(filteredAssessments.map(a => a.id));
-    return assessmentItems.filter(item => filteredAssessmentIds.has(item.assessment_id));
-  }, [assessmentItems, filteredAssessments]);
-  const calculateCategoryAverages = (hospitalIds: string[], healthOfficeIds: string[] = []) => {
-    const relevantAssessments = filteredAssessments.filter(a => a.hospital_id && hospitalIds.includes(a.hospital_id) || a.health_office_id && healthOfficeIds.includes(a.health_office_id));
-    const totalUnitsInScope = hospitalIds.length + healthOfficeIds.length;
-    return categories.map(cat => {
-      let passedCount = 0;
-      hospitalIds.forEach(hospitalId => {
-        const unitAssessments = relevantAssessments.filter(a => a.hospital_id === hospitalId);
-        if (unitAssessments.length === 0) return;
-        const assessmentIds = unitAssessments.map(a => a.id);
-        const catItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id);
-        if (catItems.length > 0) {
-          const hasPassed = catItems.some(item => Number(item.score) === 1);
-          if (hasPassed) passedCount++;
-        }
-      });
-      healthOfficeIds.forEach(officeId => {
-        const unitAssessments = relevantAssessments.filter(a => a.health_office_id === officeId);
-        if (unitAssessments.length === 0) return;
-        const assessmentIds = unitAssessments.map(a => a.id);
-        const catItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id);
-        if (catItems.length > 0) {
-          const hasPassed = catItems.some(item => Number(item.score) === 1);
-          if (hasPassed) passedCount++;
-        }
-      });
-      if (totalUnitsInScope === 0) return {
-        categoryId: cat.id,
-        average: null,
-        passedCount: 0,
-        totalCount: 0
-      };
-      const percentage = passedCount / totalUnitsInScope * 100;
+
+  // Get latest assessments only (one per hospital/health_office)
+  const latestAssessments = useMemo(() => getLatestAssessmentPerUnit(filteredAssessments), [filteredAssessments]);
+
+  // Region level table data
+  const regionTableData = useMemo(() => {
+    return healthRegions.map(region => {
+      const regionProvinces = provinces.filter(p => p.health_region_id === region.id);
+      const regionHospitals = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id));
+      const regionHealthOffices = healthOffices.filter(ho => ho.health_region_id === region.id);
+      const totalUnits = regionHospitals.length + regionHealthOffices.length;
+
+      // Get latest assessments for this region
+      const regionLatestAssessments = latestAssessments.filter(a =>
+        regionHospitals.some(h => h.id === a.hospital_id) ||
+        regionHealthOffices.some(ho => ho.id === a.health_office_id)
+      );
+
+      // Count completed (passed) assessments - same logic as Reports.tsx
+      const completedCount = regionLatestAssessments.filter(
+        a => a.status === 'approved_regional' || a.status === 'completed'
+      ).length;
+
       return {
-        categoryId: cat.id,
-        average: percentage,
-        passedCount,
-        totalCount: totalUnitsInScope
+        id: region.id,
+        name: `เขตสุขภาพที่ ${region.region_number}`,
+        totalUnits,
+        completedCount,
+        percentage: totalUnits > 0 ? (completedCount / totalUnits) * 100 : 0
       };
     });
+  }, [healthRegions, provinces, hospitals, healthOffices, latestAssessments]);
+
+  // Province level table data
+  const provinceTableData = useMemo(() => {
+    if (selectedRegion === 'all') return [];
+
+    const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
+    return regionProvinces.map(province => {
+      const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
+      const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === province.id);
+      const totalUnits = provinceHospitals.length + provinceHealthOffices.length;
+
+      // Get latest assessments for this province
+      const provinceLatestAssessments = latestAssessments.filter(a =>
+        provinceHospitals.some(h => h.id === a.hospital_id) ||
+        provinceHealthOffices.some(ho => ho.id === a.health_office_id)
+      );
+
+      // Count completed (passed) assessments
+      const completedCount = provinceLatestAssessments.filter(
+        a => a.status === 'approved_regional' || a.status === 'completed'
+      ).length;
+
+      // Calculate average scores
+      const quantitativeScores = provinceLatestAssessments.filter(a => a.quantitative_score !== null);
+      const avgQuantitative = quantitativeScores.length > 0
+        ? quantitativeScores.reduce((sum, a) => sum + (a.quantitative_score || 0), 0) / quantitativeScores.length
+        : null;
+
+      const impactScores = provinceLatestAssessments.filter(a => a.impact_score !== null);
+      const avgImpact = impactScores.length > 0
+        ? impactScores.reduce((sum, a) => sum + (a.impact_score || 0), 0) / impactScores.length
+        : null;
+
+      const totalScoreSum = provinceLatestAssessments.filter(a => a.total_score !== null).reduce((sum, a) => sum + (a.total_score || 0), 0);
+      const scoreCount = provinceLatestAssessments.filter(a => a.total_score !== null).length;
+
+      return {
+        id: province.id,
+        name: province.name,
+        totalUnits,
+        avgQuantitative,
+        avgImpact,
+        avgTotal: scoreCount > 0 ? totalScoreSum / scoreCount : null
+      };
+    });
+  }, [selectedRegion, provinces, hospitals, healthOffices, latestAssessments]);
+
+  const handleRegionClick = (regionId: string) => {
+    setSelectedRegion(regionId);
   };
 
-  // Public users: cannot drill to hospital level
-  const tableData = useMemo(() => {
-    if (selectedRegion === 'all') {
-      return healthRegions.map(region => {
-        const regionProvinces = provinces.filter(p => p.health_region_id === region.id);
-        const regionHospitals = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id));
-        const regionHealthOffices = healthOffices.filter(ho => ho.health_region_id === region.id);
-        const hospitalIds = regionHospitals.map(h => h.id);
-        const healthOfficeIds = regionHealthOffices.map(ho => ho.id);
-        const categoryAverages = calculateCategoryAverages(hospitalIds, healthOfficeIds);
-        let unitsPassedAll17 = 0;
-        hospitalIds.forEach(hospitalId => {
-          const unitAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
-          if (unitAssessments.length === 0) return;
-          const assessmentIds = unitAssessments.map(a => a.id);
-          let passedAllCategories = true;
-          categories.forEach(cat => {
-            const catItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id);
-            const hasPassed = catItems.some(item => Number(item.score) === 1);
-            if (!hasPassed) passedAllCategories = false;
-          });
-          if (passedAllCategories) unitsPassedAll17++;
-        });
-        healthOfficeIds.forEach(officeId => {
-          const unitAssessments = filteredAssessments.filter(a => a.health_office_id === officeId);
-          if (unitAssessments.length === 0) return;
-          const assessmentIds = unitAssessments.map(a => a.id);
-          let passedAllCategories = true;
-          categories.forEach(cat => {
-            const catItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id);
-            const hasPassed = catItems.some(item => Number(item.score) === 1);
-            if (!hasPassed) passedAllCategories = false;
-          });
-          if (passedAllCategories) unitsPassedAll17++;
-        });
-        return {
-          id: region.id,
-          name: `เขตสุขภาพที่ ${region.region_number}`,
-          type: 'region' as const,
-          hospitalCount: regionHospitals.length + regionHealthOffices.length,
-          hospitalsPassedAll17: unitsPassedAll17,
-          categoryAverages
-        };
-      });
-    } else if (selectedProvince === 'all') {
-      const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
-      return regionProvinces.map(province => {
-        const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
-        const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === province.id);
-        const hospitalIds = provinceHospitals.map(h => h.id);
-        const healthOfficeIds = provinceHealthOffices.map(ho => ho.id);
-        const categoryAverages = calculateCategoryAverages(hospitalIds, healthOfficeIds);
-        let unitsPassedAll17 = 0;
-        hospitalIds.forEach(hospitalId => {
-          const unitAssessments = filteredAssessments.filter(a => a.hospital_id === hospitalId);
-          if (unitAssessments.length === 0) return;
-          const assessmentIds = unitAssessments.map(a => a.id);
-          let passedAllCategories = true;
-          categories.forEach(cat => {
-            const catItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id);
-            const hasPassed = catItems.some(item => Number(item.score) === 1);
-            if (!hasPassed) passedAllCategories = false;
-          });
-          if (passedAllCategories) unitsPassedAll17++;
-        });
-        healthOfficeIds.forEach(officeId => {
-          const unitAssessments = filteredAssessments.filter(a => a.health_office_id === officeId);
-          if (unitAssessments.length === 0) return;
-          const assessmentIds = unitAssessments.map(a => a.id);
-          let passedAllCategories = true;
-          categories.forEach(cat => {
-            const catItems = filteredAssessmentItems.filter(item => assessmentIds.includes(item.assessment_id) && item.category_id === cat.id);
-            const hasPassed = catItems.some(item => Number(item.score) === 1);
-            if (!hasPassed) passedAllCategories = false;
-          });
-          if (passedAllCategories) unitsPassedAll17++;
-        });
-        return {
-          id: province.id,
-          name: province.name,
-          type: 'province' as const,
-          hospitalCount: provinceHospitals.length + provinceHealthOffices.length,
-          hospitalsPassedAll17: unitsPassedAll17,
-          categoryAverages
-        };
-      });
-    }
-    return [];
-  }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, healthOffices, categories, filteredAssessments, filteredAssessmentItems]);
-  const handleRowClick = (id: string, type: string) => {
-    if (type === 'region') {
-      setSelectedRegion(id);
-    } else if (type === 'province') {
-      // Public users cannot drill to hospital level
-      toast.info('กรุณาเข้าสู่ระบบเพื่อดูรายละเอียดรายโรงพยาบาล');
-    }
+  const handleBackToRegions = () => {
+    setSelectedRegion('all');
   };
-  return <PublicLayout>
+
+  return (
+    <PublicLayout>
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -294,7 +231,9 @@ export default function PublicReportsQuantitative() {
               <TrendingUp className="w-6 h-6" />
               รายงานเชิงปริมาณ
             </h1>
-            <p className="text-muted-foreground">สรุปผลการประเมินเชิงปริมาณตาม 17 หมวดหมู่ (สำหรับผู้ใช้ทั่วไป)</p>
+            <p className="text-muted-foreground">
+              สรุปผลการประเมินเชิงปริมาณตาม 17 หมวดหมู่ (สำหรับผู้ใช้ทั่วไป)
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Filter className="w-4 h-4 text-muted-foreground" />
@@ -304,9 +243,11 @@ export default function PublicReportsQuantitative() {
               </SelectTrigger>
               <SelectContent className="bg-background z-50">
                 <SelectItem value="all">ทุกปีงบประมาณ</SelectItem>
-                {fiscalYears.map(year => <SelectItem key={year} value={year.toString()}>
+                {fiscalYears.map(year => (
+                  <SelectItem key={year} value={year.toString()}>
                     ปีงบประมาณ {year + 543}
-                  </SelectItem>)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -314,82 +255,147 @@ export default function PublicReportsQuantitative() {
 
         {/* Breadcrumb navigation */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <button onClick={() => {
-          setSelectedRegion('all');
-          setSelectedProvince('all');
-        }} className={`hover:text-primary ${selectedRegion === 'all' ? 'font-medium text-foreground' : ''}`}>
+          <button
+            onClick={handleBackToRegions}
+            className={`hover:text-primary ${selectedRegion === 'all' ? 'font-medium text-foreground' : ''}`}
+          >
             ทุกเขตสุขภาพ
           </button>
-          {selectedRegion !== 'all' && <>
+          {selectedRegion !== 'all' && (
+            <>
               <span>/</span>
-              <button onClick={() => setSelectedProvince('all')} className={`hover:text-primary ${selectedProvince === 'all' ? 'font-medium text-foreground' : ''}`}>
+              <span className="font-medium text-foreground">
                 {healthRegions.find(r => r.id === selectedRegion)?.name || 'เขตสุขภาพ'}
-              </button>
-            </>}
+              </span>
+            </>
+          )}
         </div>
 
         {/* Table */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {selectedRegion === 'all' ? <><Building2 className="w-5 h-5" /> รายงานรายเขตสุขภาพ</> : <><MapPin className="w-5 h-5" /> รายงานรายจังหวัด</>}
+              {selectedRegion === 'all' ? (
+                <>
+                  <Building2 className="w-5 h-5" /> รายงานรายเขตสุขภาพ
+                </>
+              ) : (
+                <>
+                  <MapPin className="w-5 h-5" /> รายงานสรุปรายจังหวัด - เขตสุขภาพที่{' '}
+                  {healthRegions.find(r => r.id === selectedRegion)?.region_number}
+                </>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {loading ? <div className="text-center py-8 text-muted-foreground">กำลังโหลด...</div> : <div className="overflow-x-auto">
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">กำลังโหลด...</div>
+            ) : selectedRegion === 'all' ? (
+              // Region level table
+              <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="sticky left-0 bg-background z-10">
-                        {selectedRegion === 'all' ? 'เขตสุขภาพ' : 'จังหวัด'}
-                      </TableHead>
+                      <TableHead className="sticky left-0 bg-background z-10">เขตสุขภาพ</TableHead>
                       <TableHead className="text-center">จำนวนหน่วยงานทั้งหมด</TableHead>
-                      <TableHead className="text-center">ผ่านครบ 17 ข้อ</TableHead>
+                      <TableHead className="text-center">ประเมินแล้ว</TableHead>
                       <TableHead className="text-center min-w-[180px]">ผ่านร้อยละ</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tableData.map(row => <TableRow key={row.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleRowClick(row.id, row.type)}>
+                    {regionTableData.map(row => (
+                      <TableRow
+                        key={row.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleRegionClick(row.id)}
+                      >
                         <TableCell className="font-medium sticky left-0 bg-background z-10 text-primary hover:underline">
                           {row.name}
                         </TableCell>
-                        <TableCell className="text-center">{row.hospitalCount}</TableCell>
-                        <TableCell className="text-center">{row.hospitalsPassedAll17}</TableCell>
+                        <TableCell className="text-center">{row.totalUnits}</TableCell>
+                        <TableCell className="text-center">{row.completedCount}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center gap-2">
                             {(() => {
-                        const percentage = row.hospitalCount > 0 ? row.hospitalsPassedAll17 / row.hospitalCount * 100 : 0;
-                        const colorClass = percentage === 100 ? '[&>div]:bg-green-500' : percentage >= 50 ? '[&>div]:bg-yellow-500' : '[&>div]:bg-red-500';
-                        return <Progress value={percentage} className={`h-4 flex-1 ${colorClass}`} />;
-                      })()}
-                            <span className="text-sm font-medium min-w-[50px] text-right">
-                              {row.hospitalCount > 0 ? `${(row.hospitalsPassedAll17 / row.hospitalCount * 100).toFixed(1)}%` : '-'}
+                              const percentage = row.percentage;
+                              const colorClass =
+                                percentage === 100
+                                  ? '[&>div]:bg-green-500'
+                                  : percentage >= 50
+                                  ? '[&>div]:bg-yellow-500'
+                                  : '[&>div]:bg-red-500';
+                              return <Progress value={percentage} className={`h-4 flex-1 ${colorClass}`} />;
+                            })()}
+                            <span className="w-14 text-right text-sm font-medium">
+                              {row.percentage.toFixed(1)}%
                             </span>
                           </div>
                         </TableCell>
-                      </TableRow>)}
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
-              </div>}
-            
-            {/* Legend */}
-            <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
-              <span className="font-medium">สัญลักษณ์ (ร้อยละรพ.ที่ผ่าน 17 ข้อ) :</span>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-red-500"></div>
-                <span>ผ่านน้อยกว่า 50%</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-yellow-500"></div>
-                <span>ผ่าน 50% - 99%</span>
+            ) : (
+              // Province level table
+              <div className="overflow-x-auto">
+                <button
+                  onClick={handleBackToRegions}
+                  className="mb-4 text-sm text-primary hover:underline flex items-center gap-1"
+                >
+                  ← กลับไปยังเขตสุขภาพ
+                </button>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>จังหวัด</TableHead>
+                      <TableHead className="text-right">จำนวนสถานบริการ</TableHead>
+                      <TableHead className="text-right">คะแนนเชิงปริมาณ</TableHead>
+                      <TableHead className="text-right">คะแนนเชิงผลกระทบ</TableHead>
+                      <TableHead className="text-right">คะแนนรวม</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {provinceTableData.map(row => (
+                      <TableRow key={row.id}>
+                        <TableCell className="font-medium">{row.name}</TableCell>
+                        <TableCell className="text-right">{row.totalUnits}</TableCell>
+                        <TableCell className="text-right">
+                          {row.avgQuantitative !== null ? row.avgQuantitative.toFixed(2) : '-'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {row.avgImpact !== null ? row.avgImpact.toFixed(2) : '-'}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {row.avgTotal !== null ? row.avgTotal.toFixed(2) : '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-green-500"></div>
-                <span>ผ่าน 100%</span>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Legend */}
+        {selectedRegion === 'all' && (
+          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-green-500 rounded"></div>
+              <span>100% (ผ่านทั้งหมด)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+              <span>50-99%</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-red-500 rounded"></div>
+              <span>ต่ำกว่า 50%</span>
+            </div>
+          </div>
+        )}
       </div>
-    </PublicLayout>;
+    </PublicLayout>
+  );
 }
