@@ -133,12 +133,10 @@ export default function PublicReportsQuantitative() {
     return map;
   }, [summary]);
 
-  const provinceAvgQuantitativeMap = useMemo(() => {
-    const map = new Map<string, number | null>();
-    (summary?.province_avg_quantitative_score || []).forEach(p => {
-      const val = p.avg_quantitative_score;
-      const num = val === null ? null : Number(val);
-      map.set(p.province_id, Number.isFinite(num as number) ? (num as number) : null);
+const provincePassedAll17Map = useMemo(() => {
+    const map = new Map<string, number>();
+    (summary?.province_passed_all_17 || []).forEach(p => {
+      map.set(p.province_id, Number(p.passed_all_17) || 0);
     });
     return map;
   }, [summary]);
@@ -171,16 +169,17 @@ export default function PublicReportsQuantitative() {
       const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === province.id);
       const totalUnits = provinceHospitals.length + provinceHealthOffices.length;
 
-      const avgQuantitative = provinceAvgQuantitativeMap.get(province.id) ?? null;
+      const passedAll17 = provincePassedAll17Map.get(province.id) ?? 0;
 
       return {
         id: province.id,
         name: province.name,
         totalUnits,
-        avgQuantitative,
+        passedAll17,
+        percentage: totalUnits > 0 ? (passedAll17 / totalUnits) * 100 : 0,
       };
     });
-  }, [selectedRegion, provinces, hospitals, healthOffices, provinceAvgQuantitativeMap]);
+  }, [selectedRegion, provinces, hospitals, healthOffices, provincePassedAll17Map]);
 
   const handleRegionClick = (regionId: string) => {
     setSelectedRegion(regionId);
@@ -316,18 +315,34 @@ export default function PublicReportsQuantitative() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>จังหวัด</TableHead>
-                      <TableHead className="text-right">จำนวนสถานบริการ</TableHead>
-                      <TableHead className="text-right">คะแนนเชิงปริมาณเฉลี่ย</TableHead>
+                      <TableHead className="sticky left-0 bg-background z-10">จังหวัด</TableHead>
+                      <TableHead className="text-center">จำนวนหน่วยงานทั้งหมด</TableHead>
+                      <TableHead className="text-center">ผ่านครบ 17 ข้อ</TableHead>
+                      <TableHead className="text-center min-w-[180px]">ผ่านร้อยละ</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {provinceTableData.map(row => (
                       <TableRow key={row.id}>
-                        <TableCell className="font-medium">{row.name}</TableCell>
-                        <TableCell className="text-right">{row.totalUnits}</TableCell>
-                        <TableCell className="text-right">
-                          {row.avgQuantitative !== null ? row.avgQuantitative.toFixed(2) : '-'}
+                        <TableCell className="font-medium sticky left-0 bg-background z-10">{row.name}</TableCell>
+                        <TableCell className="text-center">{row.totalUnits}</TableCell>
+                        <TableCell className="text-center">{row.passedAll17}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center gap-2">
+                            {(() => {
+                              const percentage = row.percentage;
+                              const colorClass =
+                                percentage === 100
+                                  ? '[&>div]:bg-success'
+                                  : percentage >= 50
+                                  ? '[&>div]:bg-warning'
+                                  : '[&>div]:bg-destructive';
+                              return <Progress value={percentage} className={`h-4 flex-1 ${colorClass}`} />;
+                            })()}
+                            <span className="w-14 text-right text-sm font-medium">
+                              {row.percentage.toFixed(1)}%
+                            </span>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -339,8 +354,7 @@ export default function PublicReportsQuantitative() {
         </Card>
 
         {/* Legend */}
-        {selectedRegion === 'all' && (
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+        <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-success rounded"></div>
               <span>100% (ผ่านทั้งหมด)</span>
@@ -354,7 +368,6 @@ export default function PublicReportsQuantitative() {
               <span>ต่ำกว่า 50%</span>
             </div>
           </div>
-        )}
       </div>
     </PublicLayout>
   );
