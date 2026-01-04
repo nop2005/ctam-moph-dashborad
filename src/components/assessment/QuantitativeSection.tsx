@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -126,6 +126,17 @@ export function QuantitativeSection({
   const { toast } = useToast();
   const [savingId, setSavingId] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [localDescriptions, setLocalDescriptions] = useState<Record<string, string>>({});
+  const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // Initialize local descriptions from items
+  useEffect(() => {
+    const descriptions: Record<string, string> = {};
+    items.forEach(item => {
+      descriptions[item.category_id] = item.description || '';
+    });
+    setLocalDescriptions(descriptions);
+  }, [items]);
 
   const getItemForCategory = (categoryId: string) => {
     return items.find(item => item.category_id === categoryId);
@@ -174,7 +185,7 @@ export function QuantitativeSection({
     }
   };
 
-  const handleDescriptionChange = async (categoryId: string, description: string) => {
+  const saveDescription = useCallback(async (categoryId: string, description: string) => {
     const item = getItemForCategory(categoryId);
     if (!item) return;
 
@@ -194,7 +205,29 @@ export function QuantitativeSection({
       console.error('Error updating description:', error);
       toast({ title: 'เกิดข้อผิดพลาด', description: error.message, variant: 'destructive' });
     }
-  };
+  }, [items, onItemsChange, toast]);
+
+  const handleDescriptionChange = useCallback((categoryId: string, description: string) => {
+    // Update local state immediately for responsive UI
+    setLocalDescriptions(prev => ({ ...prev, [categoryId]: description }));
+
+    // Clear existing timer
+    if (debounceTimers.current[categoryId]) {
+      clearTimeout(debounceTimers.current[categoryId]);
+    }
+
+    // Set new debounce timer (save after 800ms of no typing)
+    debounceTimers.current[categoryId] = setTimeout(() => {
+      saveDescription(categoryId, description);
+    }, 800);
+  }, [saveDescription]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(debounceTimers.current).forEach(timer => clearTimeout(timer));
+    };
+  }, []);
 
   const progress = calculateProgress();
   
@@ -392,7 +425,7 @@ export function QuantitativeSection({
                         <Label className="font-medium">รายละเอียด/หมายเหตุ</Label>
                         <Textarea
                           placeholder="อธิบายรายละเอียดเพิ่มเติม..."
-                          value={item?.description || ''}
+                          value={localDescriptions[category.id] ?? item?.description ?? ''}
                           onChange={(e) => handleDescriptionChange(category.id, e.target.value)}
                           disabled={readOnly}
                           className="min-h-[100px]"
