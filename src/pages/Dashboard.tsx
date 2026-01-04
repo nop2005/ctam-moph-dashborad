@@ -102,6 +102,7 @@ export default function Dashboard() {
   const [creating, setCreating] = useState(false);
   const [nextPeriod, setNextPeriod] = useState<string>('1');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [dataUpdatedFilter, setDataUpdatedFilter] = useState<string>('all'); // 'all' | 'updated' | 'not_updated'
   
   // Return for revision dialog state
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
@@ -512,11 +513,16 @@ export default function Dashboard() {
     },
   ];
 
-  // Filter assessments based on statusFilter
+  // Filter assessments based on statusFilter and dataUpdatedFilter
   const filteredAssessments = assessments.filter(assessment => {
     // Apply fiscal year filter first
     if (selectedFiscalYear !== 'all' && assessment.fiscal_year !== parseInt(selectedFiscalYear)) {
       return false;
+    }
+    // Apply data updated filter for central_admin
+    if (profile?.role === 'central_admin' && dataUpdatedFilter !== 'all') {
+      if (dataUpdatedFilter === 'updated' && !assessment.data_updated) return false;
+      if (dataUpdatedFilter === 'not_updated' && assessment.data_updated) return false;
     }
     // Then apply status filter
     if (!statusFilter) return true;
@@ -594,13 +600,31 @@ export default function Dashboard() {
                   {statsDisplay.find(s => s.filterValue === statusFilter)?.label}
                 </Badge>
               )}
+              {profile?.role === 'central_admin' && dataUpdatedFilter !== 'all' && (
+                <Badge variant={dataUpdatedFilter === 'updated' ? 'default' : 'outline'} className="ml-2 font-normal">
+                  {dataUpdatedFilter === 'updated' ? 'อัพเดดแล้ว' : 'ยังไม่อัพเดด'}
+                </Badge>
+              )}
             </CardTitle>
             <CardDescription>
               {filteredAssessments.length} รายการ
             </CardDescription>
           </div>
-          {canCreate && (
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <div className="flex items-center gap-2">
+            {profile?.role === 'central_admin' && (
+              <Select value={dataUpdatedFilter} onValueChange={setDataUpdatedFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="กรองสถานะอัพเดด" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">ทั้งหมด</SelectItem>
+                  <SelectItem value="updated">อัพเดดข้อมูลเเล้ว</SelectItem>
+                  <SelectItem value="not_updated">ยังไม่อัพเดด</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            {canCreate && (
+              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
@@ -673,8 +697,9 @@ export default function Dashboard() {
                   </Button>
                 </DialogFooter>
               </DialogContent>
-            </Dialog>
-          )}
+              </Dialog>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
