@@ -15,6 +15,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarHeader,
+  SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
 import {
@@ -311,6 +312,33 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
+
+      {/* Footer with About System and Agency Info */}
+      <SidebarFooter className="border-t border-sidebar-border p-3">
+        {!collapsed && (
+          <div className="mb-3 p-3 rounded-lg bg-sidebar-accent/50 border border-sidebar-border">
+            <p className="text-xs text-sidebar-foreground/70 leading-relaxed">
+              ระบบ CTAM+ เป็นระบบประเมินความมั่นคงปลอดภัยไซเบอร์สำหรับหน่วยบริการสุขภาพ 
+              ใช้สำหรับการประเมินและรายงานผลการดำเนินงานด้าน Cybersecurity ตามมาตรฐานกระทรวงสาธารณสุข
+            </p>
+          </div>
+        )}
+        {!collapsed ? (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-sidebar-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Building2 className="w-5 h-5 text-sidebar-primary" />
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-xs font-medium text-sidebar-foreground leading-tight">ศูนย์เฝ้าระวังความมั่นคงปลอดภัยไซเบอร์เขตสุขภาพที่ 1 (CISO)</p>
+              <p className="text-xs text-sidebar-foreground/60 truncate">ศทส.สป. กระทรวงสาธารณสุข</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            <Building2 className="w-5 h-5 text-sidebar-primary" />
+          </div>
+        )}
+      </SidebarFooter>
     </Sidebar>
   );
 }
