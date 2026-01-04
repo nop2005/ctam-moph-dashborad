@@ -276,6 +276,34 @@ export function QuantitativeSection({
     };
   }, []);
 
+  // Check if a category requires sub-option but hasn't selected one
+  const isSubOptionRequired = (categoryId: string): boolean => {
+    const item = getItemForCategory(categoryId);
+    return item?.status === 'pass' && !subOptionSelections[categoryId];
+  };
+
+  // Check if user can interact with a specific category (all previous items with 'pass' must have sub-option selected)
+  const canInteractWithCategory = (categoryIndex: number): boolean => {
+    for (let i = 0; i < categoryIndex; i++) {
+      const prevCategory = categories[i];
+      if (isSubOptionRequired(prevCategory.id)) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Get the first incomplete category index (needs sub-option selection)
+  const getFirstIncompleteIndex = (): number => {
+    for (let i = 0; i < categories.length; i++) {
+      const category = categories[i];
+      if (isSubOptionRequired(category.id)) {
+        return i;
+      }
+    }
+    return -1; // All complete
+  };
+
   const progress = calculateProgress();
   
   // Calculate score converted to 70% weight (out of 7 points)
@@ -433,27 +461,46 @@ export function QuantitativeSection({
                         className="flex items-center gap-2"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {statusOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (!readOnly && savingId !== item?.id) {
-                                handleStatusChange(category.id, option.value);
-                              }
-                            }}
-                            disabled={readOnly || savingId === item?.id}
-                            className={`flex items-center gap-1 px-2 py-1 rounded-full border transition-all ${
-                              item?.status === option.value 
-                                ? `${option.color} border-current bg-background font-medium` 
-                                : 'text-muted-foreground border-transparent hover:border-muted-foreground/30'
-                            } ${readOnly ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                          >
-                            {option.icon}
-                            <span className="text-sm">{option.label}</span>
-                          </button>
-                        ))}
+                        {(() => {
+                          const canInteract = canInteractWithCategory(index);
+                          const firstIncompleteIdx = getFirstIncompleteIndex();
+                          const isBlocked = !canInteract;
+                          
+                          return statusOptions.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (isBlocked) {
+                                  const blockedCategory = categories[firstIncompleteIdx];
+                                  toast({
+                                    title: 'กรุณาเลือกประเภทระบบ/เครื่องมือ',
+                                    description: `กรุณาเลือกประเภทของระบบ/เครื่องมือที่ใช้ในข้อ ${blockedCategory.order_number} (${blockedCategory.name_th}) ก่อน`,
+                                    variant: 'destructive'
+                                  });
+                                  // Expand the incomplete item
+                                  if (!expandedItems.includes(blockedCategory.id)) {
+                                    setExpandedItems(prev => [...prev, blockedCategory.id]);
+                                  }
+                                  return;
+                                }
+                                if (!readOnly && savingId !== item?.id) {
+                                  handleStatusChange(category.id, option.value);
+                                }
+                              }}
+                              disabled={readOnly || savingId === item?.id}
+                              className={`flex items-center gap-1 px-2 py-1 rounded-full border transition-all ${
+                                item?.status === option.value 
+                                  ? `${option.color} border-current bg-background font-medium` 
+                                  : 'text-muted-foreground border-transparent hover:border-muted-foreground/30'
+                              } ${readOnly ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${isBlocked ? 'opacity-50' : ''}`}
+                            >
+                              {option.icon}
+                              <span className="text-sm">{option.label}</span>
+                            </button>
+                          ));
+                        })()}
                         {savingId === item?.id && (
                           <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                         )}
