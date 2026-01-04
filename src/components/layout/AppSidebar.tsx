@@ -54,7 +54,7 @@ const reportSubItems = [
   { title: 'รายงานภาพรวม', url: '/reports', icon: PieChart },
   { title: 'เชิงปริมาณ (17 ข้อ)', url: '/reports/quantitative', icon: TrendingUp },
   { title: 'เชิงผลกระทบ (Incident & Recovery)', url: '/reports/impact', icon: AlertTriangle },
-  { title: 'รายงานเพิ่มเติม', url: '/reports/quantitative-detail', icon: ListOrdered },
+  { title: 'รายงาน CTAM+ เพิ่มเติม', url: '/reports/quantitative-detail', icon: ListOrdered },
 ];
 
 const inspectionSubItems = [
