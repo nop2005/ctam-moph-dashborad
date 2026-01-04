@@ -9,22 +9,26 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useReportAccessPolicy } from '@/hooks/useReportAccessPolicy';
+
 interface HealthRegion {
   id: string;
   name: string;
   region_number: number;
 }
+
 interface Province {
   id: string;
   name: string;
   health_region_id: string;
 }
+
 interface Hospital {
   id: string;
   name: string;
   code: string;
   province_id: string;
 }
+
 interface HealthOffice {
   id: string;
   name: string;
@@ -33,6 +37,7 @@ interface HealthOffice {
   health_region_id: string;
   office_type: string;
 }
+
 interface CTAMCategory {
   id: string;
   code: string;
@@ -40,12 +45,14 @@ interface CTAMCategory {
   name_en: string;
   order_number: number;
 }
+
 interface AssessmentItem {
   id: string;
   assessment_id: string;
   category_id: string;
   score: number | string | null;
 }
+
 interface Assessment {
   id: string;
   hospital_id: string | null;
@@ -54,6 +61,7 @@ interface Assessment {
   fiscal_year: number;
   quantitative_score: number | string | null;
 }
+
 type SortOrder = 'asc' | 'desc' | 'default';
 type ViewLevel = 'country' | 'region' | 'province' | 'hospital';
 
@@ -75,10 +83,9 @@ const generateFiscalYears = (assessments: Assessment[]): number[] => {
   });
   return Array.from(years).sort((a, b) => b - a);
 };
+
 export default function ReportsQuantitativeDetail() {
-  const {
-    profile
-  } = useAuth();
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [healthRegions, setHealthRegions] = useState<HealthRegion[]>([]);
   const [provinces, setProvinces] = useState<Province[]>([]);
@@ -93,7 +100,7 @@ export default function ReportsQuantitativeDetail() {
   const [viewLevel, setViewLevel] = useState<ViewLevel>('country');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
-
+  
   // Sorting
   const [sortOrder, setSortOrder] = useState<SortOrder>('default');
 
@@ -110,7 +117,7 @@ export default function ReportsQuantitativeDetail() {
   const {
     canDrillToProvince,
     canDrillToHospital,
-    canViewSameProvinceHospitals
+    canViewSameProvinceHospitals,
   } = useReportAccessPolicy('quantitative', provinces, healthOffices);
 
   // Fetch data
@@ -120,10 +127,7 @@ export default function ReportsQuantitativeDetail() {
       let from = 0;
       const all: T[] = [];
       while (true) {
-        const {
-          data,
-          error
-        } = await query.range(from, from + pageSize - 1);
+        const { data, error } = await query.range(from, from + pageSize - 1);
         if (error) throw error;
         const chunk = (data || []) as T[];
         all.push(...chunk);
@@ -132,25 +136,36 @@ export default function ReportsQuantitativeDetail() {
       }
       return all;
     };
+
     const fetchData = async () => {
       try {
-        const [regionsRes, provincesRes, hospitalsRes, healthOfficesRes, categoriesRes] = await Promise.all([supabase.from('health_regions').select('*').order('region_number'), supabase.from('provinces').select('*').order('name'), supabase.from('hospitals').select('*').order('name'), supabase.from('health_offices').select('*').order('name'), supabase.from('ctam_categories').select('*').order('order_number')]);
+        const [regionsRes, provincesRes, hospitalsRes, healthOfficesRes, categoriesRes] = await Promise.all([
+          supabase.from('health_regions').select('*').order('region_number'),
+          supabase.from('provinces').select('*').order('name'),
+          supabase.from('hospitals').select('*').order('name'),
+          supabase.from('health_offices').select('*').order('name'),
+          supabase.from('ctam_categories').select('*').order('order_number'),
+        ]);
+
         if (regionsRes.error) throw regionsRes.error;
         if (provincesRes.error) throw provincesRes.error;
         if (hospitalsRes.error) throw hospitalsRes.error;
         if (healthOfficesRes.error) throw healthOfficesRes.error;
         if (categoriesRes.error) throw categoriesRes.error;
+
         setHealthRegions(regionsRes.data || []);
         setProvinces(provincesRes.data || []);
         setHospitals(hospitalsRes.data || []);
         setHealthOffices(healthOfficesRes.data || []);
         setCategories(categoriesRes.data || []);
-        const assessmentsAll = await fetchAll<Assessment>(supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, quantitative_score, created_at').order('created_at', {
-          ascending: true
-        }));
-        const itemsAll = await fetchAll<AssessmentItem>(supabase.from('assessment_items').select('id, assessment_id, category_id, score, created_at').order('created_at', {
-          ascending: true
-        }));
+
+        const assessmentsAll = await fetchAll<Assessment>(
+          supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, quantitative_score, created_at').order('created_at', { ascending: true })
+        );
+        const itemsAll = await fetchAll<AssessmentItem>(
+          supabase.from('assessment_items').select('id, assessment_id, category_id, score, created_at').order('created_at', { ascending: true })
+        );
+
         setAssessments(assessmentsAll);
         setAssessmentItems(itemsAll);
       } catch (error) {
@@ -160,6 +175,7 @@ export default function ReportsQuantitativeDetail() {
         setLoading(false);
       }
     };
+
     fetchData();
   }, []);
 
@@ -210,6 +226,7 @@ export default function ReportsQuantitativeDetail() {
     // Determine which hospitals/health offices are in scope
     let hospitalIds: string[] = [];
     let healthOfficeIds: string[] = [];
+
     if (viewLevel === 'country') {
       hospitalIds = hospitals.map(h => h.id);
       healthOfficeIds = healthOffices.map(ho => ho.id);
@@ -224,8 +241,12 @@ export default function ReportsQuantitativeDetail() {
       hospitalIds = hospitals.filter(h => h.province_id === selectedProvince).map(h => h.id);
       healthOfficeIds = healthOffices.filter(ho => ho.province_id === selectedProvince).map(ho => ho.id);
     }
+
     const totalUnitsInScope = hospitalIds.length + healthOfficeIds.length;
-    const relevantAssessments = filteredAssessments.filter(a => a.hospital_id && hospitalIds.includes(a.hospital_id) || a.health_office_id && healthOfficeIds.includes(a.health_office_id));
+    const relevantAssessments = filteredAssessments.filter(
+      a => (a.hospital_id && hospitalIds.includes(a.hospital_id)) || 
+           (a.health_office_id && healthOfficeIds.includes(a.health_office_id))
+    );
 
     // Create a map to get the latest assessment for each unit
     const latestAssessmentByUnit = new Map<string, Assessment>();
@@ -237,20 +258,25 @@ export default function ReportsQuantitativeDetail() {
         latestAssessmentByUnit.set(unitKey, a);
       }
     });
+
     const latestAssessmentIds = new Set(Array.from(latestAssessmentByUnit.values()).map(a => a.id));
+
     return categories.map(cat => {
       let passedCount = 0;
       let failedCount = 0;
       let assessedCount = 0;
 
       // Get all assessment items for this category from the latest assessments
-      const categoryItems = filteredAssessmentItems.filter(item => latestAssessmentIds.has(item.assessment_id) && item.category_id === cat.id);
+      const categoryItems = filteredAssessmentItems.filter(
+        item => latestAssessmentIds.has(item.assessment_id) && item.category_id === cat.id
+      );
 
       // Count pass/fail for each unique assessment (unit)
       const processedAssessments = new Set<string>();
       categoryItems.forEach(item => {
         if (processedAssessments.has(item.assessment_id)) return;
         processedAssessments.add(item.assessment_id);
+        
         const score = Number(item.score);
         if (score === 1) {
           passedCount++;
@@ -259,7 +285,9 @@ export default function ReportsQuantitativeDetail() {
         }
         assessedCount++;
       });
-      const passPercentage = assessedCount > 0 ? passedCount / assessedCount * 100 : 0;
+
+      const passPercentage = assessedCount > 0 ? (passedCount / assessedCount) * 100 : 0;
+
       return {
         categoryId: cat.id,
         code: cat.code,
@@ -269,7 +297,7 @@ export default function ReportsQuantitativeDetail() {
         failedCount,
         assessedCount,
         totalUnits: totalUnitsInScope,
-        passPercentage
+        passPercentage,
       };
     });
   }, [categories, hospitals, healthOffices, provinces, viewLevel, selectedRegion, selectedProvince, filteredAssessments, filteredAssessmentItems]);
@@ -288,7 +316,9 @@ export default function ReportsQuantitativeDetail() {
 
   // Toggle sort order
   const toggleSortOrder = () => {
-    if (sortOrder === 'default') setSortOrder('asc');else if (sortOrder === 'asc') setSortOrder('desc');else setSortOrder('default');
+    if (sortOrder === 'default') setSortOrder('asc');
+    else if (sortOrder === 'asc') setSortOrder('desc');
+    else setSortOrder('default');
   };
 
   // Get sort icon
@@ -319,12 +349,15 @@ export default function ReportsQuantitativeDetail() {
     if (percentage >= 50) return 'bg-yellow-500';
     return 'bg-red-500';
   };
-  return <DashboardLayout>
+
+  return (
+    <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">รายงาน CTAM+ เพิ่มเติม (รายข้อ 17 ข้อ)<ListOrdered className="w-6 h-6 text-primary" />
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <ListOrdered className="w-6 h-6 text-primary" />
               รายงานเพิ่มเติม (รายข้อ 17 ข้อ)
             </h1>
             <p className="text-muted-foreground">แสดงผลการประเมินแยกรายข้อ พร้อมเรียงลำดับตามคะแนน</p>
@@ -343,13 +376,17 @@ export default function ReportsQuantitativeDetail() {
             <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
               <div className="w-full sm:w-48">
                 <label className="text-sm font-medium mb-1.5 block">ระดับการดู</label>
-                <Select value={viewLevel} onValueChange={(value: ViewLevel) => {
-                setViewLevel(value);
-                if (value === 'country') {
-                  setSelectedRegion('all');
-                  setSelectedProvince('all');
-                }
-              }} disabled={isProvincialAdmin}>
+                <Select 
+                  value={viewLevel} 
+                  onValueChange={(value: ViewLevel) => {
+                    setViewLevel(value);
+                    if (value === 'country') {
+                      setSelectedRegion('all');
+                      setSelectedProvince('all');
+                    }
+                  }}
+                  disabled={isProvincialAdmin}
+                >
                   <SelectTrigger className="h-9 text-sm">
                     <SelectValue placeholder="เลือกระดับ" />
                   </SelectTrigger>
@@ -361,42 +398,58 @@ export default function ReportsQuantitativeDetail() {
                 </Select>
               </div>
 
-              {(viewLevel === 'region' || viewLevel === 'province' || viewLevel === 'hospital') && <div className="w-full sm:w-48">
+              {(viewLevel === 'region' || viewLevel === 'province' || viewLevel === 'hospital') && (
+                <div className="w-full sm:w-48">
                   <label className="text-sm font-medium mb-1.5 block">เขตสุขภาพ</label>
-                  <Select value={selectedRegion} onValueChange={value => {
-                setSelectedRegion(value);
-                setSelectedProvince('all');
-              }} disabled={isProvincialAdmin}>
+                  <Select 
+                    value={selectedRegion} 
+                    onValueChange={(value) => {
+                      setSelectedRegion(value);
+                      setSelectedProvince('all');
+                    }}
+                    disabled={isProvincialAdmin}
+                  >
                     <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder="เลือกเขต" />
                     </SelectTrigger>
                     <SelectContent className="bg-background z-50">
                       {healthRegions.filter(region => {
-                    if (isProvincialAdmin && userProvinceId) {
-                      const userProvince = provinces.find(p => p.id === userProvinceId);
-                      return userProvince?.health_region_id === region.id;
-                    }
-                    return true;
-                  }).map(region => <SelectItem key={region.id} value={region.id} className="text-sm">
+                        if (isProvincialAdmin && userProvinceId) {
+                          const userProvince = provinces.find(p => p.id === userProvinceId);
+                          return userProvince?.health_region_id === region.id;
+                        }
+                        return true;
+                      }).map(region => (
+                        <SelectItem key={region.id} value={region.id} className="text-sm">
                           เขต {region.region_number}
-                        </SelectItem>)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                </div>}
+                </div>
+              )}
 
-              {(viewLevel === 'province' || viewLevel === 'hospital') && selectedRegion !== 'all' && <div className="w-full sm:w-48">
+              {(viewLevel === 'province' || viewLevel === 'hospital') && selectedRegion !== 'all' && (
+                <div className="w-full sm:w-48">
                   <label className="text-sm font-medium mb-1.5 block">จังหวัด</label>
-                  <Select value={selectedProvince} onValueChange={setSelectedProvince} disabled={isProvincialAdmin}>
+                  <Select 
+                    value={selectedProvince} 
+                    onValueChange={setSelectedProvince}
+                    disabled={isProvincialAdmin}
+                  >
                     <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder="เลือกจังหวัด" />
                     </SelectTrigger>
                     <SelectContent className="bg-background z-50">
-                      {filteredProvinces.map(province => <SelectItem key={province.id} value={province.id} className="text-sm">
+                      {filteredProvinces.map(province => (
+                        <SelectItem key={province.id} value={province.id} className="text-sm">
                           {province.name}
-                        </SelectItem>)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                </div>}
+                </div>
+              )}
 
               <div className="w-full sm:w-48">
                 <label className="text-sm font-medium mb-1.5 block">ปีงบประมาณ</label>
@@ -406,9 +459,11 @@ export default function ReportsQuantitativeDetail() {
                   </SelectTrigger>
                   <SelectContent className="bg-background z-50">
                     <SelectItem value="all" className="text-sm">ทุกปีงบประมาณ</SelectItem>
-                    {fiscalYears.map(year => <SelectItem key={year} value={year.toString()} className="text-sm">
+                    {fiscalYears.map(year => (
+                      <SelectItem key={year} value={year.toString()} className="text-sm">
                         ปีงบประมาณ {year + 543}
-                      </SelectItem>)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -424,7 +479,12 @@ export default function ReportsQuantitativeDetail() {
                 <ListOrdered className="w-4 h-4" />
                 {getTitle()}
               </CardTitle>
-              <Button variant="outline" size="sm" onClick={toggleSortOrder} className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleSortOrder}
+                className="flex items-center gap-2"
+              >
                 {getSortIcon()}
                 <span className="text-sm">
                   {sortOrder === 'default' && 'เรียงตามลำดับข้อ'}
@@ -435,7 +495,12 @@ export default function ReportsQuantitativeDetail() {
             </div>
           </CardHeader>
           <CardContent>
-            {loading ? <div className="text-center py-8 text-muted-foreground">กำลังโหลดข้อมูล...</div> : sortedCategoryStats.length === 0 ? <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูล</div> : <div className="overflow-x-auto">
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">กำลังโหลดข้อมูล...</div>
+            ) : sortedCategoryStats.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูล</div>
+            ) : (
+              <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -449,7 +514,8 @@ export default function ReportsQuantitativeDetail() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedCategoryStats.map((stat, index) => <TableRow key={stat.categoryId}>
+                    {sortedCategoryStats.map((stat, index) => (
+                      <TableRow key={stat.categoryId}>
                         <TableCell className="text-center font-medium">
                           {stat.orderNumber}
                         </TableCell>
@@ -478,19 +544,22 @@ export default function ReportsQuantitativeDetail() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-secondary">
-                              <div className={`h-full transition-all ${getProgressColorClass(stat.passPercentage)}`} style={{
-                          width: `${stat.passPercentage}%`
-                        }} />
+                              <div 
+                                className={`h-full transition-all ${getProgressColorClass(stat.passPercentage)}`}
+                                style={{ width: `${stat.passPercentage}%` }}
+                              />
                             </div>
                             <span className="text-sm font-medium w-16 text-right">
                               {stat.passPercentage.toFixed(1)}%
                             </span>
                           </div>
                         </TableCell>
-                      </TableRow>)}
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
-              </div>}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -514,5 +583,6 @@ export default function ReportsQuantitativeDetail() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>;
+    </DashboardLayout>
+  );
 }
