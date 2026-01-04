@@ -102,7 +102,7 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly }: FileUpl
 
         if (uploadError) throw uploadError;
 
-        // Save file record
+        // Save file record - use profile.id (not user_id) for foreign key
         const { error: dbError } = await supabase
           .from('evidence_files')
           .insert({
@@ -111,7 +111,7 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly }: FileUpl
             file_path: filePath,
             file_type: file.type,
             file_size: file.size,
-            uploaded_by: profile?.user_id!,
+            uploaded_by: profile?.id!,
           });
 
         if (dbError) throw dbError;
