@@ -471,7 +471,7 @@ export function QuantitativeSection({
                       {showFileUpload && (
                         <div className="space-y-2">
                           <Label className="font-medium">
-                            การจัดการ Admin Account <span className="text-destructive">*</span>
+                            ประเภทของระบบ/เครื่องมือที่ใช้ <span className="text-destructive">*</span>
                           </Label>
                           <div className="flex flex-wrap gap-2">
                             {subOptions.map((option) => (
