@@ -17,6 +17,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { 
   FileText, 
   CheckCircle2, 
@@ -25,6 +36,7 @@ import {
   Plus,
   Eye,
   Loader2,
+  RotateCcw,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
@@ -89,6 +101,12 @@ export default function Dashboard() {
   const [creating, setCreating] = useState(false);
   const [nextPeriod, setNextPeriod] = useState<string>('1');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  
+  // Return for revision dialog state
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [selectedAssessmentForReturn, setSelectedAssessmentForReturn] = useState<(Assessment & { hospitals?: Hospital; health_offices?: HealthOffice }) | null>(null);
+  const [returnComment, setReturnComment] = useState('');
+  const [returning, setReturning] = useState(false);
 
   const currentYear = new Date().getFullYear();
   const years = [currentYear - 1, currentYear, currentYear + 1];
@@ -286,6 +304,83 @@ export default function Dashboard() {
     } finally {
       setCreating(false);
     }
+  };
+
+  // Handle return for revision by provincial admin
+  const handleReturnForRevision = async () => {
+    if (!selectedAssessmentForReturn || !profile) return;
+    
+    try {
+      setReturning(true);
+      
+      const fromStatus = selectedAssessmentForReturn.status;
+      
+      // Update assessment status to 'returned' and clear section approvals
+      const { error: updateError } = await supabase
+        .from('assessments')
+        .update({
+          status: 'returned',
+          quantitative_approved_by: null,
+          quantitative_approved_at: null,
+          qualitative_approved_by: null,
+          qualitative_approved_at: null,
+          impact_approved_by: null,
+          impact_approved_at: null,
+          provincial_approved_by: null,
+          provincial_approved_at: null,
+          regional_approved_by: null,
+          regional_approved_at: null,
+        })
+        .eq('id', selectedAssessmentForReturn.id);
+
+      if (updateError) throw updateError;
+
+      // Log to approval history
+      const { error: historyError } = await supabase
+        .from('approval_history')
+        .insert({
+          assessment_id: selectedAssessmentForReturn.id,
+          action: 'return_for_revision',
+          performed_by: profile.id,
+          from_status: fromStatus,
+          to_status: 'returned',
+          comment: returnComment || 'ส่งกลับให้แก้ไข'
+        });
+
+      if (historyError) throw historyError;
+
+      toast({ 
+        title: 'ส่งกลับสำเร็จ', 
+        description: 'แบบประเมินถูกส่งกลับให้โรงพยาบาลแก้ไขเรียบร้อยแล้ว' 
+      });
+
+      // Refresh data
+      const { data: assessmentsData } = await supabase
+        .from('assessments')
+        .select('*, hospitals(*), health_offices(*)')
+        .order('created_at', { ascending: false });
+      
+      setAssessments(assessmentsData || []);
+      setReturnDialogOpen(false);
+      setSelectedAssessmentForReturn(null);
+      setReturnComment('');
+    } catch (error: any) {
+      console.error('Error returning assessment:', error);
+      toast({ 
+        title: 'เกิดข้อผิดพลาด', 
+        description: error.message, 
+        variant: 'destructive' 
+      });
+    } finally {
+      setReturning(false);
+    }
+  };
+
+  // Check if user can return assessment for revision
+  const canReturnForRevision = (assessment: Assessment) => {
+    if (profile?.role !== 'provincial') return false;
+    // Allow returning assessments that are approved by regional or completed
+    return assessment.status === 'approved_regional' || assessment.status === 'completed';
   };
 
   const canCreate = profile?.role === 'hospital_it' || profile?.role === 'central_admin' || profile?.role === 'health_office';
@@ -569,14 +664,30 @@ export default function Dashboard() {
                         {format(new Date(assessment.created_at), 'd MMM yyyy', { locale: th })}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/assessment/${assessment.id}`)}
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          {assessment.status === 'draft' ? 'แก้ไข' : 'ดู'}
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          {canReturnForRevision(assessment) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-warning hover:text-warning"
+                              onClick={() => {
+                                setSelectedAssessmentForReturn(assessment);
+                                setReturnDialogOpen(true);
+                              }}
+                            >
+                              <RotateCcw className="w-4 h-4 mr-1" />
+                              แก้ไข
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/assessment/${assessment.id}`)}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            {assessment.status === 'draft' ? 'แก้ไข' : 'ดู'}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -606,6 +717,54 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* Return for Revision Dialog */}
+      <AlertDialog open={returnDialogOpen} onOpenChange={setReturnDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันส่งกลับให้แก้ไข</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedAssessmentForReturn && (
+                <>
+                  ส่งแบบประเมินกลับไปให้ <strong className="text-foreground">
+                    {(selectedAssessmentForReturn as any).hospitals?.name || 
+                     (selectedAssessmentForReturn as any).health_offices?.name}
+                  </strong> แก้ไขแบบประเมิน
+                  <br /><br />
+                  เมื่อโรงพยาบาลแก้ไขเสร็จและส่งกลับมา จะต้องผ่านขั้นตอนอนุมัติใหม่ทั้งหมด
+                  (สสจ. → เขตสุขภาพ)
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="return-comment">เหตุผลที่ส่งกลับ (ถ้ามี)</Label>
+            <Textarea
+              id="return-comment"
+              placeholder="ระบุเหตุผลหรือสิ่งที่ต้องแก้ไข..."
+              value={returnComment}
+              onChange={(e) => setReturnComment(e.target.value)}
+              className="mt-2"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setSelectedAssessmentForReturn(null);
+              setReturnComment('');
+            }}>
+              ยกเลิก
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleReturnForRevision}
+              disabled={returning}
+              className="bg-warning text-warning-foreground hover:bg-warning/90"
+            >
+              {returning && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              ยืนยันส่งกลับ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
