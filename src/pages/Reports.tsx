@@ -11,6 +11,7 @@ import { BarChart3, FileText, Building2, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useReportAccessPolicy } from '@/hooks/useReportAccessPolicy';
+import { isApprovedAssessmentStatus } from '@/lib/assessment-latest';
 interface HealthRegion {
   id: string;
   name: string;
@@ -202,6 +203,12 @@ export default function Reports() {
   // Get latest assessments only (one per hospital/health_office) from filtered assessments
   const latestAssessments = useMemo(() => getLatestAssessmentPerUnit(filteredAssessments), [filteredAssessments]);
 
+  // Latest assessments per unit, but only counting the most recent *approved* one
+  const latestApprovedAssessments = useMemo(
+    () => getLatestAssessmentPerUnit(filteredAssessments.filter(a => isApprovedAssessmentStatus(a.status))),
+    [filteredAssessments]
+  );
+
   // Calculate statistics based on drill level (including health offices)
   const drillStats = (() => {
     let filteredHospitals: Hospital[] = [];
@@ -348,18 +355,22 @@ export default function Reports() {
                   const totalUnits = regionHospitals.length + regionHealthOffices.length;
                   // Use latest assessments only (include both hospitals and health offices)
                   const regionLatestAssessments = latestAssessments.filter(a => regionHospitals.some(h => h.id === a.hospital_id) || regionHealthOffices.some(ho => ho.id === a.health_office_id));
+                  const regionLatestApprovedAssessments = latestApprovedAssessments.filter(a => regionHospitals.some(h => h.id === a.hospital_id) || regionHealthOffices.some(ho => ho.id === a.health_office_id));
+
                   const completedCount = regionLatestAssessments.filter(a => a.status === 'approved_regional' || a.status === 'completed').length;
-                  // Calculate average scores
-                  const quantitativeScores = regionLatestAssessments.filter(a => a.quantitative_score !== null);
+
+                  // Calculate average scores (approved only)
+                  const quantitativeScores = regionLatestApprovedAssessments.filter(a => a.quantitative_score !== null);
                   const avgQuantitative = quantitativeScores.length > 0 
                     ? quantitativeScores.reduce((sum, a) => sum + (a.quantitative_score || 0), 0) / quantitativeScores.length 
                     : null;
-                  const impactScores = regionLatestAssessments.filter(a => a.impact_score !== null);
+                  const impactScores = regionLatestApprovedAssessments.filter(a => a.impact_score !== null);
                   const avgImpact = impactScores.length > 0 
                     ? impactScores.reduce((sum, a) => sum + (a.impact_score || 0), 0) / impactScores.length 
                     : null;
-                  const totalScoreSum = regionLatestAssessments.filter(a => a.total_score !== null).reduce((sum, a) => sum + (a.total_score || 0), 0);
-                  const scoreCount = regionLatestAssessments.filter(a => a.total_score !== null).length;
+
+                  const totalScoreSum = regionLatestApprovedAssessments.filter(a => a.total_score !== null).reduce((sum, a) => sum + (a.total_score || 0), 0);
+                  const scoreCount = regionLatestApprovedAssessments.filter(a => a.total_score !== null).length;
                   const canDrill = canDrillToProvince(region.id);
                   return <TableRow key={region.id} className={canDrill ? "cursor-pointer hover:bg-muted/50 transition-colors" : "opacity-50"} onClick={() => canDrill && handleDrillChange('province', region.id, null)}>
                           <TableCell className={canDrill ? "font-medium text-primary underline" : "font-medium"}>
@@ -405,10 +416,13 @@ export default function Reports() {
                   const totalUnits = provinceHospitals.length + provinceHealthOffices.length;
                   // Use latest assessments only (include both hospitals and health offices)
                   const provinceLatestAssessments = latestAssessments.filter(a => provinceHospitals.some(h => h.id === a.hospital_id) || provinceHealthOffices.some(ho => ho.id === a.health_office_id));
+                  const provinceLatestApprovedAssessments = latestApprovedAssessments.filter(a => provinceHospitals.some(h => h.id === a.hospital_id) || provinceHealthOffices.some(ho => ho.id === a.health_office_id));
+
                   const completedCount = provinceLatestAssessments.filter(a => a.status === 'approved_regional' || a.status === 'completed').length;
-                  // Sum of latest scores (not average)
-                  const totalScoreSum = provinceLatestAssessments.filter(a => a.total_score !== null).reduce((sum, a) => sum + (a.total_score || 0), 0);
-                  const scoreCount = provinceLatestAssessments.filter(a => a.total_score !== null).length;
+
+                  // Average score (approved only)
+                  const totalScoreSum = provinceLatestApprovedAssessments.filter(a => a.total_score !== null).reduce((sum, a) => sum + (a.total_score || 0), 0);
+                  const scoreCount = provinceLatestApprovedAssessments.filter(a => a.total_score !== null).length;
                   const canDrill = canDrillToHospital(province.id);
                   return <TableRow key={province.id} className={canDrill ? "cursor-pointer hover:bg-muted/50 transition-colors" : "opacity-50"} onClick={() => canDrill && handleDrillChange('hospital', chartRegionId, province.id)}>
                           <TableCell className={canDrill ? "font-medium text-primary underline" : "font-medium"}>{province.name}</TableCell>
@@ -459,7 +473,7 @@ export default function Reports() {
                   }
                   return true;
                 }).map(hospital => {
-                  const assessment = latestAssessments.find(a => a.hospital_id === hospital.id);
+                  const assessment = latestApprovedAssessments.find(a => a.hospital_id === hospital.id) || latestAssessments.find(a => a.hospital_id === hospital.id);
                   return <TableRow key={hospital.id}>
                           <TableCell className="font-mono text-sm">{hospital.code}</TableCell>
                           <TableCell className="font-medium">{hospital.name}</TableCell>
@@ -499,7 +513,7 @@ export default function Reports() {
                   }
                   return true;
                 }).map(office => {
-                  const assessment = latestAssessments.find(a => a.health_office_id === office.id);
+                  const assessment = latestApprovedAssessments.find(a => a.health_office_id === office.id) || latestAssessments.find(a => a.health_office_id === office.id);
                   return <TableRow key={office.id}>
                           <TableCell className="font-mono text-sm">{office.code}</TableCell>
                           <TableCell className="font-medium">{office.name}</TableCell>
