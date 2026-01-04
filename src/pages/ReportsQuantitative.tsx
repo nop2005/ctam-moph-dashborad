@@ -542,46 +542,12 @@ export default function ReportsQuantitative() {
   return <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-primary" />
-              รายงานเชิงปริมาณ
-            </h1>
-            <p className="text-muted-foreground">คะแนนการประเมินเชิงปริมาณ 17 ข้อ CTAM</p>
-          </div>
-          
-          {/* User Info Box */}
-          {profile && (
-            <Card className="min-w-[200px] border-primary/30">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <UserCircle className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-medium text-sm truncate">
-                      {profile.full_name || profile.email}
-                    </span>
-                    {organizationName && (
-                      <span className="text-xs text-muted-foreground flex items-center gap-1 truncate">
-                        <Briefcase className="w-3 h-3 flex-shrink-0" />
-                        {organizationName}
-                      </span>
-                    )}
-                    <span className="text-xs text-primary font-medium mt-0.5">
-                      {profile.role === 'hospital_it' && 'IT รพ.'}
-                      {profile.role === 'provincial' && 'สสจ.'}
-                      {profile.role === 'regional' && 'เขตสุขภาพ'}
-                      {profile.role === 'central_admin' && 'Super Admin'}
-                      {profile.role === 'health_office' && 'สสจ./สนข.'}
-                      {profile.role === 'supervisor' && 'ผู้ตรวจราชการ'}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <TrendingUp className="w-6 h-6 text-primary" />
+            รายงานเชิงปริมาณ
+          </h1>
+          <p className="text-muted-foreground">คะแนนการประเมินเชิงปริมาณ 17 ข้อ CTAM</p>
         </div>
 
         {/* Filters */}
