@@ -47,12 +47,6 @@ const menuItems = [
     icon: LayoutDashboard,
     roles: ['hospital_it', 'provincial', 'regional', 'central_admin', 'health_office', 'supervisor']
   },
-  { 
-    title: 'แบบประเมิน CTAM+', 
-    url: '/assessments', 
-    icon: FileText,
-    roles: ['hospital_it', 'provincial', 'regional', 'central_admin', 'health_office', 'supervisor']
-  },
 ];
 
 const reportSubItems = [
