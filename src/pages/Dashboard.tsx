@@ -88,6 +88,7 @@ export default function Dashboard() {
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [creating, setCreating] = useState(false);
   const [nextPeriod, setNextPeriod] = useState<string>('1');
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   const currentYear = new Date().getFullYear();
   const years = [currentYear - 1, currentYear, currentYear + 1];
@@ -296,6 +297,7 @@ export default function Dashboard() {
       icon: FileText, 
       color: 'text-primary',
       bgColor: 'bg-primary/10',
+      filterValue: null, // Show all
     },
     { 
       label: 'ร่าง', 
@@ -303,6 +305,7 @@ export default function Dashboard() {
       icon: FileText, 
       color: 'text-muted-foreground',
       bgColor: 'bg-muted',
+      filterValue: 'draft',
     },
     { 
       label: 'รอ สสจ. ตรวจสอบ', 
@@ -310,6 +313,7 @@ export default function Dashboard() {
       icon: Clock, 
       color: 'text-warning',
       bgColor: 'bg-warning/10',
+      filterValue: 'submitted',
     },
     { 
       label: 'รอ เขตสุขภาพ ตรวจสอบ', 
@@ -317,6 +321,7 @@ export default function Dashboard() {
       icon: Clock, 
       color: 'text-primary',
       bgColor: 'bg-primary/10',
+      filterValue: 'approved_provincial',
     },
     { 
       label: 'อนุมัติแล้ว', 
@@ -324,6 +329,7 @@ export default function Dashboard() {
       icon: CheckCircle2, 
       color: 'text-success',
       bgColor: 'bg-success/10',
+      filterValue: 'approved',
     },
     { 
       label: 'ต้องแก้ไข', 
@@ -331,8 +337,23 @@ export default function Dashboard() {
       icon: AlertTriangle, 
       color: 'text-destructive',
       bgColor: 'bg-destructive/10',
+      filterValue: 'returned',
     },
   ];
+
+  // Filter assessments based on statusFilter
+  const filteredAssessments = assessments.filter(assessment => {
+    // Apply fiscal year filter first
+    if (selectedFiscalYear !== 'all' && assessment.fiscal_year !== parseInt(selectedFiscalYear)) {
+      return false;
+    }
+    // Then apply status filter
+    if (!statusFilter) return true;
+    if (statusFilter === 'approved') {
+      return assessment.status === 'approved_regional' || assessment.status === 'completed';
+    }
+    return assessment.status === statusFilter;
+  });
 
   return (
     <DashboardLayout>
@@ -369,7 +390,12 @@ export default function Dashboard() {
         {statsDisplay.map((stat, index) => (
           <Card 
             key={index} 
-            className="card-hover"
+            className={`card-hover cursor-pointer transition-all ${
+              statusFilter === stat.filterValue 
+                ? 'ring-2 ring-primary ring-offset-2' 
+                : ''
+            }`}
+            onClick={() => setStatusFilter(stat.filterValue)}
           >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -390,9 +416,16 @@ export default function Dashboard() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
-            <CardTitle>รายการแบบประเมิน</CardTitle>
+            <CardTitle>
+              รายการแบบประเมิน
+              {statusFilter && (
+                <Badge variant="secondary" className="ml-2 font-normal">
+                  {statsDisplay.find(s => s.filterValue === statusFilter)?.label}
+                </Badge>
+              )}
+            </CardTitle>
             <CardDescription>
-              {assessments.length} รายการ
+              {filteredAssessments.length} รายการ
             </CardDescription>
           </div>
           {canCreate && (
@@ -477,11 +510,20 @@ export default function Dashboard() {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
-          ) : assessments.length === 0 ? (
+          ) : filteredAssessments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>ยังไม่มีแบบประเมิน</p>
-              {canCreate && (
+              <p>{statusFilter ? 'ไม่มีรายการตามเงื่อนไขที่เลือก' : 'ยังไม่มีแบบประเมิน'}</p>
+              {statusFilter && (
+                <Button 
+                  variant="outline" 
+                  className="mt-4"
+                  onClick={() => setStatusFilter(null)}
+                >
+                  ดูทั้งหมด
+                </Button>
+              )}
+              {!statusFilter && canCreate && (
                 <Button 
                   variant="outline" 
                   className="mt-4"
@@ -505,7 +547,7 @@ export default function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {assessments.map((assessment) => {
+                {filteredAssessments.map((assessment) => {
                   const status = statusLabels[assessment.status] || statusLabels.draft;
                   return (
                     <TableRow key={assessment.id}>
