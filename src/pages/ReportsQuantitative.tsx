@@ -299,11 +299,15 @@ export default function ReportsQuantitative() {
 
         // Calculate units that passed all 17 items (green)
         let unitsPassedAll17 = 0;
+        // Calculate units that have been assessed (have latest approved assessment)
+        let unitsAssessed = 0;
 
         // Check hospitals (latest approved assessment only)
         hospitalIds.forEach(hospitalId => {
           const latestAssessmentId = latestApprovedByUnit.get(hospitalId)?.id;
           if (!latestAssessmentId) return;
+
+          unitsAssessed++;
 
           const passedAllCategories = categories.every(cat => {
             const catItems = filteredAssessmentItems.filter(
@@ -320,6 +324,8 @@ export default function ReportsQuantitative() {
           const latestAssessmentId = latestApprovedByUnit.get(officeId)?.id;
           if (!latestAssessmentId) return;
 
+          unitsAssessed++;
+
           const passedAllCategories = categories.every(cat => {
             const catItems = filteredAssessmentItems.filter(
               item => item.assessment_id === latestAssessmentId && item.category_id === cat.id
@@ -334,6 +340,7 @@ export default function ReportsQuantitative() {
           name: `เขตสุขภาพที่ ${region.region_number}`,
           type: 'region' as const,
           hospitalCount: regionHospitals.length + regionHealthOffices.length,
+          hospitalsAssessed: unitsAssessed,
           hospitalsPassedAll17: unitsPassedAll17,
           categoryAverages
         };
@@ -350,11 +357,15 @@ export default function ReportsQuantitative() {
 
         // Calculate units that passed all 17 items
         let unitsPassedAll17 = 0;
+        // Calculate units that have been assessed (have latest approved assessment)
+        let unitsAssessed = 0;
 
         // Check hospitals (latest approved assessment only)
         hospitalIds.forEach(hospitalId => {
           const latestAssessmentId = latestApprovedByUnit.get(hospitalId)?.id;
           if (!latestAssessmentId) return;
+
+          unitsAssessed++;
 
           const passedAllCategories = categories.every(cat => {
             const catItems = filteredAssessmentItems.filter(
@@ -371,6 +382,8 @@ export default function ReportsQuantitative() {
           const latestAssessmentId = latestApprovedByUnit.get(officeId)?.id;
           if (!latestAssessmentId) return;
 
+          unitsAssessed++;
+
           const passedAllCategories = categories.every(cat => {
             const catItems = filteredAssessmentItems.filter(
               item => item.assessment_id === latestAssessmentId && item.category_id === cat.id
@@ -385,6 +398,7 @@ export default function ReportsQuantitative() {
           name: province.name,
           type: 'province' as const,
           hospitalCount: provinceHospitals.length + provinceHealthOffices.length,
+          hospitalsAssessed: unitsAssessed,
           hospitalsPassedAll17: unitsPassedAll17,
           categoryAverages
         };
@@ -759,14 +773,16 @@ export default function ReportsQuantitative() {
             const sticky = {
               name: 180,
               hospitalCount: 80,
+              hospitalsAssessed: 100,
               passedAll17: 100,
               percentGreen: 200
             } as const;
             const left = {
               name: 0,
               hospitalCount: sticky.name,
-              passedAll17: sticky.name + sticky.hospitalCount,
-              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.passedAll17 : 0)
+              hospitalsAssessed: sticky.name + sticky.hospitalCount,
+              passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
+              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.passedAll17 : 0)
             } as const;
             const stickyHeaderBase = "sticky z-30 border-r border-border/60";
             const stickyCellBase = "sticky z-20 border-r border-border/60 bg-background";
@@ -791,6 +807,15 @@ export default function ReportsQuantitative() {
                         left: left.hospitalCount
                       }}>
                             จำนวน รพ.
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-blue-100 dark:bg-blue-900/30`} style={{
+                        left: left.hospitalsAssessed
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>รพ.ที่ประเมิน</span>
+                              <span>แล้ว</span>
+                            </div>
                           </TableHead>}
 
                         {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-green-100 dark:bg-green-900/30`} style={{
@@ -857,6 +882,13 @@ export default function ReportsQuantitative() {
                           minWidth: sticky.hospitalCount
                         }}>
                                 {row.hospitalCount}
+                              </TableCell>}
+
+                            {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-blue-50 dark:bg-blue-900/20`} style={{
+                          left: left.hospitalsAssessed,
+                          minWidth: sticky.hospitalsAssessed
+                        }}>
+                                {'hospitalsAssessed' in row ? row.hospitalsAssessed : 0}
                               </TableCell>}
 
                             {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-green-50 dark:bg-green-900/20`} style={{
