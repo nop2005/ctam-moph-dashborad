@@ -120,15 +120,10 @@ function PublicSidebar() {
 
               {/* คู่มือเอกสาร - Main Menu Item */}
               <SidebarMenuItem>
-                <SidebarMenuButton 
-                  tooltip="คู่มือเอกสาร" 
-                  isActive={currentPath === '/public/inspection/manual'}
-                  onClick={() => navigate('/public/inspection/manual')}
-                  className={`
+                <SidebarMenuButton tooltip="คู่มือเอกสาร" isActive={currentPath === '/public/inspection/manual'} onClick={() => navigate('/public/inspection/manual')} className={`
                     text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
                     data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
-                  `}
-                >
+                  `}>
                   <BookOpen className="h-4 w-4" />
                   <span>คู่มือเอกสาร</span>
                 </SidebarMenuButton>
@@ -152,9 +147,7 @@ function PublicSidebar() {
             </div>
             <div className="overflow-hidden">
               <p className="text-xs font-medium text-sidebar-foreground leading-tight">ศูนย์เฝ้าระวังความมั่นคงปลอดภัยไซเบอร์เขตสุขภาพที่ 1 (CISO)</p>
-              <p className="text-xs text-sidebar-foreground/60 truncate">
-                กระทรวงสาธารณสุข
-              </p>
+              <p className="text-xs text-sidebar-foreground/60 truncate">ศทส.สป. กระทรวงสาธารณสุข</p>
             </div>
           </div> : <div className="flex justify-center">
             <Building2 className="w-5 h-5 text-sidebar-primary" />
