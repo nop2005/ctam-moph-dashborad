@@ -334,9 +334,9 @@ export default function Reports() {
                     <TableRow>
                       <TableHead>เขตสุขภาพ</TableHead>
                       <TableHead className="text-right">จำนวนสถานบริการ</TableHead>
+                      <TableHead className="text-right">ประเมินแล้ว</TableHead>
                       <TableHead className="text-right">คะแนนเชิงปริมาณ</TableHead>
                       <TableHead className="text-right">คะแนนเชิงผลกระทบ</TableHead>
-                      <TableHead className="text-right">ประเมินแล้ว</TableHead>
                       <TableHead className="text-right">คะแนนรวม</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -366,13 +366,13 @@ export default function Reports() {
                             เขตสุขภาพที่ {region.region_number}
                           </TableCell>
                           <TableCell className="text-right">{totalUnits}</TableCell>
+                          <TableCell className="text-right">{completedCount}</TableCell>
                           <TableCell className="text-right">
                             {avgQuantitative !== null ? avgQuantitative.toFixed(2) : '-'}
                           </TableCell>
                           <TableCell className="text-right">
                             {avgImpact !== null ? avgImpact.toFixed(2) : '-'}
                           </TableCell>
-                          <TableCell className="text-right">{completedCount}</TableCell>
                           <TableCell className="text-right font-medium">
                             {scoreCount > 0 ? (totalScoreSum / scoreCount).toFixed(2) : '-'}
                           </TableCell>
