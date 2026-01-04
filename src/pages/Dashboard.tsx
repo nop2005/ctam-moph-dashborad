@@ -158,7 +158,7 @@ export default function Dashboard() {
           setStats({ total, draft, waitingProvincial, waitingRegional, approved, returned });
         }
 
-        // Load assessments list
+        // Load assessments list - provincial จะเห็นเฉพาะจังหวัดตัวเอง
         const { data: assessmentsData, error: assessError } = await supabase
           .from('assessments')
           .select('*, hospitals(*), health_offices(*)')
@@ -167,7 +167,22 @@ export default function Dashboard() {
         if (assessError) {
           console.error('Error loading assessments:', assessError);
         } else {
-          setAssessments(assessmentsData || []);
+          // Filter assessments for provincial users to only show their province
+          let filtered = assessmentsData || [];
+          if (profile?.role === 'provincial' && profile.province_id) {
+            filtered = (assessmentsData || []).filter(a => {
+              // Filter hospital assessments by province
+              if (a.hospital_id && a.hospitals) {
+                return (a.hospitals as Hospital).province_id === profile.province_id;
+              }
+              // Filter health office assessments by province
+              if (a.health_office_id && a.health_offices) {
+                return (a.health_offices as HealthOffice).province_id === profile.province_id;
+              }
+              return false;
+            });
+          }
+          setAssessments(filtered);
         }
 
         // Load hospitals for create dialog
