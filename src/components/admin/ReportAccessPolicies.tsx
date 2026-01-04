@@ -171,6 +171,7 @@ export function ReportAccessPolicies() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[180px]">บทบาท</TableHead>
+                <TableHead>Role</TableHead>
                 <TableHead className="text-center">เห็นระดับเขต</TableHead>
                 <TableHead className="text-center">Drill ไประดับจังหวัด</TableHead>
                 <TableHead className="text-center">Drill ไประดับสถานบริการ</TableHead>
@@ -180,13 +181,13 @@ export function ReportAccessPolicies() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               ) : filteredPolicies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     ไม่พบข้อมูลนโยบาย
                   </TableCell>
                 </TableRow>
@@ -197,6 +198,9 @@ export function ReportAccessPolicies() {
                       <Badge variant={getRoleBadgeVariant(policy.role)}>
                         {getRoleLabel(policy.role)}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-sm">
+                      {policy.role}
                     </TableCell>
                     <TableCell className="text-center">
                       <Checkbox
