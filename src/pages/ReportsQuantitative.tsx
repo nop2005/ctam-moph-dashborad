@@ -882,10 +882,19 @@ export default function ReportsQuantitative() {
                             // Calculate quantitative score for hospital/health_office level (score out of 7)
                             const isUnitLevel = row.type === 'hospital' || row.type === 'health_office';
                             let quantitativeScore: number | null = null;
+                            let passedCount: number | null = null;
                             if (isUnitLevel) {
                               const latestAssessment = latestApprovedByUnit.get(row.id);
                               if (latestAssessment && latestAssessment.quantitative_score !== null) {
                                 quantitativeScore = Number(latestAssessment.quantitative_score);
+                              }
+                              // Count passed items for this unit (from the latest assessment only)
+                              if (latestAssessment) {
+                                const latestAssessmentItems = filteredAssessmentItems.filter(item => 
+                                  item.assessment_id === latestAssessment.id
+                                );
+                                // Pass is determined by score === 1
+                                passedCount = latestAssessmentItems.filter(item => Number(item.score) === 1).length;
                               }
                             }
                             
@@ -896,9 +905,9 @@ export default function ReportsQuantitative() {
                                         {row.hospitalCount > 0 || passedPercentage !== null ? `${percentage.toFixed(1)}%` : '-'}
                                       </span>
                                     </div>
-                                    {isUnitLevel && quantitativeScore !== null && (
+                                    {isUnitLevel && passedCount !== null && quantitativeScore !== null && (
                                       <span className="text-xs text-muted-foreground">
-                                        ({quantitativeScore.toFixed(2)}/7)
+                                        (ผ่าน {passedCount}/17 ข้อ = {quantitativeScore.toFixed(2)}/7 คะแนน)
                                       </span>
                                     )}
                                   </div>;
