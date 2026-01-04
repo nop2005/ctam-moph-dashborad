@@ -11,11 +11,11 @@ const reportSubItems = [{
   url: '/public/reports',
   icon: PieChart
 }, {
-  title: 'เชิงปริมาณ',
+  title: 'เชิงปริมาณ ( 17 ข้อ )',
   url: '/public/reports/quantitative',
   icon: TrendingUp
 }, {
-  title: 'เชิงผลกระทบ',
+  title: 'เชิงผลกระทบ ( Incident & Recovery )',
   url: '/public/reports/impact',
   icon: AlertTriangle
 }];
