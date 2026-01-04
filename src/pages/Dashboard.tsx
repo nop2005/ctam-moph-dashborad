@@ -665,6 +665,14 @@ export default function Dashboard() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/assessment/${assessment.id}`)}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            {assessment.status === 'draft' ? 'แก้ไข' : 'ดู'}
+                          </Button>
                           {canReturnForRevision(assessment) && (
                             <Button
                               variant="ghost"
@@ -679,14 +687,6 @@ export default function Dashboard() {
                               แก้ไข
                             </Button>
                           )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/assessment/${assessment.id}`)}
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            {assessment.status === 'draft' ? 'แก้ไข' : 'ดู'}
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
