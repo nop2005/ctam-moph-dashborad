@@ -104,10 +104,14 @@ export default function ReportsQuantitativeDetail() {
   // Sorting
   const [sortOrder, setSortOrder] = useState<SortOrder>('default');
 
-  // Check if user is provincial admin
+  // Check user role for access control
   const isProvincialAdmin = profile?.role === 'provincial';
+  const isHospitalIT = profile?.role === 'hospital_it';
+  const isHealthOffice = profile?.role === 'health_office';
   const userProvinceId = profile?.province_id;
   const userRegionId = profile?.health_region_id;
+  const userHospitalId = profile?.hospital_id;
+  const userHealthOfficeId = profile?.health_office_id;
 
   // Report access policy
   const {
@@ -175,15 +179,20 @@ export default function ReportsQuantitativeDetail() {
     fetchData();
   }, []);
 
-  // Set initial filters for provincial admin
+  // Set initial filters based on user role
   useEffect(() => {
-    if (isProvincialAdmin && userProvinceId && provinces.length > 0) {
-      const userProvince = provinces.find(p => p.id === userProvinceId);
-      if (userProvince) {
-        setSelectedRegion(userProvince.health_region_id);
-        setSelectedProvince(userProvinceId);
-        setViewLevel('province');
+    if (provinces.length > 0) {
+      // Provincial admin: start at their province level
+      if (isProvincialAdmin && userProvinceId) {
+        const userProvince = provinces.find(p => p.id === userProvinceId);
+        if (userProvince) {
+          setSelectedRegion(userProvince.health_region_id);
+          setSelectedProvince(userProvinceId);
+          setViewLevel('province');
+        }
       }
+      // Hospital IT and Health Office: can view country-wide data (no filter restriction)
+      // They can see aggregated data from all units, not just their own
     }
   }, [isProvincialAdmin, userProvinceId, provinces]);
 
