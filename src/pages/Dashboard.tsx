@@ -896,21 +896,21 @@ export default function Dashboard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {profile?.role === 'regional' && (
-                    <TableHead className="w-10"></TableHead>
-                  )}
                   <TableHead>โรงพยาบาล</TableHead>
                   <TableHead>ครั้งที่ประเมิน</TableHead>
                   <TableHead>สถานะ</TableHead>
                   <TableHead>คะแนนรวม (10)</TableHead>
                   <TableHead>วันที่สร้าง</TableHead>
+                  <TableHead className="text-right">การดำเนินการ</TableHead>
                   {(profile?.role === 'central_admin' || profile?.role === 'regional') && (
                     <TableHead className="text-center">สถานะส่งอีเมล</TableHead>
                   )}
                   {profile?.role === 'central_admin' && (
                     <TableHead className="text-center">ศทส.อัพเดดเเดชบอร์ดกลางเเล้ว</TableHead>
                   )}
-                  <TableHead className="text-right">การดำเนินการ</TableHead>
+                  {profile?.role === 'regional' && (
+                    <TableHead className="text-center w-16">ส่งเมล์รายงานไป ศทส.</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -919,16 +919,6 @@ export default function Dashboard() {
                   const emailSentAt = (assessment as any).email_sent_at;
                   return (
                     <TableRow key={assessment.id}>
-                      {profile?.role === 'regional' && (
-                        <TableCell>
-                          {canSelectForEmail(assessment) && (
-                            <Checkbox
-                              checked={selectedAssessmentIds.has(assessment.id)}
-                              onCheckedChange={() => toggleSelectAssessment(assessment.id)}
-                            />
-                          )}
-                        </TableCell>
-                      )}
                       <TableCell className="font-medium">
                         {(assessment as any).hospitals?.name || (assessment as any).health_offices?.name || '-'}
                       </TableCell>
@@ -945,6 +935,32 @@ export default function Dashboard() {
                       </TableCell>
                       <TableCell>
                         {format(new Date(assessment.created_at), 'd MMM yyyy', { locale: th })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/assessment/${assessment.id}`)}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            {assessment.status === 'draft' ? 'แก้ไข' : 'ดู'}
+                          </Button>
+                          {canReturnForRevision(assessment) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-warning hover:text-warning"
+                              onClick={() => {
+                                setSelectedAssessmentForReturn(assessment);
+                                setReturnDialogOpen(true);
+                              }}
+                            >
+                              <RotateCcw className="w-4 h-4 mr-1" />
+                              แก้ไข
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                       {(profile?.role === 'central_admin' || profile?.role === 'regional') && (
                         <TableCell className="text-center">
@@ -1000,32 +1016,16 @@ export default function Dashboard() {
                           />
                         </TableCell>
                       )}
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/assessment/${assessment.id}`)}
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            {assessment.status === 'draft' ? 'แก้ไข' : 'ดู'}
-                          </Button>
-                          {canReturnForRevision(assessment) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-warning hover:text-warning"
-                              onClick={() => {
-                                setSelectedAssessmentForReturn(assessment);
-                                setReturnDialogOpen(true);
-                              }}
-                            >
-                              <RotateCcw className="w-4 h-4 mr-1" />
-                              แก้ไข
-                            </Button>
+                      {profile?.role === 'regional' && (
+                        <TableCell className="text-center">
+                          {canSelectForEmail(assessment) && (
+                            <Checkbox
+                              checked={selectedAssessmentIds.has(assessment.id)}
+                              onCheckedChange={() => toggleSelectAssessment(assessment.id)}
+                            />
                           )}
-                        </div>
-                      </TableCell>
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}
