@@ -7,19 +7,20 @@ import { Shield, Lock, Server, Database, Loader2 } from 'lucide-react';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
-  const { user, isLoading } = useAuth();
+  const { user, profile, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   // Get the redirect path from location state (set by ProtectedRoute)
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
+  const isActive = profile?.is_active === true;
 
   useEffect(() => {
-    if (user) {
+    if (user && isActive) {
       // Redirect to the original requested page or dashboard
       navigate(from, { replace: true });
     }
-  }, [user, navigate, from]);
+  }, [user, isActive, navigate, from]);
 
   const features = [
     { icon: Shield, label: 'ประเมินตาม CTAM+ 17 หมวด' },
@@ -28,8 +29,8 @@ export default function Login() {
     { icon: Database, label: 'รองรับการตรวจราชการ' },
   ];
 
-  // Show loading only briefly during initial auth check
-  if (isLoading) {
+  // Show loading during initial auth check AND while profile is being fetched
+  if (isLoading || (user && !profile)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">

@@ -119,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: new Error('ไม่สามารถตรวจสอบสถานะบัญชีได้') };
       }
 
+      // If no profile row OR not active -> block login until approved
       if (!profileData?.is_active) {
         await supabase.auth.signOut();
         return { error: new Error('บัญชีของคุณยังไม่ได้รับการอนุมัติจากผู้ดูแลระบบ กรุณารอการอนุมัติ') };
@@ -129,29 +130,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
+    const redirectUrl = `${window.location.origin}/`;
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo: redirectUrl,
         data: {
           full_name: fullName,
         },
       },
     });
 
-    if (!error && data.user) {
-      // Update profile with full name, phone, and set is_active to false (pending approval)
-      await supabase
-        .from('profiles')
-        .update({ 
-          full_name: fullName,
-          phone: phone || null,
-          is_active: false // Require admin approval
-        })
-        .eq('user_id', data.user.id);
+    if (error || !data.user) {
+      return { error };
     }
 
-    return { error };
+    // Ensure profiles row exists and mark as pending approval
+    const { data: existingProfile, error: existingError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', data.user.id)
+      .maybeSingle();
+
+    if (existingError) {
+      await supabase.auth.signOut();
+      return { error: new Error('ไม่สามารถบันทึกข้อมูลผู้ใช้ได้') };
+    }
+
+    const profilePayload = {
+      email,
+      full_name: fullName,
+      phone: phone || null,
+      is_active: false,
+    };
+
+    const { error: writeError } = existingProfile
+      ? await supabase
+          .from('profiles')
+          .update(profilePayload)
+          .eq('user_id', data.user.id)
+      : await supabase
+          .from('profiles')
+          .insert({ user_id: data.user.id, ...profilePayload });
+
+    // Always force logout until approved (even if profile write fails)
+    await supabase.auth.signOut();
+
+    if (writeError) {
+      return { error: new Error('ไม่สามารถบันทึกข้อมูลผู้ใช้ได้') };
+    }
+
+    return { error: null };
   };
 
   const signOut = async () => {
