@@ -116,6 +116,8 @@ export type Database = {
           created_at: string
           created_by: string
           data_updated: boolean
+          email_sent_at: string | null
+          email_sent_by: string | null
           fiscal_year: number
           health_office_id: string | null
           hospital_id: string | null
@@ -146,6 +148,8 @@ export type Database = {
           created_at?: string
           created_by: string
           data_updated?: boolean
+          email_sent_at?: string | null
+          email_sent_by?: string | null
           fiscal_year: number
           health_office_id?: string | null
           hospital_id?: string | null
@@ -176,6 +180,8 @@ export type Database = {
           created_at?: string
           created_by?: string
           data_updated?: boolean
+          email_sent_at?: string | null
+          email_sent_by?: string | null
           fiscal_year?: number
           health_office_id?: string | null
           hospital_id?: string | null
@@ -205,6 +211,13 @@ export type Database = {
           {
             foreignKeyName: "assessments_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessments_email_sent_by_fkey"
+            columns: ["email_sent_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
