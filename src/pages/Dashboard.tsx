@@ -37,11 +37,22 @@ import {
   Eye,
   Loader2,
   RotateCcw,
+  Mail,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type { Database } from '@/integrations/supabase/types';
+
 
 type Assessment = Database['public']['Tables']['assessments']['Row'];
 type Hospital = Database['public']['Tables']['hospitals']['Row'];
@@ -109,6 +120,12 @@ export default function Dashboard() {
   const [selectedAssessmentForReturn, setSelectedAssessmentForReturn] = useState<(Assessment & { hospitals?: Hospital; health_offices?: HealthOffice }) | null>(null);
   const [returnComment, setReturnComment] = useState('');
   const [returning, setReturning] = useState(false);
+
+  // Email sending state (for regional admin)
+  const [selectedAssessmentIds, setSelectedAssessmentIds] = useState<Set<string>>(new Set());
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailSentFilter, setEmailSentFilter] = useState<string>('all'); // 'all' | 'sent' | 'not_sent'
 
   const currentYear = new Date().getFullYear();
   const years = [currentYear - 1, currentYear, currentYear + 1];
@@ -453,10 +470,94 @@ export default function Dashboard() {
     }
   };
 
+  // Handle send email to ศทส.สป.
+  const handleSendEmail = async () => {
+    if (selectedAssessmentIds.size === 0) return;
+    
+    try {
+      setSendingEmail(true);
+      
+      const { data, error } = await supabase.functions.invoke('send-assessment-report', {
+        body: { assessment_ids: Array.from(selectedAssessmentIds) },
+      });
+
+      if (error) throw error;
+
+      toast({ 
+        title: 'ส่งอีเมลสำเร็จ', 
+        description: `ส่งรายงานไปยัง ศทส.สป. แล้ว ${selectedAssessmentIds.size} รายการ` 
+      });
+
+      // Refresh assessments to show updated email_sent_at
+      const { data: assessmentsData } = await supabase
+        .from('assessments')
+        .select('*, hospitals(*), health_offices(*)')
+        .order('created_at', { ascending: false });
+      
+      // Re-apply role-based filtering
+      let filtered = assessmentsData || [];
+      if (profile?.role === 'regional' && profile.health_region_id) {
+        filtered = (assessmentsData || []).filter(a => {
+          if (a.hospital_id && (a as any).hospitals?.provinces) {
+            return (a as any).hospitals.provinces.health_region_id === profile.health_region_id;
+          }
+          if (a.health_office_id && (a as any).health_offices) {
+            return (a as any).health_offices.health_region_id === profile.health_region_id;
+          }
+          return false;
+        });
+      }
+      
+      setAssessments(filtered);
+      setSelectedAssessmentIds(new Set());
+      setEmailDialogOpen(false);
+    } catch (error: any) {
+      console.error('Error sending email:', error);
+      toast({ 
+        title: 'เกิดข้อผิดพลาด', 
+        description: error.message || 'ไม่สามารถส่งอีเมลได้', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  // Toggle select assessment for email
+  const toggleSelectAssessment = (assessmentId: string) => {
+    setSelectedAssessmentIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(assessmentId)) {
+        newSet.delete(assessmentId);
+      } else {
+        newSet.add(assessmentId);
+      }
+      return newSet;
+    });
+  };
+
+  // Select/Deselect all visible approved assessments
+  const selectAllApproved = () => {
+    const approvedIds = filteredAssessments
+      .filter(a => a.status === 'approved_regional' || a.status === 'completed')
+      .map(a => a.id);
+    setSelectedAssessmentIds(new Set(approvedIds));
+  };
+
+  const deselectAll = () => {
+    setSelectedAssessmentIds(new Set());
+  };
+
   // Check if user can return assessment for revision
   const canReturnForRevision = (assessment: Assessment) => {
     if (profile?.role !== 'provincial') return false;
     // Allow returning assessments that are approved by regional or completed
+    return assessment.status === 'approved_regional' || assessment.status === 'completed';
+  };
+
+  // Check if assessment can be selected for email (regional admin only, approved/completed status)
+  const canSelectForEmail = (assessment: Assessment) => {
+    if (profile?.role !== 'regional') return false;
     return assessment.status === 'approved_regional' || assessment.status === 'completed';
   };
 
@@ -513,7 +614,7 @@ export default function Dashboard() {
     },
   ];
 
-  // Filter assessments based on statusFilter and dataUpdatedFilter
+  // Filter assessments based on statusFilter, dataUpdatedFilter, and emailSentFilter
   const filteredAssessments = assessments.filter(assessment => {
     // Apply fiscal year filter first
     if (selectedFiscalYear !== 'all' && assessment.fiscal_year !== parseInt(selectedFiscalYear)) {
@@ -523,6 +624,11 @@ export default function Dashboard() {
     if (profile?.role === 'central_admin' && dataUpdatedFilter !== 'all') {
       if (dataUpdatedFilter === 'updated' && !assessment.data_updated) return false;
       if (dataUpdatedFilter === 'not_updated' && assessment.data_updated) return false;
+    }
+    // Apply email sent filter for central_admin
+    if (profile?.role === 'central_admin' && emailSentFilter !== 'all') {
+      if (emailSentFilter === 'sent' && !(assessment as any).email_sent_at) return false;
+      if (emailSentFilter === 'not_sent' && (assessment as any).email_sent_at) return false;
     }
     // Then apply status filter
     if (!statusFilter) return true;
@@ -591,7 +697,7 @@ export default function Dashboard() {
 
       {/* Assessments Table */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 flex-wrap gap-4">
           <div>
             <CardTitle>
               รายการแบบประเมิน
@@ -605,23 +711,78 @@ export default function Dashboard() {
                   {dataUpdatedFilter === 'updated' ? 'อัพเดดแล้ว' : 'ยังไม่อัพเดด'}
                 </Badge>
               )}
+              {profile?.role === 'central_admin' && emailSentFilter !== 'all' && (
+                <Badge variant={emailSentFilter === 'sent' ? 'default' : 'outline'} className="ml-2 font-normal">
+                  {emailSentFilter === 'sent' ? 'ส่งอีเมลแล้ว' : 'ยังไม่ส่งอีเมล'}
+                </Badge>
+              )}
             </CardTitle>
             <CardDescription>
               {filteredAssessments.length} รายการ
+              {profile?.role === 'regional' && selectedAssessmentIds.size > 0 && (
+                <span className="ml-2 text-primary font-medium">
+                  (เลือก {selectedAssessmentIds.size} รายการ)
+                </span>
+              )}
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Regional admin email controls */}
+            {profile?.role === 'regional' && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={selectAllApproved}
+                >
+                  <CheckSquare className="w-4 h-4 mr-1" />
+                  เลือกทั้งหมด
+                </Button>
+                {selectedAssessmentIds.size > 0 && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={deselectAll}
+                    >
+                      <Square className="w-4 h-4 mr-1" />
+                      ยกเลิกเลือก
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => setEmailDialogOpen(true)}
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      ส่งอีเมล ศทส.สป. ({selectedAssessmentIds.size})
+                    </Button>
+                  </>
+                )}
+              </>
+            )}
+            {/* Central admin filters */}
             {profile?.role === 'central_admin' && (
-              <Select value={dataUpdatedFilter} onValueChange={setDataUpdatedFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="กรองสถานะอัพเดด" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">ทั้งหมด</SelectItem>
-                  <SelectItem value="updated">อัพเดดข้อมูลเเล้ว</SelectItem>
-                  <SelectItem value="not_updated">ยังไม่อัพเดด</SelectItem>
-                </SelectContent>
-              </Select>
+              <>
+                <Select value={emailSentFilter} onValueChange={setEmailSentFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="กรองสถานะส่งอีเมล" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">ทั้งหมด</SelectItem>
+                    <SelectItem value="sent">ส่งอีเมลแล้ว</SelectItem>
+                    <SelectItem value="not_sent">ยังไม่ส่งอีเมล</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={dataUpdatedFilter} onValueChange={setDataUpdatedFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="กรองสถานะอัพเดด" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">ทั้งหมด</SelectItem>
+                    <SelectItem value="updated">อัพเดดข้อมูลเเล้ว</SelectItem>
+                    <SelectItem value="not_updated">ยังไม่อัพเดด</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
             )}
             {canCreate && (
               <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -731,14 +892,21 @@ export default function Dashboard() {
               )}
             </div>
           ) : (
+            <TooltipProvider>
             <Table>
               <TableHeader>
                 <TableRow>
+                  {profile?.role === 'regional' && (
+                    <TableHead className="w-10"></TableHead>
+                  )}
                   <TableHead>โรงพยาบาล</TableHead>
                   <TableHead>ครั้งที่ประเมิน</TableHead>
                   <TableHead>สถานะ</TableHead>
                   <TableHead>คะแนนรวม (10)</TableHead>
                   <TableHead>วันที่สร้าง</TableHead>
+                  {(profile?.role === 'central_admin' || profile?.role === 'regional') && (
+                    <TableHead className="text-center">สถานะส่งอีเมล</TableHead>
+                  )}
                   {profile?.role === 'central_admin' && (
                     <TableHead className="text-center">ศทส.อัพเดดเเดชบอร์ดกลางเเล้ว</TableHead>
                   )}
@@ -748,8 +916,19 @@ export default function Dashboard() {
               <TableBody>
                 {filteredAssessments.map((assessment) => {
                   const status = statusLabels[assessment.status] || statusLabels.draft;
+                  const emailSentAt = (assessment as any).email_sent_at;
                   return (
                     <TableRow key={assessment.id}>
+                      {profile?.role === 'regional' && (
+                        <TableCell>
+                          {canSelectForEmail(assessment) && (
+                            <Checkbox
+                              checked={selectedAssessmentIds.has(assessment.id)}
+                              onCheckedChange={() => toggleSelectAssessment(assessment.id)}
+                            />
+                          )}
+                        </TableCell>
+                      )}
                       <TableCell className="font-medium">
                         {(assessment as any).hospitals?.name || (assessment as any).health_offices?.name || '-'}
                       </TableCell>
@@ -767,6 +946,27 @@ export default function Dashboard() {
                       <TableCell>
                         {format(new Date(assessment.created_at), 'd MMM yyyy', { locale: th })}
                       </TableCell>
+                      {(profile?.role === 'central_admin' || profile?.role === 'regional') && (
+                        <TableCell className="text-center">
+                          {emailSentAt ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-success/10 text-success cursor-help">
+                                  <Mail className="w-3 h-3 mr-1" />
+                                  ส่งแล้ว
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>ส่งเมื่อ {format(new Date(emailSentAt), 'd MMM yyyy HH:mm', { locale: th })}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground">
+                              ยังไม่ส่ง
+                            </Badge>
+                          )}
+                        </TableCell>
+                      )}
                       {profile?.role === 'central_admin' && (
                         <TableCell className="text-center">
                           <Switch
@@ -831,6 +1031,7 @@ export default function Dashboard() {
                 })}
               </TableBody>
             </Table>
+            </TooltipProvider>
           )}
         </CardContent>
       </Card>
@@ -898,6 +1099,56 @@ export default function Dashboard() {
             >
               {returning && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               ยืนยันส่งกลับ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Send Email Dialog */}
+      <AlertDialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5 text-primary" />
+              ยืนยันส่งอีเมลไปยัง ศทส.สป.
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div>
+                <p className="mb-4">
+                  คุณกำลังจะส่งรายงานสรุปผลการประเมิน <strong className="text-foreground">{selectedAssessmentIds.size} รายการ</strong> ไปยัง:
+                </p>
+                <div className="bg-muted rounded-lg p-3 text-sm mb-4">
+                  <p className="font-medium text-foreground mb-1">ผู้รับอีเมล:</p>
+                  <ul className="list-disc list-inside text-muted-foreground">
+                    <li>cyberaudit@moph.go.th</li>
+                    <li>nopparat.ratcha@sansaihospital.go.th</li>
+                  </ul>
+                </div>
+                <p className="text-muted-foreground text-sm">
+                  อีเมลจะมีข้อมูลสรุปคะแนน, สถานะการโจมตี, การละเมิดข้อมูล และลิงก์ไปหน้าแบบประเมินแต่ละรายการ
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setEmailDialogOpen(false)}>
+              ยกเลิก
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleSendEmail}
+              disabled={sendingEmail}
+            >
+              {sendingEmail ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  กำลังส่ง...
+                </>
+              ) : (
+                <>
+                  <Mail className="w-4 h-4 mr-2" />
+                  ส่งอีเมล
+                </>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

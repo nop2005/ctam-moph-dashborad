@@ -14,3 +14,12 @@ verify_jwt = false
 
 [functions.create-health-office-users-provincial]
 verify_jwt = false
+
+[functions.create-regional-office-users]
+verify_jwt = false
+
+[functions.create-supervisor-users]
+verify_jwt = false
+
+[functions.send-assessment-report]
+verify_jwt = true
