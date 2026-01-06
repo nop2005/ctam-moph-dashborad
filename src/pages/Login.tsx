@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
@@ -9,12 +9,17 @@ export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get the redirect path from location state (set by ProtectedRoute)
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      // Redirect to the original requested page or dashboard
+      navigate(from, { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, from]);
 
   const features = [
     { icon: Shield, label: 'ประเมินตาม CTAM+ 17 หมวด' },
