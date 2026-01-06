@@ -287,9 +287,15 @@ serve(async (req: Request): Promise<Response> => {
       html: htmlContent,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    // Check if email was sent successfully
+    if (emailResponse.error) {
+      console.error("Email sending failed:", emailResponse.error);
+      throw new Error(`Failed to send email: ${emailResponse.error.message}`);
+    }
 
-    // Update assessments with email sent info
+    console.log("Email sent successfully:", emailResponse.data);
+
+    // Update assessments with email sent info ONLY after successful send
     const { error: updateError } = await supabaseAdmin
       .from("assessments")
       .update({
@@ -300,7 +306,6 @@ serve(async (req: Request): Promise<Response> => {
 
     if (updateError) {
       console.error("Error updating assessments:", updateError);
-      // Don't throw - email was sent successfully
     }
 
     console.log("Assessments updated with email_sent_at");
