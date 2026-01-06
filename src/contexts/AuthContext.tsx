@@ -97,11 +97,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    return { error };
+
+    if (error) {
+      return { error };
+    }
+
+    // Check if user is approved (is_active)
+    if (data.user) {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_active')
+        .eq('user_id', data.user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        await supabase.auth.signOut();
+        return { error: new Error('ไม่สามารถตรวจสอบสถานะบัญชีได้') };
+      }
+
+      if (!profileData?.is_active) {
+        await supabase.auth.signOut();
+        return { error: new Error('บัญชีของคุณยังไม่ได้รับการอนุมัติจากผู้ดูแลระบบ กรุณารอการอนุมัติ') };
+      }
+    }
+
+    return { error: null };
   };
 
   const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
