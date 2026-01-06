@@ -625,8 +625,8 @@ export default function Dashboard() {
       if (dataUpdatedFilter === 'updated' && !assessment.data_updated) return false;
       if (dataUpdatedFilter === 'not_updated' && assessment.data_updated) return false;
     }
-    // Apply email sent filter for central_admin
-    if (profile?.role === 'central_admin' && emailSentFilter !== 'all') {
+    // Apply email sent filter for central_admin and regional
+    if ((profile?.role === 'central_admin' || profile?.role === 'regional') && emailSentFilter !== 'all') {
       if (emailSentFilter === 'sent' && !(assessment as any).email_sent_at) return false;
       if (emailSentFilter === 'not_sent' && (assessment as any).email_sent_at) return false;
     }
