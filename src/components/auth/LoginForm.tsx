@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +17,6 @@ export function LoginForm({ onToggleMode }: LoginFormProps) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,13 +26,15 @@ export function LoginForm({ onToggleMode }: LoginFormProps) {
     const { error } = await signIn(email, password);
 
     if (error) {
-      setError(error.message === 'Invalid login credentials' 
-        ? 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' 
-        : error.message
+      setError(
+        error.message === 'Invalid login credentials'
+          ? 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
+          : error.message
       );
       setIsLoading(false);
     } else {
-      navigate('/dashboard');
+      // Redirect is handled by src/pages/Login.tsx using location.state (from ProtectedRoute)
+      setIsLoading(false);
     }
   };
 
