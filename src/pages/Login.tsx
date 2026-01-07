@@ -4,45 +4,55 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { Shield, Lock, Server, Database, Loader2 } from 'lucide-react';
-
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
-  const { user, profile, isLoading } = useAuth();
+  const {
+    user,
+    profile,
+    isLoading
+  } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   // Get the redirect path from location state (set by ProtectedRoute)
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
+  const from = (location.state as {
+    from?: {
+      pathname: string;
+    };
+  })?.from?.pathname || '/dashboard';
   const isActive = profile?.is_active === true;
-
   useEffect(() => {
     if (user && isActive) {
       // Redirect to the original requested page or dashboard
-      navigate(from, { replace: true });
+      navigate(from, {
+        replace: true
+      });
     }
   }, [user, isActive, navigate, from]);
-
-  const features = [
-    { icon: Shield, label: 'ประเมินตาม CTAM+ 17 หมวด' },
-    { icon: Lock, label: 'ระบบ Workflow 3 ระดับ' },
-    { icon: Server, label: 'Dashboard ภาพรวม' },
-    { icon: Database, label: 'รองรับการตรวจราชการ' },
-  ];
+  const features = [{
+    icon: Shield,
+    label: 'ประเมินตาม CTAM+ 17 หมวด'
+  }, {
+    icon: Lock,
+    label: 'ระบบ Workflow 3 ระดับ'
+  }, {
+    icon: Server,
+    label: 'Dashboard ภาพรวม'
+  }, {
+    icon: Database,
+    label: 'รองรับการตรวจราชการ'
+  }];
 
   // Show loading during initial auth check AND while profile is being fetched
-  if (isLoading || (user && !profile)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+  if (isLoading || user && !profile) {
+    return <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
           <p className="text-muted-foreground">กำลังโหลด...</p>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen flex">
+  return <div className="min-h-screen flex">
       {/* Left: Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-primary-foreground p-12 flex-col justify-between relative overflow-hidden">
         {/* Background pattern */}
@@ -71,21 +81,16 @@ export default function Login() {
             ความปลอดภัยไซเบอร์<br />
             โรงพยาบาล
           </h1>
-          <p className="text-primary-foreground/80 text-lg mb-8">
-            สอดคล้องกับแนวทางตรวจราชการ สธ. ปีงบ 2569<br />
+          <p className="text-primary-foreground/80 text-lg mb-8">สอดคล้องกับแนวทางตรวจราชการ สธ. ปีงบ 2569
+และสูตรคะแนน 70 : 30 <br />
             และสูตรคะแนน 70 : 15 : 15
           </p>
 
           <div className="grid grid-cols-2 gap-4">
-            {features.map((feature, index) => (
-              <div 
-                key={index}
-                className="flex items-center gap-3 p-3 rounded-lg bg-primary-foreground/10 backdrop-blur-sm"
-              >
+            {features.map((feature, index) => <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-primary-foreground/10 backdrop-blur-sm">
                 <feature.icon className="w-5 h-5" />
                 <span className="text-sm font-medium">{feature.label}</span>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
 
@@ -111,13 +116,8 @@ export default function Login() {
             </p>
           </div>
 
-          {isLogin ? (
-            <LoginForm onToggleMode={() => setIsLogin(false)} />
-          ) : (
-            <RegisterForm onToggleMode={() => setIsLogin(true)} />
-          )}
+          {isLogin ? <LoginForm onToggleMode={() => setIsLogin(false)} /> : <RegisterForm onToggleMode={() => setIsLogin(true)} />}
         </div>
       </div>
-    </div>
-  );
+    </div>;
 }
