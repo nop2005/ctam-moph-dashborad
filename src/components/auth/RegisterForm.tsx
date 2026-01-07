@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, Mail, Lock, User, Loader2, AlertCircle, Clock, Phone } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Shield, Mail, Lock, User, Loader2, AlertCircle, Clock, Phone, CheckCircle2 } from 'lucide-react';
 import { z } from 'zod';
 
 interface RegisterFormProps {
@@ -70,33 +71,35 @@ export function RegisterForm({ onToggleMode }: RegisterFormProps) {
     }
   };
 
-  if (success) {
-    return (
-      <Card className="w-full max-w-md mx-auto shadow-lg animate-fade-in">
-        <CardContent className="py-12 text-center">
-          <div className="mx-auto w-16 h-16 bg-warning/10 rounded-full flex items-center justify-center mb-4">
-            <Clock className="w-8 h-8 text-warning" />
-          </div>
-          <h3 className="text-xl font-semibold mb-2">สมัครสมาชิกสำเร็จ!</h3>
-          <p className="text-muted-foreground mb-4">
-            บัญชีของคุณกำลังรอการอนุมัติจากผู้ดูแลระบบ
-          </p>
-          <p className="text-sm text-muted-foreground">
-            เมื่อได้รับการอนุมัติ คุณจะสามารถเข้าสู่ระบบได้
-          </p>
-          <Button 
-            variant="outline" 
-            className="mt-6"
-            onClick={onToggleMode}
-          >
-            กลับไปหน้าเข้าสู่ระบบ
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+  const handleSuccessClose = () => {
+    setSuccess(false);
+    onToggleMode();
+  };
 
   return (
+    <>
+      {/* Success Dialog */}
+      <Dialog open={success} onOpenChange={handleSuccessClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="text-center">
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-8 h-8 text-green-600" />
+            </div>
+            <DialogTitle className="text-xl">ขอบคุณที่สมัครสมาชิก!</DialogTitle>
+            <DialogDescription className="text-center space-y-2">
+              <p>บัญชีของคุณถูกสร้างเรียบร้อยแล้ว</p>
+              <p className="font-medium text-warning">กรุณารอให้ผู้ดูแลระบบอนุมัติก่อนจึงจะใช้งานได้</p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button onClick={handleSuccessClose} className="w-full sm:w-auto">
+              ตกลง
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Registration Form */}
     <Card className="w-full max-w-md mx-auto shadow-lg animate-fade-in">
       <CardHeader className="space-y-4 text-center">
         <div className="mx-auto w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
@@ -235,5 +238,6 @@ export function RegisterForm({ onToggleMode }: RegisterFormProps) {
         </CardFooter>
       </form>
     </Card>
+    </>
   );
 }
