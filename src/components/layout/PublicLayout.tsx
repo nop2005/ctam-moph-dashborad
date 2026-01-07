@@ -146,7 +146,7 @@ function PublicSidebar() {
               <Building2 className="w-5 h-5 text-sidebar-primary" />
             </div>
             <div className="overflow-hidden">
-              <p className="text-xs font-medium text-sidebar-foreground leading-tight">ศูนย์เฝ้าระวังความมั่นคงปลอดภัยไซเบอร์ (CISO)</p>
+              <p className="text-xs font-medium text-sidebar-foreground leading-tight">ศูนย์เฝ้าระวังความมั่นคงปลอดภัยไซเบอร์ </p>
               <p className="text-xs text-sidebar-foreground/60 truncate">ศทส.สป. กระทรวงสาธารณสุข</p>
             </div>
           </div> : <div className="flex justify-center">
