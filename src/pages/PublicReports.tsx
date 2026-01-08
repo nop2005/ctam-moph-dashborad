@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import { Button } from '@/components/ui/button';
-
+import { BannerCarousel } from '@/components/BannerCarousel';
 interface HealthRegion {
   id: string;
   name: string;
@@ -166,6 +166,9 @@ export default function PublicReports() {
   return (
     <PublicLayout>
       <div className="space-y-6">
+        {/* Banner Carousel */}
+        <BannerCarousel className="mb-2" />
+
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>

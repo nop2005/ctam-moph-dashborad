@@ -55,11 +55,14 @@ const inspectionSubItems = [
     icon: FileSearch,
   },
 ];
-function PublicSidebar() {
+interface PublicSidebarProps {
+  navigate: (path: string) => void;
+}
+
+function PublicSidebar({ navigate }: PublicSidebarProps) {
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const navigate = useNavigate();
   const currentPath = location.pathname;
   const isReportsActive = currentPath.startsWith("/public/reports");
   const isInspectionActive = currentPath.startsWith("/public/inspection");
@@ -198,7 +201,7 @@ function PublicSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Footer with About System and Agency Info */}
+      {/* Footer with About System, Agency Info, and Login */}
       <SidebarFooter className="border-t border-sidebar-border p-3">
         {!collapsed && (
           <div className="mb-3 p-3 rounded-lg bg-sidebar-accent/50 border border-sidebar-border">
@@ -209,25 +212,40 @@ function PublicSidebar() {
           </div>
         )}
         {!collapsed ? (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-sidebar-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
               <Building2 className="w-5 h-5 text-sidebar-primary" />
             </div>
             <div className="overflow-hidden">
               <p className="text-xs font-medium text-sidebar-foreground leading-tight">
-                ศูนย์เฝ้าระวังความมั่นคงปลอดภัยไซเบอร์เขตสุขภาพที่ 1 
+                ศูนย์เฝ้าระวังความมั่นคงปลอดภัยไซเบอร์เขตสุขภาพที่ 1 
               </p>
               <p className="text-xs text-sidebar-foreground/60 truncate">ศทส.สป. กระทรวงสาธารณสุข</p>
             </div>
           </div>
         ) : (
-          <div className="flex justify-center">
+          <div className="flex justify-center mb-3">
             <Building2 className="w-5 h-5 text-sidebar-primary" />
           </div>
         )}
+        
+        {/* Login Button in Footer */}
+        <SidebarMenuButton
+          tooltip="เข้าสู่ระบบ"
+          onClick={() => navigate("/login")}
+          className="text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground w-full"
+        >
+          <LogIn className="h-4 w-4" />
+          {!collapsed && <span>เข้าสู่ระบบ</span>}
+        </SidebarMenuButton>
       </SidebarFooter>
     </Sidebar>
   );
+}
+
+function PublicSidebarInner() {
+  const navigate = useNavigate();
+  return <PublicSidebar navigate={navigate} />;
 }
 interface PublicLayoutProps {
   children: React.ReactNode;
@@ -237,20 +255,15 @@ export function PublicLayout({ children }: PublicLayoutProps) {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <PublicSidebar />
+        <PublicSidebar navigate={navigate} />
         <SidebarInset className="flex-1">
-          <header className="sticky top-0 z-[60] flex h-14 items-center justify-between border-b bg-background px-4">
+          <header className="sticky top-0 z-[60] flex h-14 items-center border-b bg-background px-4">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
               <span className="text-sm font-medium text-muted-foreground">
                 ระบบประเมินความมั่นคงปลอดภัยไซเบอร์และรายงานการตรวจราชการ
               </span>
             </div>
-
-            <Button variant="outline" size="sm" onClick={() => navigate("/login")} className="gap-2">
-              <LogIn className="h-4 w-4" />
-              เข้าสู่ระบบ
-            </Button>
           </header>
           <main className="flex-1 p-6 pl-12">{children}</main>
         </SidebarInset>
