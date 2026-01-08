@@ -17,7 +17,7 @@ const defaultBanners: BannerSlide[] = [
     id: 1,
     title: "ระบบ CTAM+ ประเมินความมั่นคงปลอดภัยไซเบอร์",
     subtitle: "สำหรับหน่วยบริการสุขภาพ",
-    description: "ศูนย์เฝ้าระวังความมั่นคงปลอดภัยไซเบอร์ ศทส.ป. กรมวิทยาศาสตร์การแพทย์ มุ่งมั่นยกระดับมาตรฐาน Cybersecurity เพื่อความปลอดภัยของข้อมูลสุขภาพประชาชน",
+    description: "กระทรวงสาธารสุข มุ่งมั่นยกระดับมาตรฐาน Cybersecurity เพื่อความปลอดภัยของข้อมูลสุขภาพประชาชน",
     gradient: "from-primary via-primary/90 to-accent",
   },
   {
@@ -88,10 +88,7 @@ export function BannerCarousel({
 
   return (
     <div
-      className={cn(
-        "relative w-full overflow-hidden rounded-2xl",
-        className
-      )}
+      className={cn("relative w-full overflow-hidden rounded-2xl", className)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -100,7 +97,7 @@ export function BannerCarousel({
         className={cn(
           "relative h-48 md:h-56 lg:h-64 bg-gradient-to-r p-6 md:p-8 lg:p-10 flex flex-col justify-center transition-all duration-500",
           currentBanner.gradient,
-          currentBanner.link && "cursor-pointer"
+          currentBanner.link && "cursor-pointer",
         )}
         onClick={handleBannerClick}
       >
@@ -113,18 +110,12 @@ export function BannerCarousel({
 
         {/* Content */}
         <div className="relative z-10 max-w-3xl mx-auto text-center text-white">
-          <h2 className="text-xl md:text-2xl lg:text-3xl font-bold mb-2 drop-shadow-lg">
-            {currentBanner.title}
-          </h2>
+          <h2 className="text-xl md:text-2xl lg:text-3xl font-bold mb-2 drop-shadow-lg">{currentBanner.title}</h2>
           {currentBanner.subtitle && (
-            <p className="text-lg md:text-xl font-semibold mb-3 text-white/90">
-              {currentBanner.subtitle}
-            </p>
+            <p className="text-lg md:text-xl font-semibold mb-3 text-white/90">{currentBanner.subtitle}</p>
           )}
           {currentBanner.description && (
-            <p className="text-sm md:text-base text-white/80 line-clamp-2">
-              {currentBanner.description}
-            </p>
+            <p className="text-sm md:text-base text-white/80 line-clamp-2">{currentBanner.description}</p>
           )}
         </div>
       </div>
@@ -164,9 +155,7 @@ export function BannerCarousel({
             }}
             className={cn(
               "w-2.5 h-2.5 rounded-full transition-all duration-300",
-              index === currentIndex
-                ? "bg-white w-6"
-                : "bg-white/50 hover:bg-white/70"
+              index === currentIndex ? "bg-white w-6" : "bg-white/50 hover:bg-white/70",
             )}
           />
         ))}
