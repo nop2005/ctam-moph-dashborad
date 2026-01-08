@@ -42,6 +42,7 @@ import {
   Square,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { BannerCarousel } from '@/components/BannerCarousel';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
@@ -640,6 +641,9 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
+      {/* Banner Carousel */}
+      <BannerCarousel className="mb-6" />
+
       {/* Welcome Section */}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
