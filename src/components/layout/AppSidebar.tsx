@@ -36,6 +36,7 @@ import {
   BookOpen,
   ChevronRight,
   ListOrdered,
+  HardDrive,
 } from "lucide-react";
 const menuItems = [
   {
@@ -102,6 +103,12 @@ const adminItems = [
     title: "ตั้งค่าระบบ",
     url: "/admin/settings",
     icon: Settings,
+    roles: ["central_admin"],
+  },
+  {
+    title: "แดชบอร์ดระบบ",
+    url: "/admin/system-dashboard",
+    icon: HardDrive,
     roles: ["central_admin"],
   },
 ];
