@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import SuperAdmin from "./pages/SuperAdmin";
+import SystemDashboard from "./pages/SystemDashboard";
 // AssessmentList removed - functionality moved to Dashboard
 import Assessment from "./pages/Assessment";
 import UserManagement from "./pages/UserManagement";
@@ -154,6 +155,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ProfileSettings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/system-dashboard" 
+              element={
+                <ProtectedRoute allowedRoles={['central_admin']}>
+                  <SystemDashboard />
                 </ProtectedRoute>
               } 
             />
