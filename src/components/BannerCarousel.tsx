@@ -17,7 +17,7 @@ const defaultBanners: BannerSlide[] = [
     id: 1,
     title: "ระบบ CTAM+ ประเมินความมั่นคงปลอดภัยไซเบอร์",
     subtitle: "สำหรับหน่วยบริการสุขภาพ",
-    description: "กระทรวงสาธารสุข มุ่งมั่นยกระดับมาตรฐาน Cybersecurity เพื่อความปลอดภัยของข้อมูลสุขภาพประชาชน",
+    description: "กระทรวงสาธารณสุข มุ่งมั่นยกระดับมาตรฐาน Cyber Security เพื่อความปลอดภัยของข้อมูลสุขภาพประชาชน",
     gradient: "from-primary via-primary/90 to-accent",
   },
   {
