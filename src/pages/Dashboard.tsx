@@ -961,7 +961,7 @@ export default function Dashboard() {
                               }}
                             >
                               <RotateCcw className="w-4 h-4 mr-1" />
-                              แก้ไข
+                              ส่งกลับไปแก้ไข
                             </Button>
                           )}
                         </div>
