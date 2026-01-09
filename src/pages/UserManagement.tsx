@@ -158,6 +158,28 @@ export default function UserManagement() {
     return region ? `เขตสุขภาพที่ ${region.region_number}` : '-';
   };
 
+  // Helper to get health office name
+  const getHealthOfficeName = (healthOfficeId: string | null) => {
+    if (!healthOfficeId) return '-';
+    // Since we don't have health_offices loaded, we display from profile full_name
+    return '-';
+  };
+
+  // Get organization name based on role and IDs
+  const getOrganizationDisplay = (profile: Profile) => {
+    if (profile.role === 'hospital_it' && profile.hospital_id) {
+      return getHospitalName(profile.hospital_id);
+    }
+    if (profile.role === 'health_office') {
+      // For health_office users, display their full_name which contains office name
+      return profile.full_name?.replace('IT ', '') || '-';
+    }
+    if (profile.role === 'provincial' && profile.province_id) {
+      return getProvinceName(profile.province_id);
+    }
+    return '-';
+  };
+
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
       hospital_it: 'IT รพ.',
@@ -460,7 +482,7 @@ export default function UserManagement() {
             </span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {(() => {
             const displayProfiles = activeTab === 'all' ? filteredProfiles : activeTab === 'pending' ? pendingProfiles : activeProfiles;
             
@@ -476,78 +498,101 @@ export default function UserManagement() {
             }
             
             return (
-              <div className="grid gap-4">
-                {displayProfiles.map((profile) => (
-                  <div key={profile.id} className="border rounded-lg p-4">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-lg">
-                            {profile.full_name || 'ไม่ระบุชื่อ'}
-                          </h3>
-                          <Badge variant="outline">{getRoleLabel(profile.role)}</Badge>
-                          {profile.is_active ? (
-                            <Badge variant="default" className="bg-success">ใช้งานได้</Badge>
-                          ) : (
-                            <Badge variant="secondary" className="bg-warning/20 text-warning">รออนุมัติ</Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">{profile.email}</p>
-                        {profile.phone && (
-                          <p className="text-sm text-muted-foreground">โทร: {profile.phone}</p>
-                        )}
-                        <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                          {profile.hospital_id && (
-                            <span className="flex items-center gap-1">
-                              <Building2 className="h-4 w-4" />
-                              {getHospitalName(profile.hospital_id)}
-                            </span>
-                          )}
-                          {profile.province_id && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="h-4 w-4" />
-                              {getProvinceName(profile.province_id)}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          ลงทะเบียนเมื่อ: {formatDate(profile.created_at)}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        {!profile.is_active ? (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRejectClick(profile)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <XCircle className="h-4 w-4 mr-1" />
-                              ปฏิเสธ
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleApproveClick(profile)}
-                            >
-                              <CheckCircle2 className="h-4 w-4 mr-1" />
-                              อนุมัติ
-                            </Button>
-                          </>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleDeleteClick(profile)}
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>อีเมล</TableHead>
+                      <TableHead>ชื่อ-นามสกุล</TableHead>
+                      <TableHead>เบอร์โทร</TableHead>
+                      <TableHead>บทบาท</TableHead>
+                      <TableHead>หน่วยงาน</TableHead>
+                      <TableHead>สถานะ</TableHead>
+                      <TableHead className="text-right">จัดการ</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {displayProfiles.map((profile) => (
+                      <TableRow key={profile.id}>
+                        <TableCell className="font-medium text-primary">
+                          {profile.email}
+                        </TableCell>
+                        <TableCell>
+                          {profile.full_name || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {profile.phone || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant="outline" 
+                            className={
+                              profile.role === 'hospital_it' 
+                                ? 'bg-cyan-100 text-cyan-700 border-cyan-200' 
+                                : profile.role === 'health_office'
+                                ? 'bg-teal-100 text-teal-700 border-teal-200'
+                                : profile.role === 'provincial'
+                                ? 'bg-blue-100 text-blue-700 border-blue-200'
+                                : ''
+                            }
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                            {getRoleLabel(profile.role)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="flex items-center gap-1">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            {getOrganizationDisplay(profile)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {profile.is_active ? (
+                            <Badge className="bg-success/20 text-success border-success/30 hover:bg-success/30">
+                              อนุมัติแล้ว
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-warning/20 text-warning border-warning/30 hover:bg-warning/30">
+                              รออนุมัติ
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {!profile.is_active ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleApproveClick(profile)}
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  อนุมัติ
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleRejectClick(profile)}
+                                  className="text-destructive border-destructive hover:bg-destructive/10"
+                                >
+                                  <XCircle className="h-4 w-4 mr-1" />
+                                  ปฏิเสธ
+                                </Button>
+                              </>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handleDeleteClick(profile)}
+                                className="text-muted-foreground hover:text-foreground"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             );
           })()}
