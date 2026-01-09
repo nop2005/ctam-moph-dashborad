@@ -46,8 +46,9 @@ interface Profile {
   user_id: string;
   email: string;
   full_name: string | null;
-  role: 'hospital_it' | 'provincial' | 'regional' | 'central_admin';
+  role: 'hospital_it' | 'provincial' | 'regional' | 'central_admin' | 'health_office' | 'supervisor';
   hospital_id: string | null;
+  health_office_id: string | null;
   province_id: string | null;
   health_region_id: string | null;
   phone: string | null;
@@ -160,9 +161,11 @@ export default function UserManagement() {
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
       hospital_it: 'IT รพ.',
+      health_office: 'IT สสจ.',
       provincial: 'Admin จังหวัด',
       regional: 'Admin เขตสุขภาพ',
       central_admin: 'Super Admin',
+      supervisor: 'ผู้นิเทศ',
     };
     return labels[role] || role;
   };
