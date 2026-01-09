@@ -9,10 +9,15 @@ import type { Database } from '@/integrations/supabase/types';
 
 type EvidenceFile = Database['public']['Tables']['evidence_files']['Row'];
 
+const MAX_FILES = 2;
+const MAX_FILE_SIZE_MB = 20;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 interface FileUploadProps {
   assessmentId: string;
   assessmentItemId: string;
   readOnly: boolean;
+  onFileCountChange?: (count: number) => void;
 }
 
 const getFileIcon = (fileType: string | null) => {
@@ -47,7 +52,7 @@ const sanitizeFileName = (fileName: string): string => {
   return (sanitized || 'file') + ext;
 };
 
-export function FileUpload({ assessmentId, assessmentItemId, readOnly }: FileUploadProps) {
+export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCountChange }: FileUploadProps) {
   const { profile } = useAuth();
   const { toast } = useToast();
   const [files, setFiles] = useState<EvidenceFile[]>([]);
@@ -63,13 +68,15 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly }: FileUpl
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setFiles(data || []);
+      const loadedFiles = data || [];
+      setFiles(loadedFiles);
+      onFileCountChange?.(loadedFiles.length);
     } catch (error: any) {
       console.error('Error loading files:', error);
     } finally {
       setLoading(false);
     }
-  }, [assessmentItemId]);
+  }, [assessmentItemId, onFileCountChange]);
 
   useEffect(() => {
     loadFiles();
@@ -79,15 +86,37 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly }: FileUpl
     const selectedFiles = e.target.files;
     if (!selectedFiles || selectedFiles.length === 0) return;
 
+    // Check max files limit
+    const remainingSlots = MAX_FILES - files.length;
+    if (remainingSlots <= 0) {
+      toast({ 
+        title: 'ถึงจำนวนไฟล์สูงสุดแล้ว', 
+        description: `สามารถแนบได้สูงสุด ${MAX_FILES} ไฟล์ต่อข้อ`,
+        variant: 'destructive' 
+      });
+      e.target.value = '';
+      return;
+    }
+
+    const filesToUpload = Array.from(selectedFiles).slice(0, remainingSlots);
+    
+    if (filesToUpload.length < selectedFiles.length) {
+      toast({ 
+        title: 'เลือกไฟล์เกินจำนวน', 
+        description: `สามารถอัปโหลดได้อีก ${remainingSlots} ไฟล์ (สูงสุด ${MAX_FILES} ไฟล์ต่อข้อ)`,
+        variant: 'destructive' 
+      });
+    }
+
     try {
       setUploading(true);
 
-      for (const file of Array.from(selectedFiles)) {
-        // Validate file size (50MB max)
-        if (file.size > 50 * 1024 * 1024) {
+      for (const file of filesToUpload) {
+        // Validate file size (20MB max)
+        if (file.size > MAX_FILE_SIZE_BYTES) {
           toast({ 
             title: 'ไฟล์ใหญ่เกินไป', 
-            description: `${file.name} มีขนาดเกิน 50MB`,
+            description: `${file.name} มีขนาดเกิน ${MAX_FILE_SIZE_MB}MB`,
             variant: 'destructive' 
           });
           continue;
@@ -172,6 +201,8 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly }: FileUpl
       if (dbError) throw dbError;
 
       toast({ title: 'ลบไฟล์สำเร็จ' });
+      const newCount = files.length - 1;
+      onFileCountChange?.(newCount);
       loadFiles();
 
     } catch (error: any) {
@@ -179,6 +210,8 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly }: FileUpl
       toast({ title: 'ลบไฟล์ล้มเหลว', description: error.message, variant: 'destructive' });
     }
   };
+
+  const canUploadMore = files.length < MAX_FILES;
 
   return (
     <div className="space-y-3">
@@ -190,20 +223,25 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly }: FileUpl
             multiple
             accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
             onChange={handleFileUpload}
-            disabled={uploading}
+            disabled={uploading || !canUploadMore}
             className="hidden"
             id={`file-upload-${assessmentItemId}`}
           />
           <Button
             variant="outline"
             className="w-full border-dashed"
-            disabled={uploading}
+            disabled={uploading || !canUploadMore}
             onClick={() => document.getElementById(`file-upload-${assessmentItemId}`)?.click()}
           >
             {uploading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 กำลังอัปโหลด...
+              </>
+            ) : !canUploadMore ? (
+              <>
+                <Upload className="w-4 h-4 mr-2" />
+                ถึงจำนวนไฟล์สูงสุดแล้ว ({MAX_FILES} ไฟล์)
               </>
             ) : (
               <>
@@ -213,7 +251,10 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly }: FileUpl
             )}
           </Button>
           <p className="text-xs text-muted-foreground mt-1">
-            รองรับ: PDF, รูปภาพ, Word, Excel (สูงสุด 50MB)
+            รองรับ: PDF, รูปภาพ, Word, Excel (สูงสุด {MAX_FILE_SIZE_MB}MB ต่อไฟล์, สูงสุด {MAX_FILES} ไฟล์)
+          </p>
+          <p className="text-xs text-muted-foreground">
+            แนบแล้ว: {files.length}/{MAX_FILES} ไฟล์
           </p>
         </div>
       )}
