@@ -40,8 +40,6 @@ import {
   Edit,
   UserPlus
 } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 
 interface Profile {
   id: string;
@@ -89,7 +87,7 @@ export default function UserManagement() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
-  const [createUserType, setCreateUserType] = useState<'hospital_it' | 'health_office'>('hospital_it');
+  // Removed createUserType state - now creates both types at once
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -273,35 +271,43 @@ export default function UserManagement() {
         return;
       }
 
-      const functionName = createUserType === 'hospital_it' 
-        ? 'create-hospital-users-provincial' 
-        : 'create-health-office-users-provincial';
+      const headers = {
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+      };
 
-      const { data, error } = await supabase.functions.invoke(functionName, {
-        headers: {
-          Authorization: `Bearer ${sessionData.session.access_token}`,
-        },
-      });
+      // Call both Edge Functions simultaneously
+      const [hospitalResult, healthOfficeResult] = await Promise.all([
+        supabase.functions.invoke('create-hospital-users-provincial', { headers }),
+        supabase.functions.invoke('create-health-office-users-provincial', { headers }),
+      ]);
 
-      if (error) throw error;
-
-      if (data.success) {
-        if (createUserType === 'hospital_it') {
-          const successCount = data.results?.filter((r: any) => r.status === 'success').length || 0;
-          const skippedCount = data.results?.filter((r: any) => r.status === 'skipped').length || 0;
-          toast.success(`สร้างผู้ใช้ IT รพ. สำเร็จ ${successCount} คน, ข้าม ${skippedCount} คน`);
-        } else {
-          if (data.status === 'skipped') {
-            toast.info(`ผู้ใช้ IT สสจ. มีอยู่แล้ว: ${data.email || data.health_office_code}`);
-          } else {
-            toast.success(`สร้างผู้ใช้ IT สสจ. สำเร็จ: ${data.email}`);
-          }
-        }
-        setCreateUserDialogOpen(false);
-        fetchData();
-      } else {
-        toast.error(data.error || 'เกิดข้อผิดพลาด');
+      // Process hospital IT results
+      let hospitalSuccessCount = 0;
+      let hospitalSkippedCount = 0;
+      if (hospitalResult.data?.success && hospitalResult.data?.results) {
+        hospitalSuccessCount = hospitalResult.data.results.filter((r: any) => r.status === 'success').length;
+        hospitalSkippedCount = hospitalResult.data.results.filter((r: any) => r.status === 'skipped').length;
       }
+
+      // Process health office result
+      let healthOfficeStatus = '';
+      if (healthOfficeResult.data?.success) {
+        if (healthOfficeResult.data.status === 'skipped') {
+          healthOfficeStatus = 'ข้าม (มีอยู่แล้ว)';
+        } else {
+          healthOfficeStatus = 'สำเร็จ';
+        }
+      } else {
+        healthOfficeStatus = 'ล้มเหลว';
+      }
+
+      // Show combined result
+      toast.success(
+        `สร้างผู้ใช้สำเร็จ: IT สสจ. ${healthOfficeStatus}, IT รพ. ${hospitalSuccessCount} คน (ข้าม ${hospitalSkippedCount} คน)`
+      );
+      
+      setCreateUserDialogOpen(false);
+      fetchData();
     } catch (error) {
       console.error('Error creating users:', error);
       toast.error('ไม่สามารถสร้างผู้ใช้ได้');
@@ -644,41 +650,30 @@ export default function UserManagement() {
           <DialogHeader>
             <DialogTitle>สร้างผู้ใช้งานใหม่</DialogTitle>
             <DialogDescription>
-              เลือกประเภทผู้ใช้ที่ต้องการสร้างในจังหวัดของคุณ
+              สร้างผู้ใช้ทั้งหมดในจังหวัดของคุณ
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>ประเภทผู้ใช้</Label>
-              <Select 
-                value={createUserType} 
-                onValueChange={(value: 'hospital_it' | 'health_office') => setCreateUserType(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hospital_it">IT รพ. (สร้างทุก รพ. ในจังหวัด)</SelectItem>
-                  <SelectItem value="health_office">IT สสจ. (สร้าง 1 คน)</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="text-sm">
+              <p className="font-medium mb-2">ระบบจะสร้างผู้ใช้ดังนี้:</p>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                <li>IT สสจ. - 1 คน</li>
+                <li>IT รพ. - ทุกโรงพยาบาลในจังหวัด</li>
+              </ul>
             </div>
-            <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
-              {createUserType === 'hospital_it' ? (
-                <>
-                  <p className="font-medium mb-1">รูปแบบ Email/Password:</p>
-                  <p>Email: รหัสโรงพยาบาล@ctam.moph</p>
-                  <p>Password: รหัสโรงพยาบาล</p>
-                  <p className="mt-2 text-xs">เช่น 12345@ctam.moph / 12345</p>
-                </>
-              ) : (
-                <>
-                  <p className="font-medium mb-1">รูปแบบ Email/Password:</p>
-                  <p>Email: รหัสสสจ@ctam.moph</p>
-                  <p>Password: รหัสสสจ</p>
-                  <p className="mt-2 text-xs">เช่น 00037@ctam.moph / 00037</p>
-                </>
-              )}
+            <div className="text-sm bg-muted p-3 rounded-md space-y-3">
+              <div>
+                <p className="font-medium text-foreground">IT รพ.:</p>
+                <p className="text-muted-foreground">Email: รหัสโรงพยาบาล@ctam.moph</p>
+                <p className="text-muted-foreground">Password: รหัสโรงพยาบาล</p>
+                <p className="text-xs text-muted-foreground mt-1">เช่น 12345@ctam.moph / 12345</p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground">IT สสจ.:</p>
+                <p className="text-muted-foreground">Email: รหัสสสจ@ctam.moph</p>
+                <p className="text-muted-foreground">Password: รหัสสสจ</p>
+                <p className="text-xs text-muted-foreground mt-1">เช่น 00037@ctam.moph / 00037</p>
+              </div>
             </div>
           </div>
           <DialogFooter>
