@@ -87,11 +87,20 @@ Deno.serve(async (req) => {
     // Check if user already exists
     const { data: existingProfile } = await supabase
       .from("profiles")
-      .select("id, email")
+      .select("id, email, province_id")
       .eq("email", email)
       .single();
 
     if (existingProfile) {
+      // Update province_id if missing
+      if (!existingProfile.province_id) {
+        await supabase
+          .from("profiles")
+          .update({ province_id: province_id })
+          .eq("id", existingProfile.id);
+        console.log(`Updated province_id for existing user: ${email}`);
+      }
+      
       return new Response(
         JSON.stringify({
           success: true,
