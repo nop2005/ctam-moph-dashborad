@@ -54,6 +54,7 @@ export default function Assessment() {
   const [activeTab, setActiveTab] = useState('quantitative');
   const [submitting, setSubmitting] = useState(false);
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
+  const [allFilesAttached, setAllFilesAttached] = useState(false);
 
   const isReadOnly = assessment?.status !== 'draft' && assessment?.status !== 'returned';
   // Health office users can edit their own assessments just like hospital_it
@@ -72,7 +73,7 @@ export default function Assessment() {
     return item.description && /^\[\w+\]/.test(item.description);
   });
 
-  const canSubmit = canEdit && allItemsAnswered && allSubOptionsSelected;
+  const canSubmit = canEdit && allItemsAnswered && allSubOptionsSelected && allFilesAttached;
 
   // Calculate scores for tabs
   const calculateQuantitativeScore = () => {
@@ -302,6 +303,7 @@ export default function Assessment() {
               categories={categories}
               items={items}
               onItemsChange={setItems}
+              onAllFilesAttached={setAllFilesAttached}
               readOnly={!canEdit}
             />
             
@@ -327,6 +329,11 @@ export default function Assessment() {
             {canEdit && allItemsAnswered && !allSubOptionsSelected && (
               <p className="text-center text-sm text-destructive">
                 กรุณาเลือกประเภทของระบบ/เครื่องมือที่ใช้ให้ครบทุกข้อที่ตอบ "มี"
+              </p>
+            )}
+            {canEdit && allItemsAnswered && allSubOptionsSelected && !allFilesAttached && (
+              <p className="text-center text-sm text-destructive">
+                กรุณาแนบไฟล์หลักฐานให้ครบทุกข้อที่ตอบ "มี" (อย่างน้อย 1 ไฟล์ต่อข้อ)
               </p>
             )}
             

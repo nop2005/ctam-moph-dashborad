@@ -23,6 +23,7 @@ interface QuantitativeSectionProps {
   categories: CTAMCategory[];
   items: AssessmentItem[];
   onItemsChange: (items: AssessmentItem[]) => void;
+  onAllFilesAttached?: (allAttached: boolean) => void;
   readOnly: boolean;
 }
 
@@ -129,6 +130,7 @@ export function QuantitativeSection({
   categories,
   items,
   onItemsChange,
+  onAllFilesAttached,
   readOnly,
 }: QuantitativeSectionProps) {
   const { toast } = useToast();
@@ -136,6 +138,7 @@ export function QuantitativeSection({
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [localDescriptions, setLocalDescriptions] = useState<Record<string, string>>({});
   const [subOptionSelections, setSubOptionSelections] = useState<Record<string, string>>({});
+  const [fileCounts, setFileCounts] = useState<Record<string, number>>({});
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
   // Initialize local descriptions and sub-option selections from items
@@ -282,6 +285,26 @@ export function QuantitativeSection({
     return item?.status === 'pass' && !subOptionSelections[categoryId];
   };
 
+  // Check if a category requires file but hasn't attached one
+  const isFileRequired = (categoryId: string): boolean => {
+    const item = getItemForCategory(categoryId);
+    if (!item || item.status !== 'pass') return false;
+    const fileCount = fileCounts[item.id] || 0;
+    return fileCount === 0;
+  };
+
+  // Handle file count change from FileUpload component
+  const handleFileCountChange = useCallback((itemId: string, count: number) => {
+    setFileCounts(prev => ({ ...prev, [itemId]: count }));
+  }, []);
+
+  // Check if all pass items have at least one file attached
+  useEffect(() => {
+    const passItems = items.filter(item => item.status === 'pass');
+    const allHaveFiles = passItems.every(item => (fileCounts[item.id] || 0) > 0);
+    onAllFilesAttached?.(allHaveFiles);
+  }, [items, fileCounts, onAllFilesAttached]);
+
   // Check if user can interact with a specific category (all previous items with 'pass' must have sub-option selected)
   const canInteractWithCategory = (categoryIndex: number): boolean => {
     for (let i = 0; i < categoryIndex; i++) {
@@ -302,6 +325,11 @@ export function QuantitativeSection({
       }
     }
     return -1; // All complete
+  };
+
+  // Count items missing files
+  const getMissingFilesCount = (): number => {
+    return items.filter(item => item.status === 'pass' && (fileCounts[item.id] || 0) === 0).length;
   };
 
   const progress = calculateProgress();
@@ -555,16 +583,24 @@ export function QuantitativeSection({
                         />
                       </div>
 
-                      {/* File Upload - Only show when status is 'pass' (มี) */}
+                      {/* File Upload - Only show when status is 'pass' (มี) - Required */}
                       {showFileUpload && (
                         <div className="space-y-2">
-                          <Label className="font-medium">แนบหลักฐาน</Label>
+                          <Label className="font-medium">
+                            แนบหลักฐาน <span className="text-destructive">*</span>
+                          </Label>
                           {item && (
-                            <FileUpload
-                              assessmentId={assessmentId}
-                              assessmentItemId={item.id}
-                              readOnly={readOnly}
-                            />
+                            <>
+                              <FileUpload
+                                assessmentId={assessmentId}
+                                assessmentItemId={item.id}
+                                readOnly={readOnly}
+                                onFileCountChange={(count) => handleFileCountChange(item.id, count)}
+                              />
+                              {isFileRequired(category.id) && !readOnly && (
+                                <p className="text-sm text-destructive">กรุณาแนบไฟล์หลักฐานอย่างน้อย 1 ไฟล์</p>
+                              )}
+                            </>
                           )}
                         </div>
                       )}
