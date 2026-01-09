@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
           health_region_id: office.health_region_id,
           role: "health_office",
           is_active: false,
-          full_name: `ผู้ใช้ ${office.name}`,
+          full_name: `IT ${office.name}`,
         })
         .eq("user_id", authData.user.id);
 
