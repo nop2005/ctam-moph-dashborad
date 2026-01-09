@@ -1050,6 +1050,10 @@ export type Database = {
       }
       is_central_admin: { Args: never; Returns: boolean }
       is_provincial_admin: { Args: never; Returns: boolean }
+      is_provincial_for_province: {
+        Args: { check_province_id: string }
+        Returns: boolean
+      }
       is_regional_admin: { Args: never; Returns: boolean }
       is_supervisor: { Args: never; Returns: boolean }
     }
