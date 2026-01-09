@@ -82,7 +82,7 @@ const inspectionSubItems = [
 ];
 const adminItems = [
   {
-    title: "อนุมัติผู้ใช้งาน",
+    title: "จัดการผู้ใช้งาน",
     url: "/user-management",
     icon: Users,
     roles: ["provincial", "regional"],
