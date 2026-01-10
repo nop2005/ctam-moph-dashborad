@@ -99,13 +99,14 @@ const generateFiscalYears = (assessments: Assessment[]): number[] => {
   return Array.from(years).sort((a, b) => b - a);
 };
 
-// Impact level classification based on total_score (percentage)
+// Impact level classification based on total_score (percentage) - 5 levels
 const getImpactLevel = (totalScore: number | null): { level: string; color: string; bgColor: string } => {
   if (totalScore === null) return { level: 'ยังไม่ประเมิน', color: 'text-muted-foreground', bgColor: 'bg-muted' };
-  if (totalScore >= 100) return { level: 'ปลอดภัยสูง', color: 'text-green-600', bgColor: 'bg-green-100' };
-  if (totalScore >= 80) return { level: 'ปลอดภัยปานกลาง', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
-  if (totalScore >= 70) return { level: 'ความเสี่ยงต่ำ', color: 'text-orange-600', bgColor: 'bg-orange-100' };
-  return { level: 'ความเสี่ยงสูง', color: 'text-red-600', bgColor: 'bg-red-100' };
+  if (totalScore >= 86) return { level: 'ระดับ 5 = ดีเยี่ยม (Excellent)', color: 'text-green-600', bgColor: 'bg-green-100' };
+  if (totalScore >= 71) return { level: 'ระดับ 4 = ดี (Good)', color: 'text-lime-600', bgColor: 'bg-lime-100' };
+  if (totalScore >= 56) return { level: 'ระดับ 3 = พอใช้ (Fair)', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
+  if (totalScore >= 41) return { level: 'ระดับ 2 = ต้องพัฒนา (Developing)', color: 'text-orange-600', bgColor: 'bg-orange-100' };
+  return { level: 'ระดับ 1 = ต้องเร่งแก้ไข (Critical)', color: 'text-red-600', bgColor: 'bg-red-100' };
 };
 
 export default function ReportsImpact() {
@@ -297,10 +298,11 @@ export default function ReportsImpact() {
 
   // Calculate impact statistics for a set of hospital IDs and health office IDs
   const calculateImpactStats = (hospitalIds: string[], healthOfficeIds: string[] = []) => {
-    let highSafety = 0;
-    let mediumSafety = 0;
-    let lowRisk = 0;
-    let highRisk = 0;
+    let level5 = 0; // ดีเยี่ยม (86-100)
+    let level4 = 0; // ดี (71-85)
+    let level3 = 0; // พอใช้ (56-70)
+    let level2 = 0; // ต้องพัฒนา (41-55)
+    let level1 = 0; // ต้องเร่งแก้ไข (0-40)
     let notAssessed = 0;
     let totalIncidents = 0;
     let totalBreaches = 0;
@@ -318,11 +320,11 @@ export default function ReportsImpact() {
         return;
       }
 
-      const level = getImpactLevel(snap.percentScore);
-      if (level.level === 'ปลอดภัยสูง') highSafety++;
-      else if (level.level === 'ปลอดภัยปานกลาง') mediumSafety++;
-      else if (level.level === 'ความเสี่ยงต่ำ') lowRisk++;
-      else if (level.level === 'ความเสี่ยงสูง') highRisk++;
+      if (snap.percentScore >= 86) level5++;
+      else if (snap.percentScore >= 71) level4++;
+      else if (snap.percentScore >= 56) level3++;
+      else if (snap.percentScore >= 41) level2++;
+      else level1++;
 
       if (snap.hadIncident) totalIncidents++;
       if (snap.hadBreach) totalBreaches++;
@@ -333,10 +335,11 @@ export default function ReportsImpact() {
 
     return {
       total: hospitalIds.length + healthOfficeIds.length,
-      highSafety,
-      mediumSafety,
-      lowRisk,
-      highRisk,
+      level5,
+      level4,
+      level3,
+      level2,
+      level1,
       notAssessed,
       totalIncidents,
       totalBreaches,
@@ -366,10 +369,11 @@ export default function ReportsImpact() {
 
     return {
       data: [
-        { name: 'ปลอดภัยสูง', value: stats.highSafety, color: '#22c55e' },
-        { name: 'ปลอดภัยปานกลาง', value: stats.mediumSafety, color: '#eab308' },
-        { name: 'ความเสี่ยงต่ำ', value: stats.lowRisk, color: '#f97316' },
-        { name: 'ความเสี่ยงสูง', value: stats.highRisk, color: '#ef4444' },
+        { name: 'ระดับ 5 = ดีเยี่ยม (86-100)', value: stats.level5, color: '#22c55e' },
+        { name: 'ระดับ 4 = ดี (71-85)', value: stats.level4, color: '#84cc16' },
+        { name: 'ระดับ 3 = พอใช้ (56-70)', value: stats.level3, color: '#eab308' },
+        { name: 'ระดับ 2 = ต้องพัฒนา (41-55)', value: stats.level2, color: '#f97316' },
+        { name: 'ระดับ 1 = ต้องเร่งแก้ไข (0-40)', value: stats.level1, color: '#ef4444' },
         { name: 'ยังไม่ประเมิน', value: stats.notAssessed, color: '#94a3b8' },
       ].filter(d => d.value > 0),
       stats,
@@ -690,33 +694,41 @@ export default function ReportsImpact() {
                   <div className="flex items-center justify-between p-2 rounded-lg bg-green-50 dark:bg-green-950/20">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-5 h-5 text-green-600" />
-                      <span className="text-green-700 dark:text-green-400">ปลอดภัยสูง (100 คะแนน)</span>
+                      <span className="text-green-700 dark:text-green-400">ระดับ 5 = ดีเยี่ยม (86-100 คะแนน)</span>
                     </div>
-                    <span className="font-bold text-green-600">{pieChartData.stats.highSafety}</span>
+                    <span className="font-bold text-green-600">{pieChartData.stats.level5}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-lime-50 dark:bg-lime-950/20">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5 text-lime-600" />
+                      <span className="text-lime-700 dark:text-lime-400">ระดับ 4 = ดี (71-85 คะแนน)</span>
+                    </div>
+                    <span className="font-bold text-lime-600">{pieChartData.stats.level4}</span>
                   </div>
                   
                   <div className="flex items-center justify-between p-2 rounded-lg bg-yellow-50 dark:bg-yellow-950/20">
                     <div className="flex items-center gap-2">
                       <ShieldAlert className="w-5 h-5 text-yellow-600" />
-                      <span className="text-yellow-700 dark:text-yellow-400">ปลอดภัยปานกลาง (80-99 คะแนน)</span>
+                      <span className="text-yellow-700 dark:text-yellow-400">ระดับ 3 = พอใช้ (56-70 คะแนน)</span>
                     </div>
-                    <span className="font-bold text-yellow-600">{pieChartData.stats.mediumSafety}</span>
+                    <span className="font-bold text-yellow-600">{pieChartData.stats.level3}</span>
                   </div>
                   
                   <div className="flex items-center justify-between p-2 rounded-lg bg-orange-50 dark:bg-orange-950/20">
                     <div className="flex items-center gap-2">
                       <AlertCircle className="w-5 h-5 text-orange-600" />
-                      <span className="text-orange-700 dark:text-orange-400">ความเสี่ยงต่ำ (70-79 คะแนน)</span>
+                      <span className="text-orange-700 dark:text-orange-400">ระดับ 2 = ต้องพัฒนา (41-55 คะแนน)</span>
                     </div>
-                    <span className="font-bold text-orange-600">{pieChartData.stats.lowRisk}</span>
+                    <span className="font-bold text-orange-600">{pieChartData.stats.level2}</span>
                   </div>
                   
                   <div className="flex items-center justify-between p-2 rounded-lg bg-red-50 dark:bg-red-950/20">
                     <div className="flex items-center gap-2">
                       <ShieldX className="w-5 h-5 text-red-600" />
-                      <span className="text-red-700 dark:text-red-400">ความเสี่ยงสูง (&lt;70 คะแนน)</span>
+                      <span className="text-red-700 dark:text-red-400">ระดับ 1 = ต้องเร่งแก้ไข (0-40 คะแนน)</span>
                     </div>
-                    <span className="font-bold text-red-600">{pieChartData.stats.highRisk}</span>
+                    <span className="font-bold text-red-600">{pieChartData.stats.level1}</span>
                   </div>
                   
                   <div className="flex items-center justify-between p-2 rounded-lg bg-muted">
