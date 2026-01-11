@@ -4,13 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { TrendingUp, Filter, Building2, MapPin, ArrowLeft, UserCircle, Briefcase } from 'lucide-react';
+import { TrendingUp, Filter, Building2, MapPin, ArrowLeft, UserCircle, Briefcase, Map } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useReportAccessPolicy } from '@/hooks/useReportAccessPolicy';
 import { getLatestAssessmentsByUnit, isApprovedAssessmentStatus } from '@/lib/assessment-latest';
+import ThailandMap, { ProvinceData } from '@/components/reports/ThailandMap';
 interface HealthRegion {
   id: string;
   name: string;
@@ -624,169 +625,228 @@ export default function ReportsQuantitative() {
           </CardContent>
         </Card>
 
-        {/* Safety Level Donut Chart - shows all data based on filters (no access policy restriction) */}
-        <Card className="max-w-5xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">สัดส่วนระดับความปลอดภัยไซเบอร์ของหน่วยบริการ (รพ. + สสจ./สำนักเขต)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {(() => {
-            // Get all hospitals and health offices in scope based on filters
-            // This is based ONLY on filters, NOT on access policy
-            let allHospitalsInScope: Hospital[] = [];
-            let allHealthOfficesInScope: HealthOffice[] = [];
-            
-            if (selectedProvince !== 'all') {
-              allHospitalsInScope = hospitals.filter(h => h.province_id === selectedProvince);
-              allHealthOfficesInScope = healthOffices.filter(ho => ho.province_id === selectedProvince);
-            } else if (selectedRegion !== 'all') {
-              const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
-              allHospitalsInScope = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id));
-              allHealthOfficesInScope = healthOffices.filter(ho => ho.health_region_id === selectedRegion);
-            } else {
-              allHospitalsInScope = hospitals;
-              allHealthOfficesInScope = healthOffices;
-            }
+        {/* Map and Donut Chart Section */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {/* Thailand Map */}
+          <Card className="h-[500px]">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Map className="w-4 h-4" />
+                แผนที่ระดับความปลอดภัยไซเบอร์รายจังหวัด
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="h-[calc(100%-60px)]">
+              {(() => {
+                // Calculate province data for the map
+                const provinceMapData: ProvinceData[] = provinces.map(province => {
+                  const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
+                  const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === province.id);
+                  const hospitalIds = provinceHospitals.map(h => h.id);
+                  const healthOfficeIds = provinceHealthOffices.map(ho => ho.id);
+                  
+                  const totalUnits = hospitalIds.length + healthOfficeIds.length;
+                  let passedAll17 = 0;
+                  let assessed = 0;
 
-            // Combine all units (hospitals + health offices)
-            const allUnitsInScope = [
-              ...allHospitalsInScope.map(h => ({ id: h.id, type: 'hospital' as const })),
-              ...allHealthOfficesInScope.map(ho => ({ id: ho.id, type: 'health_office' as const }))
-            ];
+                  // Check hospitals
+                  hospitalIds.forEach(hospitalId => {
+                    const latestAssessmentId = latestApprovedByUnit.get(hospitalId)?.id;
+                    if (!latestAssessmentId) return;
+                    assessed++;
 
-            // Calculate safety level distribution from ALL units in scope
-            let greenCount = 0;
-            let yellowCount = 0;
-            let redCount = 0;
-            let grayCount = 0;
+                    const passedAllCategories = categories.every(cat => {
+                      const catItems = filteredAssessmentItems.filter(
+                        item => item.assessment_id === latestAssessmentId && item.category_id === cat.id
+                      );
+                      return catItems.some(item => Number(item.score) === 1);
+                    });
+                    if (passedAllCategories) passedAll17++;
+                  });
 
-            // Calculate for each unit in scope
-            const assessedUnitIds = new Set<string>();
-            allUnitsInScope.forEach(unit => {
-              // Get latest approved assessment for this unit
-              const latestAssessment = latestApprovedByUnit.get(unit.id);
-              if (!latestAssessment) return;
+                  // Check health offices
+                  healthOfficeIds.forEach(officeId => {
+                    const latestAssessmentId = latestApprovedByUnit.get(officeId)?.id;
+                    if (!latestAssessmentId) return;
+                    assessed++;
 
-              // Get category items for this assessment
-              const unitCategoryAverages = categories.map(cat => {
-                const catItems = filteredAssessmentItems.filter(
-                  item => item.assessment_id === latestAssessment.id && item.category_id === cat.id
+                    const passedAllCategories = categories.every(cat => {
+                      const catItems = filteredAssessmentItems.filter(
+                        item => item.assessment_id === latestAssessmentId && item.category_id === cat.id
+                      );
+                      return catItems.some(item => Number(item.score) === 1);
+                    });
+                    if (passedAllCategories) passedAll17++;
+                  });
+
+                  const passedPercentage = totalUnits > 0 ? (passedAll17 / totalUnits) * 100 : null;
+
+                  return {
+                    id: province.id,
+                    name: province.name,
+                    passedPercentage,
+                    totalUnits,
+                    passedAll17,
+                    assessed,
+                    healthRegionId: province.health_region_id
+                  };
+                });
+
+                return (
+                  <ThailandMap
+                    provinceData={provinceMapData}
+                    selectedRegion={selectedRegion}
+                    selectedProvince={selectedProvince}
+                    onProvinceClick={(provinceId) => {
+                      const province = provinces.find(p => p.id === provinceId);
+                      if (province) {
+                        // Set region first if not already set
+                        if (selectedRegion === 'all') {
+                          setSelectedRegion(province.health_region_id);
+                        }
+                        setSelectedProvince(provinceId);
+                      }
+                    }}
+                    healthRegions={healthRegions}
+                    provinces={provinces}
+                  />
                 );
-                if (catItems.length === 0) return { categoryId: cat.id, average: null };
-                const avg = catItems.reduce((sum, item) => sum + Number(item.score), 0) / catItems.length;
-                return { categoryId: cat.id, average: avg };
-              });
+              })()}
+            </CardContent>
+          </Card>
 
-              const passedCount = unitCategoryAverages.filter(c => c.average === 1).length;
-              const totalCount = unitCategoryAverages.filter(c => c.average !== null).length;
-              const passedPercentage = totalCount > 0 ? passedCount / totalCount * 100 : null;
+          {/* Safety Level Donut Chart */}
+          <Card className="h-[500px]">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">สัดส่วนระดับความปลอดภัยไซเบอร์ของหน่วยบริการ (รพ. + สสจ./สำนักเขต)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                // Get all hospitals and health offices in scope based on filters
+                let allHospitalsInScope: Hospital[] = [];
+                let allHealthOfficesInScope: HealthOffice[] = [];
+                
+                if (selectedProvince !== 'all') {
+                  allHospitalsInScope = hospitals.filter(h => h.province_id === selectedProvince);
+                  allHealthOfficesInScope = healthOffices.filter(ho => ho.province_id === selectedProvince);
+                } else if (selectedRegion !== 'all') {
+                  const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
+                  allHospitalsInScope = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id));
+                  allHealthOfficesInScope = healthOffices.filter(ho => ho.health_region_id === selectedRegion);
+                } else {
+                  allHospitalsInScope = hospitals;
+                  allHealthOfficesInScope = healthOffices;
+                }
 
-              if (passedPercentage !== null) {
-                assessedUnitIds.add(unit.id);
-                if (passedPercentage === 100) greenCount++;
-                else if (passedPercentage >= 50) yellowCount++;
-                else redCount++;
-              }
-            });
+                // Combine all units
+                const allUnitsInScope = [
+                  ...allHospitalsInScope.map(h => ({ id: h.id, type: 'hospital' as const })),
+                  ...allHealthOfficesInScope.map(ho => ({ id: ho.id, type: 'health_office' as const }))
+                ];
 
-            // Count unassessed units
-            grayCount = allUnitsInScope.filter(u => !assessedUnitIds.has(u.id)).length;
-            const total = greenCount + yellowCount + redCount + grayCount;
-            if (total === 0) {
-              return <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูลหน่วยบริการ (กรุณาเลือกจังหวัดเพื่อดูข้อมูล)</div>;
-            }
-            const pieData = [{
-              name: 'ปลอดภัยไซเบอร์สูง',
-              shortName: '100%',
-              value: greenCount,
-              color: '#22c55e',
-              percentage: (greenCount / total * 100).toFixed(1)
-            }, {
-              name: 'ปลอดภัยต่ำ',
-              shortName: '50-99%',
-              value: yellowCount,
-              color: '#eab308',
-              percentage: (yellowCount / total * 100).toFixed(1)
-            }, {
-              name: 'ไม่ปลอดภัย',
-              shortName: '<50%',
-              value: redCount,
-              color: '#ef4444',
-              percentage: (redCount / total * 100).toFixed(1)
-            }, {
-              name: 'ยังไม่ประเมิน',
-              shortName: '-',
-              value: grayCount,
-              color: '#9ca3af',
-              percentage: (grayCount / total * 100).toFixed(1)
-            }].filter(d => d.value > 0);
+                // Calculate safety level distribution
+                let greenCount = 0;
+                let yellowCount = 0;
+                let redCount = 0;
+                let grayCount = 0;
 
-            // Custom label renderer for outside labels
-            const renderCustomLabel = ({
-              cx,
-              cy,
-              midAngle,
-              outerRadius,
-              name,
-              shortName,
-              value,
-              percentage
-            }: any) => {
-              const RADIAN = Math.PI / 180;
-              const radius = outerRadius + 25;
-              const x = cx + radius * Math.cos(-midAngle * RADIAN);
-              const y = cy + radius * Math.sin(-midAngle * RADIAN);
-              return <text x={x} y={y} fill="currentColor" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs fill-foreground">
-                    {`${shortName} ${value} แห่ง (${percentage}%)`}
-                  </text>;
-            };
-            return <div className="flex flex-col md:flex-row items-start gap-4">
-                  <div className="w-full md:w-auto h-[280px] min-w-[480px] flex-shrink-0">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={pieData} cx="50%" cy="50%" labelLine={true} label={renderCustomLabel} innerRadius={50} outerRadius={80} fill="#8884d8" dataKey="value" paddingAngle={2}>
-                          {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.color} />)}
-                        </Pie>
-                        <Tooltip formatter={(value: number, name: string) => [`${value} แห่ง`, name]} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="space-y-3 w-fit">
-                    <div>
-                      <span className="text-xl font-bold">{total}</span>
-                      <span className="text-muted-foreground ml-2 text-sm">หน่วยบริการทั้งหมด (รพ. {allHospitalsInScope.length} + สสจ./สำนักเขต {allHealthOfficesInScope.length})</span>
+                const assessedUnitIds = new Set<string>();
+                allUnitsInScope.forEach(unit => {
+                  const latestAssessment = latestApprovedByUnit.get(unit.id);
+                  if (!latestAssessment) return;
+
+                  const unitCategoryAverages = categories.map(cat => {
+                    const catItems = filteredAssessmentItems.filter(
+                      item => item.assessment_id === latestAssessment.id && item.category_id === cat.id
+                    );
+                    if (catItems.length === 0) return { categoryId: cat.id, average: null };
+                    const avg = catItems.reduce((sum, item) => sum + Number(item.score), 0) / catItems.length;
+                    return { categoryId: cat.id, average: avg };
+                  });
+
+                  const passedCount = unitCategoryAverages.filter(c => c.average === 1).length;
+                  const totalCount = unitCategoryAverages.filter(c => c.average !== null).length;
+                  const passedPercentage = totalCount > 0 ? passedCount / totalCount * 100 : null;
+
+                  if (passedPercentage !== null) {
+                    assessedUnitIds.add(unit.id);
+                    if (passedPercentage === 100) greenCount++;
+                    else if (passedPercentage >= 50) yellowCount++;
+                    else redCount++;
+                  }
+                });
+
+                grayCount = allUnitsInScope.filter(u => !assessedUnitIds.has(u.id)).length;
+                const total = greenCount + yellowCount + redCount + grayCount;
+
+                if (total === 0) {
+                  return <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูลหน่วยบริการ</div>;
+                }
+
+                const pieData = [
+                  { name: 'ปลอดภัยไซเบอร์สูง', shortName: '100%', value: greenCount, color: '#22c55e', percentage: (greenCount / total * 100).toFixed(1) },
+                  { name: 'ปลอดภัยต่ำ', shortName: '50-99%', value: yellowCount, color: '#eab308', percentage: (yellowCount / total * 100).toFixed(1) },
+                  { name: 'ไม่ปลอดภัย', shortName: '<50%', value: redCount, color: '#ef4444', percentage: (redCount / total * 100).toFixed(1) },
+                  { name: 'ยังไม่ประเมิน', shortName: '-', value: grayCount, color: '#9ca3af', percentage: (grayCount / total * 100).toFixed(1) }
+                ].filter(d => d.value > 0);
+
+                const renderCustomLabel = ({ cx, cy, midAngle, outerRadius, shortName, value, percentage }: any) => {
+                  const RADIAN = Math.PI / 180;
+                  const radius = outerRadius + 20;
+                  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                  return (
+                    <text x={x} y={y} fill="currentColor" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs fill-foreground">
+                      {`${shortName} ${value} แห่ง (${percentage}%)`}
+                    </text>
+                  );
+                };
+
+                return (
+                  <div className="flex flex-col gap-4">
+                    <div className="h-[220px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={pieData} cx="50%" cy="50%" labelLine={true} label={renderCustomLabel} innerRadius={40} outerRadius={70} fill="#8884d8" dataKey="value" paddingAngle={2}>
+                            {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.color} />)}
+                          </Pie>
+                          <Tooltip formatter={(value: number, name: string) => [`${value} แห่ง`, name]} />
+                        </PieChart>
+                      </ResponsiveContainer>
                     </div>
                     <div className="space-y-2">
-                      <div className="flex items-center gap-3 p-2 rounded-lg bg-green-50 dark:bg-green-950/30 whitespace-nowrap">
-                        <div className="w-3 h-3 rounded-full bg-green-500 shrink-0" />
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">ปลอดภัยสูง (เขียว 100%)</span>
-                        <span className="ml-auto text-sm font-bold">{greenCount}</span>
-                        <span className="text-xs text-muted-foreground">({(greenCount / total * 100).toFixed(1)}%)</span>
+                      <div className="text-center">
+                        <span className="text-xl font-bold">{total}</span>
+                        <span className="text-muted-foreground ml-2 text-sm">หน่วยบริการทั้งหมด</span>
                       </div>
-                      <div className="flex items-center gap-3 p-2 rounded-lg bg-yellow-50 dark:bg-yellow-950/30 whitespace-nowrap">
-                        <div className="w-3 h-3 rounded-full bg-yellow-500 shrink-0" />
-                        <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">ปลอดภัยต่ำ (เขียว 50-99%)</span>
-                        <span className="ml-auto text-sm font-bold">{yellowCount}</span>
-                        <span className="text-xs text-muted-foreground">({(yellowCount / total * 100).toFixed(1)}%)</span>
-                      </div>
-                      <div className="flex items-center gap-3 p-2 rounded-lg bg-red-50 dark:bg-red-950/30 whitespace-nowrap">
-                        <div className="w-3 h-3 rounded-full bg-red-500 shrink-0" />
-                        <span className="text-sm font-medium text-red-700 dark:text-red-400">ไม่ปลอดภัย (เขียว &lt;50%)</span>
-                        <span className="ml-auto text-sm font-bold">{redCount}</span>
-                        <span className="text-xs text-muted-foreground">({(redCount / total * 100).toFixed(1)}%)</span>
-                      </div>
-                      <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-950/30 whitespace-nowrap">
-                        <div className="w-3 h-3 rounded-full bg-gray-400 shrink-0" />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-400">ยังไม่ประเมิน</span>
-                        <span className="ml-auto text-sm font-bold">{grayCount}</span>
-                        <span className="text-xs text-muted-foreground">({(grayCount / total * 100).toFixed(1)}%)</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-green-50 dark:bg-green-950/30">
+                          <div className="w-3 h-3 rounded-full bg-green-500 shrink-0" />
+                          <span className="text-xs text-green-700 dark:text-green-400">ปลอดภัยสูง 100%</span>
+                          <span className="ml-auto text-xs font-bold">{greenCount}</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-50 dark:bg-yellow-950/30">
+                          <div className="w-3 h-3 rounded-full bg-yellow-500 shrink-0" />
+                          <span className="text-xs text-yellow-700 dark:text-yellow-400">ปลอดภัยต่ำ 50-99%</span>
+                          <span className="ml-auto text-xs font-bold">{yellowCount}</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-red-50 dark:bg-red-950/30">
+                          <div className="w-3 h-3 rounded-full bg-red-500 shrink-0" />
+                          <span className="text-xs text-red-700 dark:text-red-400">ไม่ปลอดภัย &lt;50%</span>
+                          <span className="ml-auto text-xs font-bold">{redCount}</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-950/30">
+                          <div className="w-3 h-3 rounded-full bg-gray-400 shrink-0" />
+                          <span className="text-xs text-gray-700 dark:text-gray-400">ยังไม่ประเมิน</span>
+                          <span className="ml-auto text-xs font-bold">{grayCount}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>;
-          })()}
-          </CardContent>
-        </Card>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Data Table */}
         <Card>
