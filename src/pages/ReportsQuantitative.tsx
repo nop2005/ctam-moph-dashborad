@@ -939,12 +939,6 @@ export default function ReportsQuantitative() {
                             </div>}
                         </TableHead>
 
-                        {categories.map((cat, index) => <TableHead key={cat.id} className="text-center min-w-[80px] text-xs" title={cat.name_th}>
-                            <div className="flex flex-col items-center">
-                              <span className="font-bold">ข้อ {index + 1}</span>
-                              <span className="text-muted-foreground truncate max-w-[70px]">{cat.code}</span>
-                            </div>
-                          </TableHead>)}
                       </TableRow>
                     </TableHeader>
 
@@ -1047,9 +1041,6 @@ export default function ReportsQuantitative() {
                           })()}
                             </TableCell>
 
-                            {row.categoryAverages.map(catAvg => <TableCell key={catAvg.categoryId} className={`text-center ${getScoreColorClass(catAvg.average, row.type)}`}>
-                                {formatScore(catAvg, row.type)}
-                              </TableCell>)}
                           </TableRow>;
                     })}
                     </TableBody>
