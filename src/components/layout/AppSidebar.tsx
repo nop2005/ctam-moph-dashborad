@@ -23,7 +23,8 @@ const reportSubItems = [{
   title: "คะแนน 17 ข้อ แยกตามพื้นที่",
   url: "/reports/quantitative-by-area",
   icon: MapPinned
-}, {
+}];
+const analyticalReportSubItems = [{
   title: "เชิงผลกระทบ (Incident & Recovery)",
   url: "/reports/impact",
   icon: AlertTriangle
@@ -79,11 +80,13 @@ export function AppSidebar() {
   } = useAuth();
   const currentPath = location.pathname;
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + "/");
-  const isReportsActive = currentPath.startsWith("/reports");
+  const isReportsActive = currentPath === "/reports" || currentPath === "/reports/quantitative" || currentPath === "/reports/quantitative-by-area";
+  const isAnalyticalReportsActive = currentPath === "/reports/impact" || currentPath === "/reports/quantitative-detail";
   const isInspectionActive = currentPath.startsWith("/inspection") && currentPath !== "/inspection/manual";
 
   // State for collapsible menus (persist across route changes)
   const [reportsOpen, setReportsOpen] = useLocalStorageState<boolean>("sidebar.reportsOpen", isReportsActive);
+  const [analyticalReportsOpen, setAnalyticalReportsOpen] = useLocalStorageState<boolean>("sidebar.analyticalReportsOpen", isAnalyticalReportsActive);
   const [inspectionOpen, setInspectionOpen] = useLocalStorageState<boolean>("sidebar.inspectionOpen", isInspectionActive);
   const filterByRole = (items: typeof menuItems) => {
     if (!profile?.role) return items;
@@ -144,6 +147,38 @@ export function AppSidebar() {
                   <CollapsibleContent>
                     <SidebarMenuSub className="border-sidebar-border">
                       {reportSubItems.map(subItem => <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton onClick={() => navigate(subItem.url)} isActive={currentPath === subItem.url} className={`
+                              text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
+                              data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                            `}>
+                            <subItem.icon className="h-3 w-3" />
+                            <span>{subItem.title}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>)}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+
+              {/* Analytical Reports with Submenu */}
+              <Collapsible open={analyticalReportsOpen} onOpenChange={setAnalyticalReportsOpen} className="group/collapsible">
+                <SidebarMenuItem>
+                  <SidebarMenuButton tooltip="รายงานเชิงวิเคราะห์" isActive={false} onClick={() => {
+                  if (collapsed) {
+                    navigate("/reports/impact");
+                  } else {
+                    setAnalyticalReportsOpen(!analyticalReportsOpen);
+                  }
+                }} className={`
+                      text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                    `}>
+                    <TrendingUp className="h-4 w-4" />
+                    <span>รายงานเชิงวิเคราะห์</span>
+                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  </SidebarMenuButton>
+                  <CollapsibleContent>
+                    <SidebarMenuSub className="border-sidebar-border">
+                      {analyticalReportSubItems.map(subItem => <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton onClick={() => navigate(subItem.url)} isActive={currentPath === subItem.url} className={`
                               text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
                               data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
