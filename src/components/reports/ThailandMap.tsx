@@ -1,7 +1,9 @@
-import React, { useMemo } from 'react';
-import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps';
+import React, { useMemo, useState, useCallback } from 'react';
+import { ComposableMap, Geographies, Geography, ZoomableGroup, Marker, Annotation } from 'react-simple-maps';
 import { Tooltip } from '@/components/ui/tooltip';
 import { TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { ZoomIn, ZoomOut, Maximize2, Move } from 'lucide-react';
 
 // Thailand province boundaries - simplified GeoJSON
 const THAILAND_TOPO_URL = "https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json";
@@ -118,6 +120,87 @@ const getProvinceColor = (passedPercentage: number | null, isSelected: boolean) 
   return '#ef4444'; // Red - <50%
 };
 
+// Province coordinates for labels (approximate centers)
+const PROVINCE_COORDINATES: Record<string, [number, number]> = {
+  "กระบี่": [98.9, 8.1],
+  "กรุงเทพมหานคร": [100.5, 13.75],
+  "กาญจนบุรี": [99.5, 14.0],
+  "กาฬสินธุ์": [103.5, 16.4],
+  "กำแพงเพชร": [99.5, 16.5],
+  "ขอนแก่น": [102.8, 16.4],
+  "จันทบุรี": [102.1, 12.6],
+  "ฉะเชิงเทรา": [101.1, 13.7],
+  "ชลบุรี": [101.0, 13.4],
+  "ชัยนาท": [100.1, 15.2],
+  "ชัยภูมิ": [102.0, 16.0],
+  "ชุมพร": [99.2, 10.5],
+  "เชียงราย": [99.8, 19.9],
+  "เชียงใหม่": [98.9, 18.8],
+  "ตรัง": [99.6, 7.6],
+  "ตราด": [102.5, 12.2],
+  "ตาก": [99.0, 16.9],
+  "นครนายก": [101.2, 14.2],
+  "นครปฐม": [100.1, 13.8],
+  "นครพนม": [104.8, 17.4],
+  "นครราชสีมา": [102.1, 15.0],
+  "นครศรีธรรมราช": [99.9, 8.4],
+  "นครสวรรค์": [100.1, 15.7],
+  "นนทบุรี": [100.5, 13.9],
+  "นราธิวาส": [101.8, 6.4],
+  "น่าน": [100.8, 18.8],
+  "บึงกาฬ": [103.7, 18.4],
+  "บุรีรัมย์": [103.1, 15.0],
+  "ปทุมธานี": [100.5, 14.0],
+  "ประจวบคีรีขันธ์": [99.8, 11.8],
+  "ปราจีนบุรี": [101.4, 14.1],
+  "ปัตตานี": [101.3, 6.9],
+  "พระนครศรีอยุธยา": [100.5, 14.4],
+  "พะเยา": [99.9, 19.2],
+  "พังงา": [98.5, 8.5],
+  "พัทลุง": [100.1, 7.6],
+  "พิจิตร": [100.3, 16.4],
+  "พิษณุโลก": [100.3, 16.8],
+  "เพชรบุรี": [99.9, 13.1],
+  "เพชรบูรณ์": [101.2, 16.4],
+  "แพร่": [100.1, 18.1],
+  "ภูเก็ต": [98.4, 7.9],
+  "มหาสารคาม": [103.3, 16.2],
+  "มุกดาหาร": [104.7, 16.5],
+  "แม่ฮ่องสอน": [97.9, 19.3],
+  "ยโสธร": [104.1, 15.8],
+  "ยะลา": [101.3, 6.5],
+  "ร้อยเอ็ด": [103.7, 16.1],
+  "ระนอง": [98.6, 9.9],
+  "ระยอง": [101.3, 12.7],
+  "ราชบุรี": [99.8, 13.5],
+  "ลพบุรี": [100.6, 14.8],
+  "ลำปาง": [99.5, 18.3],
+  "ลำพูน": [99.0, 18.6],
+  "เลย": [101.7, 17.5],
+  "ศรีสะเกษ": [104.3, 15.1],
+  "สกลนคร": [104.1, 17.2],
+  "สงขลา": [100.6, 7.2],
+  "สตูล": [100.1, 6.6],
+  "สมุทรปราการ": [100.6, 13.6],
+  "สมุทรสงคราม": [100.0, 13.4],
+  "สมุทรสาคร": [100.3, 13.5],
+  "สระแก้ว": [102.1, 13.8],
+  "สระบุรี": [100.9, 14.5],
+  "สิงห์บุรี": [100.4, 14.9],
+  "สุโขทัย": [99.8, 17.0],
+  "สุพรรณบุรี": [100.0, 14.5],
+  "สุราษฎร์ธานี": [99.3, 9.1],
+  "สุรินทร์": [103.5, 14.9],
+  "หนองคาย": [102.8, 17.9],
+  "หนองบัวลำภู": [102.4, 17.2],
+  "อ่างทอง": [100.4, 14.6],
+  "อำนาจเจริญ": [104.6, 15.9],
+  "อุดรธานี": [102.8, 17.4],
+  "อุตรดิตถ์": [100.1, 17.6],
+  "อุทัยธานี": [99.5, 15.4],
+  "อุบลราชธานี": [105.0, 15.2]
+};
+
 const ThailandMap: React.FC<ThailandMapProps> = ({
   provinceData,
   selectedRegion,
@@ -126,6 +209,11 @@ const ThailandMap: React.FC<ThailandMapProps> = ({
   healthRegions,
   provinces
 }) => {
+  // Zoom state for manual control
+  const [zoom, setZoom] = useState(1);
+  const [center, setCenter] = useState<[number, number]>([100.5, 13.75]);
+  const [isPanning, setIsPanning] = useState(false);
+
   // Create a map from Thai province name to province data
   const provinceDataMap = useMemo(() => {
     const map = new Map<string, ProvinceData>();
@@ -141,17 +229,37 @@ const ThailandMap: React.FC<ThailandMapProps> = ({
     return new Set(provinces.filter(p => p.health_region_id === selectedRegion).map(p => p.id));
   }, [selectedRegion, provinces]);
 
+  // Get province names to display on map
+  const provincesToLabel = useMemo(() => {
+    if (selectedProvince !== 'all') {
+      // Show only the selected province name
+      const province = provinces.find(p => p.id === selectedProvince);
+      if (province) {
+        return [province.name];
+      }
+      return [];
+    }
+    
+    if (selectedRegion !== 'all') {
+      // Show all provinces in the selected region
+      return provinces
+        .filter(p => p.health_region_id === selectedRegion)
+        .map(p => p.name);
+    }
+    
+    return [];
+  }, [selectedRegion, selectedProvince, provinces]);
+
   // Calculate center and zoom based on selection
   const mapSettings = useMemo(() => {
     if (selectedProvince !== 'all') {
-      // Zoom to specific province - we'd need province coordinates
-      // For now, just zoom to region if available
+      // Zoom to specific province
       const province = provinces.find(p => p.id === selectedProvince);
-      if (province) {
-        // Get approximate center based on region
-        const region = healthRegions.find(r => r.id === province.health_region_id);
-        // Return default thailand view for now
-        return { center: [100.5, 13.75] as [number, number], zoom: 1 };
+      if (province && PROVINCE_COORDINATES[province.name]) {
+        return { 
+          center: PROVINCE_COORDINATES[province.name] as [number, number], 
+          zoom: 5 
+        };
       }
     }
     
@@ -184,8 +292,38 @@ const ThailandMap: React.FC<ThailandMapProps> = ({
     return { center: [100.5, 13.75] as [number, number], zoom: 1 };
   }, [selectedRegion, selectedProvince, healthRegions, provinces]);
 
-  const [hoveredProvince, setHoveredProvince] = React.useState<string | null>(null);
-  const [tooltipContent, setTooltipContent] = React.useState<{
+  // Sync state when mapSettings change
+  React.useEffect(() => {
+    setZoom(mapSettings.zoom);
+    setCenter(mapSettings.center);
+  }, [mapSettings]);
+
+  // Calculate font size based on zoom level
+  const getFontSize = useCallback((baseSize: number = 8) => {
+    const size = baseSize * Math.max(0.5, Math.min(2, zoom / 2));
+    return Math.max(4, Math.min(14, size));
+  }, [zoom]);
+
+  // Map control handlers
+  const handleZoomIn = useCallback(() => {
+    setZoom(prev => Math.min(8, prev * 1.5));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoom(prev => Math.max(0.5, prev / 1.5));
+  }, []);
+
+  const handleFitToScreen = useCallback(() => {
+    setZoom(mapSettings.zoom);
+    setCenter(mapSettings.center);
+  }, [mapSettings]);
+
+  const togglePanning = useCallback(() => {
+    setIsPanning(prev => !prev);
+  }, []);
+
+  const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
+  const [tooltipContent, setTooltipContent] = useState<{
     name: string;
     percentage: number | null;
     total: number;
@@ -196,6 +334,46 @@ const ThailandMap: React.FC<ThailandMapProps> = ({
   return (
     <TooltipProvider>
       <div className="relative w-full h-full min-h-[400px]">
+        {/* Map Controls - Top Right */}
+        <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 bg-background/95 border border-border rounded-lg p-1 shadow-md">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={handleZoomIn}
+            title="ซูมเข้า"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={handleZoomOut}
+            title="ซูมออก"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={handleFitToScreen}
+            title="พอดีจอ"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={isPanning ? "default" : "ghost"}
+            size="icon"
+            className="h-8 w-8"
+            onClick={togglePanning}
+            title="ขยับแผนที่"
+          >
+            <Move className="h-4 w-4" />
+          </Button>
+        </div>
+
         <ComposableMap
           projection="geoMercator"
           projectionConfig={{
@@ -205,10 +383,15 @@ const ThailandMap: React.FC<ThailandMapProps> = ({
           className="w-full h-full"
         >
           <ZoomableGroup
-            center={mapSettings.center}
-            zoom={mapSettings.zoom}
+            center={center}
+            zoom={zoom}
             minZoom={0.5}
             maxZoom={8}
+            onMoveEnd={({ coordinates, zoom: newZoom }) => {
+              setCenter(coordinates as [number, number]);
+              setZoom(newZoom);
+            }}
+            filterZoomEvent={(evt) => isPanning || evt.type === "wheel"}
           >
             <Geographies geography={THAILAND_TOPO_URL}>
               {({ geographies }) =>
@@ -277,6 +460,31 @@ const ThailandMap: React.FC<ThailandMapProps> = ({
                 })
               }
             </Geographies>
+
+            {/* Province Labels */}
+            {provincesToLabel.map(provinceName => {
+              const coords = PROVINCE_COORDINATES[provinceName];
+              if (!coords) return null;
+              
+              return (
+                <Marker key={provinceName} coordinates={coords}>
+                  <text
+                    textAnchor="middle"
+                    style={{
+                      fontFamily: "'Noto Sans Thai', sans-serif",
+                      fontSize: `${getFontSize(8)}px`,
+                      fill: '#1e293b',
+                      fontWeight: 500,
+                      textShadow: '1px 1px 2px rgba(255,255,255,0.8), -1px -1px 2px rgba(255,255,255,0.8)',
+                      pointerEvents: 'none'
+                    }}
+                    dy={2}
+                  >
+                    {provinceName}
+                  </text>
+                </Marker>
+              );
+            })}
           </ZoomableGroup>
         </ComposableMap>
 
