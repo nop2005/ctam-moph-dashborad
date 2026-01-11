@@ -37,6 +37,7 @@ import {
   ChevronRight,
   ListOrdered,
   HardDrive,
+  MapPinned,
 } from "lucide-react";
 const menuItems = [
   {
@@ -56,6 +57,11 @@ const reportSubItems = [
     title: "เชิงปริมาณ (17 ข้อ)",
     url: "/reports/quantitative",
     icon: TrendingUp,
+  },
+  {
+    title: "คะแนน 17 ข้อ แยกตามพื้นที่",
+    url: "/reports/quantitative-by-area",
+    icon: MapPinned,
   },
   {
     title: "เชิงผลกระทบ (Incident & Recovery)",
