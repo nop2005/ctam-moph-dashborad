@@ -91,7 +91,7 @@ const adminItems = [
     title: "จัดการผู้ใช้งาน",
     url: "/super-admin",
     icon: Users,
-    roles: ["central_admin", "regional"],
+    roles: ["central_admin"],
   },
   {
     title: "จัดการโรงพยาบาล",
