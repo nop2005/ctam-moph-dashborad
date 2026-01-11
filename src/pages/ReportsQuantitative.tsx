@@ -633,6 +633,15 @@ export default function ReportsQuantitative() {
               <CardTitle className="text-base flex items-center gap-2">
                 <Map className="w-4 h-4" />
                 แผนที่ระดับความปลอดภัยไซเบอร์รายจังหวัด
+                {selectedProvince !== 'all' ? (
+                  <span className="text-primary font-medium">
+                    - {provinces.find(p => p.id === selectedProvince)?.name}
+                  </span>
+                ) : selectedRegion !== 'all' ? (
+                  <span className="text-primary font-medium">
+                    - เขตสุขภาพที่ {healthRegions.find(r => r.id === selectedRegion)?.region_number}
+                  </span>
+                ) : null}
               </CardTitle>
             </CardHeader>
             <CardContent className="h-[calc(100%-60px)]">
@@ -717,7 +726,18 @@ export default function ReportsQuantitative() {
           {/* Safety Level Donut Chart */}
           <Card className="h-[500px]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">สัดส่วนระดับความปลอดภัยไซเบอร์ของหน่วยบริการ (รพ. + สสจ./สำนักเขต)</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2 flex-wrap">
+                สัดส่วนระดับความปลอดภัยไซเบอร์ของหน่วยบริการ (รพ. + สสจ./สำนักเขต)
+                {selectedProvince !== 'all' ? (
+                  <span className="text-primary font-medium">
+                    - {provinces.find(p => p.id === selectedProvince)?.name}
+                  </span>
+                ) : selectedRegion !== 'all' ? (
+                  <span className="text-primary font-medium">
+                    - เขตสุขภาพที่ {healthRegions.find(r => r.id === selectedRegion)?.region_number}
+                  </span>
+                ) : null}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {(() => {
