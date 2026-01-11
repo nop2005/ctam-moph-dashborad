@@ -88,13 +88,20 @@ export default function UserManagement() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
-  // Removed createUserType state - now creates both types at once
+  const [createSupervisorDialogOpen, setCreateSupervisorDialogOpen] = useState(false);
+  const [createProvincialDialogOpen, setCreateProvincialDialogOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState(false);
   const [creatingUsers, setCreatingUsers] = useState(false);
   const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'all'>('all');
-
+  
+  // Supervisor form state
+  const [supervisorEmail, setSupervisorEmail] = useState('');
+  const [supervisorPassword, setSupervisorPassword] = useState('');
+  const [supervisorFullName, setSupervisorFullName] = useState('');
+  const [supervisorPosition, setSupervisorPosition] = useState('');
+  const [supervisorOrganization, setSupervisorOrganization] = useState('');
   const isProvincialAdmin = currentUserProfile?.role === 'provincial';
   const isRegionalAdmin = currentUserProfile?.role === 'regional';
 
@@ -341,6 +348,90 @@ export default function UserManagement() {
     }
   };
 
+  const handleCreateSupervisor = async () => {
+    setCreatingUsers(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast.error('กรุณาเข้าสู่ระบบ');
+        return;
+      }
+
+      const headers = {
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+      };
+
+      const { data, error } = await supabase.functions.invoke('create-supervisor-users', {
+        headers,
+        body: {
+          email: supervisorEmail,
+          password: supervisorPassword,
+          full_name: supervisorFullName,
+          position: supervisorPosition,
+          organization: supervisorOrganization,
+        },
+      });
+
+      if (error || !data?.success) {
+        toast.error(data?.error || 'ไม่สามารถสร้างผู้นิเทศได้');
+        return;
+      }
+
+      toast.success('สร้างผู้นิเทศสำเร็จ');
+      setCreateSupervisorDialogOpen(false);
+      setSupervisorEmail('');
+      setSupervisorPassword('');
+      setSupervisorFullName('');
+      setSupervisorPosition('');
+      setSupervisorOrganization('');
+      fetchData();
+    } catch (error) {
+      console.error('Error creating supervisor:', error);
+      toast.error('ไม่สามารถสร้างผู้นิเทศได้');
+    } finally {
+      setCreatingUsers(false);
+    }
+  };
+
+  const handleCreateProvincialUsers = async () => {
+    setCreatingUsers(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast.error('กรุณาเข้าสู่ระบบ');
+        return;
+      }
+
+      const headers = {
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+      };
+
+      const { data, error } = await supabase.functions.invoke('create-provincial-users', {
+        headers,
+        body: {
+          health_region_id: currentUserProfile?.health_region_id,
+        },
+      });
+
+      if (error || !data?.success) {
+        toast.error(data?.error || 'ไม่สามารถสร้าง Admin จังหวัดได้');
+        return;
+      }
+
+      const successCount = data.results?.filter((r: any) => r.status === 'success').length || 0;
+      const skippedCount = data.results?.filter((r: any) => r.status === 'skipped').length || 0;
+
+      toast.success(`สร้าง Admin จังหวัดสำเร็จ: ${successCount} คน (ข้าม ${skippedCount} คน)`);
+      setCreateProvincialDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      console.error('Error creating provincial users:', error);
+      toast.error('ไม่สามารถสร้าง Admin จังหวัดได้');
+    } finally {
+      setCreatingUsers(false);
+    }
+  };
+
   // Filter profiles based on search
   const filteredProfiles = profiles.filter(p => {
     const matchesSearch = 
@@ -402,6 +493,18 @@ export default function UserManagement() {
             <UserPlus className="h-4 w-4 mr-2" />
             สร้างผู้ใช้งาน
           </Button>
+        )}
+        {isRegionalAdmin && (
+          <div className="flex gap-2">
+            <Button onClick={() => setCreateSupervisorDialogOpen(true)}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              เพิ่มผู้นิเทศ
+            </Button>
+            <Button onClick={() => setCreateProvincialDialogOpen(true)} variant="outline">
+              <UserPlus className="h-4 w-4 mr-2" />
+              เพิ่ม Admin จังหวัด
+            </Button>
+          </div>
         )}
       </div>
 
@@ -738,6 +841,120 @@ export default function UserManagement() {
             >
               {creatingUsers && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               สร้างผู้ใช้งาน
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Supervisor Dialog for Regional Admin */}
+      <Dialog open={createSupervisorDialogOpen} onOpenChange={setCreateSupervisorDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>เพิ่มผู้นิเทศ</DialogTitle>
+            <DialogDescription>
+              กรอกข้อมูลเพื่อสร้างบัญชีผู้นิเทศใหม่
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">อีเมล *</label>
+              <Input
+                type="email"
+                placeholder="email@example.com"
+                value={supervisorEmail}
+                onChange={(e) => setSupervisorEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">รหัสผ่าน *</label>
+              <Input
+                type="password"
+                placeholder="รหัสผ่าน"
+                value={supervisorPassword}
+                onChange={(e) => setSupervisorPassword(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">ชื่อ-นามสกุล</label>
+              <Input
+                placeholder="ชื่อ-นามสกุล"
+                value={supervisorFullName}
+                onChange={(e) => setSupervisorFullName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">ตำแหน่ง</label>
+              <Input
+                placeholder="ตำแหน่ง"
+                value={supervisorPosition}
+                onChange={(e) => setSupervisorPosition(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">หน่วยงาน</label>
+              <Input
+                placeholder="หน่วยงาน"
+                value={supervisorOrganization}
+                onChange={(e) => setSupervisorOrganization(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setCreateSupervisorDialogOpen(false)}
+              disabled={creatingUsers}
+            >
+              ยกเลิก
+            </Button>
+            <Button 
+              onClick={handleCreateSupervisor}
+              disabled={creatingUsers || !supervisorEmail || !supervisorPassword}
+            >
+              {creatingUsers && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              สร้างผู้นิเทศ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Provincial Admin Dialog for Regional Admin */}
+      <Dialog open={createProvincialDialogOpen} onOpenChange={setCreateProvincialDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>เพิ่ม Admin จังหวัด</DialogTitle>
+            <DialogDescription>
+              สร้าง Admin จังหวัดสำหรับทุกจังหวัดในเขตสุขภาพของคุณ
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="text-sm">
+              <p className="font-medium mb-2">ระบบจะสร้าง Admin จังหวัดดังนี้:</p>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                <li>Admin จังหวัด - ทุกจังหวัดในเขตสุขภาพ</li>
+              </ul>
+            </div>
+            <div className="text-sm bg-muted p-3 rounded-md">
+              <p className="font-medium text-foreground">รูปแบบบัญชี:</p>
+              <p className="text-muted-foreground">Email: admin.รหัสสสจ@ctam.moph</p>
+              <p className="text-muted-foreground">Password: รหัสสสจ</p>
+              <p className="text-xs text-muted-foreground mt-1">เช่น admin.00037@ctam.moph / 00037</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setCreateProvincialDialogOpen(false)}
+              disabled={creatingUsers}
+            >
+              ยกเลิก
+            </Button>
+            <Button 
+              onClick={handleCreateProvincialUsers}
+              disabled={creatingUsers}
+            >
+              {creatingUsers && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              สร้าง Admin จังหวัด
             </Button>
           </DialogFooter>
         </DialogContent>
