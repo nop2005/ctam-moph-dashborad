@@ -25,13 +25,13 @@ const reportSubItems = [{
   icon: MapPinned
 }];
 const analyticalReportSubItems = [{
-  title: "เชิงผลกระทบ (Incident & Recovery)",
-  url: "/reports/impact",
-  icon: AlertTriangle
-}, {
   title: "รายงาน CTAM+ เพิ่มเติม",
   url: "/reports/quantitative-detail",
   icon: ListOrdered
+}, {
+  title: "เชิงผลกระทบ (Incident & Recovery)",
+  url: "/reports/impact",
+  icon: AlertTriangle
 }];
 const inspectionSubItems = [{
   title: "รายงานผู้นิเทศ",
