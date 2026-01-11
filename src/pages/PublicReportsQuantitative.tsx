@@ -5,8 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
-import { TrendingUp, Filter, Building2, MapPin } from 'lucide-react';
+import { TrendingUp, Filter, Building2, MapPin, Map as MapIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import ThailandMap, { ProvinceData } from '@/components/reports/ThailandMap';
 
 interface HealthRegion {
   id: string;
@@ -62,6 +63,7 @@ export default function PublicReportsQuantitative() {
   const [summary, setSummary] = useState<PublicQuantitativeSummary | null>(null);
 
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
+  const [selectedProvince, setSelectedProvince] = useState<string>('all');
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
 
   useEffect(() => {
@@ -181,12 +183,35 @@ const provincePassedAll17Map = useMemo(() => {
     });
   }, [selectedRegion, provinces, hospitals, healthOffices, provincePassedAll17Map]);
 
+  // Compute province map data for Thailand map
+  const provinceMapData = useMemo<ProvinceData[]>(() => {
+    return provinces.map(province => {
+      const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
+      const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === province.id);
+      const totalUnits = provinceHospitals.length + provinceHealthOffices.length;
+      const passedAll17 = provincePassedAll17Map.get(province.id) ?? 0;
+      const passedPercentage = totalUnits > 0 ? (passedAll17 / totalUnits) * 100 : null;
+
+      return {
+        id: province.id,
+        name: province.name,
+        passedPercentage,
+        totalUnits,
+        passedAll17,
+        assessed: passedAll17, // Approximation for public view
+        healthRegionId: province.health_region_id,
+      };
+    });
+  }, [provinces, hospitals, healthOffices, provincePassedAll17Map]);
+
   const handleRegionClick = (regionId: string) => {
     setSelectedRegion(regionId);
+    setSelectedProvince('all');
   };
 
   const handleBackToRegions = () => {
     setSelectedRegion('all');
+    setSelectedProvince('all');
   };
 
   return (
@@ -237,6 +262,43 @@ const provincePassedAll17Map = useMemo(() => {
             </>
           )}
         </div>
+
+        {/* Thailand Map */}
+        <Card className="h-[500px]">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2 flex-wrap">
+              <MapIcon className="w-4 h-4" />
+              แผนที่ระดับความปลอดภัยไซเบอร์รายจังหวัด
+              {selectedProvince !== 'all' ? (
+                <span className="text-primary font-medium">
+                  - {provinces.find(p => p.id === selectedProvince)?.name}
+                </span>
+              ) : selectedRegion !== 'all' ? (
+                <span className="text-primary font-medium">
+                  - เขตสุขภาพที่ {healthRegions.find(r => r.id === selectedRegion)?.region_number}
+                </span>
+              ) : null}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="h-[calc(100%-60px)]">
+            <ThailandMap
+              provinceData={provinceMapData}
+              selectedRegion={selectedRegion}
+              selectedProvince={selectedProvince}
+              onProvinceClick={(provinceId) => {
+                const province = provinces.find(p => p.id === provinceId);
+                if (province) {
+                  if (selectedRegion === 'all') {
+                    setSelectedRegion(province.health_region_id);
+                  }
+                  setSelectedProvince(provinceId);
+                }
+              }}
+              healthRegions={healthRegions}
+              provinces={provinces}
+            />
+          </CardContent>
+        </Card>
 
         {/* Table */}
         <Card>
