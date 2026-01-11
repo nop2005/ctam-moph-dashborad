@@ -802,43 +802,47 @@ export default function ReportsQuantitative() {
                 };
 
                 return (
-                  <div className="flex flex-col gap-4">
-                    <div className="h-[220px]">
+                  <div className="flex flex-row gap-6 items-center h-[350px]">
+                    {/* Donut Chart - Left */}
+                    <div className="flex-1 h-full min-w-[280px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
-                          <Pie data={pieData} cx="50%" cy="50%" labelLine={true} label={renderCustomLabel} innerRadius={40} outerRadius={70} fill="#8884d8" dataKey="value" paddingAngle={2}>
+                          <Pie data={pieData} cx="50%" cy="50%" labelLine={true} label={renderCustomLabel} innerRadius={60} outerRadius={100} fill="#8884d8" dataKey="value" paddingAngle={2}>
                             {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.color} />)}
                           </Pie>
                           <Tooltip formatter={(value: number, name: string) => [`${value} แห่ง`, name]} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <div className="space-y-2">
-                      <div className="text-center">
-                        <span className="text-xl font-bold">{total}</span>
-                        <span className="text-muted-foreground ml-2 text-sm">หน่วยบริการทั้งหมด</span>
+                    {/* Legend - Right */}
+                    <div className="flex flex-col gap-3 min-w-[280px]">
+                      <div className="mb-2">
+                        <span className="text-2xl font-bold">{total}</span>
+                        <span className="text-muted-foreground ml-2 text-sm">หน่วยบริการทั้งหมด (รพ. {allHospitalsInScope.length} + สสจ./สำนักเขต {allHealthOfficesInScope.length})</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex items-center gap-2 p-2 rounded-lg bg-green-50 dark:bg-green-950/30">
-                          <div className="w-3 h-3 rounded-full bg-green-500 shrink-0" />
-                          <span className="text-xs text-green-700 dark:text-green-400">ปลอดภัยสูง 100%</span>
-                          <span className="ml-auto text-xs font-bold">{greenCount}</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-50 dark:bg-yellow-950/30">
-                          <div className="w-3 h-3 rounded-full bg-yellow-500 shrink-0" />
-                          <span className="text-xs text-yellow-700 dark:text-yellow-400">ปลอดภัยต่ำ 50-99%</span>
-                          <span className="ml-auto text-xs font-bold">{yellowCount}</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 rounded-lg bg-red-50 dark:bg-red-950/30">
-                          <div className="w-3 h-3 rounded-full bg-red-500 shrink-0" />
-                          <span className="text-xs text-red-700 dark:text-red-400">ไม่ปลอดภัย &lt;50%</span>
-                          <span className="ml-auto text-xs font-bold">{redCount}</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-950/30">
-                          <div className="w-3 h-3 rounded-full bg-gray-400 shrink-0" />
-                          <span className="text-xs text-gray-700 dark:text-gray-400">ยังไม่ประเมิน</span>
-                          <span className="ml-auto text-xs font-bold">{grayCount}</span>
-                        </div>
+                      <div className="flex items-center gap-3 py-2 border-b border-border/40">
+                        <div className="w-3 h-3 rounded-full bg-green-500 shrink-0" />
+                        <span className="text-sm text-foreground">ปลอดภัยสูง (เขียว 100%)</span>
+                        <span className="ml-auto text-sm font-bold min-w-[40px] text-right">{greenCount}</span>
+                        <span className="text-xs text-muted-foreground w-[50px] text-right">({pieData.find(d => d.name === 'ปลอดภัยไซเบอร์สูง')?.percentage || '0.0'}%)</span>
+                      </div>
+                      <div className="flex items-center gap-3 py-2 border-b border-border/40">
+                        <div className="w-3 h-3 rounded-full bg-yellow-500 shrink-0" />
+                        <span className="text-sm text-foreground">ปลอดภัยต่ำ (เขียว 50-99%)</span>
+                        <span className="ml-auto text-sm font-bold min-w-[40px] text-right">{yellowCount}</span>
+                        <span className="text-xs text-muted-foreground w-[50px] text-right">({pieData.find(d => d.name === 'ปลอดภัยต่ำ')?.percentage || '0.0'}%)</span>
+                      </div>
+                      <div className="flex items-center gap-3 py-2 border-b border-border/40">
+                        <div className="w-3 h-3 rounded-full bg-red-500 shrink-0" />
+                        <span className="text-sm text-foreground">ไม่ปลอดภัย (เขียว &lt;50%)</span>
+                        <span className="ml-auto text-sm font-bold min-w-[40px] text-right">{redCount}</span>
+                        <span className="text-xs text-muted-foreground w-[50px] text-right">({pieData.find(d => d.name === 'ไม่ปลอดภัย')?.percentage || '0.0'}%)</span>
+                      </div>
+                      <div className="flex items-center gap-3 py-2">
+                        <div className="w-3 h-3 rounded-full bg-gray-400 shrink-0" />
+                        <span className="text-sm text-foreground">ยังไม่ประเมิน</span>
+                        <span className="ml-auto text-sm font-bold min-w-[40px] text-right">{grayCount}</span>
+                        <span className="text-xs text-muted-foreground w-[50px] text-right">({pieData.find(d => d.name === 'ยังไม่ประเมิน')?.percentage || '0.0'}%)</span>
                       </div>
                     </div>
                   </div>
