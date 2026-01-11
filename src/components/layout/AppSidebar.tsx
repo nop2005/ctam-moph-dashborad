@@ -20,18 +20,18 @@ const reportSubItems = [{
   url: "/reports/quantitative",
   icon: TrendingUp
 }, {
-  title: "คะแนน 17 ข้อ แยกตามพื้นที่",
-  url: "/reports/quantitative-by-area",
-  icon: MapPinned
+  title: "เชิงผลกระทบ (Incident & Recovery)",
+  url: "/reports/impact",
+  icon: AlertTriangle
 }];
 const analyticalReportSubItems = [{
   title: "รายงาน CTAM+ เพิ่มเติม",
   url: "/reports/quantitative-detail",
   icon: ListOrdered
 }, {
-  title: "เชิงผลกระทบ (Incident & Recovery)",
-  url: "/reports/impact",
-  icon: AlertTriangle
+  title: "คะแนน 17 ข้อ แยกตามพื้นที่",
+  url: "/reports/quantitative-by-area",
+  icon: MapPinned
 }];
 const inspectionSubItems = [{
   title: "รายงานผู้นิเทศ",
@@ -80,8 +80,8 @@ export function AppSidebar() {
   } = useAuth();
   const currentPath = location.pathname;
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + "/");
-  const isReportsActive = currentPath === "/reports" || currentPath === "/reports/quantitative" || currentPath === "/reports/quantitative-by-area";
-  const isAnalyticalReportsActive = currentPath === "/reports/impact" || currentPath === "/reports/quantitative-detail";
+  const isReportsActive = currentPath === "/reports" || currentPath === "/reports/quantitative" || currentPath === "/reports/impact";
+  const isAnalyticalReportsActive = currentPath === "/reports/quantitative-by-area" || currentPath === "/reports/quantitative-detail";
   const isInspectionActive = currentPath.startsWith("/inspection") && currentPath !== "/inspection/manual";
 
   // State for collapsible menus (persist across route changes)
@@ -147,12 +147,12 @@ export function AppSidebar() {
                   <CollapsibleContent>
                     <SidebarMenuSub className="border-sidebar-border">
                       {reportSubItems.map(subItem => <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton onClick={() => navigate(subItem.url)} isActive={currentPath === subItem.url} className={`
+                          <SidebarMenuSubButton onClick={() => navigate(subItem.url)} isActive={currentPath === subItem.url} title={subItem.title} className={`
                               text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
                               data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
                             `}>
                             <subItem.icon className="h-3 w-3" />
-                            <span>{subItem.title}</span>
+                            <span className="truncate">{subItem.title}</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>)}
                     </SidebarMenuSub>
@@ -179,12 +179,12 @@ export function AppSidebar() {
                   <CollapsibleContent>
                     <SidebarMenuSub className="border-sidebar-border">
                       {analyticalReportSubItems.map(subItem => <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton onClick={() => navigate(subItem.url)} isActive={currentPath === subItem.url} className={`
+                          <SidebarMenuSubButton onClick={() => navigate(subItem.url)} isActive={currentPath === subItem.url} title={subItem.title} className={`
                               text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
                               data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
                             `}>
                             <subItem.icon className="h-3 w-3" />
-                            <span>{subItem.title}</span>
+                            <span className="truncate">{subItem.title}</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>)}
                     </SidebarMenuSub>
@@ -211,12 +211,12 @@ export function AppSidebar() {
                   <CollapsibleContent>
                     <SidebarMenuSub className="border-sidebar-border">
                       {inspectionSubItems.map(subItem => <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton onClick={() => navigate(subItem.url)} isActive={currentPath === subItem.url || currentPath.startsWith(subItem.url + "/")} className={`
+                          <SidebarMenuSubButton onClick={() => navigate(subItem.url)} isActive={currentPath === subItem.url || currentPath.startsWith(subItem.url + "/")} title={subItem.title} className={`
                               text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
                               data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
                             `}>
                             <subItem.icon className="h-3 w-3" />
-                            <span>{subItem.title}</span>
+                            <span className="truncate">{subItem.title}</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>)}
                     </SidebarMenuSub>
