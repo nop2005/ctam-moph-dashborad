@@ -227,23 +227,90 @@ const provincePassedAll17Map = useMemo(() => {
               สรุปผลการประเมินเชิงปริมาณตาม 17 หมวดหมู่ (สำหรับผู้ใช้ทั่วไป)
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <Select value={selectedFiscalYear} onValueChange={setSelectedFiscalYear}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="ปีงบประมาณ" />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-50">
-                <SelectItem value="all">ทุกปีงบประมาณ</SelectItem>
-                {fiscalYears.map(year => (
-                  <SelectItem key={year} value={year.toString()}>
-                    ปีงบประมาณ {year + 543}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
+
+        {/* Filters Card */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+              ตัวกรอง
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-4">
+              <div className="w-full sm:w-48">
+                <label className="text-sm font-medium mb-1.5 block">เขตสุขภาพ</label>
+                <Select value={selectedRegion} onValueChange={(value) => {
+                  setSelectedRegion(value);
+                  setSelectedProvince('all');
+                }}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="เลือกเขตสุขภาพ" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    <SelectItem value="all" className="text-sm">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-3 h-3" />
+                        ทุกเขตสุขภาพ
+                      </div>
+                    </SelectItem>
+                    {healthRegions.map(region => (
+                      <SelectItem key={region.id} value={region.id} className="text-sm">
+                        เขต {region.region_number}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="w-full sm:w-48">
+                <label className="text-sm font-medium mb-1.5 block">จังหวัด</label>
+                <Select 
+                  value={selectedProvince} 
+                  onValueChange={setSelectedProvince}
+                  disabled={selectedRegion === 'all'}
+                >
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="เลือกจังหวัด" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    <SelectItem value="all" className="text-sm">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-3 h-3" />
+                        ทุกจังหวัด
+                      </div>
+                    </SelectItem>
+                    {provinces
+                      .filter(p => selectedRegion === 'all' || p.health_region_id === selectedRegion)
+                      .map(province => (
+                        <SelectItem key={province.id} value={province.id} className="text-sm">
+                          {province.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="w-full sm:w-48">
+                <label className="text-sm font-medium mb-1.5 block">ปีงบประมาณ</label>
+                <Select value={selectedFiscalYear} onValueChange={setSelectedFiscalYear}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="เลือกปีงบประมาณ" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    <SelectItem value="all" className="text-sm">ทุกปีงบประมาณ</SelectItem>
+                    {fiscalYears.map(year => (
+                      <SelectItem key={year} value={year.toString()} className="text-sm">
+                        ปีงบประมาณ {year + 543}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Breadcrumb navigation */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
