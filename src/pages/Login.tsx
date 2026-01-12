@@ -6,11 +6,7 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 import { Shield, Lock, Server, Database, Loader2 } from 'lucide-react';
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
-  const {
-    user,
-    profile,
-    isLoading
-  } = useAuth();
+  const { user, profile, isLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -43,14 +39,50 @@ export default function Login() {
     label: 'รองรับการตรวจราชการ'
   }];
 
-  // Show loading during initial auth check AND while profile is being fetched
-  if (isLoading || user && !profile) {
-    return <div className="min-h-screen flex items-center justify-center bg-background">
+  // Show loading during initial auth check
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
           <p className="text-muted-foreground">กำลังโหลด...</p>
         </div>
-      </div>;
+      </div>
+    );
+  }
+
+  // If login succeeded but profile fetch is temporarily unavailable (503/PGRST002), show a recoverable screen.
+  if (user && !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-md w-full text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <div className="space-y-1">
+            <p className="font-medium text-foreground">กำลังเชื่อมต่อฐานข้อมูล…</p>
+            <p className="text-sm text-muted-foreground">
+              ถ้านานเกินไป ให้กด “ออกจากระบบ” แล้วลองเข้าสู่ระบบใหม่อีกครั้ง
+            </p>
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="text-sm text-primary hover:underline"
+            >
+              รีเฟรชหน้า
+            </button>
+            <span className="text-muted-foreground">•</span>
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="text-sm text-primary hover:underline"
+            >
+              ออกจากระบบ
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
   return <div className="min-h-screen flex">
       {/* Left: Branding */}

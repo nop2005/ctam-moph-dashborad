@@ -37,8 +37,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
-    console.log('Fetching profile for user:', userId);
+  const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+  const isRetriableBackendError = (error: any) => {
+    const status = error?.status ?? error?.statusCode;
+    const code = error?.code;
+    return (
+      code === 'PGRST002' || // "Could not query the database for the schema cache"
+      status === 502 ||
+      status === 503 ||
+      status === 504
+    );
+  };
+
+  const fetchProfile = async (userId: string, attempt = 0): Promise<Profile | null> => {
+    if (attempt === 0) console.log('Fetching profile for user:', userId);
+
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -47,11 +61,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       console.error('Error fetching profile:', error);
+
+      if (isRetriableBackendError(error) && attempt < 6) {
+        const delay = Math.min(800 * 2 ** attempt, 6000) + Math.random() * 250;
+        await sleep(delay);
+        return fetchProfile(userId, attempt + 1);
+      }
+
       return null;
     }
 
-    console.log('Profile fetched:', data);
+    if (attempt === 0) console.log('Profile fetched:', data);
     return data as Profile | null;
+  };
+
+  const fetchIsActive = async (userId: string, attempt = 0): Promise<boolean | null> => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('is_active')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      if (isRetriableBackendError(error) && attempt < 6) {
+        const delay = Math.min(800 * 2 ** attempt, 6000) + Math.random() * 250;
+        await sleep(delay);
+        return fetchIsActive(userId, attempt + 1);
+      }
+      return null;
+    }
+
+    return data?.is_active ?? false;
   };
 
   const refreshProfile = async () => {
@@ -108,21 +148,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Check if user is approved (is_active)
     if (data.user) {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('is_active')
-        .eq('user_id', data.user.id)
-        .maybeSingle();
+      const isActive = await fetchIsActive(data.user.id);
 
-      if (profileError) {
+      // If backend is temporarily unavailable, don’t lock the user into a broken session.
+      if (isActive === null) {
         await supabase.auth.signOut();
-        return { error: new Error('ไม่สามารถตรวจสอบสถานะบัญชีได้') };
+        return { error: new Error('ระบบกำลังเชื่อมต่อฐานข้อมูล กรุณารอสักครู่แล้วลองเข้าสู่ระบบใหม่') };
       }
 
-      // If no profile row OR not active -> block login until approved
-      if (!profileData?.is_active) {
+      if (!isActive) {
         await supabase.auth.signOut();
-        return { error: new Error('บัญชีของคุณยังไม่ได้รับการอนุมัติจากผู้ดูแลระบบ กรุณารอการอนุมัติ') };
+        return {
+          error: new Error('บัญชีของคุณยังไม่ได้รับการอนุมัติจากผู้ดูแลระบบ กรุณารอการอนุมัติ'),
+        };
       }
     }
 
