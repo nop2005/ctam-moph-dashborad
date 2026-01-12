@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -58,40 +58,113 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
   const [files, setFiles] = useState<EvidenceFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
+
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const retryCountRef = useRef(0);
+  const retryTimerRef = useRef<number | null>(null);
+  const [retryTick, setRetryTick] = useState(0);
 
-  const loadFiles = useCallback(async () => {
-    if (hasLoaded) return; // Prevent re-loading
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('evidence_files')
-        .select('id, file_name, file_path, file_type, file_size')
-        .eq('assessment_item_id', assessmentItemId)
-        .order('created_at', { ascending: false });
+  const isRetriableBackendError = (error: any) => {
+    const status = error?.status ?? error?.statusCode;
+    const code = error?.code;
+    return code === 'PGRST002' || status === 502 || status === 503 || status === 504;
+  };
 
-      if (error) throw error;
-      const loadedFiles = (data || []) as EvidenceFile[];
-      setFiles(loadedFiles);
-      onFileCountChange?.(loadedFiles.length);
-      setHasLoaded(true);
-    } catch (error: any) {
-      console.error('Error loading files:', error);
-      // Still mark as loaded to prevent infinite retries
-      setHasLoaded(true);
-    } finally {
-      setLoading(false);
+  const clearRetryTimer = () => {
+    if (retryTimerRef.current) {
+      window.clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
     }
-  }, [assessmentItemId, onFileCountChange, hasLoaded]);
+  };
 
-  // Lazy load: only load files when component is visible (using IntersectionObserver pattern)
+  const scheduleRetry = () => {
+    clearRetryTimer();
+
+    const attempt = retryCountRef.current;
+    if (attempt >= 6) {
+      // Give up silently after some retries; keep UI usable.
+      setHasLoaded(true);
+      return;
+    }
+
+    const delay = Math.min(800 * 2 ** attempt, 6000) + Math.random() * 250;
+    retryCountRef.current = attempt + 1;
+    setRetryCount(retryCountRef.current);
+
+    retryTimerRef.current = window.setTimeout(() => {
+      setRetryTick((t) => t + 1);
+    }, delay);
+  };
+
+  const loadFiles = useCallback(
+    async ({ force = false }: { force?: boolean } = {}) => {
+      if (hasLoaded && !force) return;
+
+      if (force) {
+        clearRetryTimer();
+        retryCountRef.current = 0;
+        setRetryCount(0);
+        setHasLoaded(false);
+      }
+
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('evidence_files')
+          .select('id, file_name, file_path, file_type, file_size, created_at')
+          .eq('assessment_item_id', assessmentItemId)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const loadedFiles = (data || []) as EvidenceFile[];
+        setFiles(loadedFiles);
+        onFileCountChange?.(loadedFiles.length);
+        setHasLoaded(true);
+        clearRetryTimer();
+        retryCountRef.current = 0;
+        setRetryCount(0);
+      } catch (error: any) {
+        console.error('Error loading files:', error);
+
+        // Transient backend errors: retry with backoff (don’t mark as loaded)
+        if (isRetriableBackendError(error)) {
+          setHasLoaded(false);
+          scheduleRetry();
+          return;
+        }
+
+        // Non-retriable errors: stop trying
+        setHasLoaded(true);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [assessmentItemId, hasLoaded, onFileCountChange]
+  );
+
   useEffect(() => {
-    // Small delay to stagger queries and reduce concurrent load
-    const timer = setTimeout(() => {
+    // Reset when changing item
+    setFiles([]);
+    setHasLoaded(false);
+    clearRetryTimer();
+    retryCountRef.current = 0;
+    setRetryCount(0);
+    setRetryTick(0);
+
+    return () => clearRetryTimer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assessmentItemId]);
+
+  // Lazy/staggered initial load + controlled retries
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
       loadFiles();
-    }, Math.random() * 500); // Random delay 0-500ms to stagger
-    return () => clearTimeout(timer);
-  }, [loadFiles]);
+    }, Math.random() * 500);
+
+    return () => window.clearTimeout(timer);
+  }, [loadFiles, retryTick]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
@@ -169,7 +242,7 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
       }
 
       toast({ title: 'อัปโหลดไฟล์สำเร็จ' });
-      loadFiles();
+      loadFiles({ force: true });
 
     } catch (error: any) {
       console.error('Error uploading file:', error);
@@ -225,7 +298,7 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
       toast({ title: 'ลบไฟล์สำเร็จ' });
       const newCount = files.length - 1;
       onFileCountChange?.(newCount);
-      loadFiles();
+      loadFiles({ force: true });
 
     } catch (error: any) {
       console.error('Error deleting file:', error);
