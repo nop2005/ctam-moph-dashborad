@@ -807,6 +807,24 @@ export type Database = {
           },
         ]
       }
+      public_report_cache: {
+        Row: {
+          fiscal_year: number
+          generated_at: string
+          payload: Json
+        }
+        Insert: {
+          fiscal_year: number
+          generated_at?: string
+          payload: Json
+        }
+        Update: {
+          fiscal_year?: number
+          generated_at?: string
+          payload?: Json
+        }
+        Relationships: []
+      }
       qualitative_evidence_files: {
         Row: {
           created_at: string
