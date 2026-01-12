@@ -689,6 +689,30 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_report_cache: {
+        Row: {
+          cache_key: string
+          fiscal_year: number | null
+          generated_at: string
+          id: string
+          payload: Json
+        }
+        Insert: {
+          cache_key: string
+          fiscal_year?: number | null
+          generated_at?: string
+          id?: string
+          payload: Json
+        }
+        Update: {
+          cache_key?: string
+          fiscal_year?: number | null
+          generated_at?: string
+          id?: string
+          payload?: Json
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -1057,6 +1081,21 @@ export type Database = {
       can_regional_view_supervisor: {
         Args: { _health_region_id: string }
         Returns: boolean
+      }
+      get_dashboard_stats: {
+        Args: {
+          p_fiscal_year?: number
+          p_health_office_id?: string
+          p_health_region_id?: string
+          p_hospital_id?: string
+          p_province_id?: string
+          p_user_role?: string
+        }
+        Returns: Json
+      }
+      get_internal_report_summary: {
+        Args: { p_fiscal_year?: number }
+        Returns: Json
       }
       get_public_quantitative_summary: {
         Args: { p_fiscal_year?: number }
