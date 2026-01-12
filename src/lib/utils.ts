@@ -5,11 +5,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Wrap a Promise (or a thenable like Supabase query builder) with a timeout.
+ * If the promise doesn't resolve within `ms`, it rejects with `message`.
+ */
 export function withTimeout<T>(
-  promise: Promise<T>,
+  promiseOrThenable: Promise<T> | PromiseLike<T>,
   ms = 10_000,
   message = "Request timed out"
 ): Promise<T> {
+  // Ensure we have a real Promise (Supabase query builders are thenables)
+  const promise = Promise.resolve(promiseOrThenable);
   let timer: number | undefined;
 
   return Promise.race([
