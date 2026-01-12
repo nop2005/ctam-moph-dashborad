@@ -12,22 +12,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { useReportAccessPolicy } from '@/hooks/useReportAccessPolicy';
 import { getLatestAssessmentsByUnit, isApprovedAssessmentStatus } from '@/lib/assessment-latest';
+
 interface HealthRegion {
   id: string;
   name: string;
   region_number: number;
 }
+
 interface Province {
   id: string;
   name: string;
   health_region_id: string;
 }
+
 interface Hospital {
   id: string;
   name: string;
   code: string;
   province_id: string;
+  health_region_id?: string;
 }
+
 interface HealthOffice {
   id: string;
   name: string;
@@ -36,6 +41,7 @@ interface HealthOffice {
   health_region_id: string;
   office_type: string;
 }
+
 interface Assessment {
   id: string;
   hospital_id: string | null;
@@ -45,9 +51,38 @@ interface Assessment {
   assessment_period: string;
   total_score: number | null;
   quantitative_score: number | null;
-  qualitative_score: number | null;
+  qualitative_score?: number | null;
   impact_score: number | null;
   created_at: string;
+  health_region_id?: string | null;
+  province_id?: string | null;
+}
+
+interface InternalReportSummary {
+  health_regions: HealthRegion[];
+  provinces: Province[];
+  hospitals: Hospital[];
+  health_offices: HealthOffice[];
+  region_stats: {
+    id: string;
+    name: string;
+    region_number: number;
+    total_units: number;
+    with_assessment: number;
+    completed: number;
+    pending: number;
+  }[];
+  province_stats: {
+    id: string;
+    name: string;
+    health_region_id: string;
+    total_units: number;
+    with_assessment: number;
+    completed: number;
+    pending: number;
+  }[];
+  assessments: Assessment[];
+  fiscal_years: number[];
 }
 
 // Helper function to get current fiscal year (Oct 1 - Sep 30)
@@ -55,70 +90,30 @@ const getCurrentFiscalYear = (): number => {
   const now = new Date();
   const month = now.getMonth(); // 0-11
   const year = now.getFullYear();
-  // If current month is October (9) or later, fiscal year is next year
-  // Otherwise, fiscal year is current year
   return month >= 9 ? year + 1 : year;
 };
-
-// Generate list of fiscal years for the filter
-const generateFiscalYears = (assessments: Assessment[]): number[] => {
-  const years = new Set<number>();
-  const currentFiscalYear = getCurrentFiscalYear();
-
-  // Add current fiscal year
-  years.add(currentFiscalYear);
-
-  // Add years from assessments
-  assessments.forEach(a => {
-    if (a.fiscal_year) years.add(a.fiscal_year);
-  });
-  return Array.from(years).sort((a, b) => b - a); // Sort descending
-};
-interface HospitalReport {
-  hospital: Hospital;
-  province: Province;
-  assessment: Assessment | null;
-}
 
 const statusLabels: Record<string, {
   label: string;
   variant: 'default' | 'secondary' | 'destructive' | 'outline';
 }> = {
-  'draft': {
-    label: 'ร่าง',
-    variant: 'secondary'
-  },
-  'submitted': {
-    label: 'รอ สสจ. ตรวจสอบ',
-    variant: 'outline'
-  },
-  'returned': {
-    label: 'ต้องแก้ไข',
-    variant: 'destructive'
-  },
-  'approved_provincial': {
-    label: 'รอเขตสุขภาพตรวจสอบ',
-    variant: 'outline'
-  },
-  'approved_regional': {
-    label: 'ผ่านการประเมิน',
-    variant: 'default'
-  },
-  'completed': {
-    label: 'เสร็จสิ้น',
-    variant: 'default'
-  }
+  'draft': { label: 'ร่าง', variant: 'secondary' },
+  'submitted': { label: 'รอ สสจ. ตรวจสอบ', variant: 'outline' },
+  'returned': { label: 'ต้องแก้ไข', variant: 'destructive' },
+  'approved_provincial': { label: 'รอเขตสุขภาพตรวจสอบ', variant: 'outline' },
+  'approved_regional': { label: 'ผ่านการประเมิน', variant: 'default' },
+  'completed': { label: 'เสร็จสิ้น', variant: 'default' }
 };
+
 export default function Reports() {
-  const {
-    profile
-  } = useAuth();
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [healthRegions, setHealthRegions] = useState<HealthRegion[]>([]);
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [healthOffices, setHealthOffices] = useState<HealthOffice[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [fiscalYears, setFiscalYears] = useState<number[]>([]);
 
   // Fiscal year filter
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
@@ -128,23 +123,20 @@ export default function Reports() {
   const [chartRegionId, setChartRegionId] = useState<string | null>(null);
   const [chartProvinceId, setChartProvinceId] = useState<string | null>(null);
 
-  // Generate fiscal years from assessments
-  const fiscalYears = useMemo(() => generateFiscalYears(assessments), [assessments]);
-
   // Filter assessments by fiscal year
   const filteredAssessments = useMemo(() => {
     if (selectedFiscalYear === 'all') return assessments;
     return assessments.filter(a => a.fiscal_year === parseInt(selectedFiscalYear));
   }, [assessments, selectedFiscalYear]);
+
   // Report access policy
   const {
     canDrillToProvince,
     canDrillToHospital,
     canViewSameProvinceHospitals,
-    userProvinceId
   } = useReportAccessPolicy('overview', provinces, healthOffices);
+
   const handleDrillChange = (level: DrillLevel, regionId: string | null, provinceId: string | null) => {
-    // Check permissions before drilling
     if (level === 'province' && regionId && !canDrillToProvince(regionId)) {
       return;
     }
@@ -156,21 +148,33 @@ export default function Reports() {
     setChartProvinceId(provinceId);
   };
 
-  // Fetch initial data
+  // Fetch data using RPC function (single query instead of 5 separate queries)
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [regionsRes, provincesRes, hospitalsRes, healthOfficesRes, assessmentsRes] = await Promise.all([supabase.from('health_regions').select('*').order('region_number'), supabase.from('provinces').select('*').order('name'), supabase.from('hospitals').select('*').order('name'), supabase.from('health_offices').select('*').order('name'), supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, assessment_period, total_score, quantitative_score, qualitative_score, impact_score, created_at')]);
-        if (regionsRes.error) throw regionsRes.error;
-        if (provincesRes.error) throw provincesRes.error;
-        if (hospitalsRes.error) throw hospitalsRes.error;
-        if (healthOfficesRes.error) throw healthOfficesRes.error;
-        if (assessmentsRes.error) throw assessmentsRes.error;
-        setHealthRegions(regionsRes.data || []);
-        setProvinces(provincesRes.data || []);
-        setHospitals(hospitalsRes.data || []);
-        setHealthOffices(healthOfficesRes.data || []);
-        setAssessments(assessmentsRes.data || []);
+        setLoading(true);
+        
+        // Use RPC function for optimized single-query fetch
+        const fiscalYearParam = selectedFiscalYear === 'all' ? null : parseInt(selectedFiscalYear);
+        
+        const { data, error } = await supabase.rpc('get_internal_report_summary', {
+          p_fiscal_year: fiscalYearParam
+        });
+
+        if (error) {
+          console.error('RPC error:', error);
+          throw error;
+        }
+
+        const summary = data as unknown as InternalReportSummary;
+        
+        setHealthRegions(summary.health_regions || []);
+        setProvinces(summary.provinces || []);
+        setHospitals(summary.hospitals || []);
+        setHealthOffices(summary.health_offices || []);
+        setAssessments(summary.assessments || []);
+        setFiscalYears(summary.fiscal_years || [getCurrentFiscalYear()]);
+        
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
@@ -178,8 +182,9 @@ export default function Reports() {
         setLoading(false);
       }
     };
+    
     fetchData();
-  }, [profile]);
+  }, [selectedFiscalYear]);
 
   // Get latest assessments only (one per hospital/health_office) from filtered assessments
   const latestByUnit = useMemo(() => getLatestAssessmentsByUnit(filteredAssessments), [filteredAssessments]);
@@ -200,36 +205,43 @@ export default function Reports() {
   );
 
   // Calculate statistics based on drill level (including health offices)
-  const drillStats = (() => {
+  const drillStats = useMemo(() => {
     let filteredHospitals: Hospital[] = [];
     let filteredHealthOffices: HealthOffice[] = [];
-    let filteredAssessments: Assessment[] = [];
+    let drillFilteredAssessments: Assessment[] = [];
+    
     if (chartDrillLevel === 'region') {
-      // All hospitals and health offices
       filteredHospitals = hospitals;
       filteredHealthOffices = healthOffices;
-      filteredAssessments = latestAssessments;
+      drillFilteredAssessments = latestAssessments;
     } else if (chartDrillLevel === 'province' && chartRegionId) {
-      // Hospitals and health offices in selected region
       const regionProvinces = provinces.filter(p => p.health_region_id === chartRegionId);
       filteredHospitals = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id));
       filteredHealthOffices = healthOffices.filter(ho => ho.health_region_id === chartRegionId);
-      filteredAssessments = latestAssessments.filter(a => filteredHospitals.some(h => h.id === a.hospital_id) || filteredHealthOffices.some(ho => ho.id === a.health_office_id));
+      drillFilteredAssessments = latestAssessments.filter(a => 
+        filteredHospitals.some(h => h.id === a.hospital_id) || 
+        filteredHealthOffices.some(ho => ho.id === a.health_office_id)
+      );
     } else if (chartDrillLevel === 'hospital' && chartProvinceId) {
-      // Hospitals in selected province + health offices in that province
       filteredHospitals = hospitals.filter(h => h.province_id === chartProvinceId);
       filteredHealthOffices = healthOffices.filter(ho => ho.province_id === chartProvinceId);
-      filteredAssessments = latestAssessments.filter(a => filteredHospitals.some(h => h.id === a.hospital_id) || filteredHealthOffices.some(ho => ho.id === a.health_office_id));
+      drillFilteredAssessments = latestAssessments.filter(a => 
+        filteredHospitals.some(h => h.id === a.hospital_id) || 
+        filteredHealthOffices.some(ho => ho.id === a.health_office_id)
+      );
     }
+    
     const totalUnits = filteredHospitals.length + filteredHealthOffices.length;
     return {
       totalHospitals: totalUnits,
-      withAssessment: filteredAssessments.length,
-      completed: filteredAssessments.filter(a => a.status === 'approved_regional' || a.status === 'completed').length,
-      pending: filteredAssessments.filter(a => a.status === 'submitted' || a.status === 'approved_provincial').length
+      withAssessment: drillFilteredAssessments.length,
+      completed: drillFilteredAssessments.filter(a => a.status === 'approved_regional' || a.status === 'completed').length,
+      pending: drillFilteredAssessments.filter(a => a.status === 'submitted' || a.status === 'approved_provincial').length
     };
-  })();
-  return <DashboardLayout>
+  }, [chartDrillLevel, chartRegionId, chartProvinceId, hospitals, healthOffices, provinces, latestAssessments]);
+
+  return (
+    <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -245,9 +257,11 @@ export default function Reports() {
               </SelectTrigger>
               <SelectContent className="bg-background z-50">
                 <SelectItem value="all">ทุกปีงบประมาณ</SelectItem>
-                {fiscalYears.map(year => <SelectItem key={year} value={year.toString()}>
+                {fiscalYears.map(year => (
+                  <SelectItem key={year} value={year.toString()}>
                     ปีงบประมาณ {year + 543}
-                  </SelectItem>)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -310,7 +324,17 @@ export default function Reports() {
         </div>
 
         {/* Score Chart */}
-        <ScoreChart healthRegions={healthRegions} provinces={provinces} hospitals={hospitals} healthOffices={healthOffices} assessments={filteredAssessments} onDrillChange={handleDrillChange} selectedFiscalYear={selectedFiscalYear} canDrillToProvince={canDrillToProvince} canDrillToHospital={canDrillToHospital} />
+        <ScoreChart 
+          healthRegions={healthRegions} 
+          provinces={provinces} 
+          hospitals={hospitals} 
+          healthOffices={healthOffices} 
+          assessments={filteredAssessments} 
+          onDrillChange={handleDrillChange} 
+          selectedFiscalYear={selectedFiscalYear} 
+          canDrillToProvince={canDrillToProvince} 
+          canDrillToHospital={canDrillToHospital} 
+        />
 
         {/* Dynamic Reports Table based on drill level */}
         <Card>
@@ -323,9 +347,11 @@ export default function Reports() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {loading ? <div className="text-center py-8 text-muted-foreground">กำลังโหลด...</div> : chartDrillLevel === 'region' ?
-          // Region level table
-          <div className="overflow-x-auto">
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">กำลังโหลด...</div>
+            ) : chartDrillLevel === 'region' ? (
+              // Region level table
+              <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -339,30 +365,44 @@ export default function Reports() {
                   </TableHeader>
                   <TableBody>
                     {healthRegions.map(region => {
-                  const regionProvinces = provinces.filter(p => p.health_region_id === region.id);
-                  const regionHospitals = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id));
-                  const regionHealthOffices = healthOffices.filter(ho => ho.health_region_id === region.id);
-                  const totalUnits = regionHospitals.length + regionHealthOffices.length;
-                  // Use latest assessments only (include both hospitals and health offices)
-                  const regionLatestAssessments = latestAssessments.filter(a => regionHospitals.some(h => h.id === a.hospital_id) || regionHealthOffices.some(ho => ho.id === a.health_office_id));
-                  const regionLatestApprovedAssessments = latestApprovedAssessments.filter(a => regionHospitals.some(h => h.id === a.hospital_id) || regionHealthOffices.some(ho => ho.id === a.health_office_id));
+                      const regionProvinces = provinces.filter(p => p.health_region_id === region.id);
+                      const regionHospitals = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id));
+                      const regionHealthOffices = healthOffices.filter(ho => ho.health_region_id === region.id);
+                      const totalUnits = regionHospitals.length + regionHealthOffices.length;
+                      
+                      const regionLatestAssessments = latestAssessments.filter(a => 
+                        regionHospitals.some(h => h.id === a.hospital_id) || 
+                        regionHealthOffices.some(ho => ho.id === a.health_office_id)
+                      );
+                      const regionLatestApprovedAssessments = latestApprovedAssessments.filter(a => 
+                        regionHospitals.some(h => h.id === a.hospital_id) || 
+                        regionHealthOffices.some(ho => ho.id === a.health_office_id)
+                      );
 
-                  const completedCount = regionLatestAssessments.filter(a => a.status === 'approved_regional' || a.status === 'completed').length;
+                      const completedCount = regionLatestAssessments.filter(a => 
+                        a.status === 'approved_regional' || a.status === 'completed'
+                      ).length;
 
-                  // Calculate average scores (approved only)
-                  const quantitativeScores = regionLatestApprovedAssessments.filter(a => a.quantitative_score !== null);
-                  const avgQuantitative = quantitativeScores.length > 0 
-                    ? quantitativeScores.reduce((sum, a) => sum + (a.quantitative_score || 0), 0) / quantitativeScores.length 
-                    : null;
-                  const impactScores = regionLatestApprovedAssessments.filter(a => a.impact_score !== null);
-                  const avgImpact = impactScores.length > 0 
-                    ? impactScores.reduce((sum, a) => sum + (a.impact_score || 0), 0) / impactScores.length 
-                    : null;
+                      const quantitativeScores = regionLatestApprovedAssessments.filter(a => a.quantitative_score !== null);
+                      const avgQuantitative = quantitativeScores.length > 0 
+                        ? quantitativeScores.reduce((sum, a) => sum + (a.quantitative_score || 0), 0) / quantitativeScores.length 
+                        : null;
+                      const impactScores = regionLatestApprovedAssessments.filter(a => a.impact_score !== null);
+                      const avgImpact = impactScores.length > 0 
+                        ? impactScores.reduce((sum, a) => sum + (a.impact_score || 0), 0) / impactScores.length 
+                        : null;
 
-                  const totalScoreSum = regionLatestApprovedAssessments.filter(a => a.total_score !== null).reduce((sum, a) => sum + (a.total_score || 0), 0);
-                  const scoreCount = regionLatestApprovedAssessments.filter(a => a.total_score !== null).length;
-                  const canDrill = canDrillToProvince(region.id);
-                  return <TableRow key={region.id} className={canDrill ? "cursor-pointer hover:bg-muted/50 transition-colors" : "opacity-50"} onClick={() => canDrill && handleDrillChange('province', region.id, null)}>
+                      const totalScoreSum = regionLatestApprovedAssessments.filter(a => a.total_score !== null)
+                        .reduce((sum, a) => sum + (a.total_score || 0), 0);
+                      const scoreCount = regionLatestApprovedAssessments.filter(a => a.total_score !== null).length;
+                      const canDrill = canDrillToProvince(region.id);
+                      
+                      return (
+                        <TableRow 
+                          key={region.id} 
+                          className={canDrill ? "cursor-pointer hover:bg-muted/50 transition-colors" : "opacity-50"} 
+                          onClick={() => canDrill && handleDrillChange('province', region.id, null)}
+                        >
                           <TableCell className={canDrill ? "font-medium text-primary underline" : "font-medium"}>
                             เขตสุขภาพที่ {region.region_number}
                           </TableCell>
@@ -377,13 +417,15 @@ export default function Reports() {
                           <TableCell className="text-right font-medium">
                             {scoreCount > 0 ? (totalScoreSum / scoreCount).toFixed(2) : '-'}
                           </TableCell>
-                        </TableRow>;
-                })}
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
-              </div> : chartDrillLevel === 'province' && chartRegionId ?
-          // Province level table
-          <div className="overflow-x-auto">
+              </div>
+            ) : chartDrillLevel === 'province' && chartRegionId ? (
+              // Province level table
+              <div className="overflow-x-auto">
                 <div className="mb-4">
                   <Button variant="outline" size="sm" onClick={() => handleDrillChange('region', null, null)}>
                     ← กลับไปดูเขตสุขภาพทั้งหมด
@@ -401,34 +443,52 @@ export default function Reports() {
                   </TableHeader>
                   <TableBody>
                     {provinces.filter(p => p.health_region_id === chartRegionId).map(province => {
-                  const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
-                  const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === province.id);
-                  const totalUnits = provinceHospitals.length + provinceHealthOffices.length;
-                  // Use latest assessments only (include both hospitals and health offices)
-                  const provinceLatestAssessments = latestAssessments.filter(a => provinceHospitals.some(h => h.id === a.hospital_id) || provinceHealthOffices.some(ho => ho.id === a.health_office_id));
-                  const provinceLatestApprovedAssessments = latestApprovedAssessments.filter(a => provinceHospitals.some(h => h.id === a.hospital_id) || provinceHealthOffices.some(ho => ho.id === a.health_office_id));
+                      const provinceHospitals = hospitals.filter(h => h.province_id === province.id);
+                      const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === province.id);
+                      const totalUnits = provinceHospitals.length + provinceHealthOffices.length;
+                      
+                      const provinceLatestAssessments = latestAssessments.filter(a => 
+                        provinceHospitals.some(h => h.id === a.hospital_id) || 
+                        provinceHealthOffices.some(ho => ho.id === a.health_office_id)
+                      );
+                      const provinceLatestApprovedAssessments = latestApprovedAssessments.filter(a => 
+                        provinceHospitals.some(h => h.id === a.hospital_id) || 
+                        provinceHealthOffices.some(ho => ho.id === a.health_office_id)
+                      );
 
-                  const completedCount = provinceLatestAssessments.filter(a => a.status === 'approved_regional' || a.status === 'completed').length;
+                      const completedCount = provinceLatestAssessments.filter(a => 
+                        a.status === 'approved_regional' || a.status === 'completed'
+                      ).length;
 
-                  // Average score (approved only)
-                  const totalScoreSum = provinceLatestApprovedAssessments.filter(a => a.total_score !== null).reduce((sum, a) => sum + (a.total_score || 0), 0);
-                  const scoreCount = provinceLatestApprovedAssessments.filter(a => a.total_score !== null).length;
-                  const canDrill = canDrillToHospital(province.id);
-                  return <TableRow key={province.id} className={canDrill ? "cursor-pointer hover:bg-muted/50 transition-colors" : "opacity-50"} onClick={() => canDrill && handleDrillChange('hospital', chartRegionId, province.id)}>
-                          <TableCell className={canDrill ? "font-medium text-primary underline" : "font-medium"}>{province.name}</TableCell>
+                      const totalScoreSum = provinceLatestApprovedAssessments.filter(a => a.total_score !== null)
+                        .reduce((sum, a) => sum + (a.total_score || 0), 0);
+                      const scoreCount = provinceLatestApprovedAssessments.filter(a => a.total_score !== null).length;
+                      const canDrill = canDrillToHospital(province.id);
+                      
+                      return (
+                        <TableRow 
+                          key={province.id} 
+                          className={canDrill ? "cursor-pointer hover:bg-muted/50 transition-colors" : "opacity-50"} 
+                          onClick={() => canDrill && handleDrillChange('hospital', chartRegionId, province.id)}
+                        >
+                          <TableCell className={canDrill ? "font-medium text-primary underline" : "font-medium"}>
+                            {province.name}
+                          </TableCell>
                           <TableCell className="text-right">{totalUnits}</TableCell>
                           <TableCell className="text-right">{provinceLatestAssessments.length}</TableCell>
                           <TableCell className="text-right">{completedCount}</TableCell>
                           <TableCell className="text-right font-medium">
                             {scoreCount > 0 ? (totalScoreSum / scoreCount).toFixed(2) : '-'}
                           </TableCell>
-                        </TableRow>;
-                })}
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
-              </div> : chartDrillLevel === 'hospital' && chartProvinceId ?
-          // Hospital level table
-          <div className="overflow-x-auto">
+              </div>
+            ) : chartDrillLevel === 'hospital' && chartProvinceId ? (
+              // Hospital level table
+              <div className="overflow-x-auto">
                 <div className="mb-4 flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => handleDrillChange('region', null, null)}>
                     ← เขตสุขภาพทั้งหมด
@@ -451,34 +511,37 @@ export default function Reports() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {/* Render hospitals - filter by canViewSameProvinceHospitals policy */}
+                    {/* Render hospitals */}
                     {hospitals.filter(h => {
-                  // Must be in selected province
-                  if (h.province_id !== chartProvinceId) return false;
-
-                  // If user is hospital_it and can't view same province hospitals,
-                  // only show their own hospital
-                  if (profile?.role === 'hospital_it' && !canViewSameProvinceHospitals()) {
-                    return h.id === profile.hospital_id;
-                  }
-                  return true;
-                }).map(hospital => {
-                  const assessment = latestApprovedByUnit.get(hospital.id) ?? latestByUnit.get(hospital.id) ?? null;
-                  return <TableRow key={hospital.id}>
+                      if (h.province_id !== chartProvinceId) return false;
+                      if (profile?.role === 'hospital_it' && !canViewSameProvinceHospitals()) {
+                        return h.id === profile.hospital_id;
+                      }
+                      return true;
+                    }).map(hospital => {
+                      const assessment = latestApprovedByUnit.get(hospital.id) ?? latestByUnit.get(hospital.id) ?? null;
+                      return (
+                        <TableRow key={hospital.id}>
                           <TableCell className="font-mono text-sm">{hospital.code}</TableCell>
                           <TableCell className="font-medium">{hospital.name}</TableCell>
                           <TableCell>
                             <Badge variant="secondary">โรงพยาบาล</Badge>
                           </TableCell>
                           <TableCell>
-                            {assessment ? <span className="text-sm">
+                            {assessment ? (
+                              <span className="text-sm">
                                 {assessment.assessment_period}/{assessment.fiscal_year + 543}
-                              </span> : '-'}
+                              </span>
+                            ) : '-'}
                           </TableCell>
                           <TableCell>
-                            {assessment ? <Badge variant={statusLabels[assessment.status]?.variant || 'secondary'}>
+                            {assessment ? (
+                              <Badge variant={statusLabels[assessment.status]?.variant || 'secondary'}>
                                 {statusLabels[assessment.status]?.label || assessment.status}
-                              </Badge> : <Badge variant="outline">ยังไม่มีข้อมูล</Badge>}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline">ยังไม่มีข้อมูล</Badge>
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             {assessment?.quantitative_score?.toFixed(2) || '-'}
@@ -489,36 +552,40 @@ export default function Reports() {
                           <TableCell className="text-right font-medium">
                             {assessment?.total_score?.toFixed(2) || '-'}
                           </TableCell>
-                        </TableRow>;
-                })}
-                    {/* Render health offices in this province - filter by canViewSameProvinceHospitals policy */}
+                        </TableRow>
+                      );
+                    })}
+                    {/* Render health offices */}
                     {healthOffices.filter(ho => {
-                  // Must be in selected province
-                  if (ho.province_id !== chartProvinceId) return false;
-
-                  // If user is health_office and can't view same province hospitals,
-                  // only show their own health office
-                  if (profile?.role === 'health_office' && !canViewSameProvinceHospitals()) {
-                    return ho.id === profile.health_office_id;
-                  }
-                  return true;
-                }).map(office => {
-                  const assessment = latestApprovedByUnit.get(office.id) ?? latestByUnit.get(office.id) ?? null;
-                  return <TableRow key={office.id}>
+                      if (ho.province_id !== chartProvinceId) return false;
+                      if (profile?.role === 'health_office' && !canViewSameProvinceHospitals()) {
+                        return ho.id === profile.health_office_id;
+                      }
+                      return true;
+                    }).map(office => {
+                      const assessment = latestApprovedByUnit.get(office.id) ?? latestByUnit.get(office.id) ?? null;
+                      return (
+                        <TableRow key={office.id}>
                           <TableCell className="font-mono text-sm">{office.code}</TableCell>
                           <TableCell className="font-medium">{office.name}</TableCell>
                           <TableCell>
                             <Badge variant="outline">{office.office_type}</Badge>
                           </TableCell>
                           <TableCell>
-                            {assessment ? <span className="text-sm">
+                            {assessment ? (
+                              <span className="text-sm">
                                 {assessment.assessment_period}/{assessment.fiscal_year + 543}
-                              </span> : '-'}
+                              </span>
+                            ) : '-'}
                           </TableCell>
                           <TableCell>
-                            {assessment ? <Badge variant={statusLabels[assessment.status]?.variant || 'secondary'}>
+                            {assessment ? (
+                              <Badge variant={statusLabels[assessment.status]?.variant || 'secondary'}>
                                 {statusLabels[assessment.status]?.label || assessment.status}
-                              </Badge> : <Badge variant="outline">ยังไม่มีข้อมูล</Badge>}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline">ยังไม่มีข้อมูล</Badge>
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             {assessment?.quantitative_score?.toFixed(2) || '-'}
@@ -529,13 +596,18 @@ export default function Reports() {
                           <TableCell className="text-right font-medium">
                             {assessment?.total_score?.toFixed(2) || '-'}
                           </TableCell>
-                        </TableRow>;
-                })}
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
-              </div> : <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูล</div>}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูล</div>
+            )}
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>;
+    </DashboardLayout>
+  );
 }
