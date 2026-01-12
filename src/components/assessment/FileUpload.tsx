@@ -86,13 +86,24 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
     const selectedFiles = e.target.files;
     if (!selectedFiles || selectedFiles.length === 0) return;
 
+    // Ensure profile is loaded (required for uploaded_by)
+    if (!profile?.id) {
+      toast({
+        title: 'ไม่พร้อมอัปโหลดไฟล์',
+        description: 'กำลังโหลดข้อมูลผู้ใช้ กรุณารอสักครู่แล้วลองใหม่อีกครั้ง',
+        variant: 'destructive',
+      });
+      e.target.value = '';
+      return;
+    }
+
     // Check max files limit
     const remainingSlots = MAX_FILES - files.length;
     if (remainingSlots <= 0) {
-      toast({ 
-        title: 'ถึงจำนวนไฟล์สูงสุดแล้ว', 
+      toast({
+        title: 'ถึงจำนวนไฟล์สูงสุดแล้ว',
         description: `สามารถแนบได้สูงสุด ${MAX_FILES} ไฟล์ต่อข้อ`,
-        variant: 'destructive' 
+        variant: 'destructive'
       });
       e.target.value = '';
       return;
@@ -140,7 +151,7 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
             file_path: filePath,
             file_type: file.type,
             file_size: file.size,
-            uploaded_by: profile?.id!,
+            uploaded_by: profile.id,
           });
 
         if (dbError) throw dbError;
