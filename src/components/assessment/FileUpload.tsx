@@ -136,11 +136,41 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
         // Upload to storage - sanitize file name for Supabase Storage
         const safeFileName = sanitizeFileName(file.name);
         const filePath = `${assessmentId}/${assessmentItemId}/${Date.now()}_${safeFileName}`;
-        const { error: uploadError } = await supabase.storage
-          .from('evidence-files')
-          .upload(filePath, file);
+        
+        // Retry logic for storage upload
+        let uploadError: Error | null = null;
+        let retries = 3;
+        
+        while (retries > 0) {
+          const result = await supabase.storage
+            .from('evidence-files')
+            .upload(filePath, file, {
+              cacheControl: '3600',
+              upsert: false
+            });
+          
+          if (!result.error) {
+            uploadError = null;
+            break;
+          }
+          
+          uploadError = result.error;
+          retries--;
+          
+          if (retries > 0) {
+            // Wait before retry (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, (3 - retries) * 1000));
+          }
+        }
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          toast({ 
+            title: 'อัปโหลดล้มเหลว', 
+            description: 'การเชื่อมต่อขัดข้อง กรุณาลองใหม่อีกครั้ง',
+            variant: 'destructive' 
+          });
+          continue;
+        }
 
         // Save file record - use profile.id (not user_id) for foreign key
         const { error: dbError } = await supabase
