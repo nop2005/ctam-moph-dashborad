@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -22,43 +21,12 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     }
   }, [user, profile, signOut]);
 
-  if (isLoading || isSigningOut) {
+  if (isLoading || isSigningOut || (user && !profile)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
           <p className="text-muted-foreground">กำลังโหลด...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If user is authenticated but profile is temporarily unavailable (backend hiccup), show a recoverable screen.
-  if (user && !profile) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-6">
-        <div className="max-w-md w-full text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <div className="space-y-1">
-            <p className="font-medium text-foreground">กำลังเชื่อมต่อฐานข้อมูล…</p>
-            <p className="text-sm text-muted-foreground">กรุณารอสักครู่ แล้วกดรีเฟรช (หรือออกจากระบบแล้วลองใหม่)</p>
-          </div>
-          <div className="flex items-center justify-center gap-2">
-            <Button variant="link" size="sm" onClick={() => window.location.reload()}>
-              รีเฟรชหน้า
-            </Button>
-            <span className="text-muted-foreground">•</span>
-            <Button
-              variant="link"
-              size="sm"
-              onClick={() => {
-                setIsSigningOut(true);
-                signOut().finally(() => setIsSigningOut(false));
-              }}
-            >
-              ออกจากระบบ
-            </Button>
-          </div>
         </div>
       </div>
     );

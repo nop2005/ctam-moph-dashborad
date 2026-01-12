@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo } from 'react';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { backendCircuit, isRetriableBackendError } from '@/lib/backendCircuitBreaker';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart3, FileText, Building2, Filter, ChevronLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -80,16 +79,6 @@ export default function PublicReports() {
   const [drillLevel, setDrillLevel] = useState<DrillLevel>('region');
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
 
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [reloadNonce, setReloadNonce] = useState(0);
-
-  const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
-  const waitForCircuit = async () => {
-    const ms = backendCircuit.getDisabledMsRemaining();
-    if (ms > 0) await sleep(ms + Math.random() * 250);
-  };
-
   const fiscalYears = useMemo(() => {
     if (!reportData?.fiscal_years) return [getCurrentFiscalYear()];
     const years = new Set([getCurrentFiscalYear(), ...reportData.fiscal_years]);
@@ -97,67 +86,26 @@ export default function PublicReports() {
   }, [reportData]);
 
   useEffect(() => {
-    let cancelled = false;
-
-    const fetchWithRetry = async (attempt = 0): Promise<PublicReportData> => {
-      const fiscalYear = selectedFiscalYear === 'all' ? null : parseInt(selectedFiscalYear);
-
-      await waitForCircuit();
-
-      const { data, error } = await supabase.rpc('get_public_report_summary', {
-        p_fiscal_year: fiscalYear,
-      });
-
-      if (error) {
-        if (isRetriableBackendError(error)) backendCircuit.reportFailure(error);
-
-        if (isRetriableBackendError(error) && attempt < 2) {
-          const delay = Math.min(1200 * 2 ** attempt, 7000) + Math.random() * 350;
-          await sleep(delay);
-          return fetchWithRetry(attempt + 1);
-        }
-
-        throw error;
-      }
-
-      backendCircuit.reportSuccess();
-      return data as unknown as PublicReportData;
-    };
-
     const fetchData = async () => {
       try {
-        setErrorMessage(null);
         setLoading(true);
-
-        const data = await fetchWithRetry();
-        if (!cancelled) setReportData(data);
-      } catch (error: any) {
+        const fiscalYear = selectedFiscalYear === 'all' ? null : parseInt(selectedFiscalYear);
+        
+        const { data, error } = await supabase.rpc('get_public_report_summary', {
+          p_fiscal_year: fiscalYear
+        });
+        
+        if (error) throw error;
+        setReportData(data as unknown as PublicReportData);
+      } catch (error) {
         console.error('Error fetching data:', error);
-
-        if (!cancelled) {
-          setReportData(null);
-          setErrorMessage(
-            isRetriableBackendError(error)
-              ? 'ระบบกำลังเชื่อมต่อฐานข้อมูล กรุณารอสักครู่แล้วกด “ลองใหม่”'
-              : 'เกิดข้อผิดพลาดในการโหลดข้อมูล'
-          );
-        }
-
-        // ลดการยิง toast ซ้ำ ๆ: แจ้งเฉพาะกรณีไม่ใช่ปัญหาชั่วคราว
-        if (!isRetriableBackendError(error)) {
-          toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
-        }
+        toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
       } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       }
     };
-
     fetchData();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedFiscalYear, reloadNonce]);
+  }, [selectedFiscalYear]);
 
   const handleDrillToProvince = (regionId: string) => {
     setSelectedRegionId(regionId);
@@ -170,35 +118,24 @@ export default function PublicReports() {
   };
 
   const currentStats = useMemo(() => {
-    // อย่าโชว์ 0 ตอนที่ระบบโหลดไม่ได้ (จะทำให้เข้าใจผิด)
-    if (!reportData) {
-      return { totalUnits: '—', withAssessment: '—', completed: '—', pending: '—' } as const;
-    }
-
+    if (!reportData) return { totalUnits: 0, withAssessment: 0, completed: 0, pending: 0 };
+    
     if (drillLevel === 'region') {
-      const sum = reportData.region_stats.reduce(
-        (acc, r) => ({
-          totalUnits: acc.totalUnits + r.total_units,
-          withAssessment: acc.withAssessment + r.with_assessment,
-          completed: acc.completed + r.completed,
-          pending: acc.pending + r.pending,
-        }),
-        { totalUnits: 0, withAssessment: 0, completed: 0, pending: 0 }
-      );
-      return sum;
-    }
-
-    const regionProvinces = reportData.province_stats.filter((p) => p.health_region_id === selectedRegionId);
-    const sum = regionProvinces.reduce(
-      (acc, p) => ({
+      return reportData.region_stats.reduce((acc, r) => ({
+        totalUnits: acc.totalUnits + r.total_units,
+        withAssessment: acc.withAssessment + r.with_assessment,
+        completed: acc.completed + r.completed,
+        pending: acc.pending + r.pending,
+      }), { totalUnits: 0, withAssessment: 0, completed: 0, pending: 0 });
+    } else {
+      const regionProvinces = reportData.province_stats.filter(p => p.health_region_id === selectedRegionId);
+      return regionProvinces.reduce((acc, p) => ({
         totalUnits: acc.totalUnits + p.total_units,
         withAssessment: acc.withAssessment + p.with_assessment,
         completed: acc.completed + p.completed,
         pending: acc.pending + p.pending,
-      }),
-      { totalUnits: 0, withAssessment: 0, completed: 0, pending: 0 }
-    );
-    return sum;
+      }), { totalUnits: 0, withAssessment: 0, completed: 0, pending: 0 });
+    }
   }, [reportData, drillLevel, selectedRegionId]);
 
   const chartData = useMemo(() => {
@@ -338,38 +275,34 @@ export default function PublicReports() {
             </p>
           </CardHeader>
           <CardContent>
-            {errorMessage ? (
-              <div className="text-center py-10 space-y-3">
-                <div className="text-muted-foreground">{errorMessage}</div>
-                <Button variant="outline" size="sm" onClick={() => setReloadNonce((n) => n + 1)}>
-                  ลองใหม่
-                </Button>
-              </div>
-            ) : loading ? (
+            {loading ? (
               <div className="text-center py-8 text-muted-foreground">กำลังโหลด...</div>
             ) : chartData.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูล</div>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 12 }}
-                    angle={-45}
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 12 }} 
+                    angle={-45} 
                     textAnchor="end"
                     height={80}
                   />
-                  <YAxis tick={{ fontSize: 12 }} domain={[0, 10]} />
+                  <YAxis 
+                    tick={{ fontSize: 12 }}
+                    domain={[0, 10]}
+                  />
                   <Tooltip
                     formatter={(value: number) => [`${value.toFixed(2)} คะแนน`, 'คะแนนเฉลี่ย']}
-                    contentStyle={{
+                    contentStyle={{ 
                       backgroundColor: 'hsl(var(--background))',
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
+                      borderRadius: '8px'
                     }}
                   />
-                  <Bar
-                    dataKey="score"
+                  <Bar 
+                    dataKey="score" 
                     radius={[4, 4, 0, 0]}
                     cursor={drillLevel === 'region' ? 'pointer' : 'default'}
                     onClick={(data) => {
@@ -398,14 +331,7 @@ export default function PublicReports() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {errorMessage ? (
-              <div className="text-center py-10 space-y-3">
-                <div className="text-muted-foreground">{errorMessage}</div>
-                <Button variant="outline" size="sm" onClick={() => setReloadNonce((n) => n + 1)}>
-                  ลองใหม่
-                </Button>
-              </div>
-            ) : loading ? (
+            {loading ? (
               <div className="text-center py-8 text-muted-foreground">กำลังโหลด...</div>
             ) : drillLevel === 'region' ? (
               <div className="overflow-x-auto">

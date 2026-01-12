@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { backendCircuit, isRetriableBackendError } from '@/lib/backendCircuitBreaker';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,115 +57,30 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
   const { toast } = useToast();
   const [files, setFiles] = useState<EvidenceFile[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const [hasLoaded, setHasLoaded] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const retryCountRef = useRef(0);
-  const retryTimerRef = useRef<number | null>(null);
-  const [retryTick, setRetryTick] = useState(0);
+  const loadFiles = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('evidence_files')
+        .select('*')
+        .eq('assessment_item_id', assessmentItemId)
+        .order('created_at', { ascending: false });
 
-  const waitForCircuit = async () => {
-    const ms = backendCircuit.getDisabledMsRemaining();
-    if (ms > 0) await new Promise<void>((resolve) => setTimeout(resolve, ms + Math.random() * 250));
-  };
-
-  const clearRetryTimer = () => {
-    if (retryTimerRef.current) {
-      window.clearTimeout(retryTimerRef.current);
-      retryTimerRef.current = null;
+      if (error) throw error;
+      const loadedFiles = data || [];
+      setFiles(loadedFiles);
+      onFileCountChange?.(loadedFiles.length);
+    } catch (error: any) {
+      console.error('Error loading files:', error);
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const scheduleRetry = () => {
-    clearRetryTimer();
-
-    const attempt = retryCountRef.current;
-    if (attempt >= 6) {
-      // Give up silently after some retries; keep UI usable.
-      setHasLoaded(true);
-      return;
-    }
-
-    const delay = Math.min(800 * 2 ** attempt, 6000) + Math.random() * 250;
-    retryCountRef.current = attempt + 1;
-    setRetryCount(retryCountRef.current);
-
-    retryTimerRef.current = window.setTimeout(() => {
-      setRetryTick((t) => t + 1);
-    }, delay);
-  };
-
-  const loadFiles = useCallback(
-    async ({ force = false }: { force?: boolean } = {}) => {
-      if (hasLoaded && !force) return;
-
-      if (force) {
-        clearRetryTimer();
-        retryCountRef.current = 0;
-        setRetryCount(0);
-        setHasLoaded(false);
-      }
-
-      try {
-        setLoading(true);
-        await waitForCircuit();
-
-        const { data, error } = await supabase
-          .from('evidence_files')
-          .select('id, file_name, file_path, file_type, file_size, created_at')
-          .eq('assessment_item_id', assessmentItemId)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        backendCircuit.reportSuccess();
-        const loadedFiles = (data || []) as EvidenceFile[];
-        setFiles(loadedFiles);
-        onFileCountChange?.(loadedFiles.length);
-        setHasLoaded(true);
-        clearRetryTimer();
-        retryCountRef.current = 0;
-        setRetryCount(0);
-      } catch (error: any) {
-        // Transient backend errors: retry with backoff (don’t mark as loaded)
-        if (isRetriableBackendError(error)) {
-          backendCircuit.reportFailure(error);
-          setHasLoaded(false);
-          scheduleRetry();
-          return;
-        }
-
-        // Non-retriable errors: stop trying
-        setHasLoaded(true);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [assessmentItemId, hasLoaded, onFileCountChange]
-  );
+  }, [assessmentItemId, onFileCountChange]);
 
   useEffect(() => {
-    // Reset when changing item
-    setFiles([]);
-    setHasLoaded(false);
-    clearRetryTimer();
-    retryCountRef.current = 0;
-    setRetryCount(0);
-    setRetryTick(0);
-
-    return () => clearRetryTimer();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assessmentItemId]);
-
-  // Lazy/staggered initial load + controlled retries
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      loadFiles();
-    }, Math.random() * 500);
-
-    return () => window.clearTimeout(timer);
-  }, [loadFiles, retryTick]);
+    loadFiles();
+  }, [loadFiles]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
@@ -244,7 +158,7 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
       }
 
       toast({ title: 'อัปโหลดไฟล์สำเร็จ' });
-      loadFiles({ force: true });
+      loadFiles();
 
     } catch (error: any) {
       console.error('Error uploading file:', error);
@@ -300,7 +214,7 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
       toast({ title: 'ลบไฟล์สำเร็จ' });
       const newCount = files.length - 1;
       onFileCountChange?.(newCount);
-      loadFiles({ force: true });
+      loadFiles();
 
     } catch (error: any) {
       console.error('Error deleting file:', error);
