@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { backendCircuit, isRetriableBackendError } from '@/lib/backendCircuitBreaker';
 
 type UserRole = 'hospital_it' | 'provincial' | 'regional' | 'central_admin' | 'health_office' | 'supervisor';
 
@@ -39,59 +40,84 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-  const isRetriableBackendError = (error: any) => {
-    const status = error?.status ?? error?.statusCode;
-    const code = error?.code;
-    return (
-      code === 'PGRST002' || // "Could not query the database for the schema cache"
-      status === 502 ||
-      status === 503 ||
-      status === 504
-    );
+  const waitForCircuit = async () => {
+    const ms = backendCircuit.getDisabledMsRemaining();
+    if (ms > 0) await sleep(ms + Math.random() * 250);
   };
 
-  const fetchProfile = async (userId: string, attempt = 0): Promise<Profile | null> => {
-    if (attempt === 0) console.log('Fetching profile for user:', userId);
+  const profileFetchPromiseRef = useRef<Promise<Profile | null> | null>(null);
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
+  const fetchProfile = (userId: string): Promise<Profile | null> => {
+    // Dedupe in-flight requests to avoid hammering backend during token refresh or rerenders.
+    if (profileFetchPromiseRef.current) return profileFetchPromiseRef.current;
 
-    if (error) {
-      console.error('Error fetching profile:', error);
+    const p = (async (): Promise<Profile | null> => {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await waitForCircuit();
 
-      if (isRetriableBackendError(error) && attempt < 6) {
-        const delay = Math.min(800 * 2 ** attempt, 6000) + Math.random() * 250;
-        await sleep(delay);
-        return fetchProfile(userId, attempt + 1);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (!error) {
+          backendCircuit.reportSuccess();
+          return data as Profile | null;
+        }
+
+        if (isRetriableBackendError(error)) {
+          backendCircuit.reportFailure(error);
+
+          if (attempt < 2) {
+            const delay = Math.min(900 * 2 ** attempt, 6000) + Math.random() * 250;
+            await sleep(delay);
+            continue;
+          }
+        }
+
+        return null;
+      }
+
+      return null;
+    })();
+
+    profileFetchPromiseRef.current = p.finally(() => {
+      profileFetchPromiseRef.current = null;
+    });
+
+    return profileFetchPromiseRef.current;
+  };
+
+  const fetchIsActive = async (userId: string): Promise<boolean | null> => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await waitForCircuit();
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_active')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!error) {
+        backendCircuit.reportSuccess();
+        return data?.is_active ?? false;
+      }
+
+      if (isRetriableBackendError(error)) {
+        backendCircuit.reportFailure(error);
+
+        if (attempt < 2) {
+          const delay = Math.min(900 * 2 ** attempt, 6000) + Math.random() * 250;
+          await sleep(delay);
+          continue;
+        }
       }
 
       return null;
     }
 
-    if (attempt === 0) console.log('Profile fetched:', data);
-    return data as Profile | null;
-  };
-
-  const fetchIsActive = async (userId: string, attempt = 0): Promise<boolean | null> => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('is_active')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error) {
-      if (isRetriableBackendError(error) && attempt < 6) {
-        const delay = Math.min(800 * 2 ** attempt, 6000) + Math.random() * 250;
-        await sleep(delay);
-        return fetchIsActive(userId, attempt + 1);
-      }
-      return null;
-    }
-
-    return data?.is_active ?? false;
+    return null;
   };
 
   const refreshProfile = async () => {
@@ -150,10 +176,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data.user) {
       const isActive = await fetchIsActive(data.user.id);
 
-      // If backend is temporarily unavailable, don’t lock the user into a broken session.
+      // If backend is temporarily unavailable, keep the session so the user can wait.
       if (isActive === null) {
-        await supabase.auth.signOut();
-        return { error: new Error('ระบบกำลังเชื่อมต่อฐานข้อมูล กรุณารอสักครู่แล้วลองเข้าสู่ระบบใหม่') };
+        return { error: new Error('ระบบกำลังเชื่อมต่อฐานข้อมูล กรุณารอสักครู่') };
       }
 
       if (!isActive) {

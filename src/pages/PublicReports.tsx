@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
+import { backendCircuit, isRetriableBackendError } from '@/lib/backendCircuitBreaker';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart3, FileText, Building2, Filter, ChevronLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -83,10 +84,10 @@ export default function PublicReports() {
   const [reloadNonce, setReloadNonce] = useState(0);
 
   const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-  const isRetriableBackendError = (error: any) => {
-    const status = error?.status ?? error?.statusCode;
-    const code = error?.code;
-    return code === 'PGRST002' || status === 502 || status === 503 || status === 504;
+
+  const waitForCircuit = async () => {
+    const ms = backendCircuit.getDisabledMsRemaining();
+    if (ms > 0) await sleep(ms + Math.random() * 250);
   };
 
   const fiscalYears = useMemo(() => {
@@ -101,19 +102,25 @@ export default function PublicReports() {
     const fetchWithRetry = async (attempt = 0): Promise<PublicReportData> => {
       const fiscalYear = selectedFiscalYear === 'all' ? null : parseInt(selectedFiscalYear);
 
+      await waitForCircuit();
+
       const { data, error } = await supabase.rpc('get_public_report_summary', {
         p_fiscal_year: fiscalYear,
       });
 
       if (error) {
-        if (isRetriableBackendError(error) && attempt < 6) {
-          const delay = Math.min(900 * 2 ** attempt, 6000) + Math.random() * 250;
+        if (isRetriableBackendError(error)) backendCircuit.reportFailure(error);
+
+        if (isRetriableBackendError(error) && attempt < 2) {
+          const delay = Math.min(1200 * 2 ** attempt, 7000) + Math.random() * 350;
           await sleep(delay);
           return fetchWithRetry(attempt + 1);
         }
+
         throw error;
       }
 
+      backendCircuit.reportSuccess();
       return data as unknown as PublicReportData;
     };
 
