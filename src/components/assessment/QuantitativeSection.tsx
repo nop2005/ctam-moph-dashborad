@@ -305,26 +305,56 @@ export function QuantitativeSection({
     onAllFilesAttached?.(allHaveFiles);
   }, [items, fileCounts, onAllFilesAttached]);
 
-  // Check if user can interact with a specific category (all previous items with 'pass' must have sub-option selected)
+  // Check if a category is complete (has sub-option selected AND has file attached)
+  const isCategoryComplete = (categoryId: string): boolean => {
+    const item = getItemForCategory(categoryId);
+    if (!item) return true; // No item = can proceed
+    if (item.status !== 'pass') return true; // Not pass = no requirements
+    
+    // Must have sub-option selected AND at least one file
+    const hasSubOption = !!subOptionSelections[categoryId];
+    const hasFile = (fileCounts[item.id] || 0) > 0;
+    return hasSubOption && hasFile;
+  };
+
+  // Check if user can interact with a specific category (all previous items with 'pass' must be complete)
   const canInteractWithCategory = (categoryIndex: number): boolean => {
     for (let i = 0; i < categoryIndex; i++) {
       const prevCategory = categories[i];
-      if (isSubOptionRequired(prevCategory.id)) {
+      if (!isCategoryComplete(prevCategory.id)) {
         return false;
       }
     }
     return true;
   };
 
-  // Get the first incomplete category index (needs sub-option selection)
+  // Get the first incomplete category index (needs sub-option selection OR file upload)
   const getFirstIncompleteIndex = (): number => {
     for (let i = 0; i < categories.length; i++) {
       const category = categories[i];
-      if (isSubOptionRequired(category.id)) {
+      if (!isCategoryComplete(category.id)) {
         return i;
       }
     }
     return -1; // All complete
+  };
+
+  // Get reason why category is incomplete
+  const getIncompleteReason = (categoryId: string): string => {
+    const item = getItemForCategory(categoryId);
+    if (!item || item.status !== 'pass') return '';
+    
+    const hasSubOption = !!subOptionSelections[categoryId];
+    const hasFile = (fileCounts[item.id] || 0) > 0;
+    
+    if (!hasSubOption && !hasFile) {
+      return 'กรุณาเลือกประเภทระบบ/เครื่องมือ และแนบหลักฐาน';
+    } else if (!hasSubOption) {
+      return 'กรุณาเลือกประเภทระบบ/เครื่องมือ';
+    } else if (!hasFile) {
+      return 'กรุณาแนบหลักฐานอย่างน้อย 1 ไฟล์';
+    }
+    return '';
   };
 
   // Count items missing files
@@ -502,9 +532,10 @@ export function QuantitativeSection({
                                 e.stopPropagation();
                                 if (isBlocked) {
                                   const blockedCategory = categories[firstIncompleteIdx];
+                                  const reason = getIncompleteReason(blockedCategory.id);
                                   toast({
-                                    title: 'กรุณาเลือกประเภทระบบ/เครื่องมือ',
-                                    description: `กรุณาเลือกประเภทของระบบ/เครื่องมือที่ใช้ในข้อ ${blockedCategory.order_number} (${blockedCategory.name_th}) ก่อน`,
+                                    title: 'กรุณาทำข้อก่อนหน้าให้ครบก่อน',
+                                    description: `ข้อ ${blockedCategory.order_number} (${blockedCategory.name_th}): ${reason}`,
                                     variant: 'destructive'
                                   });
                                   // Expand the incomplete item
