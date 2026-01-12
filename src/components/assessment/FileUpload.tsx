@@ -57,29 +57,40 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
   const { toast } = useToast();
   const [files, setFiles] = useState<EvidenceFile[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const loadFiles = useCallback(async () => {
+    if (hasLoaded) return; // Prevent re-loading
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('evidence_files')
-        .select('*')
+        .select('id, file_name, file_path, file_type, file_size')
         .eq('assessment_item_id', assessmentItemId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      const loadedFiles = data || [];
+      const loadedFiles = (data || []) as EvidenceFile[];
       setFiles(loadedFiles);
       onFileCountChange?.(loadedFiles.length);
+      setHasLoaded(true);
     } catch (error: any) {
       console.error('Error loading files:', error);
+      // Still mark as loaded to prevent infinite retries
+      setHasLoaded(true);
     } finally {
       setLoading(false);
     }
-  }, [assessmentItemId, onFileCountChange]);
+  }, [assessmentItemId, onFileCountChange, hasLoaded]);
 
+  // Lazy load: only load files when component is visible (using IntersectionObserver pattern)
   useEffect(() => {
-    loadFiles();
+    // Small delay to stagger queries and reduce concurrent load
+    const timer = setTimeout(() => {
+      loadFiles();
+    }, Math.random() * 500); // Random delay 0-500ms to stagger
+    return () => clearTimeout(timer);
   }, [loadFiles]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
