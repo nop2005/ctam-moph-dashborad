@@ -1,7 +1,8 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
+import { withTimeout } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart3, FileText, Building2, Filter, ChevronLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -72,12 +73,18 @@ const CHART_COLORS = [
 
 type DrillLevel = 'region' | 'province';
 
+const REPORT_TIMEOUT_MS = 15_000;
+
 export default function PublicReports() {
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [reportData, setReportData] = useState<PublicReportData | null>(null);
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
   const [drillLevel, setDrillLevel] = useState<DrillLevel>('region');
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
+
+  const cacheRef = useRef(new Map<string, PublicReportData>());
 
   const fiscalYears = useMemo(() => {
     if (!reportData?.fiscal_years) return [getCurrentFiscalYear()];
@@ -87,25 +94,44 @@ export default function PublicReports() {
 
   useEffect(() => {
     const fetchData = async () => {
+      const cacheKey = selectedFiscalYear;
+      const cached = cacheRef.current.get(cacheKey);
+
       try {
+        setErrorMessage(null);
         setLoading(true);
+
+        if (cached) {
+          setReportData(cached);
+          return;
+        }
+
         const fiscalYear = selectedFiscalYear === 'all' ? null : parseInt(selectedFiscalYear);
-        
-        const { data, error } = await supabase.rpc('get_public_report_summary', {
-          p_fiscal_year: fiscalYear
-        });
-        
+
+        const { data, error } = await withTimeout(
+          supabase.rpc('get_public_report_summary', {
+            p_fiscal_year: fiscalYear,
+          }),
+          REPORT_TIMEOUT_MS,
+          'REPORT_TIMEOUT'
+        );
+
         if (error) throw error;
-        setReportData(data as unknown as PublicReportData);
+
+        const payload = data as unknown as PublicReportData;
+        cacheRef.current.set(cacheKey, payload);
+        setReportData(payload);
       } catch (error) {
         console.error('Error fetching data:', error);
+        setErrorMessage('โหลดข้อมูลช้า/ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
         toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
-  }, [selectedFiscalYear]);
+  }, [selectedFiscalYear, retryKey]);
 
   const handleDrillToProvince = (regionId: string) => {
     setSelectedRegionId(regionId);
@@ -255,10 +281,9 @@ export default function PublicReports() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="w-5 h-5" />
-                {drillLevel === 'region' 
+                {drillLevel === 'region'
                   ? `คะแนนรวมรายเขตสุขภาพ (ปีงบประมาณ ${selectedFiscalYear === 'all' ? 'ทั้งหมด' : parseInt(selectedFiscalYear) + 543})`
-                  : `คะแนนรวมรายจังหวัด - เขตสุขภาพที่ ${selectedRegion?.region_number || ''}`
-                }
+                  : `คะแนนรวมรายจังหวัด - เขตสุขภาพที่ ${selectedRegion?.region_number || ''}`}
               </CardTitle>
               {drillLevel === 'province' && (
                 <Button variant="ghost" size="sm" onClick={handleBackToRegion}>
@@ -268,41 +293,42 @@ export default function PublicReports() {
               )}
             </div>
             <p className="text-sm text-muted-foreground">
-              {drillLevel === 'region' 
+              {drillLevel === 'region'
                 ? 'คลิกที่แท่งกราฟเพื่อดูรายละเอียดรายจังหวัด'
-                : 'แสดงคะแนนรวมเฉลี่ยของแต่ละจังหวัด (ไม่แสดงรายโรงพยาบาล)'
-              }
+                : 'แสดงคะแนนรวมเฉลี่ยของแต่ละจังหวัด (ไม่แสดงรายโรงพยาบาล)'}
             </p>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">กำลังโหลด...</div>
+            ) : errorMessage ? (
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground mb-3">{errorMessage}</p>
+                <Button onClick={() => setRetryKey((k) => k + 1)}>ลองใหม่</Button>
+              </div>
             ) : chartData.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูล</div>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                  <XAxis 
-                    dataKey="name" 
-                    tick={{ fontSize: 12 }} 
-                    angle={-45} 
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 12 }}
+                    angle={-45}
                     textAnchor="end"
                     height={80}
                   />
-                  <YAxis 
-                    tick={{ fontSize: 12 }}
-                    domain={[0, 10]}
-                  />
+                  <YAxis tick={{ fontSize: 12 }} domain={[0, 10]} />
                   <Tooltip
                     formatter={(value: number) => [`${value.toFixed(2)} คะแนน`, 'คะแนนเฉลี่ย']}
-                    contentStyle={{ 
+                    contentStyle={{
                       backgroundColor: 'hsl(var(--background))',
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      borderRadius: '8px',
                     }}
                   />
-                  <Bar 
-                    dataKey="score" 
+                  <Bar
+                    dataKey="score"
                     radius={[4, 4, 0, 0]}
                     cursor={drillLevel === 'region' ? 'pointer' : 'default'}
                     onClick={(data) => {
@@ -320,6 +346,7 @@ export default function PublicReports() {
             )}
           </CardContent>
         </Card>
+
 
         {/* Table */}
         <Card>
