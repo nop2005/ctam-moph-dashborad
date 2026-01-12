@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { backendCircuit, isRetriableBackendError } from '@/lib/backendCircuitBreaker';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,10 +66,9 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
   const retryTimerRef = useRef<number | null>(null);
   const [retryTick, setRetryTick] = useState(0);
 
-  const isRetriableBackendError = (error: any) => {
-    const status = error?.status ?? error?.statusCode;
-    const code = error?.code;
-    return code === 'PGRST002' || status === 502 || status === 503 || status === 504;
+  const waitForCircuit = async () => {
+    const ms = backendCircuit.getDisabledMsRemaining();
+    if (ms > 0) await new Promise<void>((resolve) => setTimeout(resolve, ms + Math.random() * 250));
   };
 
   const clearRetryTimer = () => {
@@ -110,6 +110,8 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
 
       try {
         setLoading(true);
+        await waitForCircuit();
+
         const { data, error } = await supabase
           .from('evidence_files')
           .select('id, file_name, file_path, file_type, file_size, created_at')
@@ -118,6 +120,7 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
 
         if (error) throw error;
 
+        backendCircuit.reportSuccess();
         const loadedFiles = (data || []) as EvidenceFile[];
         setFiles(loadedFiles);
         onFileCountChange?.(loadedFiles.length);
@@ -126,10 +129,9 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
         retryCountRef.current = 0;
         setRetryCount(0);
       } catch (error: any) {
-        console.error('Error loading files:', error);
-
         // Transient backend errors: retry with backoff (don’t mark as loaded)
         if (isRetriableBackendError(error)) {
+          backendCircuit.reportFailure(error);
           setHasLoaded(false);
           scheduleRetry();
           return;
