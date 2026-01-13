@@ -160,7 +160,8 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {/* Analytical Reports with Submenu */}
+              {/* Analytical Reports with Submenu - Hide from hospital_it and health_office */}
+              {profile?.role && !['hospital_it', 'health_office'].includes(profile.role) && (
               <Collapsible open={analyticalReportsOpen} onOpenChange={setAnalyticalReportsOpen} className="group/collapsible">
                 <SidebarMenuItem>
                   <SidebarMenuButton tooltip="รายงานเชิงวิเคราะห์" isActive={false} onClick={() => {
@@ -191,6 +192,7 @@ export function AppSidebar() {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
+              )}
 
               {/* Inspection Reports with Submenu */}
               <Collapsible open={inspectionOpen} onOpenChange={setInspectionOpen} className="group/collapsible">
