@@ -2,7 +2,7 @@
 
 ## Project info  AI VIBECODE : เพื่อการศึกษาและนำไปพัฒนาต่อได้เลยฟรี
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+
 
 ## How can I edit this code?
 
