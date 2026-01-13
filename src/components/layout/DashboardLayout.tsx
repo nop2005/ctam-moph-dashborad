@@ -77,8 +77,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   const handleSignOut = async () => {
+    // Redirect is handled inside AuthContext.signOut()
     await signOut();
-    navigate('/public/reports', { replace: true });
   };
 
   return (
