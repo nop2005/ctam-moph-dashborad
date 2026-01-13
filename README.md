@@ -1,6 +1,6 @@
-# Welcome to your Lovable project
+# ยินดีต้อนรับ  CTAM project  พัฒนา prototype ผ่าน โดย นพ.นพรัตน์ รัชฎาพร  รพ.สันทราย เชียงใหม่
 
-## Project info
+## Project info  AI VIBECODE : เพื่อการศึกษาและนำไปพัฒนาต่อได้เลยฟรี
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
