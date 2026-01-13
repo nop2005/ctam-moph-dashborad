@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { withTimeout } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart3, FileText, Building2, Filter, ChevronLeft } from 'lucide-react';
+import { BarChart3, Filter, ChevronLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from 'recharts';
@@ -143,26 +143,6 @@ export default function PublicReports() {
     setDrillLevel('region');
   };
 
-  const currentStats = useMemo(() => {
-    if (!reportData) return { totalUnits: 0, withAssessment: 0, completed: 0, pending: 0 };
-    
-    if (drillLevel === 'region') {
-      return reportData.region_stats.reduce((acc, r) => ({
-        totalUnits: acc.totalUnits + r.total_units,
-        withAssessment: acc.withAssessment + r.with_assessment,
-        completed: acc.completed + r.completed,
-        pending: acc.pending + r.pending,
-      }), { totalUnits: 0, withAssessment: 0, completed: 0, pending: 0 });
-    } else {
-      const regionProvinces = reportData.province_stats.filter(p => p.health_region_id === selectedRegionId);
-      return regionProvinces.reduce((acc, p) => ({
-        totalUnits: acc.totalUnits + p.total_units,
-        withAssessment: acc.withAssessment + p.with_assessment,
-        completed: acc.completed + p.completed,
-        pending: acc.pending + p.pending,
-      }), { totalUnits: 0, withAssessment: 0, completed: 0, pending: 0 });
-    }
-  }, [reportData, drillLevel, selectedRegionId]);
 
   const chartData = useMemo(() => {
     if (!reportData) return [];
@@ -219,61 +199,6 @@ export default function PublicReports() {
           </div>
         </div>
 
-        {/* Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-bold">{currentStats.totalUnits}</p>
-                  <p className="text-sm text-muted-foreground">สถานบริการทั้งหมด</p>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Building2 className="w-6 h-6 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-bold">{currentStats.withAssessment}</p>
-                  <p className="text-sm text-muted-foreground">ส่งแบบประเมินแล้ว</p>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-accent" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-bold">{currentStats.completed}</p>
-                  <p className="text-sm text-muted-foreground">ตรวจสอบแล้ว</p>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center">
-                  <BarChart3 className="w-6 h-6 text-success" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-bold">{currentStats.pending}</p>
-                  <p className="text-sm text-muted-foreground">รอตรวจสอบ</p>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-warning" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Chart */}
         <Card>
