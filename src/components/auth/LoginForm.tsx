@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
+import { Shield, Mail, Lock, Loader2, AlertCircle, Home } from 'lucide-react';
 
 interface LoginFormProps {
   onToggleMode: () => void;
@@ -17,6 +18,7 @@ export function LoginForm({ onToggleMode }: LoginFormProps) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,6 +118,16 @@ export function LoginForm({ onToggleMode }: LoginFormProps) {
               สมัครสมาชิก
             </button>
           </p>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => navigate('/public/reports')}
+          >
+            <Home className="mr-2 h-4 w-4" />
+            หน้าหลัก
+          </Button>
         </CardFooter>
       </form>
     </Card>
