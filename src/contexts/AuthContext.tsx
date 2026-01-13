@@ -244,6 +244,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       // Always clear local state regardless of API response
       clearLocalAuthState();
+      // Redirect to login page to avoid heavy query on public reports
+      window.location.href = '/login';
     }
   };
 
