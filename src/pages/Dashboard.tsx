@@ -98,7 +98,8 @@ export default function Dashboard() {
     approved: 0,
     returned: 0,
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // true เฉพาะครั้งแรก
+  const [isRefetching, setIsRefetching] = useState(false); // สำหรับ background refresh
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(
     getCurrentFiscalYear().toString()
   );
@@ -152,7 +153,12 @@ export default function Dashboard() {
       if (!profile) return;
       
       try {
-        setLoading(true);
+        // ใช้ loading เฉพาะครั้งแรก, หลังจากนั้นใช้ isRefetching
+        if (assessments.length === 0) {
+          setLoading(true);
+        } else {
+          setIsRefetching(true);
+        }
 
         // Build query for stats - include hospital/health_office for filtering
         let statsQuery = supabase
@@ -307,6 +313,7 @@ export default function Dashboard() {
         console.error('Error:', error);
       } finally {
         setLoading(false);
+        setIsRefetching(false);
       }
     };
 
@@ -685,8 +692,28 @@ export default function Dashboard() {
     return assessment.status === statusFilter;
   });
 
+  // Full page loading เฉพาะครั้งแรก
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">กำลังโหลดข้อมูล...</span>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
+      {/* Small refetching indicator - ไม่บังหน้า */}
+      {isRefetching && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-background/80 backdrop-blur-sm border rounded-full px-3 py-1.5 shadow-sm">
+          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+          <span className="text-xs text-muted-foreground">กำลังอัปเดต...</span>
+        </div>
+      )}
+
       {/* Banner Carousel */}
       <BannerCarousel className="mb-6" />
 

@@ -31,7 +31,17 @@ import PublicReportsImpact from "./pages/PublicReportsImpact";
 import PublicInspectionSupervisor from "./pages/PublicInspectionSupervisor";
 import PublicInspectionManual from "./pages/PublicInspectionManual";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false, // ⭐ ปิด refetch เมื่อกลับมาโฟกัสแท็บ
+      refetchOnReconnect: true,
+      staleTime: 60_000, // cache 1 นาที
+      gcTime: 10 * 60_000, // เก็บ cache 10 นาที
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
