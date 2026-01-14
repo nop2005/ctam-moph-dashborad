@@ -330,6 +330,42 @@ export default function Dashboard() {
     }
   }, [selectedHospital, selectedYear, assessments, healthOffice, profile?.role]);
 
+  // Check if user can create new assessment (max 2 per fiscal year)
+  const canCreateAssessment = (): boolean => {
+    const isHealthOfficeUser = profile?.role === 'health_office';
+    const targetYear = parseInt(selectedYear);
+    
+    let existingCount = 0;
+    if (isHealthOfficeUser && healthOffice) {
+      existingCount = assessments.filter(
+        a => a.health_office_id === healthOffice.id && a.fiscal_year === targetYear
+      ).length;
+    } else if (selectedHospital) {
+      existingCount = assessments.filter(
+        a => a.hospital_id === selectedHospital && a.fiscal_year === targetYear
+      ).length;
+    }
+    
+    return existingCount < 2;
+  };
+
+  // Get current assessment count for the selected year
+  const getAssessmentCountForYear = (): number => {
+    const isHealthOfficeUser = profile?.role === 'health_office';
+    const targetYear = parseInt(selectedYear);
+    
+    if (isHealthOfficeUser && healthOffice) {
+      return assessments.filter(
+        a => a.health_office_id === healthOffice.id && a.fiscal_year === targetYear
+      ).length;
+    } else if (profile?.role === 'hospital_it' && profile.hospital_id) {
+      return assessments.filter(
+        a => a.hospital_id === profile.hospital_id && a.fiscal_year === targetYear
+      ).length;
+    }
+    return 0;
+  };
+
   const handleCreateAssessment = async () => {
     const isHealthOfficeUser = profile?.role === 'health_office';
     if (!isHealthOfficeUser && !selectedHospital) {
@@ -342,6 +378,16 @@ export default function Dashboard() {
     }
     if (!selectedYear) {
       toast({ title: 'กรุณาเลือกปีงบประมาณ', variant: 'destructive' });
+      return;
+    }
+
+    // Check max 2 assessments per fiscal year
+    if (!canCreateAssessment()) {
+      toast({ 
+        title: 'ไม่สามารถสร้างแบบประเมินได้', 
+        description: `หน่วยงานของท่านมีแบบประเมินครบ 2 ครั้งต่อปีงบประมาณ ${selectedYear} แล้ว`,
+        variant: 'destructive' 
+      });
       return;
     }
 
@@ -851,12 +897,26 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
+                  {/* Warning when max assessments reached */}
+                  {getAssessmentCountForYear() >= 2 && (
+                    <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                      <p className="text-sm text-destructive font-medium">
+                        ⚠️ หน่วยงานของท่านมีแบบประเมินครบ 2 ครั้งต่อปีงบประมาณ {parseInt(selectedYear) + 543} แล้ว
+                      </p>
+                      <p className="text-xs text-destructive/80 mt-1">
+                        ไม่สามารถสร้างแบบประเมินเพิ่มในปีงบประมาณนี้ได้
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                     ยกเลิก
                   </Button>
-                  <Button onClick={handleCreateAssessment} disabled={creating}>
+                  <Button 
+                    onClick={handleCreateAssessment} 
+                    disabled={creating || getAssessmentCountForYear() >= 2}
+                  >
                     {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     สร้างแบบประเมิน
                   </Button>
