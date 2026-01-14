@@ -115,11 +115,22 @@ export function FilePreviewDialog({
             </div>
           ) : isPdf && previewUrl ? (
             <div className="h-[60vh] w-full bg-muted/30 rounded-lg overflow-hidden">
-              <iframe
-                src={previewUrl}
-                title={fileName}
-                className="w-full h-full border-0"
-              />
+              <object
+                key={previewUrl}
+                data={previewUrl}
+                type="application/pdf"
+                width="100%"
+                height="100%"
+              >
+                <div className="p-4 text-center">
+                  <p className="font-medium">ไม่สามารถแสดง PDF ได้</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    <a href={previewUrl} className="underline" download={fileName}>
+                      ดาวน์โหลดไฟล์
+                    </a>
+                  </p>
+                </div>
+              </object>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
