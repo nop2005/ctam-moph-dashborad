@@ -4,8 +4,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
-import { Upload, File, Trash2, Download, Loader2, FileText, Image, FileSpreadsheet } from 'lucide-react';
+import { Upload, File, Trash2, Download, Loader2, FileText, Image, FileSpreadsheet, Eye } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
+import { FilePreviewDialog } from './FilePreviewDialog';
 
 type EvidenceFile = Database['public']['Tables']['evidence_files']['Row'];
 
@@ -58,6 +59,7 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
   const [files, setFiles] = useState<EvidenceFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [previewFile, setPreviewFile] = useState<EvidenceFile | null>(null);
 
   const loadFiles = useCallback(async () => {
     try {
@@ -313,7 +315,10 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
               key={file.id}
               className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
             >
-              <div className="flex items-center gap-3 overflow-hidden">
+              <div 
+                className="flex items-center gap-3 overflow-hidden flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setPreviewFile(file)}
+              >
                 {getFileIcon(file.file_type)}
                 <div className="overflow-hidden">
                   <p className="text-sm font-medium truncate">{file.file_name}</p>
@@ -322,11 +327,20 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setPreviewFile(file)}
+                  title="ดูตัวอย่าง"
+                >
+                  <Eye className="w-4 h-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => handleDownload(file)}
+                  title="ดาวน์โหลด"
                 >
                   <Download className="w-4 h-4" />
                 </Button>
@@ -336,6 +350,7 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
                     size="icon"
                     onClick={() => handleDelete(file)}
                     className="text-destructive hover:text-destructive"
+                    title="ลบ"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -346,6 +361,17 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">ยังไม่มีไฟล์แนบ</p>
+      )}
+
+      {/* Preview Dialog */}
+      {previewFile && (
+        <FilePreviewDialog
+          open={!!previewFile}
+          onOpenChange={(open) => !open && setPreviewFile(null)}
+          fileName={previewFile.file_name}
+          filePath={previewFile.file_path}
+          fileType={previewFile.file_type}
+        />
       )}
     </div>
   );
