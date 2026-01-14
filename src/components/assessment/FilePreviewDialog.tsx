@@ -34,7 +34,8 @@ export function FilePreviewDialog({
       loadPreview();
     }
     return () => {
-      if (previewUrl) {
+      // Only revoke blob URLs (not signed URLs)
+      if (previewUrl && previewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(previewUrl);
       }
     };
@@ -45,14 +46,24 @@ export function FilePreviewDialog({
     setError(null);
     
     try {
-      const { data, error } = await supabase.storage
-        .from('evidence-files')
-        .download(filePath);
+      // Use signed URL for PDFs (avoids browser blocking iframe blob URLs)
+      if (isPdf) {
+        const { data, error } = await supabase.storage
+          .from('evidence-files')
+          .createSignedUrl(filePath, 3600); // 1 hour expiry
 
-      if (error) throw error;
+        if (error) throw error;
+        setPreviewUrl(data.signedUrl);
+      } else {
+        // Use blob URL for images (faster, no security issues)
+        const { data, error } = await supabase.storage
+          .from('evidence-files')
+          .download(filePath);
 
-      const url = URL.createObjectURL(data);
-      setPreviewUrl(url);
+        if (error) throw error;
+        const url = URL.createObjectURL(data);
+        setPreviewUrl(url);
+      }
     } catch (err: any) {
       console.error('Error loading preview:', err);
       setError('ไม่สามารถโหลดไฟล์ได้');
