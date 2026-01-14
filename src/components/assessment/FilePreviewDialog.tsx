@@ -46,24 +46,16 @@ export function FilePreviewDialog({
     setError(null);
     
     try {
-      // Use signed URL for PDFs (avoids browser blocking iframe blob URLs)
-      if (isPdf) {
-        const { data, error } = await supabase.storage
-          .from('evidence-files')
-          .createSignedUrl(filePath, 3600); // 1 hour expiry
+      // Use blob URL for all file types to avoid browser/extension blocking external storage URLs.
+      // (The app downloads the file first, then renders from a local blob: URL.)
+      const { data, error } = await supabase.storage
+        .from('evidence-files')
+        .download(filePath);
 
-        if (error) throw error;
-        setPreviewUrl(data.signedUrl);
-      } else {
-        // Use blob URL for images (faster, no security issues)
-        const { data, error } = await supabase.storage
-          .from('evidence-files')
-          .download(filePath);
+      if (error) throw error;
 
-        if (error) throw error;
-        const url = URL.createObjectURL(data);
-        setPreviewUrl(url);
-      }
+      const url = URL.createObjectURL(data);
+      setPreviewUrl(url);
     } catch (err: any) {
       console.error('Error loading preview:', err);
       setError('ไม่สามารถโหลดไฟล์ได้');
