@@ -85,6 +85,25 @@ const getCurrentFiscalYear = () => {
   return month >= 9 ? year + 1 : year; // ตุลาคมขึ้นไป = ปีงบถัดไป
 };
 
+// ---- In-memory cache เพื่อกัน remount แล้วโหลดใหม่ทุกครั้ง ----
+// ใช้ร่วมกับเป้าหมาย: staleTime 60s, gcTime ~10m
+const DASHBOARD_STALE_MS = 60_000;
+const DASHBOARD_CACHE_MS = 10 * 60_000;
+
+type DashboardCacheEntry = {
+  ts: number;
+  stats: AssessmentStats;
+  assessments: (Assessment & { hospitals?: Hospital; health_offices?: HealthOffice })[];
+  hospitals: Hospital[];
+  healthOffice: HealthOffice | null;
+};
+
+const dashboardCache = new Map<string, DashboardCacheEntry>();
+let fiscalYearsCache: { ts: number; years: number[] } | null = null;
+
+const getDashboardCacheKey = (p: any, fiscalYear: string) =>
+  [p?.role, p?.province_id, p?.health_region_id, p?.hospital_id, p?.health_office_id, fiscalYear].join('|');
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
@@ -132,8 +151,14 @@ export default function Dashboard() {
   const currentYear = new Date().getFullYear();
   const years = [currentYear - 1, currentYear, currentYear + 1];
 
-  // Fetch available fiscal years
+  // Fetch available fiscal years (cache 10 นาที เพื่อกันยิงซ้ำตอนสลับหน้า/แท็บ)
   useEffect(() => {
+    const now = Date.now();
+    if (fiscalYearsCache && now - fiscalYearsCache.ts < DASHBOARD_CACHE_MS) {
+      setFiscalYears(fiscalYearsCache.years);
+      return;
+    }
+
     const fetchFiscalYears = async () => {
       const { data, error } = await supabase
         .from('assessments')
@@ -141,6 +166,7 @@ export default function Dashboard() {
 
       if (!error && data) {
         const uniqueYears = [...new Set(data.map(a => a.fiscal_year))].sort((a, b) => b - a);
+        fiscalYearsCache = { ts: Date.now(), years: uniqueYears };
         setFiscalYears(uniqueYears);
       }
     };
@@ -149,12 +175,32 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchData = async () => {
       if (!profile) return;
-      
+
+      const cacheKey = getDashboardCacheKey(profile, selectedFiscalYear);
+      const now = Date.now();
+      const cached = dashboardCache.get(cacheKey);
+
+      // 1) Hydrate จาก cache ทันที เพื่อไม่ให้หน้า "หมุน" ทุกครั้งที่สลับแท็บ/สลับเมนู
+      if (cached && now - cached.ts < DASHBOARD_CACHE_MS) {
+        setStats(cached.stats);
+        setAssessments(cached.assessments);
+        setHospitals(cached.hospitals);
+        setHealthOffice(cached.healthOffice);
+        setLoading(false);
+
+        // 2) ถ้ายังไม่ stale (60s) ก็ไม่ต้องยิง API ซ้ำเลย
+        if (now - cached.ts < DASHBOARD_STALE_MS) {
+          return;
+        }
+      }
+
       try {
-        // ใช้ loading เฉพาะครั้งแรก, หลังจากนั้นใช้ isRefetching
-        if (assessments.length === 0) {
+        // Full-page spinner เฉพาะครั้งแรกจริง ๆ (ไม่มี cache)
+        if (!cached) {
           setLoading(true);
         } else {
           setIsRefetching(true);
@@ -232,7 +278,8 @@ export default function Dashboard() {
           const waitingRegional = filteredStats.filter(a => a.status === 'approved_provincial').length;
           const approved = filteredStats.filter(a => a.status === 'approved_regional' || a.status === 'completed').length;
           const returned = filteredStats.filter(a => a.status === 'returned').length;
-          setStats({ total, draft, waitingProvincial, waitingRegional, approved, returned });
+          const nextStats = { total, draft, waitingProvincial, waitingRegional, approved, returned };
+          setStats(nextStats);
         }
 
         // Load assessments list - provincial จะเห็นเฉพาะจังหวัดตัวเอง
@@ -268,7 +315,8 @@ export default function Dashboard() {
             filtered = (assessmentsData || []).filter(a => a.health_office_id === profile.health_office_id);
           }
           // central_admin, regional, supervisor see all
-          setAssessments(filtered);
+          const nextAssessments = filtered;
+          setAssessments(nextAssessments);
         }
 
         // Load hospitals for create dialog
@@ -312,12 +360,29 @@ export default function Dashboard() {
       } catch (error) {
         console.error('Error:', error);
       } finally {
-        setLoading(false);
-        setIsRefetching(false);
+        if (!cancelled) {
+          setLoading(false);
+          setIsRefetching(false);
+
+          // เขียน cache สำหรับ view ปัจจุบัน (กัน remount แล้วหน้าโหลดใหม่)
+          if (profile) {
+            const cacheKey = getDashboardCacheKey(profile, selectedFiscalYear);
+            dashboardCache.set(cacheKey, {
+              ts: Date.now(),
+              stats,
+              assessments,
+              hospitals,
+              healthOffice,
+            });
+          }
+        }
       }
     };
 
     fetchData();
+    return () => {
+      cancelled = true;
+    };
   }, [profile, selectedFiscalYear]);
 
   // Calculate next assessment period when hospital or year changes
@@ -692,8 +757,10 @@ export default function Dashboard() {
     return assessment.status === statusFilter;
   });
 
-  // Full page loading เฉพาะครั้งแรก
-  if (loading) {
+  const hasCachedView = !!profile && dashboardCache.has(getDashboardCacheKey(profile, selectedFiscalYear));
+
+  // Full page loading เฉพาะครั้งแรก (ไม่มี cache)
+  if (loading && !hasCachedView) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
