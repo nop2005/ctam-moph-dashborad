@@ -106,7 +106,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Rely on INITIAL_SESSION to avoid duplicate session/profile fetches.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      // สำคัญ: เวลาสลับแท็บ/กลับมาโฟกัส เบื้องหลังจะมี TOKEN_REFRESHED ได้
+      // ถ้าเราโหลดโปรไฟล์ใหม่และ setIsLoading(true) ทุกครั้ง จะทำให้หน้า "หมุน" ซ้ำ
+      if (event === 'TOKEN_REFRESHED') {
+        setSession(nextSession);
+        setUser(nextSession?.user ?? null);
+        // ไม่ต้องโหลด profile ซ้ำ และไม่ต้องทำให้ UI เข้า loading
+        return;
+      }
+
       handleSession(nextSession);
     });
 
