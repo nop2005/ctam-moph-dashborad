@@ -139,7 +139,43 @@ export function QuantitativeSection({
   const [localDescriptions, setLocalDescriptions] = useState<Record<string, string>>({});
   const [subOptionSelections, setSubOptionSelections] = useState<Record<string, string>>({});
   const [fileCounts, setFileCounts] = useState<Record<string, number>>({});
+  const [fileCountsLoaded, setFileCountsLoaded] = useState(false);
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // Load file counts from database on mount (before FileUpload components render)
+  useEffect(() => {
+    const loadFileCounts = async () => {
+      if (items.length === 0) {
+        setFileCountsLoaded(true);
+        return;
+      }
+      
+      try {
+        const itemIds = items.map(item => item.id);
+        const { data, error } = await supabase
+          .from('evidence_files')
+          .select('assessment_item_id')
+          .in('assessment_item_id', itemIds);
+        
+        if (error) throw error;
+        
+        // Count files per item
+        const counts: Record<string, number> = {};
+        itemIds.forEach(id => { counts[id] = 0; });
+        data?.forEach(file => {
+          counts[file.assessment_item_id] = (counts[file.assessment_item_id] || 0) + 1;
+        });
+        
+        setFileCounts(counts);
+      } catch (error) {
+        console.error('Error loading file counts:', error);
+      } finally {
+        setFileCountsLoaded(true);
+      }
+    };
+    
+    loadFileCounts();
+  }, [items]);
 
   // Initialize local descriptions and sub-option selections from items
   useEffect(() => {
@@ -319,6 +355,9 @@ export function QuantitativeSection({
 
   // Check if user can interact with a specific category (all previous items with 'pass' must be complete)
   const canInteractWithCategory = (categoryIndex: number): boolean => {
+    // Wait for file counts to load before blocking
+    if (!fileCountsLoaded) return true;
+    
     for (let i = 0; i < categoryIndex; i++) {
       const prevCategory = categories[i];
       if (!isCategoryComplete(prevCategory.id)) {
