@@ -665,6 +665,7 @@ export function QuantitativeSection({
                                 assessmentId={assessmentId}
                                 assessmentItemId={item.id}
                                 readOnly={readOnly}
+                                disabled={!subOptionSelections[category.id]}
                                 onFileCountChange={(count) => handleFileCountChange(item.id, count)}
                               />
                               {isFileRequired(category.id) && !readOnly && (

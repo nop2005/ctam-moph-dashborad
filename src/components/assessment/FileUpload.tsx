@@ -18,6 +18,8 @@ interface FileUploadProps {
   assessmentId: string;
   assessmentItemId: string;
   readOnly: boolean;
+  /** Disable upload interactions (e.g. require selecting sub-option first) */
+  disabled?: boolean;
   onFileCountChange?: (count: number) => void;
 }
 
@@ -53,7 +55,13 @@ const sanitizeFileName = (fileName: string): string => {
   return (sanitized || 'file') + ext;
 };
 
-export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCountChange }: FileUploadProps) {
+export function FileUpload({
+  assessmentId,
+  assessmentItemId,
+  readOnly,
+  disabled = false,
+  onFileCountChange,
+}: FileUploadProps) {
   const { profile } = useAuth();
   const { toast } = useToast();
   const [files, setFiles] = useState<EvidenceFile[]>([]);
@@ -85,6 +93,16 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
   }, [loadFiles]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) {
+      toast({
+        title: 'กรุณาเลือกตัวเลือกก่อน',
+        description: 'โปรดเลือก “ประเภทของระบบ/เครื่องมือที่ใช้” ก่อนจึงจะอัปโหลดหลักฐานได้',
+        variant: 'destructive',
+      });
+      e.target.value = '';
+      return;
+    }
+
     const selectedFiles = e.target.files;
     if (!selectedFiles || selectedFiles.length === 0) return;
 
@@ -266,20 +284,25 @@ export function FileUpload({ assessmentId, assessmentItemId, readOnly, onFileCou
             multiple
             accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
             onChange={handleFileUpload}
-            disabled={uploading || !canUploadMore}
+            disabled={uploading || !canUploadMore || disabled}
             className="hidden"
             id={`file-upload-${assessmentItemId}`}
           />
           <Button
             variant="outline"
             className="w-full border-dashed"
-            disabled={uploading || !canUploadMore}
+            disabled={uploading || !canUploadMore || disabled}
             onClick={() => document.getElementById(`file-upload-${assessmentItemId}`)?.click()}
           >
             {uploading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 กำลังอัปโหลด...
+              </>
+            ) : disabled ? (
+              <>
+                <Upload className="w-4 h-4 mr-2" />
+                เลือกประเภทของระบบ/เครื่องมือก่อน
               </>
             ) : !canUploadMore ? (
               <>
