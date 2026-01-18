@@ -14,6 +14,7 @@ import { FileUpload } from './FileUpload';
 import { CheckCircle2, XCircle, AlertCircle, Loader2, Award, Info, TrendingUp } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
+
 type AssessmentItem = Database['public']['Tables']['assessment_items']['Row'];
 type CTAMCategory = Database['public']['Tables']['ctam_categories']['Row'];
 type ItemStatus = Database['public']['Enums']['item_status'];
