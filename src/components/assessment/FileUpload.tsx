@@ -4,9 +4,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
-import { Upload, File, Trash2, Download, Loader2, FileText, Image, FileSpreadsheet, Eye } from 'lucide-react';
+import { Upload, File, Trash2, Download, Loader2, FileText, Image, FileSpreadsheet, Eye, RefreshCw } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 import { FilePreviewDialog } from './FilePreviewDialog';
+import { ensureValidSession, storageWithRetry } from '@/lib/supabaseRetry';
 
 type EvidenceFile = Database['public']['Tables']['evidence_files']['Row'];
 
@@ -62,31 +63,55 @@ export function FileUpload({
   disabled = false,
   onFileCountChange,
 }: FileUploadProps) {
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
   const { toast } = useToast();
   const [files, setFiles] = useState<EvidenceFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<EvidenceFile | null>(null);
 
   const loadFiles = useCallback(async () => {
+    setLoadError(null);
+    
     try {
+      // Ensure valid session before loading
+      const session = await ensureValidSession();
+      if (!session) {
+        // User might need to re-login, but don't block loading completely
+        console.warn('No valid session for loading files');
+      }
+      
       const { data, error } = await supabase
         .from('evidence_files')
         .select('*')
         .eq('assessment_item_id', assessmentItemId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+      
       const loadedFiles = data || [];
       setFiles(loadedFiles);
       onFileCountChange?.(loadedFiles.length);
     } catch (error: any) {
       console.error('Error loading files:', error);
+      const errorMessage = error?.message || 'ไม่สามารถโหลดไฟล์ได้';
+      setLoadError(errorMessage);
+      
+      // Show toast only for network errors
+      if (errorMessage.includes('เชื่อมต่อ') || errorMessage.includes('fetch')) {
+        toast({
+          title: 'โหลดไฟล์ไม่สำเร็จ',
+          description: 'กรุณาตรวจสอบการเชื่อมต่อและลองใหม่',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setLoading(false);
     }
-  }, [assessmentItemId, onFileCountChange]);
+  }, [assessmentItemId, onFileCountChange, toast]);
 
   useEffect(() => {
     loadFiles();
@@ -96,7 +121,7 @@ export function FileUpload({
     if (disabled) {
       toast({
         title: 'กรุณาเลือกตัวเลือกก่อน',
-        description: 'โปรดเลือก “ประเภทของระบบ/เครื่องมือที่ใช้” ก่อนจึงจะอัปโหลดหลักฐานได้',
+        description: 'โปรดเลือก "ประเภทของระบบ/เครื่องมือที่ใช้" ก่อนจึงจะอัปโหลดหลักฐานได้',
         variant: 'destructive',
       });
       e.target.value = '';
@@ -111,6 +136,18 @@ export function FileUpload({
       toast({
         title: 'ไม่พร้อมอัปโหลดไฟล์',
         description: 'กำลังโหลดข้อมูลผู้ใช้ กรุณารอสักครู่แล้วลองใหม่อีกครั้ง',
+        variant: 'destructive',
+      });
+      e.target.value = '';
+      return;
+    }
+
+    // Ensure valid session before upload
+    const session = await ensureValidSession();
+    if (!session) {
+      toast({
+        title: 'เซสชันหมดอายุ',
+        description: 'กรุณาเข้าสู่ระบบใหม่เพื่อดำเนินการต่อ',
         variant: 'destructive',
       });
       e.target.value = '';
@@ -141,6 +178,7 @@ export function FileUpload({
 
     try {
       setUploading(true);
+      let successCount = 0;
 
       for (const file of filesToUpload) {
         // Validate file size (20MB max)
@@ -157,42 +195,30 @@ export function FileUpload({
         const safeFileName = sanitizeFileName(file.name);
         const filePath = `${assessmentId}/${assessmentItemId}/${Date.now()}_${safeFileName}`;
         
-        // Retry logic for storage upload
-        let uploadError: Error | null = null;
-        let retries = 3;
-        
-        while (retries > 0) {
-          const result = await supabase.storage
+        // Use retry wrapper for storage upload
+        const { error: uploadError } = await storageWithRetry(
+          () => supabase.storage
             .from('evidence-files')
             .upload(filePath, file, {
               cacheControl: '3600',
               upsert: false
-            });
-          
-          if (!result.error) {
-            uploadError = null;
-            break;
-          }
-          
-          uploadError = result.error;
-          retries--;
-          
-          if (retries > 0) {
-            // Wait before retry (exponential backoff)
-            await new Promise(resolve => setTimeout(resolve, (3 - retries) * 1000));
-          }
-        }
+            }),
+          3
+        );
 
         if (uploadError) {
+          console.error('Upload error:', uploadError);
           toast({ 
             title: 'อัปโหลดล้มเหลว', 
-            description: 'การเชื่อมต่อขัดข้อง กรุณาลองใหม่อีกครั้ง',
+            description: uploadError.message.includes('เชื่อมต่อ') 
+              ? 'การเชื่อมต่อขัดข้อง กรุณาลองใหม่'
+              : `ไม่สามารถอัปโหลด ${file.name} ได้`,
             variant: 'destructive' 
           });
           continue;
         }
 
-        // Save file record - use profile.id (not user_id) for foreign key
+        // Save file record
         const { error: dbError } = await supabase
           .from('evidence_files')
           .insert({
@@ -204,29 +230,64 @@ export function FileUpload({
             uploaded_by: profile.id,
           });
 
-        if (dbError) throw dbError;
+        if (dbError) {
+          console.error('DB error:', dbError);
+          // Try to cleanup orphaned storage file
+          await supabase.storage.from('evidence-files').remove([filePath]);
+          
+          toast({ 
+            title: 'บันทึกไม่สำเร็จ', 
+            description: 'ไม่สามารถบันทึกข้อมูลไฟล์ได้',
+            variant: 'destructive' 
+          });
+          continue;
+        }
+        
+        successCount++;
       }
 
-      toast({ title: 'อัปโหลดไฟล์สำเร็จ' });
-      loadFiles();
+      if (successCount > 0) {
+        toast({ title: `อัปโหลดสำเร็จ ${successCount} ไฟล์` });
+        loadFiles();
+      }
 
     } catch (error: any) {
       console.error('Error uploading file:', error);
-      toast({ title: 'อัปโหลดล้มเหลว', description: error.message, variant: 'destructive' });
+      
+      // Handle specific error types
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        toast({ 
+          title: 'การเชื่อมต่อขัดข้อง', 
+          description: 'กรุณาตรวจสอบอินเทอร์เน็ตและลองใหม่อีกครั้ง',
+          variant: 'destructive' 
+        });
+      } else {
+        toast({ 
+          title: 'อัปโหลดล้มเหลว', 
+          description: error.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+          variant: 'destructive' 
+        });
+      }
     } finally {
       setUploading(false);
-      // Reset input
       e.target.value = '';
     }
   };
 
   const handleDownload = async (file: EvidenceFile) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('evidence-files')
-        .download(file.file_path);
+      // Ensure valid session
+      await ensureValidSession();
+      
+      const { data, error } = await storageWithRetry(
+        () => supabase.storage
+          .from('evidence-files')
+          .download(file.file_path),
+        2
+      );
 
       if (error) throw error;
+      if (!data) throw new Error('ไม่พบไฟล์');
 
       // Create download link
       const url = URL.createObjectURL(data);
@@ -240,16 +301,36 @@ export function FileUpload({
 
     } catch (error: any) {
       console.error('Error downloading file:', error);
-      toast({ title: 'ดาวน์โหลดล้มเหลว', description: error.message, variant: 'destructive' });
+      toast({ 
+        title: 'ดาวน์โหลดล้มเหลว', 
+        description: error.message.includes('เชื่อมต่อ')
+          ? 'การเชื่อมต่อขัดข้อง กรุณาลองใหม่'
+          : error.message,
+        variant: 'destructive' 
+      });
     }
   };
 
   const handleDelete = async (file: EvidenceFile) => {
     try {
-      // Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from('evidence-files')
-        .remove([file.file_path]);
+      // Ensure valid session
+      const session = await ensureValidSession();
+      if (!session) {
+        toast({
+          title: 'เซสชันหมดอายุ',
+          description: 'กรุณาเข้าสู่ระบบใหม่',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Delete from storage with retry
+      const { error: storageError } = await storageWithRetry(
+        () => supabase.storage
+          .from('evidence-files')
+          .remove([file.file_path]),
+        2
+      );
 
       if (storageError) throw storageError;
 
@@ -268,7 +349,13 @@ export function FileUpload({
 
     } catch (error: any) {
       console.error('Error deleting file:', error);
-      toast({ title: 'ลบไฟล์ล้มเหลว', description: error.message, variant: 'destructive' });
+      toast({ 
+        title: 'ลบไฟล์ล้มเหลว', 
+        description: error.message.includes('เชื่อมต่อ')
+          ? 'การเชื่อมต่อขัดข้อง กรุณาลองใหม่'
+          : error.message,
+        variant: 'destructive' 
+      });
     }
   };
 
@@ -330,6 +417,22 @@ export function FileUpload({
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 animate-spin" />
           กำลังโหลด...
+        </div>
+      ) : loadError ? (
+        <div className="flex items-center gap-2 text-sm text-destructive">
+          <span>โหลดไฟล์ไม่สำเร็จ</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setLoading(true);
+              loadFiles();
+            }}
+            className="h-6 px-2"
+          >
+            <RefreshCw className="w-3 h-3 mr-1" />
+            ลองใหม่
+          </Button>
         </div>
       ) : files.length > 0 ? (
         <div className="space-y-2">
