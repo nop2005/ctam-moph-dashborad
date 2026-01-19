@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { jsPDF } from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import mophLogoUrl from '@/assets/moph-logo.png';
+import { formatThaiDateWithFont } from '@/lib/thai-font-base64';
 
 interface CertificateData {
   assessmentId: string;
@@ -39,18 +40,21 @@ const loadImageAsBase64 = async (url: string): Promise<string> => {
   });
 };
 
-// Load THSarabunNew font dynamically
+// Load THSarabunNew font from multiple CDN sources
 const loadTHSarabunFont = async (): Promise<ArrayBuffer | null> => {
   try {
-    // Try loading from various CDN sources
+    // Try multiple CDN sources for the font
     const fontUrls = [
       'https://cdn.jsdelivr.net/gh/nicholashamilton/thai-fonts@master/TH%20Sarabun%20New/THSarabunNew.ttf',
-      'https://raw.githubusercontent.com/nicholashamilton/thai-fonts/master/TH%20Sarabun%20New/THSarabunNew.ttf',
+      'https://cdn.rawgit.com/nicholashamilton/thai-fonts/master/TH%20Sarabun%20New/THSarabunNew.ttf',
     ];
 
     for (const url of fontUrls) {
       try {
-        const response = await fetch(url, { mode: 'cors' });
+        const response = await fetch(url, { 
+          mode: 'cors',
+          cache: 'force-cache'
+        });
         if (response.ok) {
           return await response.arrayBuffer();
         }
@@ -125,7 +129,7 @@ export function useCertificatePdf() {
         y += 10;
       }
 
-      // Title - in Thai
+      // Title
       doc.setFontSize(hasThaifont ? 22 : 18);
       doc.setFont(fontName, 'normal');
       
@@ -137,6 +141,7 @@ export function useCertificatePdf() {
         y += 8;
         doc.text('CTAM+ (Cybersecurity Assessment for Thai Health Sector)', pageWidth / 2, y, { align: 'center' });
       } else {
+        // When Thai font is not available, use English only
         doc.text('Certificate of Assessment', pageWidth / 2, y, { align: 'center' });
         y += 8;
         doc.setFontSize(14);
@@ -144,11 +149,9 @@ export function useCertificatePdf() {
       }
       y += 15;
 
-      // Certificate number and date
+      // Certificate number and date - use formatted date
       const certNumber = `CTAM-${data.fiscalYear + 543}-${data.assessmentPeriod}-${data.assessmentId.slice(0, 8).toUpperCase()}`;
-      const issueDate = data.approvedAt 
-        ? new Date(data.approvedAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
-        : new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+      const issueDate = formatThaiDateWithFont(data.approvedAt, hasThaifont);
       
       doc.setFontSize(hasThaifont ? 14 : 10);
       doc.setFont(fontName, 'normal');
@@ -185,7 +188,7 @@ export function useCertificatePdf() {
         return doc.splitTextToSize(text, maxWidth);
       };
 
-      // Organization details
+      // Organization details - Use data from database
       if (hasThaifont) {
         doc.text('หนังสือฉบับนี้ขอรับรองว่า:', margin, y);
       } else {
@@ -263,10 +266,10 @@ export function useCertificatePdf() {
         y += 8;
         doc.text(`คะแนนผลกระทบ (15%): ${data.impactScore !== null ? Number(data.impactScore).toFixed(2) : '-'} / 1.50`, col1, y);
       } else {
-        doc.text(`Quantitative Score (70%): ${data.quantitativeScore !== null ? Number(data.quantitativeScore).toFixed(2) : '-'} / 7.00`, col1, y);
-        doc.text(`Qualitative Score (15%): ${data.qualitativeScore !== null ? Number(data.qualitativeScore).toFixed(2) : '-'} / 1.50`, col2, y);
+        doc.text(`Quantitative (70%): ${data.quantitativeScore !== null ? Number(data.quantitativeScore).toFixed(2) : '-'} / 7.00`, col1, y);
+        doc.text(`Qualitative (15%): ${data.qualitativeScore !== null ? Number(data.qualitativeScore).toFixed(2) : '-'} / 1.50`, col2, y);
         y += 7;
-        doc.text(`Impact Score (15%): ${data.impactScore !== null ? Number(data.impactScore).toFixed(2) : '-'} / 1.50`, col1, y);
+        doc.text(`Impact (15%): ${data.impactScore !== null ? Number(data.impactScore).toFixed(2) : '-'} / 1.50`, col1, y);
       }
       y += 12;
 
@@ -292,7 +295,7 @@ export function useCertificatePdf() {
         } else {
           doc.text('[X] Passed the assessment criteria', margin, y);
           y += 6;
-          doc.text('[  ] Passed with recommendations for improvement', margin, y);
+          doc.text('[  ] Passed with recommendations', margin, y);
         }
       } else {
         if (hasThaifont) {
@@ -304,7 +307,7 @@ export function useCertificatePdf() {
           doc.text('[  ] Passed the assessment criteria', margin, y);
           y += 6;
           doc.setTextColor(255, 140, 0);
-          doc.text('[X] Passed with recommendations for improvement', margin, y);
+          doc.text('[X] Passed with recommendations', margin, y);
         }
       }
       doc.setTextColor(0, 0, 0);
@@ -329,11 +332,7 @@ export function useCertificatePdf() {
 
       // Approval date
       if (data.approvedAt) {
-        const approvalDate = new Date(data.approvedAt).toLocaleDateString('th-TH', { 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        });
+        const approvalDate = formatThaiDateWithFont(data.approvedAt, hasThaifont);
         if (hasThaifont) {
           doc.text(`วันที่อนุมัติ: ${approvalDate}`, margin, y);
         } else {
@@ -369,7 +368,7 @@ export function useCertificatePdf() {
         );
       } else {
         doc.text(
-          'This certificate was generated by CTAM+ Cybersecurity Assessment System, Ministry of Public Health, Thailand',
+          'CTAM+ Cybersecurity Assessment System, Ministry of Public Health, Thailand',
           pageWidth / 2,
           footerY,
           { align: 'center' }
@@ -382,8 +381,9 @@ export function useCertificatePdf() {
         { align: 'center' }
       );
 
-      // Download
-      const fileName = `ใบรับรอง_${data.hospitalName.replace(/\s/g, '_')}_${data.assessmentPeriod}_${data.fiscalYear + 543}.pdf`;
+      // Download with proper filename
+      const safeHospitalName = data.hospitalName.replace(/[^a-zA-Z0-9ก-๙\s]/g, '').replace(/\s+/g, '_');
+      const fileName = `Certificate_${safeHospitalName}_${data.assessmentPeriod}_${data.fiscalYear + 543}.pdf`;
       doc.save(fileName);
       
       return true;
