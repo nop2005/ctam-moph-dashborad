@@ -1064,6 +1064,7 @@ export default function Dashboard() {
                   <TableHead>สถานะ</TableHead>
                   <TableHead>คะแนนรวม (10)</TableHead>
                   <TableHead>วันที่สร้าง</TableHead>
+                  <TableHead className="text-center">ใบรับรองการประเมิน</TableHead>
                   <TableHead className="text-right">การดำเนินการ</TableHead>
                   {(profile?.role === 'central_admin' || profile?.role === 'regional') && (
                     <TableHead className="text-center">สถานะส่งอีเมล</TableHead>
@@ -1099,45 +1100,49 @@ export default function Dashboard() {
                       <TableCell>
                         {format(new Date(assessment.created_at), 'd MMM yyyy', { locale: th })}
                       </TableCell>
+                      {/* Certificate Download Column */}
+                      <TableCell className="text-center">
+                        {(assessment.status === 'approved_regional' || assessment.status === 'completed') ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-success hover:text-success hover:bg-success/10"
+                                onClick={async () => {
+                                  try {
+                                    await fetchAndGenerateCertificate(assessment.id);
+                                    toast({
+                                      title: 'สำเร็จ',
+                                      description: 'ดาวน์โหลดใบรับรองเรียบร้อยแล้ว',
+                                    });
+                                  } catch (error) {
+                                    toast({
+                                      title: 'เกิดข้อผิดพลาด',
+                                      description: 'ไม่สามารถสร้างใบรับรองได้',
+                                      variant: 'destructive',
+                                    });
+                                  }
+                                }}
+                                disabled={isGeneratingCertificate}
+                              >
+                                {isGeneratingCertificate ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Download className="w-4 h-4" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>ดาวน์โหลดใบรับรอง PDF</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {/* Download Certificate Button - only for approved assessments */}
-                          {(assessment.status === 'approved_regional' || assessment.status === 'completed') && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-success hover:text-success hover:bg-success/10"
-                                  onClick={async () => {
-                                    try {
-                                      await fetchAndGenerateCertificate(assessment.id);
-                                      toast({
-                                        title: 'สำเร็จ',
-                                        description: 'ดาวน์โหลดใบรับรองเรียบร้อยแล้ว',
-                                      });
-                                    } catch (error) {
-                                      toast({
-                                        title: 'เกิดข้อผิดพลาด',
-                                        description: 'ไม่สามารถสร้างใบรับรองได้',
-                                        variant: 'destructive',
-                                      });
-                                    }
-                                  }}
-                                  disabled={isGeneratingCertificate}
-                                >
-                                  {isGeneratingCertificate ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Download className="w-4 h-4" />
-                                  )}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>ดาวน์โหลดใบรับรอง PDF</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
                           <Button
                             variant="ghost"
                             size="sm"
