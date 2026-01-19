@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Wrench, Filter } from 'lucide-react';
 import { toast } from 'sonner';
@@ -60,7 +60,7 @@ interface Assessment {
   fiscal_year: number;
 }
 
-type ViewLevel = 'country' | 'region' | 'province';
+type ViewLevel = 'country' | 'region' | 'province' | 'unit';
 
 // Equipment type mapping
 const EQUIPMENT_TYPES = [
@@ -111,6 +111,7 @@ export default function ReportsEquipmentUsage() {
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
   const [viewLevel, setViewLevel] = useState<ViewLevel>('country');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
+  const [selectedUnit, setSelectedUnit] = useState<string>('all');
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
 
   const isProvincialAdmin = profile?.role === 'provincial';
@@ -197,6 +198,19 @@ export default function ReportsEquipmentUsage() {
     return regionProvinces;
   }, [selectedRegion, provinces, isProvincialAdmin, userProvinceId]);
 
+  // Filter units (hospitals + health offices) based on selected province
+  const filteredUnits = useMemo(() => {
+    if (selectedProvince === 'all') return [];
+    const provinceHospitals = hospitals.filter(h => h.province_id === selectedProvince);
+    const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === selectedProvince);
+    
+    const units: { id: string; name: string; type: 'hospital' | 'health_office' }[] = [];
+    provinceHospitals.forEach(h => units.push({ id: `hospital_${h.id}`, name: h.name, type: 'hospital' }));
+    provinceHealthOffices.forEach(ho => units.push({ id: `health_office_${ho.id}`, name: ho.name, type: 'health_office' }));
+    
+    return units.sort((a, b) => a.name.localeCompare(b.name, 'th'));
+  }, [selectedProvince, hospitals, healthOffices]);
+
   // Generate fiscal years
   const fiscalYears = useMemo(() => generateFiscalYears(assessments), [assessments]);
 
@@ -212,14 +226,21 @@ export default function ReportsEquipmentUsage() {
     let hospitalIds: string[] = [];
     let healthOfficeIds: string[] = [];
 
-    if (viewLevel === 'country') {
+    if (viewLevel === 'unit' && selectedUnit !== 'all') {
+      // Single unit selected
+      if (selectedUnit.startsWith('hospital_')) {
+        hospitalIds = [selectedUnit.replace('hospital_', '')];
+      } else if (selectedUnit.startsWith('health_office_')) {
+        healthOfficeIds = [selectedUnit.replace('health_office_', '')];
+      }
+    } else if (viewLevel === 'country') {
       hospitalIds = hospitals.map(h => h.id);
       healthOfficeIds = healthOffices.map(ho => ho.id);
     } else if (viewLevel === 'region' && selectedRegion !== 'all') {
       const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
       hospitalIds = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id)).map(h => h.id);
       healthOfficeIds = healthOffices.filter(ho => ho.health_region_id === selectedRegion).map(ho => ho.id);
-    } else if (viewLevel === 'province' && selectedProvince !== 'all') {
+    } else if ((viewLevel === 'province' || viewLevel === 'unit') && selectedProvince !== 'all') {
       hospitalIds = hospitals.filter(h => h.province_id === selectedProvince).map(h => h.id);
       healthOfficeIds = healthOffices.filter(ho => ho.province_id === selectedProvince).map(ho => ho.id);
     }
@@ -277,7 +298,7 @@ export default function ReportsEquipmentUsage() {
         ...counts,
       };
     });
-  }, [categories, hospitals, healthOffices, provinces, viewLevel, selectedRegion, selectedProvince, filteredAssessments, assessmentItems]);
+  }, [categories, hospitals, healthOffices, provinces, viewLevel, selectedRegion, selectedProvince, selectedUnit, filteredAssessments, assessmentItems]);
 
   // Calculate overall pie chart data
   const pieChartData = useMemo(() => {
@@ -307,6 +328,10 @@ export default function ReportsEquipmentUsage() {
 
   // Get title based on filters
   const getTitle = () => {
+    if (viewLevel === 'unit' && selectedUnit !== 'all') {
+      const unit = filteredUnits.find(u => u.id === selectedUnit);
+      return `รายงานการใช้อุปกรณ์ - ${unit?.name || ''}`;
+    }
     if (viewLevel === 'country') return 'รายงานการใช้อุปกรณ์ - ภาพรวมทั้งประเทศ';
     if (viewLevel === 'region') {
       const region = healthRegions.find(r => r.id === selectedRegion);
@@ -315,6 +340,43 @@ export default function ReportsEquipmentUsage() {
     const province = provinces.find(p => p.id === selectedProvince);
     return `รายงานการใช้อุปกรณ์ - ${province?.name || ''}`;
   };
+
+  // Build SearchableSelect options
+  const viewLevelOptions = useMemo(() => {
+    const opts = [];
+    if (!isProvincialAdmin) {
+      opts.push({ value: 'country', label: 'ภาพรวมประเทศ' });
+      opts.push({ value: 'region', label: 'รายเขตสุขภาพ' });
+    }
+    opts.push({ value: 'province', label: 'รายจังหวัด' });
+    opts.push({ value: 'unit', label: 'รายหน่วยงาน/รพ.' });
+    return opts;
+  }, [isProvincialAdmin]);
+
+  const regionOptions = useMemo(() => {
+    return healthRegions
+      .filter(region => {
+        if (isProvincialAdmin && userProvinceId) {
+          const userProvince = provinces.find(p => p.id === userProvinceId);
+          return userProvince?.health_region_id === region.id;
+        }
+        return true;
+      })
+      .map(region => ({ value: region.id, label: `เขต ${region.region_number}` }));
+  }, [healthRegions, isProvincialAdmin, userProvinceId, provinces]);
+
+  const provinceOptions = useMemo(() => {
+    return filteredProvinces.map(province => ({ value: province.id, label: province.name }));
+  }, [filteredProvinces]);
+
+  const unitOptions = useMemo(() => {
+    return filteredUnits.map(unit => ({ value: unit.id, label: unit.name }));
+  }, [filteredUnits]);
+
+  const fiscalYearOptions = useMemo(() => {
+    return fiscalYears.map(year => ({ value: year.toString(), label: `ปีงบประมาณ ${year}` }));
+  }, [fiscalYears]);
+
 
   return (
     <DashboardLayout>
@@ -342,95 +404,89 @@ export default function ReportsEquipmentUsage() {
             <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
               <div className="w-full sm:w-48">
                 <label className="text-sm font-medium mb-1.5 block">ระดับการดู</label>
-                <Select 
-                  value={viewLevel} 
-                  onValueChange={(value: ViewLevel) => {
-                    setViewLevel(value);
-                    if (value === 'country') {
+                <SearchableSelect
+                  options={viewLevelOptions}
+                  value={viewLevel}
+                  onValueChange={(value) => {
+                    const newLevel = value as ViewLevel;
+                    setViewLevel(newLevel);
+                    if (newLevel === 'country') {
                       setSelectedRegion('all');
                       setSelectedProvince('all');
+                      setSelectedUnit('all');
+                    }
+                    if (newLevel !== 'unit') {
+                      setSelectedUnit('all');
                     }
                   }}
+                  placeholder="เลือกระดับ"
+                  searchPlaceholder="พิมพ์เพื่อค้นหา..."
                   disabled={isProvincialAdmin}
-                >
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="เลือกระดับ" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background z-50">
-                    {!isProvincialAdmin && <SelectItem value="country" className="text-sm">ภาพรวมประเทศ</SelectItem>}
-                    {!isProvincialAdmin && <SelectItem value="region" className="text-sm">รายเขตสุขภาพ</SelectItem>}
-                    <SelectItem value="province" className="text-sm">รายจังหวัด</SelectItem>
-                  </SelectContent>
-                </Select>
+                  className="h-9 text-sm"
+                />
               </div>
 
-              {(viewLevel === 'region' || viewLevel === 'province') && (
+              {(viewLevel === 'region' || viewLevel === 'province' || viewLevel === 'unit') && (
                 <div className="w-full sm:w-48">
                   <label className="text-sm font-medium mb-1.5 block">เขตสุขภาพ</label>
-                  <Select 
-                    value={selectedRegion} 
+                  <SearchableSelect
+                    options={regionOptions}
+                    value={selectedRegion}
                     onValueChange={(value) => {
                       setSelectedRegion(value);
                       setSelectedProvince('all');
+                      setSelectedUnit('all');
                     }}
+                    placeholder="เลือกเขต"
+                    searchPlaceholder="พิมพ์เพื่อค้นหา..."
                     disabled={isProvincialAdmin}
-                  >
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="เลือกเขต" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
-                      {healthRegions.filter(region => {
-                        if (isProvincialAdmin && userProvinceId) {
-                          const userProvince = provinces.find(p => p.id === userProvinceId);
-                          return userProvince?.health_region_id === region.id;
-                        }
-                        return true;
-                      }).map(region => (
-                        <SelectItem key={region.id} value={region.id} className="text-sm">
-                          เขต {region.region_number}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    className="h-9 text-sm"
+                  />
                 </div>
               )}
 
-              {viewLevel === 'province' && selectedRegion !== 'all' && (
+              {(viewLevel === 'province' || viewLevel === 'unit') && selectedRegion !== 'all' && (
                 <div className="w-full sm:w-48">
                   <label className="text-sm font-medium mb-1.5 block">จังหวัด</label>
-                  <Select 
-                    value={selectedProvince} 
-                    onValueChange={setSelectedProvince}
+                  <SearchableSelect
+                    options={provinceOptions}
+                    value={selectedProvince}
+                    onValueChange={(value) => {
+                      setSelectedProvince(value);
+                      setSelectedUnit('all');
+                    }}
+                    placeholder="เลือกจังหวัด"
+                    searchPlaceholder="พิมพ์เพื่อค้นหา..."
                     disabled={isProvincialAdmin}
-                  >
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="เลือกจังหวัด" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
-                      {filteredProvinces.map(province => (
-                        <SelectItem key={province.id} value={province.id} className="text-sm">
-                          {province.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    className="h-9 text-sm"
+                  />
+                </div>
+              )}
+
+              {viewLevel === 'unit' && selectedProvince !== 'all' && (
+                <div className="w-full sm:w-48">
+                  <label className="text-sm font-medium mb-1.5 block">หน่วยงาน/รพ.</label>
+                  <SearchableSelect
+                    options={unitOptions}
+                    value={selectedUnit}
+                    onValueChange={setSelectedUnit}
+                    placeholder="เลือกหน่วยงาน"
+                    searchPlaceholder="พิมพ์เพื่อค้นหา..."
+                    className="h-9 text-sm"
+                  />
                 </div>
               )}
 
               <div className="w-full sm:w-48">
                 <label className="text-sm font-medium mb-1.5 block">ปีงบประมาณ</label>
-                <Select value={selectedFiscalYear} onValueChange={setSelectedFiscalYear}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="เลือกปี" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background z-50">
-                    {fiscalYears.map(year => (
-                      <SelectItem key={year} value={year.toString()} className="text-sm">
-                        ปีงบประมาณ {year}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  options={fiscalYearOptions}
+                  value={selectedFiscalYear}
+                  onValueChange={setSelectedFiscalYear}
+                  placeholder="เลือกปี"
+                  searchPlaceholder="พิมพ์เพื่อค้นหา..."
+                  className="h-9 text-sm"
+                />
               </div>
             </div>
           </CardContent>
