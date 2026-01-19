@@ -247,9 +247,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      await withTimeout(supabase.auth.signOut(), AUTH_TIMEOUT_MS, 'SIGNOUT_TIMEOUT');
+      // Clear local storage auth keys first to ensure clean state
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+
+      // Attempt server signout but don't block on errors (session may already be invalid)
+      await withTimeout(supabase.auth.signOut({ scope: 'local' }), AUTH_TIMEOUT_MS, 'SIGNOUT_TIMEOUT');
     } catch (error) {
-      console.error('Error signing out:', error);
+      // Session might already be invalidated on server (session_not_found) - this is OK
+      console.warn('SignOut API error (session may already be invalid):', error);
     } finally {
       // Always clear local state regardless of API response
       clearLocalAuthState();
