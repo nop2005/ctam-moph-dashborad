@@ -153,10 +153,10 @@ export default function Reports() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Use RPC function for optimized single-query fetch
         const fiscalYearParam = selectedFiscalYear === 'all' ? null : parseInt(selectedFiscalYear);
-        
+
         const { data, error } = await supabase.rpc('get_internal_report_summary', {
           p_fiscal_year: fiscalYearParam
         });
@@ -167,14 +167,34 @@ export default function Reports() {
         }
 
         const summary = data as unknown as InternalReportSummary;
-        
+
         setHealthRegions(summary.health_regions || []);
         setProvinces(summary.provinces || []);
         setHospitals(summary.hospitals || []);
         setHealthOffices(summary.health_offices || []);
-        setAssessments(summary.assessments || []);
         setFiscalYears(summary.fiscal_years || [getCurrentFiscalYear()]);
-        
+
+        // IMPORTANT: load assessments directly so we can compute latestApprovedAssessments
+        // even when a unit has a newer draft that hides older approved rows.
+        let assessmentsQuery = supabase
+          .from('assessments')
+          .select(
+            'id, hospital_id, health_office_id, status, fiscal_year, assessment_period, total_score, quantitative_score, qualitative_score, impact_score, created_at'
+          );
+
+        if (fiscalYearParam !== null) {
+          assessmentsQuery = assessmentsQuery.eq('fiscal_year', fiscalYearParam);
+        }
+
+        const { data: assessmentsData, error: assessmentsError } = await assessmentsQuery;
+
+        if (assessmentsError) {
+          console.error('Error fetching assessments:', assessmentsError);
+          // fallback to the RPC payload if the direct query fails
+          setAssessments(summary.assessments || []);
+        } else {
+          setAssessments((assessmentsData as unknown as Assessment[]) || []);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
@@ -182,7 +202,7 @@ export default function Reports() {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [selectedFiscalYear]);
 
@@ -391,10 +411,7 @@ export default function Reports() {
                         regionHealthOffices.some(ho => ho.id === a.health_office_id)
                       );
 
-                      const completedCount = regionLatestAssessments.filter(a => 
-                        a.status === 'approved_regional' || a.status === 'completed'
-                      ).length;
-
+                      const completedCount = regionLatestApprovedAssessments.length;
                       const quantitativeScores = regionLatestApprovedAssessments.filter(a => a.quantitative_score !== null);
                       const avgQuantitative = quantitativeScores.length > 0 
                         ? quantitativeScores.reduce((sum, a) => sum + (a.quantitative_score || 0), 0) / quantitativeScores.length 
@@ -468,10 +485,7 @@ export default function Reports() {
                         provinceHealthOffices.some(ho => ho.id === a.health_office_id)
                       );
 
-                      const completedCount = provinceLatestAssessments.filter(a => 
-                        a.status === 'approved_regional' || a.status === 'completed'
-                      ).length;
-
+                      const completedCount = provinceLatestApprovedAssessments.length;
                       const totalScoreSum = provinceLatestApprovedAssessments.filter(a => a.total_score !== null)
                         .reduce((sum, a) => sum + (a.total_score || 0), 0);
                       const scoreCount = provinceLatestApprovedAssessments.filter(a => a.total_score !== null).length;
