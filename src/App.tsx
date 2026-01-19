@@ -16,6 +16,7 @@ import Reports from "./pages/Reports";
 import ReportsQuantitative from "./pages/ReportsQuantitative";
 import ReportsQuantitativeByArea from "./pages/ReportsQuantitativeByArea";
 import ReportsQuantitativeDetail from "./pages/ReportsQuantitativeDetail";
+import ReportsEquipmentUsage from "./pages/ReportsEquipmentUsage";
 import ReportsImpact from "./pages/ReportsImpact";
 import InspectionSupervisor from "./pages/InspectionSupervisor";
 import InspectionSupervisee from "./pages/InspectionSupervisee";
@@ -120,6 +121,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ReportsQuantitativeDetail />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/reports/equipment-usage" 
+              element={
+                <ProtectedRoute>
+                  <ReportsEquipmentUsage />
                 </ProtectedRoute>
               } 
             />

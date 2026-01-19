@@ -4,7 +4,7 @@ import { useLocalStorageState } from "@/hooks/useLocalStorageState";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Shield, LayoutDashboard, FileText, BarChart3, Users, Building2, Settings, PieChart, TrendingUp, AlertTriangle, ClipboardCheck, FileSearch, FileCheck, BookOpen, ChevronRight, ListOrdered, HardDrive, MapPinned } from "lucide-react";
+import { Shield, LayoutDashboard, FileText, BarChart3, Users, Building2, Settings, PieChart, TrendingUp, AlertTriangle, ClipboardCheck, FileSearch, FileCheck, BookOpen, ChevronRight, ListOrdered, HardDrive, MapPinned, Wrench } from "lucide-react";
 const menuItems = [{
   title: "หน้าหลักแบบประเมิน",
   url: "/dashboard",
@@ -32,6 +32,10 @@ const analyticalReportSubItems = [{
   title: "คะแนน 17 ข้อ แยกตามพื้นที่",
   url: "/reports/quantitative-by-area",
   icon: MapPinned
+}, {
+  title: "การใช้อุปกรณ์/ซอฟต์แวร์",
+  url: "/reports/equipment-usage",
+  icon: Wrench
 }];
 const inspectionSubItems = [{
   title: "รายงานผู้นิเทศ",
@@ -81,7 +85,7 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + "/");
   const isReportsActive = currentPath === "/reports" || currentPath === "/reports/quantitative" || currentPath === "/reports/impact";
-  const isAnalyticalReportsActive = currentPath === "/reports/quantitative-by-area" || currentPath === "/reports/quantitative-detail";
+  const isAnalyticalReportsActive = currentPath === "/reports/quantitative-by-area" || currentPath === "/reports/quantitative-detail" || currentPath === "/reports/equipment-usage";
   const isInspectionActive = currentPath.startsWith("/inspection") && currentPath !== "/inspection/manual";
 
   // State for collapsible menus (persist across route changes)
