@@ -40,6 +40,7 @@ import {
   Mail,
   CheckSquare,
   Square,
+  Download,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { BannerCarousel } from '@/components/BannerCarousel';
@@ -53,6 +54,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { Database } from '@/integrations/supabase/types';
+import { useCertificatePdf } from '@/hooks/useCertificatePdf';
 
 
 type Assessment = Database['public']['Tables']['assessments']['Row'];
@@ -147,6 +149,9 @@ export default function Dashboard() {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSentFilter, setEmailSentFilter] = useState<string>('all'); // 'all' | 'sent' | 'not_sent'
+
+  // Certificate PDF generation
+  const { isGenerating: isGeneratingCertificate, fetchAndGenerateCertificate } = useCertificatePdf();
 
   const currentYear = new Date().getFullYear();
   const years = [currentYear - 1, currentYear, currentYear + 1];
@@ -1096,6 +1101,43 @@ export default function Dashboard() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {/* Download Certificate Button - only for approved assessments */}
+                          {(assessment.status === 'approved_regional' || assessment.status === 'completed') && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-success hover:text-success hover:bg-success/10"
+                                  onClick={async () => {
+                                    try {
+                                      await fetchAndGenerateCertificate(assessment.id);
+                                      toast({
+                                        title: 'สำเร็จ',
+                                        description: 'ดาวน์โหลดใบรับรองเรียบร้อยแล้ว',
+                                      });
+                                    } catch (error) {
+                                      toast({
+                                        title: 'เกิดข้อผิดพลาด',
+                                        description: 'ไม่สามารถสร้างใบรับรองได้',
+                                        variant: 'destructive',
+                                      });
+                                    }
+                                  }}
+                                  disabled={isGeneratingCertificate}
+                                >
+                                  {isGeneratingCertificate ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Download className="w-4 h-4" />
+                                  )}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>ดาวน์โหลดใบรับรอง PDF</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
