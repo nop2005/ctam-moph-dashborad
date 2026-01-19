@@ -16,7 +16,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, Download } from 'lucide-react';
+import html2canvas from 'html2canvas';
 import type { Database } from '@/integrations/supabase/types';
 
 type Assessment = Database['public']['Tables']['assessments']['Row'];
@@ -46,8 +47,52 @@ export function AssessmentHeader({ assessment, hospital, healthOffice, onRefresh
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const status = statusLabels[assessment.status] || statusLabels.draft;
+
+  // Check if assessment is approved (can export certificate)
+  const canExportCertificate = assessment.status === 'approved_regional' || assessment.status === 'completed';
+
+  const handleExportCertificate = async () => {
+    try {
+      setExporting(true);
+      toast({ title: 'กำลังสร้างใบรับรอง...', description: 'กรุณารอสักครู่' });
+
+      // Get the main content element
+      const element = document.querySelector('main');
+      if (!element) {
+        throw new Error('ไม่พบเนื้อหาหน้าเว็บ');
+      }
+
+      // Use html2canvas to capture the page
+      const canvas = await html2canvas(element as HTMLElement, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+      });
+
+      // Convert to JPEG and download
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      const link = document.createElement('a');
+      const orgName = hospital?.name || healthOffice?.name || 'assessment';
+      const safeName = orgName.replace(/[^a-zA-Z0-9ก-๙]/g, '_');
+      link.download = `ใบรับรอง_CTAM_${safeName}_${assessment.fiscal_year + 543}_${assessment.assessment_period}.jpg`;
+      link.href = dataUrl;
+      link.click();
+
+      toast({ title: 'สำเร็จ', description: 'ส่งออกใบรับรองเรียบร้อยแล้ว' });
+    } catch (error: any) {
+      console.error('Error exporting certificate:', error);
+      toast({ title: 'เกิดข้อผิดพลาด', description: error.message || 'ไม่สามารถส่งออกใบรับรองได้', variant: 'destructive' });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleSubmit = async () => {
     try {
@@ -114,12 +159,31 @@ export function AssessmentHeader({ assessment, hospital, healthOffice, onRefresh
               </div>
             </div>
 
-            {canEdit && (assessment.status === 'draft' || assessment.status === 'returned') && (
-              <Button onClick={() => setSubmitDialogOpen(true)}>
-                <Send className="w-4 h-4 mr-2" />
-                ส่งแบบประเมิน
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Export Certificate Button - only for approved assessments */}
+              {canExportCertificate && (
+                <Button 
+                  variant="outline" 
+                  onClick={handleExportCertificate}
+                  disabled={exporting}
+                  className="text-success border-success hover:bg-success/10"
+                >
+                  {exporting ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4 mr-2" />
+                  )}
+                  ส่งออกใบรับรอง
+                </Button>
+              )}
+
+              {canEdit && (assessment.status === 'draft' || assessment.status === 'returned') && (
+                <Button onClick={() => setSubmitDialogOpen(true)}>
+                  <Send className="w-4 h-4 mr-2" />
+                  ส่งแบบประเมิน
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
