@@ -205,20 +205,27 @@ export default function Reports() {
   );
 
   // Calculate statistics based on drill level (including health offices)
+  // Use latestApprovedAssessments for "completed" count to be consistent with Dashboard
   const drillStats = useMemo(() => {
     let filteredHospitals: Hospital[] = [];
     let filteredHealthOffices: HealthOffice[] = [];
     let drillFilteredAssessments: Assessment[] = [];
+    let drillFilteredApprovedAssessments: Assessment[] = [];
     
     if (chartDrillLevel === 'region') {
       filteredHospitals = hospitals;
       filteredHealthOffices = healthOffices;
       drillFilteredAssessments = latestAssessments;
+      drillFilteredApprovedAssessments = latestApprovedAssessments;
     } else if (chartDrillLevel === 'province' && chartRegionId) {
       const regionProvinces = provinces.filter(p => p.health_region_id === chartRegionId);
       filteredHospitals = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id));
       filteredHealthOffices = healthOffices.filter(ho => ho.health_region_id === chartRegionId);
       drillFilteredAssessments = latestAssessments.filter(a => 
+        filteredHospitals.some(h => h.id === a.hospital_id) || 
+        filteredHealthOffices.some(ho => ho.id === a.health_office_id)
+      );
+      drillFilteredApprovedAssessments = latestApprovedAssessments.filter(a => 
         filteredHospitals.some(h => h.id === a.hospital_id) || 
         filteredHealthOffices.some(ho => ho.id === a.health_office_id)
       );
@@ -229,16 +236,21 @@ export default function Reports() {
         filteredHospitals.some(h => h.id === a.hospital_id) || 
         filteredHealthOffices.some(ho => ho.id === a.health_office_id)
       );
+      drillFilteredApprovedAssessments = latestApprovedAssessments.filter(a => 
+        filteredHospitals.some(h => h.id === a.hospital_id) || 
+        filteredHealthOffices.some(ho => ho.id === a.health_office_id)
+      );
     }
     
     const totalUnits = filteredHospitals.length + filteredHealthOffices.length;
+    // Use approved assessments count for "completed" to match Dashboard
     return {
       totalHospitals: totalUnits,
       withAssessment: drillFilteredAssessments.length,
-      completed: drillFilteredAssessments.filter(a => a.status === 'approved_regional' || a.status === 'completed').length,
+      completed: drillFilteredApprovedAssessments.length,
       pending: drillFilteredAssessments.filter(a => a.status === 'submitted' || a.status === 'approved_provincial').length
     };
-  }, [chartDrillLevel, chartRegionId, chartProvinceId, hospitals, healthOffices, provinces, latestAssessments]);
+  }, [chartDrillLevel, chartRegionId, chartProvinceId, hospitals, healthOffices, provinces, latestAssessments, latestApprovedAssessments]);
 
   return (
     <DashboardLayout>
@@ -519,7 +531,14 @@ export default function Reports() {
                       }
                       return true;
                     }).map(hospital => {
-                      const assessment = latestApprovedByUnit.get(hospital.id) ?? latestByUnit.get(hospital.id) ?? null;
+                      // Prioritize showing approved assessment if exists, otherwise show latest for status info
+                      const approvedAssessment = latestApprovedByUnit.get(hospital.id);
+                      const latestAssessment = latestByUnit.get(hospital.id);
+                      // For scores, always use approved assessment
+                      const scoreAssessment = approvedAssessment;
+                      // For status display, show approved if exists, otherwise show latest
+                      const displayAssessment = approvedAssessment || latestAssessment;
+                      
                       return (
                         <TableRow key={hospital.id}>
                           <TableCell className="font-mono text-sm">{hospital.code}</TableCell>
@@ -528,29 +547,29 @@ export default function Reports() {
                             <Badge variant="secondary">โรงพยาบาล</Badge>
                           </TableCell>
                           <TableCell>
-                            {assessment ? (
+                            {displayAssessment ? (
                               <span className="text-sm">
-                                {assessment.assessment_period}/{assessment.fiscal_year + 543}
+                                {displayAssessment.assessment_period}/{displayAssessment.fiscal_year + 543}
                               </span>
                             ) : '-'}
                           </TableCell>
                           <TableCell>
-                            {assessment ? (
-                              <Badge variant={statusLabels[assessment.status]?.variant || 'secondary'}>
-                                {statusLabels[assessment.status]?.label || assessment.status}
+                            {displayAssessment ? (
+                              <Badge variant={statusLabels[displayAssessment.status]?.variant || 'secondary'}>
+                                {statusLabels[displayAssessment.status]?.label || displayAssessment.status}
                               </Badge>
                             ) : (
                               <Badge variant="outline">ยังไม่มีข้อมูล</Badge>
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            {assessment?.quantitative_score?.toFixed(2) || '-'}
+                            {scoreAssessment?.quantitative_score?.toFixed(2) || '-'}
                           </TableCell>
                           <TableCell className="text-right">
-                            {assessment?.impact_score?.toFixed(2) || '-'}
+                            {scoreAssessment?.impact_score?.toFixed(2) || '-'}
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {assessment?.total_score?.toFixed(2) || '-'}
+                            {scoreAssessment?.total_score?.toFixed(2) || '-'}
                           </TableCell>
                         </TableRow>
                       );
@@ -563,7 +582,14 @@ export default function Reports() {
                       }
                       return true;
                     }).map(office => {
-                      const assessment = latestApprovedByUnit.get(office.id) ?? latestByUnit.get(office.id) ?? null;
+                      // Prioritize showing approved assessment if exists, otherwise show latest for status info
+                      const approvedAssessment = latestApprovedByUnit.get(office.id);
+                      const latestAssessment = latestByUnit.get(office.id);
+                      // For scores, always use approved assessment
+                      const scoreAssessment = approvedAssessment;
+                      // For status display, show approved if exists, otherwise show latest
+                      const displayAssessment = approvedAssessment || latestAssessment;
+                      
                       return (
                         <TableRow key={office.id}>
                           <TableCell className="font-mono text-sm">{office.code}</TableCell>
@@ -572,29 +598,29 @@ export default function Reports() {
                             <Badge variant="outline">{office.office_type}</Badge>
                           </TableCell>
                           <TableCell>
-                            {assessment ? (
+                            {displayAssessment ? (
                               <span className="text-sm">
-                                {assessment.assessment_period}/{assessment.fiscal_year + 543}
+                                {displayAssessment.assessment_period}/{displayAssessment.fiscal_year + 543}
                               </span>
                             ) : '-'}
                           </TableCell>
                           <TableCell>
-                            {assessment ? (
-                              <Badge variant={statusLabels[assessment.status]?.variant || 'secondary'}>
-                                {statusLabels[assessment.status]?.label || assessment.status}
+                            {displayAssessment ? (
+                              <Badge variant={statusLabels[displayAssessment.status]?.variant || 'secondary'}>
+                                {statusLabels[displayAssessment.status]?.label || displayAssessment.status}
                               </Badge>
                             ) : (
                               <Badge variant="outline">ยังไม่มีข้อมูล</Badge>
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            {assessment?.quantitative_score?.toFixed(2) || '-'}
+                            {scoreAssessment?.quantitative_score?.toFixed(2) || '-'}
                           </TableCell>
                           <TableCell className="text-right">
-                            {assessment?.impact_score?.toFixed(2) || '-'}
+                            {scoreAssessment?.impact_score?.toFixed(2) || '-'}
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {assessment?.total_score?.toFixed(2) || '-'}
+                            {scoreAssessment?.total_score?.toFixed(2) || '-'}
                           </TableCell>
                         </TableRow>
                       );
