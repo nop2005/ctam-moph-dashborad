@@ -73,7 +73,8 @@ export default function Assessment() {
     return item.description && /^\[\w+\]/.test(item.description);
   });
 
-  const canSubmit = canEdit && allItemsAnswered && allSubOptionsSelected && allFilesAttached;
+  // File attachment is now optional - only require answers and sub-options
+  const canSubmit = canEdit && allItemsAnswered && allSubOptionsSelected;
 
   // Calculate scores for tabs
   const calculateQuantitativeScore = () => {
@@ -331,11 +332,7 @@ export default function Assessment() {
                 กรุณาเลือกประเภทของระบบ/เครื่องมือที่ใช้ให้ครบทุกข้อที่ตอบ "มี"
               </p>
             )}
-            {canEdit && allItemsAnswered && allSubOptionsSelected && !allFilesAttached && (
-              <p className="text-center text-sm text-destructive">
-                กรุณาแนบไฟล์หลักฐานให้ครบทุกข้อที่ตอบ "มี" (อย่างน้อย 1 ไฟล์ต่อข้อ)
-              </p>
-            )}
+            {/* File attachment warning removed - now optional */}
             
             {/* Section-level approval for quantitative */}
             <SectionApproval 
