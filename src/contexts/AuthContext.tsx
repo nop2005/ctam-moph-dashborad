@@ -246,8 +246,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // 1. Clear local state first to immediately trigger UI change
+    clearLocalAuthState();
+
+    // 2. Clean up local storage in background
     try {
-      // Clear local storage auth keys first to ensure clean state
       const keysToRemove: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -262,12 +265,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       // Session might already be invalidated on server (session_not_found) - this is OK
       console.warn('SignOut API error (session may already be invalid):', error);
-    } finally {
-      // Always clear local state regardless of API response
-      clearLocalAuthState();
-      // Go to login immediately (avoid rendering public pages during teardown)
-      window.location.replace('/login');
     }
+    // Note: Navigation to /login will happen automatically via ProtectedRoute detecting user=null
   };
 
   return (
