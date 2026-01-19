@@ -215,8 +215,20 @@ export default function Dashboard() {
       const now = Date.now();
       const cached = dashboardCache.get(cacheKey);
 
+      // เก็บค่าล่าสุดไว้ในตัวแปร local เพื่อเขียนลง cache ได้ถูกต้อง (กัน state async ทำให้ cache เป็น 0)
+      let nextCacheStats: AssessmentStats = cached?.stats ?? stats;
+      let nextCacheAssessments: (Assessment & { hospitals?: Hospital; health_offices?: HealthOffice })[] =
+        cached?.assessments ?? assessments;
+      let nextCacheHospitals: Hospital[] = cached?.hospitals ?? hospitals;
+      let nextCacheHealthOffice: HealthOffice | null = cached?.healthOffice ?? healthOffice;
+
       // 1) Hydrate จาก cache ทันที เพื่อไม่ให้หน้า "หมุน" ทุกครั้งที่สลับแท็บ/สลับเมนู
       if (cached && now - cached.ts < DASHBOARD_CACHE_MS) {
+        nextCacheStats = cached.stats;
+        nextCacheAssessments = cached.assessments;
+        nextCacheHospitals = cached.hospitals;
+        nextCacheHealthOffice = cached.healthOffice;
+
         setStats(cached.stats);
         setAssessments(cached.assessments);
         setHospitals(cached.hospitals);
@@ -232,7 +244,7 @@ export default function Dashboard() {
       try {
         // Full-page spinner เฉพาะครั้งแรกจริง ๆ (ไม่มี cache หรือ cache หมดอายุ)
         // สำคัญ: ไม่ setLoading(true) ถ้ามี data อยู่แล้ว เพื่อกัน spinner ตอนสลับแท็บ
-        const hasExistingData = assessments.length > 0 || stats.total > 0;
+        const hasExistingData = nextCacheAssessments.length > 0 || nextCacheStats.total > 0;
         if (!cached && !hasExistingData) {
           setLoading(true);
         } else if (cached) {
@@ -311,8 +323,9 @@ export default function Dashboard() {
           const waitingRegional = filteredStats.filter(a => a.status === 'approved_provincial').length;
           const approved = filteredStats.filter(a => a.status === 'approved_regional' || a.status === 'completed').length;
           const returned = filteredStats.filter(a => a.status === 'returned').length;
-          const nextStats = { total, draft, waitingProvincial, waitingRegional, approved, returned };
-          setStats(nextStats);
+          const computedStats = { total, draft, waitingProvincial, waitingRegional, approved, returned };
+          nextCacheStats = computedStats;
+          setStats(computedStats);
         }
 
         // Load assessments list - provincial จะเห็นเฉพาะจังหวัดตัวเอง
@@ -348,8 +361,9 @@ export default function Dashboard() {
             filtered = (assessmentsData || []).filter(a => a.health_office_id === profile.health_office_id);
           }
           // central_admin, regional, supervisor see all
-          const nextAssessments = filtered;
-          setAssessments(nextAssessments);
+          const computedAssessments = filtered;
+          nextCacheAssessments = computedAssessments;
+          setAssessments(computedAssessments);
         }
 
         // Load hospitals for create dialog
@@ -358,7 +372,8 @@ export default function Dashboard() {
             .from('hospitals')
             .select('*')
             .eq('id', profile.hospital_id);
-          setHospitals(hospitalData || []);
+          nextCacheHospitals = hospitalData || [];
+          setHospitals(nextCacheHospitals);
           if (hospitalData?.[0]) {
             setSelectedHospital(hospitalData[0].id);
             const hospitalAssessments = (assessmentsData || []).filter(
@@ -373,6 +388,7 @@ export default function Dashboard() {
             .select('*')
             .eq('id', profile.health_office_id)
             .maybeSingle();
+          nextCacheHealthOffice = healthOfficeData;
           setHealthOffice(healthOfficeData);
           
           if (healthOfficeData) {
@@ -387,7 +403,8 @@ export default function Dashboard() {
             .from('hospitals')
             .select('*')
             .order('name');
-          setHospitals(hospitalsData || []);
+          nextCacheHospitals = hospitalsData || [];
+          setHospitals(nextCacheHospitals);
         }
 
       } catch (error) {
@@ -402,10 +419,10 @@ export default function Dashboard() {
             const cacheKey = getDashboardCacheKey(profile, selectedFiscalYear);
             dashboardCache.set(cacheKey, {
               ts: Date.now(),
-              stats,
-              assessments,
-              hospitals,
-              healthOffice,
+              stats: nextCacheStats,
+              assessments: nextCacheAssessments,
+              hospitals: nextCacheHospitals,
+              healthOffice: nextCacheHealthOffice,
             });
           }
         }
