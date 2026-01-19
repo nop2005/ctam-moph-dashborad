@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ArrowLeft, Send, Loader2, Download } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import type { Database } from '@/integrations/supabase/types';
 
 type Assessment = Database['public']['Tables']['assessments']['Row'];
@@ -57,7 +58,7 @@ export function AssessmentHeader({ assessment, hospital, healthOffice, onRefresh
   const handleExportCertificate = async () => {
     try {
       setExporting(true);
-      toast({ title: 'กำลังสร้างใบรับรอง...', description: 'กรุณารอสักครู่' });
+      toast({ title: 'กำลังสร้างใบรับรอง PDF...', description: 'กรุณารอสักครู่' });
 
       // Get the main content element
       const element = document.querySelector('main');
@@ -67,7 +68,7 @@ export function AssessmentHeader({ assessment, hospital, healthOffice, onRefresh
 
       // Use html2canvas to capture the page
       const canvas = await html2canvas(element as HTMLElement, {
-        scale: 2, // Higher quality
+        scale: 2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
@@ -76,16 +77,38 @@ export function AssessmentHeader({ assessment, hospital, healthOffice, onRefresh
         windowHeight: element.scrollHeight,
       });
 
-      // Convert to JPEG and download
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-      const link = document.createElement('a');
+      // Convert canvas to image data
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      
+      // Calculate PDF dimensions (A4 aspect ratio)
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const pdfWidth = 210; // A4 width in mm
+      const pdfHeight = (imgHeight * pdfWidth) / imgWidth;
+      
+      // Create PDF with appropriate orientation
+      const orientation = pdfHeight > pdfWidth * 1.5 ? 'portrait' : 'landscape';
+      const pdf = new jsPDF({
+        orientation: orientation as 'portrait' | 'landscape',
+        unit: 'mm',
+        format: orientation === 'portrait' ? [pdfWidth, pdfHeight] : [pdfHeight, pdfWidth]
+      });
+      
+      // Add image to PDF
+      if (orientation === 'portrait') {
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      } else {
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfHeight, pdfWidth);
+      }
+
+      // Generate filename and download
       const orgName = hospital?.name || healthOffice?.name || 'assessment';
       const safeName = orgName.replace(/[^a-zA-Z0-9ก-๙]/g, '_');
-      link.download = `ใบรับรอง_CTAM_${safeName}_${assessment.fiscal_year + 543}_${assessment.assessment_period}.jpg`;
-      link.href = dataUrl;
-      link.click();
+      const filename = `ใบรับรอง_CTAM_${safeName}_${assessment.fiscal_year + 543}_${assessment.assessment_period}.pdf`;
+      
+      pdf.save(filename);
 
-      toast({ title: 'สำเร็จ', description: 'ส่งออกใบรับรองเรียบร้อยแล้ว' });
+      toast({ title: 'สำเร็จ', description: 'ส่งออกใบรับรอง PDF เรียบร้อยแล้ว' });
     } catch (error: any) {
       console.error('Error exporting certificate:', error);
       toast({ title: 'เกิดข้อผิดพลาด', description: error.message || 'ไม่สามารถส่งออกใบรับรองได้', variant: 'destructive' });
