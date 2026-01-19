@@ -106,30 +106,52 @@ let fiscalYearsCache: { ts: number; years: number[] } | null = null;
 const getDashboardCacheKey = (p: any, fiscalYear: string) =>
   [p?.role, p?.province_id, p?.health_region_id, p?.hospital_id, p?.health_office_id, fiscalYear].join('|');
 
+// Helper: ดึง cache แบบ sync สำหรับ initial state (เพื่อไม่ให้หมุน spinner ตอนสลับแท็บ)
+const getInitialCacheState = (profile: any, fiscalYear: string) => {
+  if (!profile) return null;
+  const cacheKey = getDashboardCacheKey(profile, fiscalYear);
+  const cached = dashboardCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < DASHBOARD_CACHE_MS) {
+    return cached;
+  }
+  return null;
+};
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { toast } = useToast();
-  
-  const [stats, setStats] = useState<AssessmentStats>({
-    total: 0,
-    draft: 0,
-    waitingProvincial: 0,
-    waitingRegional: 0,
-    approved: 0,
-    returned: 0,
-  });
-  const [loading, setLoading] = useState(true); // true เฉพาะครั้งแรก
-  const [isRefetching, setIsRefetching] = useState(false); // สำหรับ background refresh
-  const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(
-    getCurrentFiscalYear().toString()
-  );
-  const [fiscalYears, setFiscalYears] = useState<number[]>([]);
 
-  // Assessment list state
-  const [assessments, setAssessments] = useState<(Assessment & { hospitals?: Hospital; health_offices?: HealthOffice })[]>([]);
-  const [hospitals, setHospitals] = useState<Hospital[]>([]);
-  const [healthOffice, setHealthOffice] = useState<HealthOffice | null>(null);
+  // กำหนดปีงบประมาณเริ่มต้นก่อน เพื่อใช้ใน initial cache lookup
+  const initialFiscalYear = getCurrentFiscalYear().toString();
+  
+  // ลอง hydrate จาก cache ทันที (sync) เพื่อไม่ให้มี spinner ตอนกลับมาจากแท็บอื่น
+  const initialCache = getInitialCacheState(profile, initialFiscalYear);
+  
+  const [stats, setStats] = useState<AssessmentStats>(
+    initialCache?.stats ?? {
+      total: 0,
+      draft: 0,
+      waitingProvincial: 0,
+      waitingRegional: 0,
+      approved: 0,
+      returned: 0,
+    }
+  );
+  // ถ้ามี cache -> loading = false ตั้งแต่แรก
+  const [loading, setLoading] = useState(!initialCache);
+  const [isRefetching, setIsRefetching] = useState(false); // สำหรับ background refresh
+  const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(initialFiscalYear);
+  const [fiscalYears, setFiscalYears] = useState<number[]>(
+    fiscalYearsCache ? fiscalYearsCache.years : []
+  );
+
+  // Assessment list state - hydrate จาก cache ถ้ามี
+  const [assessments, setAssessments] = useState<(Assessment & { hospitals?: Hospital; health_offices?: HealthOffice })[]>(
+    initialCache?.assessments ?? []
+  );
+  const [hospitals, setHospitals] = useState<Hospital[]>(initialCache?.hospitals ?? []);
+  const [healthOffice, setHealthOffice] = useState<HealthOffice | null>(initialCache?.healthOffice ?? null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedHospital, setSelectedHospital] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
@@ -183,7 +205,11 @@ export default function Dashboard() {
     let cancelled = false;
 
     const fetchData = async () => {
-      if (!profile) return;
+      if (!profile) {
+        // ถ้า profile ยังไม่มา แต่เรามี cache อยู่แล้ว ก็ไม่ต้องแสดง spinner
+        // (สลับแท็บกลับมา auth อาจยังไม่ hydrate profile แต่ UI ควรแสดงข้อมูลเก่าได้)
+        return;
+      }
 
       const cacheKey = getDashboardCacheKey(profile, selectedFiscalYear);
       const now = Date.now();
@@ -204,10 +230,12 @@ export default function Dashboard() {
       }
 
       try {
-        // Full-page spinner เฉพาะครั้งแรกจริง ๆ (ไม่มี cache)
-        if (!cached) {
+        // Full-page spinner เฉพาะครั้งแรกจริง ๆ (ไม่มี cache หรือ cache หมดอายุ)
+        // สำคัญ: ไม่ setLoading(true) ถ้ามี data อยู่แล้ว เพื่อกัน spinner ตอนสลับแท็บ
+        const hasExistingData = assessments.length > 0 || stats.total > 0;
+        if (!cached && !hasExistingData) {
           setLoading(true);
-        } else {
+        } else if (cached) {
           setIsRefetching(true);
         }
 
