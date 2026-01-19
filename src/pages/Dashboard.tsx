@@ -1088,7 +1088,7 @@ export default function Dashboard() {
                       </TableCell>
                       <TableCell>
                         {assessment.total_score !== null 
-                          ? Number(assessment.total_score).toFixed(1)
+                          ? Number(assessment.total_score).toFixed(2)
                           : '-'}
                       </TableCell>
                       <TableCell>
