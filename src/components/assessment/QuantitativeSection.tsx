@@ -342,16 +342,15 @@ export function QuantitativeSection({
     onAllFilesAttached?.(allHaveFiles);
   }, [items, fileCounts, onAllFilesAttached]);
 
-  // Check if a category is complete (has sub-option selected AND has file attached)
+  // Check if a category is complete (has sub-option selected - file is now optional)
   const isCategoryComplete = (categoryId: string): boolean => {
     const item = getItemForCategory(categoryId);
     if (!item) return true; // No item = can proceed
     if (item.status !== 'pass') return true; // Not pass = no requirements
     
-    // Must have sub-option selected AND at least one file
+    // Only require sub-option selection (file attachment is now optional)
     const hasSubOption = !!subOptionSelections[categoryId];
-    const hasFile = (fileCounts[item.id] || 0) > 0;
-    return hasSubOption && hasFile;
+    return hasSubOption;
   };
 
   // Check if user can interact with a specific category (all previous items with 'pass' must be complete)
@@ -385,14 +384,9 @@ export function QuantitativeSection({
     if (!item || item.status !== 'pass') return '';
     
     const hasSubOption = !!subOptionSelections[categoryId];
-    const hasFile = (fileCounts[item.id] || 0) > 0;
     
-    if (!hasSubOption && !hasFile) {
-      return 'กรุณาเลือกประเภทระบบ/เครื่องมือ และแนบหลักฐาน';
-    } else if (!hasSubOption) {
+    if (!hasSubOption) {
       return 'กรุณาเลือกประเภทระบบ/เครื่องมือ';
-    } else if (!hasFile) {
-      return 'กรุณาแนบหลักฐานอย่างน้อย 1 ไฟล์';
     }
     return '';
   };
@@ -669,9 +663,7 @@ export function QuantitativeSection({
                                 disabled={!subOptionSelections[category.id]}
                                 onFileCountChange={(count) => handleFileCountChange(item.id, count)}
                               />
-                              {isFileRequired(category.id) && !readOnly && (
-                                <p className="text-sm text-destructive">กรุณาแนบไฟล์หลักฐานอย่างน้อย 1 ไฟล์</p>
-                              )}
+                              {/* File attachment is now optional - no error message */}
                             </>
                           )}
                         </div>
