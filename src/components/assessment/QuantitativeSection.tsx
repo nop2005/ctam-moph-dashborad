@@ -539,7 +539,7 @@ export function QuantitativeSection({
               
               return (
                 <AccordionItem key={category.id} value={category.id}>
-                  <AccordionTrigger className="px-6 hover:no-underline">
+                  <AccordionTrigger className="px-6 hover:no-underline [&>svg]:order-last [&>svg]:self-center">
                     <div className="flex items-center gap-4 text-left flex-1">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
                         {category.order_number}
@@ -550,7 +550,7 @@ export function QuantitativeSection({
                       </div>
                       {/* Status Selection in Trigger */}
                       <div 
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 mr-4"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {(() => {
@@ -648,11 +648,11 @@ export function QuantitativeSection({
                         />
                       </div>
 
-                      {/* File Upload - Only show when status is 'pass' (มี) - Required */}
+                      {/* File Upload - Only show when status is 'pass' (มี) - Optional */}
                       {showFileUpload && (
                         <div className="space-y-2">
                           <Label className="font-medium">
-                            แนบหลักฐาน <span className="text-destructive">*</span>
+                            แนบหลักฐาน <span className="text-muted-foreground">(ไม่บังคับ)</span>
                           </Label>
                           {item && (
                             <>
