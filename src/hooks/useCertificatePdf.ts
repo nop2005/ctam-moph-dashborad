@@ -39,11 +39,58 @@ const loadImageAsBase64 = async (url: string): Promise<string> => {
   });
 };
 
+// Load THSarabunNew font dynamically
+const loadTHSarabunFont = async (): Promise<ArrayBuffer | null> => {
+  try {
+    // Try loading from various CDN sources
+    const fontUrls = [
+      'https://cdn.jsdelivr.net/gh/nicholashamilton/thai-fonts@master/TH%20Sarabun%20New/THSarabunNew.ttf',
+      'https://raw.githubusercontent.com/nicholashamilton/thai-fonts/master/TH%20Sarabun%20New/THSarabunNew.ttf',
+    ];
+
+    for (const url of fontUrls) {
+      try {
+        const response = await fetch(url, { mode: 'cors' });
+        if (response.ok) {
+          return await response.arrayBuffer();
+        }
+      } catch {
+        continue;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.warn('Could not load THSarabunNew font:', error);
+    return null;
+  }
+};
+
+// Convert ArrayBuffer to base64
+const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+};
+
 // Thai font embedding - using THSarabunNew
-const addThaiFont = async (doc: jsPDF) => {
-  // For Thai text support, we'll use the default font with UTF-8
-  // jsPDF has limited Thai font support, so we use a workaround
-  doc.setFont('helvetica');
+const addThaiFont = async (doc: jsPDF): Promise<boolean> => {
+  try {
+    const fontBuffer = await loadTHSarabunFont();
+    if (fontBuffer) {
+      const base64Font = arrayBufferToBase64(fontBuffer);
+      doc.addFileToVFS('THSarabunNew.ttf', base64Font);
+      doc.addFont('THSarabunNew.ttf', 'THSarabunNew', 'normal');
+      doc.setFont('THSarabunNew');
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.warn('Failed to add Thai font:', error);
+    return false;
+  }
 };
 
 export function useCertificatePdf() {
@@ -63,6 +110,10 @@ export function useCertificatePdf() {
       const margin = 20;
       let y = 20;
 
+      // Try to add Thai font
+      const hasThaifont = await addThaiFont(doc);
+      const fontName = hasThaifont ? 'THSarabunNew' : 'helvetica';
+
       // Load and add logo
       try {
         const logoBase64 = await loadImageAsBase64(mophLogoUrl);
@@ -74,14 +125,23 @@ export function useCertificatePdf() {
         y += 10;
       }
 
-      // Title
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Certificate of Cybersecurity Assessment', pageWidth / 2, y, { align: 'center' });
-      y += 8;
+      // Title - in Thai
+      doc.setFontSize(hasThaifont ? 22 : 18);
+      doc.setFont(fontName, 'normal');
       
-      doc.setFontSize(14);
-      doc.text('CTAM+ (Cybersecurity Assessment for Thai Health Sector)', pageWidth / 2, y, { align: 'center' });
+      if (hasThaifont) {
+        doc.text('ใบรับรองการประเมิน', pageWidth / 2, y, { align: 'center' });
+        y += 10;
+        doc.setFontSize(16);
+        doc.text('การประเมินความมั่นคงปลอดภัยไซเบอร์ระบบเทคโนโลยีสารสนเทศ', pageWidth / 2, y, { align: 'center' });
+        y += 8;
+        doc.text('CTAM+ (Cybersecurity Assessment for Thai Health Sector)', pageWidth / 2, y, { align: 'center' });
+      } else {
+        doc.text('Certificate of Assessment', pageWidth / 2, y, { align: 'center' });
+        y += 8;
+        doc.setFontSize(14);
+        doc.text('CTAM+ (Cybersecurity Assessment for Thai Health Sector)', pageWidth / 2, y, { align: 'center' });
+      }
       y += 15;
 
       // Certificate number and date
@@ -90,10 +150,16 @@ export function useCertificatePdf() {
         ? new Date(data.approvedAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
         : new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
       
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Certificate No: ${certNumber}`, margin, y);
-      doc.text(`Issue Date: ${issueDate}`, pageWidth - margin, y, { align: 'right' });
+      doc.setFontSize(hasThaifont ? 14 : 10);
+      doc.setFont(fontName, 'normal');
+      
+      if (hasThaifont) {
+        doc.text(`เลขที่ใบรับรอง: ${certNumber}`, margin, y);
+        doc.text(`วันที่ออก: ${issueDate}`, pageWidth - margin, y, { align: 'right' });
+      } else {
+        doc.text(`Certificate No: ${certNumber}`, margin, y);
+        doc.text(`Issue Date: ${issueDate}`, pageWidth - margin, y, { align: 'right' });
+      }
       y += 15;
 
       // Horizontal line
@@ -103,104 +169,162 @@ export function useCertificatePdf() {
       y += 10;
 
       // Certificate content
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('CERTIFICATE', pageWidth / 2, y, { align: 'center' });
-      y += 10;
+      doc.setFontSize(hasThaifont ? 16 : 12);
+      doc.setFont(fontName, 'normal');
+      
+      if (hasThaifont) {
+        doc.text('หนังสือรับรอง', pageWidth / 2, y, { align: 'center' });
+      } else {
+        doc.text('CERTIFICATE', pageWidth / 2, y, { align: 'center' });
+      }
+      y += 12;
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
+      doc.setFontSize(hasThaifont ? 14 : 11);
       
       const wrapText = (text: string, maxWidth: number) => {
         return doc.splitTextToSize(text, maxWidth);
       };
 
       // Organization details
-      doc.text('This certificate is issued to certify that:', margin, y);
+      if (hasThaifont) {
+        doc.text('หนังสือฉบับนี้ขอรับรองว่า:', margin, y);
+      } else {
+        doc.text('This certificate is issued to certify that:', margin, y);
+      }
       y += 10;
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
-      doc.text(`Organization: ${data.hospitalName}`, margin, y);
+      doc.setFontSize(hasThaifont ? 16 : 14);
+      if (hasThaifont) {
+        doc.text(`หน่วยงาน: ${data.hospitalName}`, margin, y);
+      } else {
+        doc.text(`Organization: ${data.hospitalName}`, margin, y);
+      }
       y += 8;
 
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Province: ${data.provinceName}`, margin, y);
-      y += 6;
-      doc.text(`Health Region: ${data.healthRegionNumber}`, margin, y);
+      doc.setFontSize(hasThaifont ? 14 : 11);
+      if (hasThaifont) {
+        doc.text(`จังหวัด: ${data.provinceName}`, margin, y);
+        y += 7;
+        doc.text(`เขตสุขภาพที่: ${data.healthRegionNumber}`, margin, y);
+      } else {
+        doc.text(`Province: ${data.provinceName}`, margin, y);
+        y += 6;
+        doc.text(`Health Region: ${data.healthRegionNumber}`, margin, y);
+      }
       y += 12;
 
       // Assessment details
-      const certText = wrapText(
-        'has successfully completed the Cybersecurity Assessment for the Health Information Technology System according to the CTAM+ (Cybersecurity Assessment for Thai Health Sector) framework.',
-        pageWidth - margin * 2
-      );
+      let certText: string[];
+      if (hasThaifont) {
+        certText = wrapText(
+          'ได้ผ่านการประเมินความมั่นคงปลอดภัยไซเบอร์ระบบเทคโนโลยีสารสนเทศสุขภาพ ตามกรอบมาตรฐาน CTAM+ (Cybersecurity Assessment for Thai Health Sector) โดยกระทรวงสาธารณสุข',
+          pageWidth - margin * 2
+        );
+      } else {
+        certText = wrapText(
+          'has successfully completed the Cybersecurity Assessment for the Health Information Technology System according to the CTAM+ (Cybersecurity Assessment for Thai Health Sector) framework.',
+          pageWidth - margin * 2
+        );
+      }
       doc.text(certText, margin, y);
-      y += certText.length * 5 + 10;
+      y += certText.length * (hasThaifont ? 7 : 5) + 10;
 
       // Assessment period
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Assessment Period: ${data.assessmentPeriod}/${data.fiscalYear + 543}`, margin, y);
+      doc.setFontSize(hasThaifont ? 14 : 11);
+      if (hasThaifont) {
+        doc.text(`รอบการประเมิน: ครั้งที่ ${data.assessmentPeriod} ปีงบประมาณ พ.ศ. ${data.fiscalYear + 543}`, margin, y);
+      } else {
+        doc.text(`Assessment Period: ${data.assessmentPeriod}/${data.fiscalYear + 543}`, margin, y);
+      }
       y += 12;
 
       // Score box
       doc.setDrawColor(0, 100, 0);
       doc.setFillColor(240, 255, 240);
-      doc.roundedRect(margin, y, pageWidth - margin * 2, 45, 3, 3, 'FD');
-      y += 8;
-
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Assessment Results', pageWidth / 2, y, { align: 'center' });
+      doc.roundedRect(margin, y, pageWidth - margin * 2, 50, 3, 3, 'FD');
       y += 10;
 
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(hasThaifont ? 16 : 12);
+      if (hasThaifont) {
+        doc.text('ผลการประเมิน', pageWidth / 2, y, { align: 'center' });
+      } else {
+        doc.text('Assessment Results', pageWidth / 2, y, { align: 'center' });
+      }
+      y += 10;
+
+      doc.setFontSize(hasThaifont ? 14 : 11);
       
       const col1 = margin + 10;
       const col2 = pageWidth / 2 + 10;
       
-      doc.text(`Quantitative Score (70%): ${data.quantitativeScore !== null ? Number(data.quantitativeScore).toFixed(2) : '-'} / 7.00`, col1, y);
-      doc.text(`Qualitative Score (15%): ${data.qualitativeScore !== null ? Number(data.qualitativeScore).toFixed(2) : '-'} / 1.50`, col2, y);
-      y += 7;
-      
-      doc.text(`Impact Score (15%): ${data.impactScore !== null ? Number(data.impactScore).toFixed(2) : '-'} / 1.50`, col1, y);
-      y += 10;
+      if (hasThaifont) {
+        doc.text(`คะแนนเชิงปริมาณ (70%): ${data.quantitativeScore !== null ? Number(data.quantitativeScore).toFixed(2) : '-'} / 7.00`, col1, y);
+        doc.text(`คะแนนเชิงคุณภาพ (15%): ${data.qualitativeScore !== null ? Number(data.qualitativeScore).toFixed(2) : '-'} / 1.50`, col2, y);
+        y += 8;
+        doc.text(`คะแนนผลกระทบ (15%): ${data.impactScore !== null ? Number(data.impactScore).toFixed(2) : '-'} / 1.50`, col1, y);
+      } else {
+        doc.text(`Quantitative Score (70%): ${data.quantitativeScore !== null ? Number(data.quantitativeScore).toFixed(2) : '-'} / 7.00`, col1, y);
+        doc.text(`Qualitative Score (15%): ${data.qualitativeScore !== null ? Number(data.qualitativeScore).toFixed(2) : '-'} / 1.50`, col2, y);
+        y += 7;
+        doc.text(`Impact Score (15%): ${data.impactScore !== null ? Number(data.impactScore).toFixed(2) : '-'} / 1.50`, col1, y);
+      }
+      y += 12;
 
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(hasThaifont ? 18 : 14);
       doc.setTextColor(0, 100, 0);
-      doc.text(`Total Score: ${data.totalScore !== null ? Number(data.totalScore).toFixed(2) : '-'} / 10.00`, pageWidth / 2, y, { align: 'center' });
+      if (hasThaifont) {
+        doc.text(`คะแนนรวม: ${data.totalScore !== null ? Number(data.totalScore).toFixed(2) : '-'} / 10.00`, pageWidth / 2, y, { align: 'center' });
+      } else {
+        doc.text(`Total Score: ${data.totalScore !== null ? Number(data.totalScore).toFixed(2) : '-'} / 10.00`, pageWidth / 2, y, { align: 'center' });
+      }
       doc.setTextColor(0, 0, 0);
-      y += 15;
+      y += 20;
 
       // Result status
-      y += 5;
-      doc.setFontSize(12);
+      doc.setFontSize(hasThaifont ? 14 : 12);
       const passed = data.totalScore !== null && data.totalScore >= 5;
       if (passed) {
         doc.setTextColor(0, 128, 0);
-        doc.text('[X] Passed the assessment criteria', margin, y);
-        y += 6;
-        doc.text('[  ] Passed with recommendations for improvement', margin, y);
+        if (hasThaifont) {
+          doc.text('[X] ผ่านเกณฑ์การประเมิน', margin, y);
+          y += 7;
+          doc.text('[  ] ผ่านโดยมีข้อเสนอแนะให้ปรับปรุง', margin, y);
+        } else {
+          doc.text('[X] Passed the assessment criteria', margin, y);
+          y += 6;
+          doc.text('[  ] Passed with recommendations for improvement', margin, y);
+        }
       } else {
-        doc.text('[  ] Passed the assessment criteria', margin, y);
-        y += 6;
-        doc.setTextColor(255, 140, 0);
-        doc.text('[X] Passed with recommendations for improvement', margin, y);
+        if (hasThaifont) {
+          doc.text('[  ] ผ่านเกณฑ์การประเมิน', margin, y);
+          y += 7;
+          doc.setTextColor(255, 140, 0);
+          doc.text('[X] ผ่านโดยมีข้อเสนอแนะให้ปรับปรุง', margin, y);
+        } else {
+          doc.text('[  ] Passed the assessment criteria', margin, y);
+          y += 6;
+          doc.setTextColor(255, 140, 0);
+          doc.text('[X] Passed with recommendations for improvement', margin, y);
+        }
       }
       doc.setTextColor(0, 0, 0);
       y += 15;
 
       // Approval section
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Assessed and certified by:', margin, y);
-      y += 7;
-      doc.text(`- Provincial Health Office of ${data.provinceName}`, margin + 5, y);
-      y += 6;
-      doc.text(`- Health Region ${data.healthRegionNumber}`, margin + 5, y);
+      doc.setFontSize(hasThaifont ? 14 : 11);
+      if (hasThaifont) {
+        doc.text('ตรวจสอบและรับรองโดย:', margin, y);
+        y += 8;
+        doc.text(`- สำนักงานสาธารณสุขจังหวัด${data.provinceName}`, margin + 5, y);
+        y += 7;
+        doc.text(`- สำนักงานเขตสุขภาพที่ ${data.healthRegionNumber}`, margin + 5, y);
+      } else {
+        doc.text('Assessed and certified by:', margin, y);
+        y += 7;
+        doc.text(`- Provincial Health Office of ${data.provinceName}`, margin + 5, y);
+        y += 6;
+        doc.text(`- Health Region ${data.healthRegionNumber}`, margin + 5, y);
+      }
       y += 15;
 
       // Approval date
@@ -210,28 +334,47 @@ export function useCertificatePdf() {
           month: 'long', 
           day: 'numeric' 
         });
-        doc.text(`Date of Approval: ${approvalDate}`, margin, y);
+        if (hasThaifont) {
+          doc.text(`วันที่อนุมัติ: ${approvalDate}`, margin, y);
+        } else {
+          doc.text(`Date of Approval: ${approvalDate}`, margin, y);
+        }
       }
       y += 20;
 
       // Signature line
       doc.line(pageWidth - margin - 60, y, pageWidth - margin, y);
       y += 5;
-      doc.setFontSize(10);
-      doc.text('Regional Health Officer', pageWidth - margin - 30, y, { align: 'center' });
-      y += 5;
-      doc.text(`Health Region ${data.healthRegionNumber}`, pageWidth - margin - 30, y, { align: 'center' });
+      doc.setFontSize(hasThaifont ? 12 : 10);
+      if (hasThaifont) {
+        doc.text('ผู้ตรวจราชการกระทรวงสาธารณสุข', pageWidth - margin - 30, y, { align: 'center' });
+        y += 6;
+        doc.text(`เขตสุขภาพที่ ${data.healthRegionNumber}`, pageWidth - margin - 30, y, { align: 'center' });
+      } else {
+        doc.text('Regional Health Officer', pageWidth - margin - 30, y, { align: 'center' });
+        y += 5;
+        doc.text(`Health Region ${data.healthRegionNumber}`, pageWidth - margin - 30, y, { align: 'center' });
+      }
 
       // Footer
       const footerY = doc.internal.pageSize.getHeight() - 15;
-      doc.setFontSize(8);
+      doc.setFontSize(hasThaifont ? 10 : 8);
       doc.setTextColor(128, 128, 128);
-      doc.text(
-        'This certificate was generated by CTAM+ Cybersecurity Assessment System, Ministry of Public Health, Thailand',
-        pageWidth / 2,
-        footerY,
-        { align: 'center' }
-      );
+      if (hasThaifont) {
+        doc.text(
+          'ใบรับรองนี้ออกโดยระบบประเมินความมั่นคงปลอดภัยไซเบอร์ CTAM+ กระทรวงสาธารณสุข',
+          pageWidth / 2,
+          footerY,
+          { align: 'center' }
+        );
+      } else {
+        doc.text(
+          'This certificate was generated by CTAM+ Cybersecurity Assessment System, Ministry of Public Health, Thailand',
+          pageWidth / 2,
+          footerY,
+          { align: 'center' }
+        );
+      }
       doc.text(
         `Document ID: ${data.assessmentId}`,
         pageWidth / 2,
@@ -240,7 +383,7 @@ export function useCertificatePdf() {
       );
 
       // Download
-      const fileName = `Certificate_${data.hospitalName.replace(/\s/g, '_')}_${data.assessmentPeriod}_${data.fiscalYear + 543}.pdf`;
+      const fileName = `ใบรับรอง_${data.hospitalName.replace(/\s/g, '_')}_${data.assessmentPeriod}_${data.fiscalYear + 543}.pdf`;
       doc.save(fileName);
       
       return true;
