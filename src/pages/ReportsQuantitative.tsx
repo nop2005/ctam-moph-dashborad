@@ -515,6 +515,42 @@ export default function ReportsQuantitative() {
     return totalCount > 0 ? (passedCount / totalCount) * 100 : null;
   };
 
+  // Calculate color counts for filter buttons
+  const colorCounts = useMemo(() => {
+    if (selectedProvince === 'all') {
+      return { all: 0, green: 0, yellow: 0, red: 0, gray: 0 };
+    }
+
+    let greenCount = 0;
+    let yellowCount = 0;
+    let redCount = 0;
+    let grayCount = 0;
+
+    tableData.forEach(row => {
+      if (row.type !== 'hospital' && row.type !== 'health_office') return;
+      
+      const passPercentage = getUnitPassPercentage(row.id);
+      
+      if (passPercentage === null) {
+        grayCount++;
+      } else if (passPercentage === 100) {
+        greenCount++;
+      } else if (passPercentage >= 50) {
+        yellowCount++;
+      } else {
+        redCount++;
+      }
+    });
+
+    return {
+      all: tableData.length,
+      green: greenCount,
+      yellow: yellowCount,
+      red: redCount,
+      gray: grayCount
+    };
+  }, [tableData, selectedProvince, latestApprovedByUnit, categories, filteredAssessmentItems]);
+
   // Filter table data based on color filter (only applies at province level - showing hospitals)
   const filteredTableData = useMemo(() => {
     if (selectedColorFilter === 'all' || selectedProvince === 'all') {
@@ -957,7 +993,7 @@ export default function ReportsQuantitative() {
                         : 'bg-background text-foreground border-border hover:bg-muted'
                     }`}
                   >
-                    ทั้งหมด
+                    ทั้งหมด ({colorCounts.all})
                   </button>
                   <button
                     onClick={() => setSelectedColorFilter('red')}
@@ -967,7 +1003,7 @@ export default function ReportsQuantitative() {
                         : 'bg-background text-red-600 border-red-300 hover:bg-red-50 dark:hover:bg-red-950'
                     }`}
                   >
-                    แดง
+                    แดง ({colorCounts.red})
                   </button>
                   <button
                     onClick={() => setSelectedColorFilter('yellow')}
@@ -977,7 +1013,7 @@ export default function ReportsQuantitative() {
                         : 'bg-background text-yellow-600 border-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-950'
                     }`}
                   >
-                    เหลือง
+                    เหลือง ({colorCounts.yellow})
                   </button>
                   <button
                     onClick={() => setSelectedColorFilter('green')}
@@ -987,7 +1023,7 @@ export default function ReportsQuantitative() {
                         : 'bg-background text-green-600 border-green-300 hover:bg-green-50 dark:hover:bg-green-950'
                     }`}
                   >
-                    เขียว
+                    เขียว ({colorCounts.green})
                   </button>
                   <button
                     onClick={() => setSelectedColorFilter('gray')}
@@ -997,7 +1033,7 @@ export default function ReportsQuantitative() {
                         : 'bg-background text-gray-600 border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-950'
                     }`}
                   >
-                    ยังไม่ประเมิน
+                    ยังไม่ประเมิน ({colorCounts.gray})
                   </button>
                 </div>
               )}
