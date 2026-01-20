@@ -101,6 +101,7 @@ export default function ReportsQuantitative() {
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
+  const [selectedColorFilter, setSelectedColorFilter] = useState<'all' | 'green' | 'yellow' | 'red' | 'gray'>('all');
 
   // Check if user is provincial admin
   const isProvincialAdmin = profile?.role === 'provincial';
@@ -232,12 +233,18 @@ export default function ReportsQuantitative() {
     return regionProvinces;
   }, [selectedRegion, provinces, isProvincialAdmin, userProvinceId]);
 
-  // Reset province when region changes (only for non-provincial admin)
+  // Reset province and color filter when region changes (only for non-provincial admin)
   useEffect(() => {
     if (!isProvincialAdmin) {
       setSelectedProvince('all');
+      setSelectedColorFilter('all');
     }
   }, [selectedRegion, isProvincialAdmin]);
+
+  // Reset color filter when province changes
+  useEffect(() => {
+    setSelectedColorFilter('all');
+  }, [selectedProvince]);
 
   // Generate fiscal years from assessments
   const fiscalYears = useMemo(() => generateFiscalYears(assessments), [assessments]);
@@ -487,7 +494,52 @@ export default function ReportsQuantitative() {
       });
       return [...hospitalRows, ...healthOfficeRows];
     }
-  }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, healthOffices, categories, filteredAssessments, filteredAssessmentItems, profile, canViewSameProvinceHospitals]);
+  }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, healthOffices, categories, filteredAssessments, filteredAssessmentItems, profile, canViewSameProvinceHospitals, latestApprovedByUnit]);
+
+  // Helper function to calculate pass percentage for a unit (hospital/health office)
+  const getUnitPassPercentage = (unitId: string): number | null => {
+    const latestAssessment = latestApprovedByUnit.get(unitId);
+    if (!latestAssessment) return null;
+
+    const unitCategoryAverages = categories.map(cat => {
+      const catItems = filteredAssessmentItems.filter(
+        item => item.assessment_id === latestAssessment.id && item.category_id === cat.id
+      );
+      if (catItems.length === 0) return null;
+      const avg = catItems.reduce((sum, item) => sum + Number(item.score), 0) / catItems.length;
+      return avg;
+    });
+
+    const passedCount = unitCategoryAverages.filter(c => c === 1).length;
+    const totalCount = unitCategoryAverages.filter(c => c !== null).length;
+    return totalCount > 0 ? (passedCount / totalCount) * 100 : null;
+  };
+
+  // Filter table data based on color filter (only applies at province level - showing hospitals)
+  const filteredTableData = useMemo(() => {
+    if (selectedColorFilter === 'all' || selectedProvince === 'all') {
+      return tableData;
+    }
+
+    return tableData.filter(row => {
+      if (row.type !== 'hospital' && row.type !== 'health_office') return true;
+      
+      const passPercentage = getUnitPassPercentage(row.id);
+      
+      switch (selectedColorFilter) {
+        case 'green':
+          return passPercentage === 100;
+        case 'yellow':
+          return passPercentage !== null && passPercentage >= 50 && passPercentage < 100;
+        case 'red':
+          return passPercentage !== null && passPercentage < 50;
+        case 'gray':
+          return passPercentage === null;
+        default:
+          return true;
+      }
+    });
+  }, [tableData, selectedColorFilter, selectedProvince, latestApprovedByUnit, categories, filteredAssessmentItems]);
 
   // Get title based on filter state
   const getTitle = () => {
@@ -875,21 +927,80 @@ export default function ReportsQuantitative() {
         {/* Data Table */}
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-3">
-              {/* Back button - show when drilling down */}
-              {(selectedRegion !== 'all' || selectedProvince !== 'all') && !isProvincialAdmin && <button onClick={() => {
-              if (selectedProvince !== 'all') {
-                // Go back to province list
-                setSelectedProvince('all');
-              } else if (selectedRegion !== 'all') {
-                // Go back to region list
-                setSelectedRegion('all');
-              }
-            }} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors">
-                  <ArrowLeft className="w-4 h-4" />
-                  ย้อนกลับ
-                </button>}
-              <CardTitle className="text-lg">{getTitle()}</CardTitle>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex items-center gap-3 flex-1">
+                {/* Back button - show when drilling down */}
+                {(selectedRegion !== 'all' || selectedProvince !== 'all') && !isProvincialAdmin && <button onClick={() => {
+                if (selectedProvince !== 'all') {
+                  // Go back to province list
+                  setSelectedProvince('all');
+                  setSelectedColorFilter('all');
+                } else if (selectedRegion !== 'all') {
+                  // Go back to region list
+                  setSelectedRegion('all');
+                }
+              }} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors">
+                    <ArrowLeft className="w-4 h-4" />
+                    ย้อนกลับ
+                  </button>}
+                <CardTitle className="text-lg">{getTitle()}</CardTitle>
+              </div>
+              
+              {/* Color Filter Buttons - only show at province level (hospital list) */}
+              {selectedProvince !== 'all' && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => setSelectedColorFilter('all')}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
+                      selectedColorFilter === 'all'
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background text-foreground border-border hover:bg-muted'
+                    }`}
+                  >
+                    ทั้งหมด
+                  </button>
+                  <button
+                    onClick={() => setSelectedColorFilter('red')}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
+                      selectedColorFilter === 'red'
+                        ? 'bg-red-500 text-white border-red-500'
+                        : 'bg-background text-red-600 border-red-300 hover:bg-red-50 dark:hover:bg-red-950'
+                    }`}
+                  >
+                    แดง
+                  </button>
+                  <button
+                    onClick={() => setSelectedColorFilter('yellow')}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
+                      selectedColorFilter === 'yellow'
+                        ? 'bg-yellow-500 text-white border-yellow-500'
+                        : 'bg-background text-yellow-600 border-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-950'
+                    }`}
+                  >
+                    เหลือง
+                  </button>
+                  <button
+                    onClick={() => setSelectedColorFilter('green')}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
+                      selectedColorFilter === 'green'
+                        ? 'bg-green-500 text-white border-green-500'
+                        : 'bg-background text-green-600 border-green-300 hover:bg-green-50 dark:hover:bg-green-950'
+                    }`}
+                  >
+                    เขียว
+                  </button>
+                  <button
+                    onClick={() => setSelectedColorFilter('gray')}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
+                      selectedColorFilter === 'gray'
+                        ? 'bg-gray-500 text-white border-gray-500'
+                        : 'bg-background text-gray-600 border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-950'
+                    }`}
+                  >
+                    ยังไม่ประเมิน
+                  </button>
+                </div>
+              )}
             </div>
           </CardHeader>
           <CardContent>
@@ -914,7 +1025,7 @@ export default function ReportsQuantitative() {
             if (loading) {
               return <div className="text-center py-12 text-muted-foreground">กำลังโหลดข้อมูล...</div>;
             }
-            if (tableData.length === 0) {
+            if (filteredTableData.length === 0) {
               return <div className="text-center py-12 text-muted-foreground">ไม่พบข้อมูล</div>;
             }
             return <div className="space-y-4">
@@ -967,7 +1078,7 @@ export default function ReportsQuantitative() {
                     </TableHeader>
 
                     <TableBody>
-                      {tableData.map(row => {
+                      {filteredTableData.map(row => {
                       const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
                       const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
                       const passedPercentage = totalCount > 0 ? passedCount / totalCount * 100 : null;
