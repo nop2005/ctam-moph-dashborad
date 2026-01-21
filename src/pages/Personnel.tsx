@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Award, Upload, FileText, X, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Pencil, Trash2, Award, Upload, FileText, X, Eye, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
@@ -336,19 +336,28 @@ export default function PersonnelPage() {
     }
   };
 
-  const handleViewCertificate = async (cert: Certificate) => {
+  const handleDownloadCertificate = async (cert: Certificate) => {
     if (!cert.file_path) return;
 
     try {
       const { data, error } = await supabase.storage
         .from("certificates")
-        .createSignedUrl(cert.file_path, 300); // 5 minutes
+        .download(cert.file_path);
 
       if (error) throw error;
-      window.open(data.signedUrl, "_blank");
+      
+      // Create download link
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = cert.file_name || cert.file_path.split('/').pop() || 'certificate';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (error: any) {
-      console.error("Error getting file URL:", error);
-      toast.error("ไม่สามารถเปิดไฟล์ได้");
+      console.error("Error downloading file:", error);
+      toast.error("ไม่สามารถดาวน์โหลดไฟล์ได้");
     }
   };
 
@@ -518,11 +527,11 @@ export default function PersonnelPage() {
                                             <Button
                                               variant="ghost"
                                               size="sm"
-                                              onClick={() => handleViewCertificate(cert)}
+                                              onClick={() => handleDownloadCertificate(cert)}
                                               className="text-primary"
                                             >
-                                              <Eye className="h-4 w-4 mr-1" />
-                                              ดูไฟล์
+                                              <Download className="h-4 w-4 mr-1" />
+                                              โหลดไฟล์
                                             </Button>
                                           ) : (
                                             <span className="text-muted-foreground text-sm">-</span>
