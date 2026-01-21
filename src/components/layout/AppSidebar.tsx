@@ -15,6 +15,11 @@ const menuItems = [{
   url: "/personnel",
   icon: UserCheck,
   roles: ["hospital_it", "health_office"]
+}, {
+  title: "บุคลากร",
+  url: "/personnel-admin",
+  icon: UserCheck,
+  roles: ["provincial", "regional"]
 }];
 const reportSubItems = [{
   title: "รายงานภาพรวม",
