@@ -12,10 +12,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Award, ChevronDown, ChevronUp, Download, X } from "lucide-react";
+import { Award, ChevronDown, ChevronUp, Download, FileSpreadsheet, X } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
+import * as XLSX from "xlsx";
 
 interface Personnel {
   id: string;
@@ -365,6 +366,93 @@ export default function PersonnelAdminPage() {
     setSelectedPosition("all");
   };
 
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      // Fetch all certificates for all personnel
+      const personnelIds = filteredPersonnel.map(p => p.id);
+      const { data: allCertificates, error: certError } = await supabase
+        .from("personnel_certificates")
+        .select("*")
+        .in("personnel_id", personnelIds);
+
+      if (certError) throw certError;
+
+      // Group certificates by personnel_id
+      const certsByPersonnel: Record<string, Certificate[]> = {};
+      (allCertificates || []).forEach(cert => {
+        if (!certsByPersonnel[cert.personnel_id]) {
+          certsByPersonnel[cert.personnel_id] = [];
+        }
+        certsByPersonnel[cert.personnel_id].push(cert);
+      });
+
+      // Build export data
+      const exportData = filteredPersonnel.map((person: any, index) => {
+        const personCerts = certsByPersonnel[person.id] || [];
+        const certNames = personCerts.map(c => c.certificate_name).join(", ");
+        
+        return {
+          "ลำดับ": index + 1,
+          "คำนำหน้า": person.title_prefix || "",
+          "ชื่อ": person.first_name,
+          "นามสกุล": person.last_name,
+          "ตำแหน่ง": person.position || "",
+          "โรงพยาบาล": person.hospitals?.name || "",
+          "จังหวัด": person.hospitals?.provinces?.name || "",
+          "เบอร์โทร": person.phone || "",
+          "วันที่เริ่มทำงาน": person.start_date ? formatDateForExcel(person.start_date) : "",
+          "จำนวนใบประกาศ": personCerts.length,
+          "รายชื่อใบประกาศ": certNames,
+        };
+      });
+
+      // Create workbook and worksheet
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "บุคลากร");
+
+      // Auto-size columns
+      const colWidths = [
+        { wch: 6 },  // ลำดับ
+        { wch: 10 }, // คำนำหน้า
+        { wch: 15 }, // ชื่อ
+        { wch: 15 }, // นามสกุล
+        { wch: 25 }, // ตำแหน่ง
+        { wch: 30 }, // โรงพยาบาล
+        { wch: 15 }, // จังหวัด
+        { wch: 15 }, // เบอร์โทร
+        { wch: 18 }, // วันที่เริ่มทำงาน
+        { wch: 12 }, // จำนวนใบประกาศ
+        { wch: 50 }, // รายชื่อใบประกาศ
+      ];
+      ws["!cols"] = colWidths;
+
+      // Generate and download file
+      XLSX.writeFile(wb, `บุคลากร_${format(new Date(), "yyyyMMdd_HHmmss")}.xlsx`);
+      toast.success("ส่งออกข้อมูลเป็น Excel สำเร็จ");
+    } catch (error: any) {
+      console.error("Error exporting Excel:", error);
+      toast.error("ไม่สามารถส่งออกข้อมูลได้");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const formatDateForExcel = (dateStr: string | null) => {
+    if (!dateStr) return "";
+    try {
+      const date = new Date(dateStr);
+      const buddhistYear = date.getFullYear() + 543;
+      const formatted = format(date, "d MMMM", { locale: th });
+      return `${formatted} ${buddhistYear}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
@@ -375,6 +463,10 @@ export default function PersonnelAdminPage() {
               ข้อมูลบุคลากรใน{isRegional ? "เขตสุขภาพ" : "จังหวัด"}
             </p>
           </div>
+          <Button onClick={handleExportExcel} disabled={exporting || loading || filteredPersonnel.length === 0}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            {exporting ? "กำลังส่งออก..." : "Export Excel"}
+          </Button>
         </div>
 
         {/* Filters */}
