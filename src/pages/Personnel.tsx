@@ -61,6 +61,20 @@ interface Personnel {
 
 const TITLE_PREFIXES = ["นาย", "นาง", "นางสาว"] as const;
 
+const POSITIONS = [
+  "นักวิชาการคอมพิวเตอร์",
+  "นักวิชาการสถิติ",
+  "เจ้าพนักงานเวชสถิติ",
+  "นวก.สาธารณสุข(เวชสถิติ)",
+  "นวก.สาธารณสุข",
+  "เจ้าพนักงานเครื่องคอมพิวเตอร์",
+  "เจ้าพนักงานธุรการ",
+  "นักเทคโนโลยีสารสนเทศ",
+  "พยาบาลวิชาชีพ",
+  "นักวิเคราะห์นโยบายและแผน",
+  "นายแพทย์",
+] as const;
+
 interface Certificate {
   id: string;
   personnel_id: string;
@@ -640,14 +654,23 @@ export default function PersonnelPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="position">ตำแหน่ง</Label>
-              <Input
-                id="position"
+              <Select
                 value={formData.position}
-                onChange={(e) =>
-                  setFormData({ ...formData, position: e.target.value })
+                onValueChange={(value) =>
+                  setFormData({ ...formData, position: value })
                 }
-                placeholder="ตำแหน่ง"
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกตำแหน่ง" />
+                </SelectTrigger>
+                <SelectContent>
+                  {POSITIONS.map((pos) => (
+                    <SelectItem key={pos} value={pos}>
+                      {pos}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">เบอร์โทร</Label>
