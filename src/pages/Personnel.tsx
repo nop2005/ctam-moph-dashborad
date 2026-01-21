@@ -38,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ThaiDatePicker } from "@/components/ui/thai-date-picker";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Award, Upload, FileText, X, Eye, ChevronDown, ChevronUp, Download } from "lucide-react";
@@ -660,14 +661,13 @@ export default function PersonnelPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="start_date">วันที่เริ่มทำงาน</Label>
-              <Input
-                id="start_date"
-                type="date"
+              <Label>วันที่เริ่มทำงาน</Label>
+              <ThaiDatePicker
                 value={formData.start_date}
-                onChange={(e) =>
-                  setFormData({ ...formData, start_date: e.target.value })
+                onChange={(value) =>
+                  setFormData({ ...formData, start_date: value })
                 }
+                placeholder="เลือกวันที่เริ่มทำงาน"
               />
             </div>
           </div>
@@ -727,14 +727,13 @@ export default function PersonnelPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cert_date">วันที่ได้รับ</Label>
-              <Input
-                id="cert_date"
-                type="date"
+              <Label>วันที่ได้รับ</Label>
+              <ThaiDatePicker
                 value={newCertificate.issue_date}
-                onChange={(e) =>
-                  setNewCertificate({ ...newCertificate, issue_date: e.target.value })
+                onChange={(value) =>
+                  setNewCertificate({ ...newCertificate, issue_date: value })
                 }
+                placeholder="เลือกวันที่ได้รับ"
               />
             </div>
             <div className="space-y-2">
