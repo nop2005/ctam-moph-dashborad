@@ -378,7 +378,10 @@ export default function PersonnelPage() {
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "-";
     try {
-      return format(new Date(dateStr), "d MMMM yyyy", { locale: th });
+      const date = new Date(dateStr);
+      const buddhistYear = date.getFullYear() + 543;
+      const formatted = format(date, "d MMMM", { locale: th });
+      return `${formatted} ${buddhistYear}`;
     } catch {
       return dateStr;
     }
