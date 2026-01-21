@@ -1,0 +1,694 @@
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Plus, Pencil, Trash2, Award, Upload, FileText, X, Eye } from "lucide-react";
+import { format } from "date-fns";
+import { th } from "date-fns/locale";
+
+interface Personnel {
+  id: string;
+  first_name: string;
+  last_name: string;
+  position: string | null;
+  phone: string | null;
+  start_date: string | null;
+  hospital_id: string | null;
+  health_office_id: string | null;
+  created_at: string;
+}
+
+interface Certificate {
+  id: string;
+  personnel_id: string;
+  certificate_name: string;
+  issue_date: string | null;
+  file_path: string | null;
+  file_name: string | null;
+  file_size: number | null;
+}
+
+export default function PersonnelPage() {
+  const { profile, user } = useAuth();
+  const [personnel, setPersonnel] = useState<Personnel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [certificatesDialogOpen, setCertificatesDialogOpen] = useState(false);
+  const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [loadingCertificates, setLoadingCertificates] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    position: "",
+    phone: "",
+    start_date: "",
+  });
+
+  // Certificate form state
+  const [newCertificate, setNewCertificate] = useState({
+    name: "",
+    issue_date: "",
+    file: null as File | null,
+  });
+  const [uploadingCertificate, setUploadingCertificate] = useState(false);
+
+  useEffect(() => {
+    fetchPersonnel();
+  }, [profile]);
+
+  const fetchPersonnel = async () => {
+    if (!profile) return;
+
+    setLoading(true);
+    try {
+      let query = supabase.from("personnel").select("*");
+
+      if (profile.hospital_id) {
+        query = query.eq("hospital_id", profile.hospital_id);
+      } else if (profile.health_office_id) {
+        query = query.eq("health_office_id", profile.health_office_id);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setPersonnel(data || []);
+    } catch (error: any) {
+      console.error("Error fetching personnel:", error);
+      toast.error("ไม่สามารถโหลดข้อมูลบุคลากรได้");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCertificates = async (personnelId: string) => {
+    setLoadingCertificates(true);
+    try {
+      const { data, error } = await supabase
+        .from("personnel_certificates")
+        .select("*")
+        .eq("personnel_id", personnelId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setCertificates(data || []);
+    } catch (error: any) {
+      console.error("Error fetching certificates:", error);
+      toast.error("ไม่สามารถโหลดข้อมูลใบประกาศได้");
+    } finally {
+      setLoadingCertificates(false);
+    }
+  };
+
+  const handleOpenDialog = (person?: Personnel) => {
+    if (person) {
+      setSelectedPersonnel(person);
+      setFormData({
+        first_name: person.first_name,
+        last_name: person.last_name,
+        position: person.position || "",
+        phone: person.phone || "",
+        start_date: person.start_date || "",
+      });
+    } else {
+      setSelectedPersonnel(null);
+      setFormData({
+        first_name: "",
+        last_name: "",
+        position: "",
+        phone: "",
+        start_date: "",
+      });
+    }
+    setDialogOpen(true);
+  };
+
+  const handleOpenCertificatesDialog = async (person: Personnel) => {
+    setSelectedPersonnel(person);
+    setCertificatesDialogOpen(true);
+    await fetchCertificates(person.id);
+  };
+
+  const handleSave = async () => {
+    if (!formData.first_name.trim() || !formData.last_name.trim()) {
+      toast.error("กรุณากรอกชื่อและนามสกุล");
+      return;
+    }
+
+    try {
+      const payload: any = {
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        position: formData.position.trim() || null,
+        phone: formData.phone.trim() || null,
+        start_date: formData.start_date || null,
+        user_id: user?.id,
+      };
+
+      if (profile?.hospital_id) {
+        payload.hospital_id = profile.hospital_id;
+      } else if (profile?.health_office_id) {
+        payload.health_office_id = profile.health_office_id;
+      }
+
+      if (selectedPersonnel) {
+        // Update
+        const { error } = await supabase
+          .from("personnel")
+          .update(payload)
+          .eq("id", selectedPersonnel.id);
+
+        if (error) throw error;
+        toast.success("แก้ไขข้อมูลบุคลากรสำเร็จ");
+      } else {
+        // Insert
+        const { error } = await supabase.from("personnel").insert(payload);
+
+        if (error) throw error;
+        toast.success("เพิ่มบุคลากรสำเร็จ");
+      }
+
+      setDialogOpen(false);
+      fetchPersonnel();
+    } catch (error: any) {
+      console.error("Error saving personnel:", error);
+      toast.error("ไม่สามารถบันทึกข้อมูลได้");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedPersonnel) return;
+
+    try {
+      // First delete all certificates files
+      const { data: certs } = await supabase
+        .from("personnel_certificates")
+        .select("file_path")
+        .eq("personnel_id", selectedPersonnel.id);
+
+      if (certs) {
+        for (const cert of certs) {
+          if (cert.file_path) {
+            await supabase.storage.from("certificates").remove([cert.file_path]);
+          }
+        }
+      }
+
+      // Delete personnel (certificates will cascade delete)
+      const { error } = await supabase
+        .from("personnel")
+        .delete()
+        .eq("id", selectedPersonnel.id);
+
+      if (error) throw error;
+      toast.success("ลบข้อมูลบุคลากรสำเร็จ");
+      setDeleteDialogOpen(false);
+      setSelectedPersonnel(null);
+      fetchPersonnel();
+    } catch (error: any) {
+      console.error("Error deleting personnel:", error);
+      toast.error("ไม่สามารถลบข้อมูลได้");
+    }
+  };
+
+  const handleAddCertificate = async () => {
+    if (!selectedPersonnel || !newCertificate.name.trim()) {
+      toast.error("กรุณากรอกชื่อใบประกาศ");
+      return;
+    }
+
+    setUploadingCertificate(true);
+    try {
+      let filePath = null;
+      let fileName = null;
+      let fileSize = null;
+
+      // Upload file if provided
+      if (newCertificate.file) {
+        const fileExt = newCertificate.file.name.split(".").pop();
+        const uniqueName = `${selectedPersonnel.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("certificates")
+          .upload(uniqueName, newCertificate.file);
+
+        if (uploadError) throw uploadError;
+
+        filePath = uniqueName;
+        fileName = newCertificate.file.name;
+        fileSize = newCertificate.file.size;
+      }
+
+      const { error } = await supabase.from("personnel_certificates").insert({
+        personnel_id: selectedPersonnel.id,
+        certificate_name: newCertificate.name.trim(),
+        issue_date: newCertificate.issue_date || null,
+        file_path: filePath,
+        file_name: fileName,
+        file_size: fileSize,
+      });
+
+      if (error) throw error;
+
+      toast.success("เพิ่มใบประกาศสำเร็จ");
+      setNewCertificate({ name: "", issue_date: "", file: null });
+      fetchCertificates(selectedPersonnel.id);
+    } catch (error: any) {
+      console.error("Error adding certificate:", error);
+      toast.error("ไม่สามารถเพิ่มใบประกาศได้");
+    } finally {
+      setUploadingCertificate(false);
+    }
+  };
+
+  const handleDeleteCertificate = async (cert: Certificate) => {
+    try {
+      // Delete file from storage if exists
+      if (cert.file_path) {
+        await supabase.storage.from("certificates").remove([cert.file_path]);
+      }
+
+      const { error } = await supabase
+        .from("personnel_certificates")
+        .delete()
+        .eq("id", cert.id);
+
+      if (error) throw error;
+
+      toast.success("ลบใบประกาศสำเร็จ");
+      if (selectedPersonnel) {
+        fetchCertificates(selectedPersonnel.id);
+      }
+    } catch (error: any) {
+      console.error("Error deleting certificate:", error);
+      toast.error("ไม่สามารถลบใบประกาศได้");
+    }
+  };
+
+  const handleViewCertificate = async (cert: Certificate) => {
+    if (!cert.file_path) return;
+
+    try {
+      const { data, error } = await supabase.storage
+        .from("certificates")
+        .createSignedUrl(cert.file_path, 300); // 5 minutes
+
+      if (error) throw error;
+      window.open(data.signedUrl, "_blank");
+    } catch (error: any) {
+      console.error("Error getting file URL:", error);
+      toast.error("ไม่สามารถเปิดไฟล์ได้");
+    }
+  };
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "-";
+    try {
+      return format(new Date(dateStr), "d MMMM yyyy", { locale: th });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return "";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">บุคลากรในหน่วยงาน</h1>
+            <p className="text-muted-foreground">
+              จัดการข้อมูลบุคลากรและใบประกาศที่ได้รับ
+            </p>
+          </div>
+          <Button onClick={() => handleOpenDialog()}>
+            <Plus className="h-4 w-4 mr-2" />
+            เพิ่มบุคลากร
+          </Button>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>รายชื่อบุคลากร ({personnel.length} คน)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : personnel.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                ยังไม่มีข้อมูลบุคลากร
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ชื่อ-นามสกุล</TableHead>
+                    <TableHead>ตำแหน่ง</TableHead>
+                    <TableHead>เบอร์โทร</TableHead>
+                    <TableHead>วันที่เริ่มทำงาน</TableHead>
+                    <TableHead className="text-center">ใบประกาศ</TableHead>
+                    <TableHead className="text-right">จัดการ</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {personnel.map((person) => (
+                    <TableRow key={person.id}>
+                      <TableCell className="font-medium">
+                        {person.first_name} {person.last_name}
+                      </TableCell>
+                      <TableCell>{person.position || "-"}</TableCell>
+                      <TableCell>{person.phone || "-"}</TableCell>
+                      <TableCell>{formatDate(person.start_date)}</TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenCertificatesDialog(person)}
+                        >
+                          <Award className="h-4 w-4 mr-1" />
+                          ดูใบประกาศ
+                        </Button>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenDialog(person)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setSelectedPersonnel(person);
+                              setDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Add/Edit Personnel Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedPersonnel ? "แก้ไขข้อมูลบุคลากร" : "เพิ่มบุคลากรใหม่"}
+            </DialogTitle>
+            <DialogDescription>
+              กรอกข้อมูลบุคลากรในหน่วยงาน
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="first_name">ชื่อ *</Label>
+                <Input
+                  id="first_name"
+                  value={formData.first_name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, first_name: e.target.value })
+                  }
+                  placeholder="ชื่อ"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last_name">นามสกุล *</Label>
+                <Input
+                  id="last_name"
+                  value={formData.last_name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, last_name: e.target.value })
+                  }
+                  placeholder="นามสกุล"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="position">ตำแหน่ง</Label>
+              <Input
+                id="position"
+                value={formData.position}
+                onChange={(e) =>
+                  setFormData({ ...formData, position: e.target.value })
+                }
+                placeholder="ตำแหน่ง"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">เบอร์โทร</Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
+                placeholder="เบอร์โทร"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="start_date">วันที่เริ่มทำงาน</Label>
+              <Input
+                id="start_date"
+                type="date"
+                value={formData.start_date}
+                onChange={(e) =>
+                  setFormData({ ...formData, start_date: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              ยกเลิก
+            </Button>
+            <Button onClick={handleSave}>บันทึก</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+            <AlertDialogDescription>
+              คุณต้องการลบข้อมูล {selectedPersonnel?.first_name}{" "}
+              {selectedPersonnel?.last_name} ใช่หรือไม่?
+              การกระทำนี้ไม่สามารถยกเลิกได้
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              ลบ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Certificates Dialog */}
+      <Dialog open={certificatesDialogOpen} onOpenChange={setCertificatesDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              ใบประกาศของ {selectedPersonnel?.first_name} {selectedPersonnel?.last_name}
+            </DialogTitle>
+            <DialogDescription>
+              จัดการใบประกาศที่ได้รับ
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Add new certificate */}
+          <Card className="bg-muted/50">
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm">เพิ่มใบประกาศใหม่</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="cert_name">ชื่อใบประกาศ *</Label>
+                <Input
+                  id="cert_name"
+                  value={newCertificate.name}
+                  onChange={(e) =>
+                    setNewCertificate({ ...newCertificate, name: e.target.value })
+                  }
+                  placeholder="เช่น ใบรับรอง PDPA"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cert_date">วันที่ได้รับ</Label>
+                <Input
+                  id="cert_date"
+                  type="date"
+                  value={newCertificate.issue_date}
+                  onChange={(e) =>
+                    setNewCertificate({ ...newCertificate, issue_date: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>แนบไฟล์ใบประกาศ (ไม่บังคับ)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) =>
+                      setNewCertificate({
+                        ...newCertificate,
+                        file: e.target.files?.[0] || null,
+                      })
+                    }
+                    className="flex-1"
+                  />
+                  {newCertificate.file && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setNewCertificate({ ...newCertificate, file: null })
+                      }
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                {newCertificate.file && (
+                  <p className="text-xs text-muted-foreground">
+                    {newCertificate.file.name} ({formatFileSize(newCertificate.file.size)})
+                  </p>
+                )}
+              </div>
+              <Button
+                onClick={handleAddCertificate}
+                disabled={uploadingCertificate}
+                className="w-full"
+              >
+                {uploadingCertificate ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    กำลังอัพโหลด...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    เพิ่มใบประกาศ
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* List of certificates */}
+          <div className="space-y-2">
+            <h4 className="font-medium">รายการใบประกาศ</h4>
+            {loadingCertificates ? (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              </div>
+            ) : certificates.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                ยังไม่มีใบประกาศ
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {certificates.map((cert) => (
+                  <div
+                    key={cert.id}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Award className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="font-medium">{cert.certificate_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {cert.issue_date ? formatDate(cert.issue_date) : "ไม่ระบุวันที่"}
+                          {cert.file_name && ` • ${cert.file_name}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {cert.file_path && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleViewCertificate(cert)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteCertificate(cert)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </DashboardLayout>
+  );
+}

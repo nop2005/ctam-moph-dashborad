@@ -713,6 +713,104 @@ export type Database = {
         }
         Relationships: []
       }
+      personnel: {
+        Row: {
+          created_at: string
+          first_name: string
+          health_office_id: string | null
+          hospital_id: string | null
+          id: string
+          last_name: string
+          phone: string | null
+          position: string | null
+          start_date: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          first_name: string
+          health_office_id?: string | null
+          hospital_id?: string | null
+          id?: string
+          last_name: string
+          phone?: string | null
+          position?: string | null
+          start_date?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          first_name?: string
+          health_office_id?: string | null
+          hospital_id?: string | null
+          id?: string
+          last_name?: string
+          phone?: string | null
+          position?: string | null
+          start_date?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personnel_health_office_id_fkey"
+            columns: ["health_office_id"]
+            isOneToOne: false
+            referencedRelation: "health_offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personnel_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      personnel_certificates: {
+        Row: {
+          certificate_name: string
+          created_at: string
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          issue_date: string | null
+          personnel_id: string
+        }
+        Insert: {
+          certificate_name: string
+          created_at?: string
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          issue_date?: string | null
+          personnel_id: string
+        }
+        Update: {
+          certificate_name?: string
+          created_at?: string
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          issue_date?: string | null
+          personnel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personnel_certificates_personnel_id_fkey"
+            columns: ["personnel_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

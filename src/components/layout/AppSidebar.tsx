@@ -4,12 +4,17 @@ import { useLocalStorageState } from "@/hooks/useLocalStorageState";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Shield, LayoutDashboard, FileText, BarChart3, Users, Building2, Settings, PieChart, TrendingUp, AlertTriangle, ClipboardCheck, FileSearch, FileCheck, BookOpen, ChevronRight, ListOrdered, HardDrive, MapPinned, Wrench } from "lucide-react";
+import { Shield, LayoutDashboard, FileText, BarChart3, Users, Building2, Settings, PieChart, TrendingUp, AlertTriangle, ClipboardCheck, FileSearch, FileCheck, BookOpen, ChevronRight, ListOrdered, HardDrive, MapPinned, Wrench, UserCheck } from "lucide-react";
 const menuItems = [{
   title: "หน้าหลักแบบประเมิน",
   url: "/dashboard",
   icon: LayoutDashboard,
   roles: ["hospital_it", "provincial", "regional", "central_admin", "health_office", "supervisor"]
+}, {
+  title: "บุคลากรในหน่วยงาน",
+  url: "/personnel",
+  icon: UserCheck,
+  roles: ["hospital_it", "health_office"]
 }];
 const reportSubItems = [{
   title: "รายงานภาพรวม",

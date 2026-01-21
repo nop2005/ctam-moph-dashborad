@@ -23,6 +23,7 @@ import InspectionSupervisee from "./pages/InspectionSupervisee";
 import InspectionRegionDetail from "./pages/InspectionRegionDetail";
 import InspectionManual from "./pages/InspectionManual";
 import ProfileSettings from "./pages/ProfileSettings";
+import Personnel from "./pages/Personnel";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 // Public pages (no login required)
@@ -189,12 +190,20 @@ const App = () => (
               } 
             />
             <Route 
+              path="/personnel" 
+              element={
+                <ProtectedRoute allowedRoles={['hospital_it', 'health_office']}>
+                  <Personnel />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/admin/system-dashboard" 
               element={
                 <ProtectedRoute allowedRoles={['central_admin']}>
                   <SystemDashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route 
               path="/admin/*" 
