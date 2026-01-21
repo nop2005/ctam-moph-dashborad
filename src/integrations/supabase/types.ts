@@ -724,6 +724,7 @@ export type Database = {
           phone: string | null
           position: string | null
           start_date: string | null
+          title_prefix: string | null
           updated_at: string
           user_id: string | null
         }
@@ -737,6 +738,7 @@ export type Database = {
           phone?: string | null
           position?: string | null
           start_date?: string | null
+          title_prefix?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -750,6 +752,7 @@ export type Database = {
           phone?: string | null
           position?: string | null
           start_date?: string | null
+          title_prefix?: string | null
           updated_at?: string
           user_id?: string | null
         }

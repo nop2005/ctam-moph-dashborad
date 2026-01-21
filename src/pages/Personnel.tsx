@@ -31,6 +31,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Award, Upload, FileText, X, Eye, ChevronDown, ChevronUp, Download } from "lucide-react";
@@ -40,6 +47,7 @@ import { th } from "date-fns/locale";
 
 interface Personnel {
   id: string;
+  title_prefix: string | null;
   first_name: string;
   last_name: string;
   position: string | null;
@@ -49,6 +57,8 @@ interface Personnel {
   health_office_id: string | null;
   created_at: string;
 }
+
+const TITLE_PREFIXES = ["นาย", "นาง", "นางสาว"] as const;
 
 interface Certificate {
   id: string;
@@ -74,6 +84,7 @@ export default function PersonnelPage() {
 
   // Form state
   const [formData, setFormData] = useState({
+    title_prefix: "",
     first_name: "",
     last_name: "",
     position: "",
@@ -152,6 +163,7 @@ export default function PersonnelPage() {
     if (person) {
       setSelectedPersonnel(person);
       setFormData({
+        title_prefix: person.title_prefix || "",
         first_name: person.first_name,
         last_name: person.last_name,
         position: person.position || "",
@@ -161,6 +173,7 @@ export default function PersonnelPage() {
     } else {
       setSelectedPersonnel(null);
       setFormData({
+        title_prefix: "",
         first_name: "",
         last_name: "",
         position: "",
@@ -184,6 +197,7 @@ export default function PersonnelPage() {
 
     try {
       const payload: any = {
+        title_prefix: formData.title_prefix || null,
         first_name: formData.first_name.trim(),
         last_name: formData.last_name.trim(),
         position: formData.position.trim() || null,
@@ -427,7 +441,7 @@ export default function PersonnelPage() {
                       <div className="border-b">
                         <div className="grid grid-cols-[1fr_1fr_1fr_1fr_auto_auto] gap-4 p-4 items-center">
                           <div className="font-medium">
-                            {person.first_name} {person.last_name}
+                            {person.title_prefix ? `${person.title_prefix}` : ''}{person.first_name} {person.last_name}
                           </div>
                           <div className="text-muted-foreground">{person.position || "-"}</div>
                           <div className="text-muted-foreground">{person.phone || "-"}</div>
@@ -576,7 +590,27 @@ export default function PersonnelPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-[100px_1fr_1fr] gap-4">
+              <div className="space-y-2">
+                <Label>คำนำหน้า</Label>
+                <Select
+                  value={formData.title_prefix}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, title_prefix: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือก" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TITLE_PREFIXES.map((prefix) => (
+                      <SelectItem key={prefix} value={prefix}>
+                        {prefix}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="first_name">ชื่อ *</Label>
                 <Input
