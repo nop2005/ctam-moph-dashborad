@@ -3,7 +3,7 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useLocalStorageState } from "@/hooks/useLocalStorageState";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarHeader, SidebarProvider, SidebarTrigger, SidebarInset, useSidebar } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Shield, BarChart3, PieChart, TrendingUp, AlertTriangle, ClipboardCheck, FileSearch, ChevronRight, LogIn, BookOpen, Building2, Info } from "lucide-react";
+import { Shield, BarChart3, PieChart, TrendingUp, AlertTriangle, ClipboardCheck, FileSearch, ChevronRight, LogIn, BookOpen, Building2, Info, MonitorDot } from "lucide-react";
 import { SidebarFooter, SidebarSeparator } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 const reportSubItems = [{
@@ -14,6 +14,10 @@ const reportSubItems = [{
   title: "เชิงปริมาณ ( 17 ข้อ )",
   url: "/public/reports/quantitative",
   icon: TrendingUp
+}, {
+  title: "แดชบอร์ดศูนย์เทคโนโลยีสารสนเทศ",
+  url: "/public/reports/tableau-dashboard",
+  icon: MonitorDot
 }];
 const inspectionSubItems = [{
   title: "รายงานผู้นิเทศ",

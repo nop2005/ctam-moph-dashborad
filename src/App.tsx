@@ -34,6 +34,7 @@ import PublicReportsQuantitative from "./pages/PublicReportsQuantitative";
 import PublicReportsImpact from "./pages/PublicReportsImpact";
 import PublicInspectionSupervisor from "./pages/PublicInspectionSupervisor";
 import PublicInspectionManual from "./pages/PublicInspectionManual";
+import PublicTableauDashboard from "./pages/PublicTableauDashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,6 +68,7 @@ const App = () => (
             <Route path="/public/reports/impact" element={<PublicReportsImpact />} />
             <Route path="/public/inspection/supervisor" element={<PublicInspectionSupervisor />} />
             <Route path="/public/inspection/manual" element={<PublicInspectionManual />} />
+            <Route path="/public/reports/tableau-dashboard" element={<PublicTableauDashboard />} />
             
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route 
