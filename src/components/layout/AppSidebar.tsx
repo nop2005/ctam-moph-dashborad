@@ -4,7 +4,7 @@ import { useLocalStorageState } from "@/hooks/useLocalStorageState";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Shield, LayoutDashboard, FileText, BarChart3, Users, Building2, Settings, PieChart, TrendingUp, AlertTriangle, ClipboardCheck, FileSearch, FileCheck, BookOpen, ChevronRight, ListOrdered, HardDrive, MapPinned, Wrench, UserCheck } from "lucide-react";
+import { Shield, LayoutDashboard, FileText, BarChart3, Users, Building2, Settings, PieChart, TrendingUp, AlertTriangle, ClipboardCheck, FileSearch, FileCheck, BookOpen, ChevronRight, ListOrdered, HardDrive, MapPinned, Wrench, UserCheck, MonitorDot } from "lucide-react";
 const menuItems = [{
   title: "หน้าหลักแบบประเมิน",
   url: "/dashboard",
@@ -33,6 +33,10 @@ const reportSubItems = [{
   title: "เชิงผลกระทบ (Incident & Recovery)",
   url: "/reports/impact",
   icon: AlertTriangle
+}, {
+  title: "แดชบอร์ดศูนย์เทคโนโลยีสารสนเทศ",
+  url: "/reports/tableau-dashboard",
+  icon: MonitorDot
 }];
 const analyticalReportSubItems = [{
   title: "รายงาน CTAM+ เพิ่มเติม",
@@ -94,7 +98,7 @@ export function AppSidebar() {
   } = useAuth();
   const currentPath = location.pathname;
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + "/");
-  const isReportsActive = currentPath === "/reports" || currentPath === "/reports/quantitative" || currentPath === "/reports/impact";
+  const isReportsActive = currentPath === "/reports" || currentPath === "/reports/quantitative" || currentPath === "/reports/impact" || currentPath === "/reports/tableau-dashboard";
   const isAnalyticalReportsActive = currentPath === "/reports/quantitative-by-area" || currentPath === "/reports/quantitative-detail" || currentPath === "/reports/equipment-usage";
   const isInspectionActive = currentPath.startsWith("/inspection") && currentPath !== "/inspection/manual";
 
