@@ -17,6 +17,7 @@ import ReportsQuantitative from "./pages/ReportsQuantitative";
 import ReportsQuantitativeByArea from "./pages/ReportsQuantitativeByArea";
 import ReportsQuantitativeDetail from "./pages/ReportsQuantitativeDetail";
 import ReportsEquipmentUsage from "./pages/ReportsEquipmentUsage";
+import TableauDashboard from "./pages/TableauDashboard";
 import ReportsImpact from "./pages/ReportsImpact";
 import InspectionSupervisor from "./pages/InspectionSupervisor";
 import InspectionSupervisee from "./pages/InspectionSupervisee";
@@ -139,6 +140,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ReportsImpact />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/reports/tableau-dashboard" 
+              element={
+                <ProtectedRoute>
+                  <TableauDashboard />
                 </ProtectedRoute>
               } 
             />
