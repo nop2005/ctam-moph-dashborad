@@ -40,6 +40,7 @@ import {
   MapPinned,
   Wrench,
   UserCheck,
+  MonitorDot,
 } from "lucide-react";
 const menuItems = [
   {
@@ -76,6 +77,11 @@ const reportSubItems = [
     title: "เชิงผลกระทบ (Incident & Recovery)",
     url: "/reports/impact",
     icon: AlertTriangle,
+  },
+  {
+    title: "แดชบอร์ดศูนย์เทคโนโลยีสารสนเทศ",
+    url: "/reports/tableau-dashboard",
+    icon: MonitorDot,
   },
 ];
 const analyticalReportSubItems = [
@@ -148,7 +154,7 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + "/");
   const isReportsActive =
-    currentPath === "/reports" || currentPath === "/reports/quantitative" || currentPath === "/reports/impact";
+    currentPath === "/reports" || currentPath === "/reports/quantitative" || currentPath === "/reports/impact" || currentPath === "/reports/tableau-dashboard";
   const isAnalyticalReportsActive =
     currentPath === "/reports/quantitative-by-area" ||
     currentPath === "/reports/quantitative-detail" ||
