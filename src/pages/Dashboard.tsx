@@ -623,7 +623,30 @@ export default function Dashboard() {
         .select('*, hospitals(*), health_offices(*)')
         .order('created_at', { ascending: false });
       
-      setAssessments(assessmentsData || []);
+      // Re-apply role-based filtering for provincial admin
+      let filtered = assessmentsData || [];
+      if (profile?.role === 'provincial' && profile.province_id) {
+        filtered = (assessmentsData || []).filter(a => {
+          if (a.hospital_id && a.hospitals) {
+            return (a.hospitals as Hospital).province_id === profile.province_id;
+          }
+          if (a.health_office_id && a.health_offices) {
+            return (a.health_offices as HealthOffice).province_id === profile.province_id;
+          }
+          return false;
+        });
+      }
+      
+      // Update stats after filtering
+      const total = filtered.length;
+      const draft = filtered.filter(a => a.status === 'draft').length;
+      const waitingProvincial = filtered.filter(a => a.status === 'submitted').length;
+      const waitingRegional = filtered.filter(a => a.status === 'approved_provincial').length;
+      const approved = filtered.filter(a => a.status === 'approved_regional' || a.status === 'completed').length;
+      const returned = filtered.filter(a => a.status === 'returned').length;
+      setStats({ total, draft, waitingProvincial, waitingRegional, approved, returned });
+      
+      setAssessments(filtered);
       setReturnDialogOpen(false);
       setSelectedAssessmentForReturn(null);
       setReturnComment('');
