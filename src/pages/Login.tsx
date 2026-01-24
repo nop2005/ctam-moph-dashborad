@@ -15,20 +15,46 @@ export default function Login() {
   const location = useLocation();
 
   // Get the redirect path from location state (set by ProtectedRoute)
-  const from = (location.state as {
+  const requestedPath = (location.state as {
     from?: {
       pathname: string;
     };
-  })?.from?.pathname || '/dashboard';
+  })?.from?.pathname;
   const isActive = profile?.is_active === true;
+
+  // Paths that are restricted by role
+  const restrictedPaths: Record<string, string[]> = {
+    '/user-management': ['provincial', 'regional'],
+    '/super-admin': ['central_admin', 'regional'],
+    '/admin/system-dashboard': ['central_admin'],
+    '/admin/hospitals': ['central_admin'],
+    '/admin/settings': ['central_admin'],
+    '/personnel-admin': ['provincial', 'regional'],
+  };
+
+  // Determine safe redirect path based on user role
+  const getSafeRedirectPath = (): string => {
+    if (!requestedPath || !profile?.role) return '/dashboard';
+    
+    // Check if the requested path is restricted
+    for (const [path, allowedRoles] of Object.entries(restrictedPaths)) {
+      if (requestedPath.startsWith(path) && !allowedRoles.includes(profile.role)) {
+        return '/dashboard'; // Redirect to dashboard if not allowed
+      }
+    }
+    
+    return requestedPath;
+  };
+
   useEffect(() => {
-    if (user && isActive) {
-      // Redirect to the original requested page or dashboard
-      navigate(from, {
+    if (user && isActive && profile?.role) {
+      // Redirect to the safe path based on user role
+      const safePath = getSafeRedirectPath();
+      navigate(safePath, {
         replace: true
       });
     }
-  }, [user, isActive, navigate, from]);
+  }, [user, isActive, profile?.role, navigate, requestedPath]);
   const features = [{
     icon: Shield,
     label: 'ประเมินตาม CTAM+ 17 หมวด'
