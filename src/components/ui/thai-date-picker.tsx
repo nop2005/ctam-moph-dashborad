@@ -1,5 +1,5 @@
 import * as React from "react";
-import { format, parse } from "date-fns";
+import { format, setMonth, setYear } from "date-fns";
 import { th } from "date-fns/locale";
 import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker } from "react-day-picker";
@@ -11,6 +11,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ThaiDatePickerProps {
   value: string; // ISO date string (YYYY-MM-DD)
@@ -19,6 +26,12 @@ interface ThaiDatePickerProps {
   disabled?: boolean;
 }
 
+const THAI_MONTHS = [
+  "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน",
+  "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
+  "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+];
+
 export function ThaiDatePicker({
   value,
   onChange,
@@ -26,6 +39,7 @@ export function ThaiDatePicker({
   disabled = false,
 }: ThaiDatePickerProps) {
   const [open, setOpen] = React.useState(false);
+  const [displayMonth, setDisplayMonth] = React.useState<Date>(new Date());
 
   const selectedDate = React.useMemo(() => {
     if (!value) return undefined;
@@ -35,6 +49,13 @@ export function ThaiDatePicker({
       return undefined;
     }
   }, [value]);
+
+  // Update display month when selected date changes
+  React.useEffect(() => {
+    if (selectedDate) {
+      setDisplayMonth(selectedDate);
+    }
+  }, [selectedDate]);
 
   const formatThaiDate = (date: Date | undefined) => {
     if (!date) return "";
@@ -53,11 +74,60 @@ export function ThaiDatePicker({
     setOpen(false);
   };
 
-  // Custom formatters for Buddhist Era
-  const formatCaption = (date: Date) => {
-    const buddhistYear = date.getFullYear() + 543;
-    const monthName = format(date, "LLLL", { locale: th });
-    return `${monthName} ${buddhistYear}`;
+  // Generate year options (current year +/- 50 years in Buddhist Era)
+  const currentYear = new Date().getFullYear();
+  const years = React.useMemo(() => {
+    const result = [];
+    for (let y = currentYear - 100; y <= currentYear + 10; y++) {
+      result.push(y);
+    }
+    return result;
+  }, [currentYear]);
+
+  const handleMonthChange = (monthIndex: string) => {
+    const newDate = setMonth(displayMonth, parseInt(monthIndex));
+    setDisplayMonth(newDate);
+  };
+
+  const handleYearChange = (year: string) => {
+    const newDate = setYear(displayMonth, parseInt(year));
+    setDisplayMonth(newDate);
+  };
+
+  // Custom caption component with month/year dropdowns
+  const CustomCaption = ({ displayMonth: captionMonth }: { displayMonth: Date }) => {
+    const buddhistYear = captionMonth.getFullYear() + 543;
+    const monthIndex = captionMonth.getMonth();
+
+    return (
+      <div className="flex justify-center items-center gap-1 py-2">
+        <Select value={monthIndex.toString()} onValueChange={handleMonthChange}>
+          <SelectTrigger className="h-8 w-[120px] text-sm font-medium border-none shadow-none focus:ring-0 px-2">
+            <SelectValue>{THAI_MONTHS[monthIndex]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {THAI_MONTHS.map((month, idx) => (
+              <SelectItem key={idx} value={idx.toString()}>
+                {month}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={captionMonth.getFullYear().toString()} onValueChange={handleYearChange}>
+          <SelectTrigger className="h-8 w-[90px] text-sm font-medium border-none shadow-none focus:ring-0 px-2">
+            <SelectValue>{buddhistYear}</SelectValue>
+          </SelectTrigger>
+          <SelectContent className="max-h-[200px]">
+            {years.map((year) => (
+              <SelectItem key={year} value={year.toString()}>
+                {year + 543}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    );
   };
 
   return (
@@ -80,17 +150,16 @@ export function ThaiDatePicker({
           mode="single"
           selected={selectedDate}
           onSelect={handleSelect}
+          month={displayMonth}
+          onMonthChange={setDisplayMonth}
           locale={th}
           showOutsideDays
-          formatters={{
-            formatCaption,
-          }}
           className={cn("p-3 pointer-events-auto")}
           classNames={{
             months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
             month: "space-y-4",
             caption: "flex justify-center pt-1 relative items-center",
-            caption_label: "text-sm font-medium",
+            caption_label: "hidden",
             nav: "space-x-1 flex items-center",
             nav_button: cn(
               buttonVariants({ variant: "outline" }),
@@ -115,6 +184,7 @@ export function ThaiDatePicker({
             day_hidden: "invisible",
           }}
           components={{
+            Caption: CustomCaption,
             IconLeft: () => <ChevronLeft className="h-4 w-4" />,
             IconRight: () => <ChevronRight className="h-4 w-4" />,
           }}
