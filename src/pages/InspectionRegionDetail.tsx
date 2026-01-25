@@ -6,10 +6,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, MapPin, Loader2, CheckCircle, XCircle, FileText, Presentation, Check } from 'lucide-react';
+import { ArrowLeft, MapPin, Loader2, CheckCircle, XCircle, FileText, Presentation, Check, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface InspectionFile {
   id: string;
@@ -53,9 +63,12 @@ export default function InspectionRegionDetail() {
     round: string;
     fileType: 'report' | 'slides';
   } | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<InspectionFile | null>(null);
 
-  // Only supervisor and regional roles can upload
+  // Only supervisor, provincial, regional and central_admin roles can upload/delete
   const canUpload = profile?.role === 'supervisor' || profile?.role === 'regional' || profile?.role === 'central_admin';
+  const canDelete = profile?.role === 'supervisor' || profile?.role === 'provincial' || profile?.role === 'regional' || profile?.role === 'central_admin';
 
   useEffect(() => {
     const fetchFiscalYears = async () => {
@@ -246,6 +259,45 @@ export default function InspectionRegionDetail() {
     );
   };
 
+  const handleDeleteFile = async () => {
+    if (!deleteConfirm) return;
+    
+    setDeleting(deleteConfirm.id);
+    try {
+      // Extract file path from URL for storage deletion
+      const url = new URL(deleteConfirm.file_path);
+      const storagePath = url.pathname.split('/inspection-files/')[1];
+      
+      if (storagePath) {
+        // Delete from storage
+        const { error: storageError } = await supabase.storage
+          .from('inspection-files')
+          .remove([decodeURIComponent(storagePath)]);
+        
+        if (storageError) {
+          console.error('Storage delete error:', storageError);
+        }
+      }
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('inspection_files')
+        .delete()
+        .eq('id', deleteConfirm.id);
+
+      if (dbError) throw dbError;
+
+      toast.success('ลบไฟล์สำเร็จ');
+      fetchData();
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast.error('เกิดข้อผิดพลาดในการลบไฟล์: ' + error.message);
+    } finally {
+      setDeleting(null);
+      setDeleteConfirm(null);
+    }
+  };
+
   const getUploadButton = (
     provinceId: string,
     round: string,
@@ -253,19 +305,37 @@ export default function InspectionRegionDetail() {
     existingFile?: InspectionFile
   ) => {
     const isUploading = uploading === `${provinceId}-${round}-${fileType}`;
+    const isDeleting = existingFile && deleting === existingFile.id;
     const Icon = fileType === 'report' ? FileText : Presentation;
 
     if (existingFile) {
       return (
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
-          onClick={() => window.open(existingFile.file_path, '_blank')}
-        >
-          <Check className="h-3 w-3" />
-          ดูไฟล์
-        </Button>
+        <div className="flex items-center justify-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+            onClick={() => window.open(existingFile.file_path, '_blank')}
+          >
+            <Check className="h-3 w-3" />
+            ดูไฟล์
+          </Button>
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => setDeleteConfirm(existingFile)}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+        </div>
       );
     }
 
@@ -443,6 +513,27 @@ export default function InspectionRegionDetail() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันการลบไฟล์</AlertDialogTitle>
+            <AlertDialogDescription>
+              คุณต้องการลบไฟล์ "{deleteConfirm?.file_name}" ใช่หรือไม่? การดำเนินการนี้ไม่สามารถย้อนกลับได้
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteFile}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              ลบไฟล์
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
