@@ -66,9 +66,20 @@ export default function InspectionRegionDetail() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<InspectionFile | null>(null);
 
-  // Only supervisor, provincial, regional and central_admin roles can upload/delete
-  const canUpload = profile?.role === 'supervisor' || profile?.role === 'regional' || profile?.role === 'central_admin';
-  const canDelete = profile?.role === 'supervisor' || profile?.role === 'provincial' || profile?.role === 'regional' || profile?.role === 'central_admin';
+  // Check if user can upload/delete for a specific province
+  const canUploadForProvince = (provinceId: string) => {
+    if (['supervisor', 'regional', 'central_admin'].includes(profile?.role || '')) return true;
+    // Provincial admin can only upload for their own province
+    if (profile?.role === 'provincial' && profile.province_id === provinceId) return true;
+    return false;
+  };
+  
+  const canDeleteForProvince = (provinceId: string) => {
+    if (['supervisor', 'regional', 'central_admin'].includes(profile?.role || '')) return true;
+    // Provincial admin can only delete for their own province
+    if (profile?.role === 'provincial' && profile.province_id === provinceId) return true;
+    return false;
+  };
 
   useEffect(() => {
     const fetchFiscalYears = async () => {
@@ -320,7 +331,7 @@ export default function InspectionRegionDetail() {
             <Check className="h-3 w-3" />
             ดูไฟล์
           </Button>
-          {canDelete && (
+          {canDeleteForProvince(provinceId) && (
             <Button
               variant="ghost"
               size="sm"
@@ -339,8 +350,8 @@ export default function InspectionRegionDetail() {
       );
     }
 
-    // Only show upload button for supervisor, regional, and central_admin roles
-    if (!canUpload) {
+    // Only show upload button for authorized roles
+    if (!canUploadForProvince(provinceId)) {
       return (
         <span className="text-muted-foreground text-sm">-</span>
       );
