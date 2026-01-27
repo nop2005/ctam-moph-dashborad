@@ -468,7 +468,7 @@ export default function Reports() {
                       <TableHead className="text-right">มีแบบประเมิน</TableHead>
                       <TableHead className="text-right">อนุมัติแล้ว</TableHead>
                       <TableHead className="text-right">คะแนนเชิงปริมาณ</TableHead>
-                      <TableHead className="text-right">คะแนนเชิงคุณภาพ</TableHead>
+                      <TableHead className="text-right">คะแนนเชิงผลกระทบ</TableHead>
                       <TableHead className="text-right">คะแนนเฉลี่ย</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -495,10 +495,10 @@ export default function Reports() {
                         ? quantitativeScores.reduce((sum, a) => sum + (a.quantitative_score || 0), 0) / quantitativeScores.length 
                         : null;
                       
-                      // Calculate average qualitative score (exclude 0 and null)
-                      const qualitativeScores = provinceLatestApprovedAssessments.filter(a => a.qualitative_score != null && a.qualitative_score > 0);
-                      const avgQualitative = qualitativeScores.length > 0 
-                        ? qualitativeScores.reduce((sum, a) => sum + (a.qualitative_score || 0), 0) / qualitativeScores.length 
+                      // Calculate average impact score (exclude 0 and null)
+                      const impactScores = provinceLatestApprovedAssessments.filter(a => a.impact_score != null && a.impact_score > 0);
+                      const avgImpact = impactScores.length > 0 
+                        ? impactScores.reduce((sum, a) => sum + (a.impact_score || 0), 0) / impactScores.length 
                         : null;
                       
                       const totalScoreSum = provinceLatestApprovedAssessments.filter(a => a.total_score !== null)
@@ -522,7 +522,7 @@ export default function Reports() {
                             {avgQuantitative !== null ? avgQuantitative.toFixed(2) : '-'}
                           </TableCell>
                           <TableCell className="text-right">
-                            {avgQualitative !== null ? avgQualitative.toFixed(2) : '-'}
+                            {avgImpact !== null ? avgImpact.toFixed(2) : '-'}
                           </TableCell>
                           <TableCell className="text-right font-medium">
                             {scoreCount > 0 ? (totalScoreSum / scoreCount).toFixed(2) : '-'}
