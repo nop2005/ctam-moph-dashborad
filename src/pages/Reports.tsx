@@ -489,14 +489,14 @@ export default function Reports() {
 
                       const completedCount = provinceLatestApprovedAssessments.length;
                       
-                      // Calculate average quantitative score
-                      const quantitativeScores = provinceLatestApprovedAssessments.filter(a => a.quantitative_score !== null);
+                      // Calculate average quantitative score (exclude 0 and null)
+                      const quantitativeScores = provinceLatestApprovedAssessments.filter(a => a.quantitative_score != null && a.quantitative_score > 0);
                       const avgQuantitative = quantitativeScores.length > 0 
                         ? quantitativeScores.reduce((sum, a) => sum + (a.quantitative_score || 0), 0) / quantitativeScores.length 
                         : null;
                       
-                      // Calculate average qualitative score
-                      const qualitativeScores = provinceLatestApprovedAssessments.filter(a => a.qualitative_score !== null);
+                      // Calculate average qualitative score (exclude 0 and null)
+                      const qualitativeScores = provinceLatestApprovedAssessments.filter(a => a.qualitative_score != null && a.qualitative_score > 0);
                       const avgQualitative = qualitativeScores.length > 0 
                         ? qualitativeScores.reduce((sum, a) => sum + (a.qualitative_score || 0), 0) / qualitativeScores.length 
                         : null;
