@@ -467,6 +467,8 @@ export default function Reports() {
                       <TableHead className="text-right">จำนวนสถานบริการ</TableHead>
                       <TableHead className="text-right">มีแบบประเมิน</TableHead>
                       <TableHead className="text-right">อนุมัติแล้ว</TableHead>
+                      <TableHead className="text-right">คะแนนเชิงปริมาณ</TableHead>
+                      <TableHead className="text-right">คะแนนเชิงคุณภาพ</TableHead>
                       <TableHead className="text-right">คะแนนเฉลี่ย</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -486,6 +488,19 @@ export default function Reports() {
                       );
 
                       const completedCount = provinceLatestApprovedAssessments.length;
+                      
+                      // Calculate average quantitative score
+                      const quantitativeScores = provinceLatestApprovedAssessments.filter(a => a.quantitative_score !== null);
+                      const avgQuantitative = quantitativeScores.length > 0 
+                        ? quantitativeScores.reduce((sum, a) => sum + (a.quantitative_score || 0), 0) / quantitativeScores.length 
+                        : null;
+                      
+                      // Calculate average qualitative score
+                      const qualitativeScores = provinceLatestApprovedAssessments.filter(a => a.qualitative_score !== null);
+                      const avgQualitative = qualitativeScores.length > 0 
+                        ? qualitativeScores.reduce((sum, a) => sum + (a.qualitative_score || 0), 0) / qualitativeScores.length 
+                        : null;
+                      
                       const totalScoreSum = provinceLatestApprovedAssessments.filter(a => a.total_score !== null)
                         .reduce((sum, a) => sum + (a.total_score || 0), 0);
                       const scoreCount = provinceLatestApprovedAssessments.filter(a => a.total_score !== null).length;
@@ -503,6 +518,12 @@ export default function Reports() {
                           <TableCell className="text-right">{totalUnits}</TableCell>
                           <TableCell className="text-right">{provinceLatestAssessments.length}</TableCell>
                           <TableCell className="text-right">{completedCount}</TableCell>
+                          <TableCell className="text-right">
+                            {avgQuantitative !== null ? avgQuantitative.toFixed(2) : '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {avgQualitative !== null ? avgQualitative.toFixed(2) : '-'}
+                          </TableCell>
                           <TableCell className="text-right font-medium">
                             {scoreCount > 0 ? (totalScoreSum / scoreCount).toFixed(2) : '-'}
                           </TableCell>
