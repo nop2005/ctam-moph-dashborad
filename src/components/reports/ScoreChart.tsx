@@ -66,21 +66,12 @@ interface ChartData {
   canDrill: boolean;
 }
 
-const COLORS = [
-  '#60A5FA', // blue
-  '#F97316', // orange
-  '#22C55E', // green
-  '#FBBF24', // yellow
-  '#06B6D4', // cyan
-  '#EC4899', // pink
-  '#8B5CF6', // violet
-  '#10B981', // emerald
-  '#EF4444', // red
-  '#3B82F6', // blue-500
-  '#A855F7', // purple
-  '#14B8A6', // teal
-  '#F59E0B', // amber
-];
+// Color based on score: Green (10), Yellow (>=5), Red (<5)
+const getScoreColor = (score: number): string => {
+  if (score >= 10) return '#22C55E'; // green
+  if (score >= 5) return '#FBBF24'; // yellow
+  return '#EF4444'; // red
+};
 
 export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices = [], assessments, onDrillChange, selectedFiscalYear, canDrillToProvince, canDrillToHospital }: ScoreChartProps) {
   const [drillLevel, setDrillLevel] = useState<DrillLevel>('region');
@@ -122,11 +113,12 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
         const hospitalIds = regionHospitals.map(h => h.id);
         const healthOfficeIds = regionHealthOffices.map(ho => ho.id);
         
+        const score = calculateAverageScore(hospitalIds, healthOfficeIds);
         return {
           id: region.id,
           name: `เขต ${region.region_number}`,
-          score: calculateAverageScore(hospitalIds, healthOfficeIds),
-          color: COLORS[index % COLORS.length],
+          score,
+          color: getScoreColor(score),
           canDrill: canDrillToProvince ? canDrillToProvince(region.id) : true,
         };
       });
@@ -141,11 +133,12 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
         const hospitalIds = provinceHospitals.map(h => h.id);
         const healthOfficeIds = provinceHealthOffices.map(ho => ho.id);
         
+        const score = calculateAverageScore(hospitalIds, healthOfficeIds);
         return {
           id: province.id,
           name: province.name,
-          score: calculateAverageScore(hospitalIds, healthOfficeIds),
-          color: COLORS[index % COLORS.length],
+          score,
+          color: getScoreColor(score),
           canDrill: canDrillToHospital ? canDrillToHospital(province.id) : true,
         };
       });
@@ -155,26 +148,28 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
       const provinceHospitals = hospitals.filter(h => h.province_id === selectedProvince.id);
       const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === selectedProvince.id);
       
-      const hospitalData = provinceHospitals.map((hospital, index) => {
+      const hospitalData = provinceHospitals.map((hospital) => {
         const assessment = latestApprovedByUnit.get(hospital.id);
+        const score = assessment?.total_score || 0;
         
         return {
           id: hospital.id,
           name: hospital.name,
-          score: assessment?.total_score || 0,
-          color: COLORS[index % COLORS.length],
+          score,
+          color: getScoreColor(score),
           canDrill: false, // Hospital level - no further drill
         };
       });
 
-      const healthOfficeData = provinceHealthOffices.map((office, index) => {
+      const healthOfficeData = provinceHealthOffices.map((office) => {
         const assessment = latestApprovedByUnit.get(office.id);
+        const score = assessment?.total_score || 0;
         
         return {
           id: office.id,
           name: office.name,
-          score: assessment?.total_score || 0,
-          color: COLORS[(hospitalData.length + index) % COLORS.length],
+          score,
+          color: getScoreColor(score),
           canDrill: false, // Health office level - no further drill
         };
       });
