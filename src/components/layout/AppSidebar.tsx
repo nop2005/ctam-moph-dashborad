@@ -41,6 +41,7 @@ import {
   Wrench,
   UserCheck,
   MonitorDot,
+  Wallet,
 } from "lucide-react";
 const menuItems = [
   {
@@ -53,6 +54,12 @@ const menuItems = [
     title: "บุคลากรในหน่วยงาน",
     url: "/personnel",
     icon: UserCheck,
+    roles: ["hospital_it", "health_office"],
+  },
+  {
+    title: "บันทึกงบประมาณประจำปี",
+    url: "/budget-recording",
+    icon: Wallet,
     roles: ["hospital_it", "health_office"],
   },
   {
