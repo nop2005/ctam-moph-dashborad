@@ -279,8 +279,11 @@ export default function BudgetReport() {
         }));
     }
 
-    if (selectedRegionId) {
-      const provincesInRegion = provinces.filter((p) => p.health_region_id === selectedRegionId);
+    // For regional users, use their health_region_id if no explicit selection
+    const regionId = selectedRegionId || (isRegional ? profile?.health_region_id : null);
+    
+    if (regionId) {
+      const provincesInRegion = provinces.filter((p) => p.health_region_id === regionId);
       return provincesInRegion.map((p) => ({
         id: p.id,
         name: p.name,
@@ -299,9 +302,26 @@ export default function BudgetReport() {
       targetProvinceId = profile?.province_id || null;
     }
 
+    // If we have a province selected, show units in that province
     if (targetProvinceId) {
       return Array.from(aggregatedData.byUnit.entries())
         .filter(([_, data]) => data.provinceId === targetProvinceId)
+        .map(([id, data]) => ({
+          id,
+          name: data.name,
+          type: data.type,
+          total: data.total,
+        }));
+    }
+
+    // For regional users at unit level without a province selected, show all units in region
+    if (isRegional && !targetProvinceId) {
+      const regionId = profile?.health_region_id;
+      const provincesInRegion = provinces.filter((p) => p.health_region_id === regionId);
+      const provinceIds = new Set(provincesInRegion.map((p) => p.id));
+      
+      return Array.from(aggregatedData.byUnit.entries())
+        .filter(([_, data]) => data.provinceId && provinceIds.has(data.provinceId))
         .map(([id, data]) => ({
           id,
           name: data.name,
