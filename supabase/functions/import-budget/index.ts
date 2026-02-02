@@ -339,12 +339,12 @@ serve(async (req: Request) => {
 
     console.log(`Processing ${data.length} rows for fiscal year ${fiscal_year}, mode: ${mode}`);
 
-    // Fetch reference data
+    // Fetch reference data - IMPORTANT: include order_number for categories
     const [hospitalsRes, healthOfficesRes, provincesRes, categoriesRes] = await Promise.all([
       supabase.from("hospitals").select("id, name, province_id"),
       supabase.from("health_offices").select("id, name, province_id, health_region_id"),
       supabase.from("provinces").select("id, name"),
-      supabase.from("ctam_categories").select("id, code"),
+      supabase.from("ctam_categories").select("id, code, order_number"),
     ]);
 
     const hospitals = hospitalsRes.data || [];
@@ -352,14 +352,18 @@ serve(async (req: Request) => {
     const provinces = provincesRes.data || [];
     const categories = categoriesRes.data || [];
 
+    console.log(`Loaded ${categories.length} categories:`, categories.map((c: any) => `${c.order_number}:${c.code}`).join(', '));
+
     // Build category order_number to ID map (1-17)
-    const categoryByOrder = new Map(categories.map((c: { id: string; code: string; order_number?: number }) => {
-      // Get order from the database order_number field
-      return [(c as { order_number: number }).order_number, c.id];
-    }));
+    const categoryByOrder = new Map<number, string>();
+    for (const c of categories) {
+      const cat = c as { id: string; code: string; order_number: number };
+      if (cat.order_number) {
+        categoryByOrder.set(cat.order_number, cat.id);
+      }
+    }
     
-    // Also build code to ID map for reference
-    const categoryByCode = new Map(categories.map((c: { id: string; code: string }) => [c.code, c.id]));
+    console.log(`Category map has ${categoryByOrder.size} entries`);
 
     // Combine all units for matching
     const allUnits: UnitData[] = [
