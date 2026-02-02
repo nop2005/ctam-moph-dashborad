@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, Building2, MapPin, Landmark, DollarSign, Users } from "lucide-react";
+import { ChevronLeft, Building2, MapPin, Landmark, DollarSign, Users, Upload } from "lucide-react";
+import { BudgetImportDialog } from "@/components/budget/BudgetImportDialog";
 
 // Types
 interface BudgetRecord {
@@ -73,12 +74,14 @@ const formatCurrency = (amount: number) => {
 
 export default function BudgetReport() {
   const { profile } = useAuth();
+  const queryClient = useQueryClient();
   const [fiscalYear, setFiscalYear] = useState(getCurrentFiscalYear());
   const [drillLevel, setDrillLevel] = useState<DrillLevel>("region");
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [selectedProvinceId, setSelectedProvinceId] = useState<string | null>(null);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [selectedUnitType, setSelectedUnitType] = useState<"hospital" | "health_office" | null>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
 
   const fiscalYears = Array.from({ length: 9 }, (_, i) => getCurrentFiscalYear() - 4 + i);
 
@@ -151,6 +154,7 @@ export default function BudgetReport() {
   const isProvincial = userRole === "provincial";
   const isRegional = userRole === "regional" || userRole === "supervisor";
   const isCentralAdmin = userRole === "central_admin";
+  const canImport = isCentralAdmin || isRegional;
 
   // Get initial drill level based on role
   useMemo(() => {
@@ -728,19 +732,34 @@ export default function BudgetReport() {
               <p className="text-muted-foreground">สรุปภาพรวมงบประมาณตามหมวดหมู่ CTAM</p>
             </div>
           </div>
-          <Select value={fiscalYear.toString()} onValueChange={(v) => setFiscalYear(Number(v))}>
-            <SelectTrigger className="w-[220px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {fiscalYears.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  ปีงบประมาณ {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            {canImport && (
+              <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                นำเข้าจาก Excel
+              </Button>
+            )}
+            <Select value={fiscalYear.toString()} onValueChange={(v) => setFiscalYear(Number(v))}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {fiscalYears.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    ปีงบประมาณ {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+
+        {/* Import Dialog */}
+        <BudgetImportDialog
+          open={showImportDialog}
+          onOpenChange={setShowImportDialog}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ["budget-records-report"] })}
+        />
 
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
