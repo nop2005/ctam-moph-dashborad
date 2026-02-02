@@ -27,6 +27,7 @@ import ProfileSettings from "./pages/ProfileSettings";
 import Personnel from "./pages/Personnel";
 import PersonnelAdmin from "./pages/PersonnelAdmin";
 import BudgetRecording from "./pages/BudgetRecording";
+import BudgetReport from "./pages/BudgetReport";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 // Public pages (no login required)
@@ -215,6 +216,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['hospital_it', 'health_office']}>
                   <BudgetRecording />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/reports/budget" 
+              element={
+                <ProtectedRoute>
+                  <BudgetReport />
                 </ProtectedRoute>
               } 
             />
