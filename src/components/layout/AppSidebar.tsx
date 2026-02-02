@@ -42,6 +42,7 @@ import {
   UserCheck,
   MonitorDot,
   Wallet,
+  DollarSign,
 } from "lucide-react";
 const menuItems = [
   {
@@ -379,6 +380,22 @@ export function AppSidebar() {
                 >
                   <BookOpen className="h-4 w-4" />
                   <span>คู่มือเอกสารสำหรับการนิเทศ</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Budget Report - For all authenticated users */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate("/reports/budget")}
+                  isActive={currentPath === "/reports/budget"}
+                  tooltip="รายงานงบประมาณประจำปี"
+                  className={`
+                    text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                    data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                  `}
+                >
+                  <DollarSign className="h-4 w-4" />
+                  <span>รายงานงบประมาณประจำปี</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
