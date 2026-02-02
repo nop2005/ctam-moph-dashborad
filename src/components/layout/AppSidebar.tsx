@@ -43,6 +43,7 @@ import {
   MonitorDot,
   Wallet,
   DollarSign,
+  Table2,
 } from "lucide-react";
 const menuItems = [
   {
@@ -109,6 +110,18 @@ const analyticalReportSubItems = [
     icon: Wrench,
   },
 ];
+const budgetReportSubItems = [
+  {
+    title: "ตารางสรุปงบประมาณ",
+    url: "/reports/budget",
+    icon: Table2,
+  },
+  {
+    title: "กราฟงบประมาณ (Drill-down)",
+    url: "/reports/budget/chart",
+    icon: BarChart3,
+  },
+];
 const inspectionSubItems = [
   {
     title: "รายงานผู้นิเทศ",
@@ -168,6 +181,7 @@ export function AppSidebar() {
     currentPath === "/reports/quantitative-detail" ||
     currentPath === "/reports/equipment-usage";
   const isInspectionActive = currentPath.startsWith("/inspection") && currentPath !== "/inspection/manual";
+  const isBudgetReportActive = currentPath.startsWith("/reports/budget");
 
   // State for collapsible menus (persist across route changes)
   const [reportsOpen, setReportsOpen] = useLocalStorageState<boolean>("sidebar.reportsOpen", isReportsActive);
@@ -178,6 +192,10 @@ export function AppSidebar() {
   const [inspectionOpen, setInspectionOpen] = useLocalStorageState<boolean>(
     "sidebar.inspectionOpen",
     isInspectionActive,
+  );
+  const [budgetReportOpen, setBudgetReportOpen] = useLocalStorageState<boolean>(
+    "sidebar.budgetReportOpen",
+    isBudgetReportActive,
   );
   const filterByRole = (items: typeof menuItems) => {
     if (!profile?.role) return items;
@@ -383,21 +401,49 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {/* Budget Report - For all authenticated users */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => navigate("/reports/budget")}
-                  isActive={currentPath === "/reports/budget"}
-                  tooltip="รายงานงบประมาณประจำปี"
-                  className={`
-                    text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
-                    data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
-                  `}
-                >
-                  <DollarSign className="h-4 w-4" />
-                  <span>รายงานงบประมาณประจำปี</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {/* Budget Report with Submenu - For all authenticated users */}
+              <Collapsible open={budgetReportOpen} onOpenChange={setBudgetReportOpen} className="group/collapsible">
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip="รายงานงบประมาณประจำปี"
+                    isActive={false}
+                    onClick={() => {
+                      if (collapsed) {
+                        navigate("/reports/budget");
+                      } else {
+                        setBudgetReportOpen(!budgetReportOpen);
+                      }
+                    }}
+                    className={`
+                      text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                    `}
+                  >
+                    <DollarSign className="h-4 w-4" />
+                    <span>รายงานงบประมาณประจำปี</span>
+                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  </SidebarMenuButton>
+                  <CollapsibleContent>
+                    <SidebarMenuSub className="border-sidebar-border">
+                      {budgetReportSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton
+                            onClick={() => navigate(subItem.url)}
+                            isActive={currentPath === subItem.url}
+                            title={subItem.title}
+                            className={`
+                              text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
+                              data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                            `}
+                          >
+                            <subItem.icon className="h-3 w-3" />
+                            <span className="truncate">{subItem.title}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
