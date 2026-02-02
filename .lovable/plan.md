@@ -1,201 +1,161 @@
 
 
-# แผนการพัฒนาเมนู "รายงานงบประมาณประจำปี"
+# แผนการนำเข้าข้อมูลงบประมาณจากไฟล์ Excel
 
-## สรุปภาพรวม
-เพิ่มเมนูหลักใหม่ "รายงานงบประมาณประจำปี" ให้ผู้ใช้แต่ละระดับสามารถดูรายงานภาพรวมงบประมาณตามสิทธิ์ที่ควรได้ โดยจะแสดงข้อมูลงบประมาณจากตาราง `budget_records` ที่มีอยู่แล้ว
+## สรุปข้อมูลจากไฟล์ Excel
+ไฟล์มีข้อมูลงบประมาณจาก **75 หน่วยงาน** (โรงพยาบาลและ สสจ.) แยกตาม 17 หมวดหมู่ CTAM โดยมีโครงสร้างดังนี้:
 
----
-
-## สิทธิ์การเข้าถึงข้อมูลตามบทบาท
-
-| บทบาท (Role) | ขอบเขตการเห็นข้อมูล |
-|--------------|-------------------|
-| hospital_it | เฉพาะโรงพยาบาลของตัวเอง |
-| health_office | เฉพาะหน่วยงานของตัวเอง |
-| provincial | โรงพยาบาลและหน่วยงานทั้งหมดในจังหวัด |
-| regional | โรงพยาบาลและหน่วยงานทั้งหมดในเขตสุขภาพ |
-| central_admin | ข้อมูลทุกหน่วยงานทั่วประเทศ |
-| supervisor | ข้อมูลหน่วยงานในเขตสุขภาพที่รับผิดชอบ |
+| คอลัมน์ | ข้อมูล |
+|---------|--------|
+| โรงพยาบาล | ชื่อหน่วยงาน (เช่น รพ.ดอยหลวง, สสจ. พะเยา) |
+| จังหวัด | จังหวัดที่ตั้ง |
+| คอลัมน์ 3-19 | งบประมาณ 17 หมวดหมู่ CTAM |
 
 ---
 
-## ฟีเจอร์หลัก
+## ความท้าทาย: การจับคู่ชื่อหน่วยงาน
 
-1. **เลือกปีงบประมาณ** - Dropdown เลือกปีงบประมาณ (พ.ศ.)
-2. **ตารางสรุปภาพรวม** - แสดงข้อมูลงบประมาณแยกตาม 17 หมวดหมู่ CTAM
-3. **การรวมข้อมูล**:
-   - hospital_it/health_office: แสดงเฉพาะข้อมูลหน่วยงานของตัวเอง
-   - provincial: รวมยอดของทุกหน่วยงานในจังหวัด พร้อมตาราง drill-down
-   - regional: รวมยอดของทุกหน่วยงานในเขตสุขภาพ พร้อมตาราง drill-down
-   - central_admin: รวมยอดทั้งประเทศ พร้อม drill-down เป็นเขต/จังหวัด/หน่วยงาน
-4. **Export** - สามารถดาวน์โหลดรายงานได้ (อนาคต)
+ชื่อในไฟล์ Excel กับฐานข้อมูลมีความแตกต่าง เช่น:
+
+| Excel | Database |
+|-------|----------|
+| `รพ.ดอยหลวง` | `รพ.ดอยหลวง` ✓ (ตรงกัน) |
+| `สสจ. พะเยา` | `สำนักงานสาธารณสุขจังหวัดพะเยา` ✗ (ต้อง fuzzy match) |
+| `สนง.เขต` | `สำนักงานเขตสุขภาพที่ 1` ✗ (ต้องระบุเพิ่ม) |
 
 ---
 
 ## สิ่งที่ต้องทำ
 
-### 1. เพิ่มเมนูใน Sidebar
-- เพิ่มเมนู "รายงานงบประมาณประจำปี" หลังจากเมนู "คู่มือเอกสารสำหรับการนิเทศ"
-- ใช้ icon `FileText` หรือ `DollarSign` จาก lucide-react
-- แสดงสำหรับทุก roles ที่ authenticated
+### 1. สร้าง Edge Function สำหรับนำเข้าข้อมูล
+สร้าง edge function ที่:
+- รับไฟล์ Excel และ fiscal_year
+- Parse ข้อมูลจาก Excel
+- จับคู่ชื่อหน่วยงานกับฐานข้อมูล (Fuzzy Matching)
+- Insert/Update ข้อมูลลงตาราง `budget_records`
 
-### 2. เพิ่ม RLS Policy สำหรับการอ่านข้อมูลตามสิทธิ์
-ต้องเพิ่ม RLS policies เพื่อให้ผู้ใช้ระดับสูงสามารถดูข้อมูลของหน่วยงานในขอบเขตได้:
-- provincial: ดูข้อมูลหน่วยงานในจังหวัด
-- regional: ดูข้อมูลหน่วยงานในเขตสุขภาพ
-- central_admin: ดูข้อมูลทุกหน่วยงาน
-- supervisor: ดูข้อมูลหน่วยงานในเขตสุขภาพ
+### 2. เพิ่มปุ่ม "นำเข้าข้อมูล" ในหน้า BudgetRecording หรือ BudgetReport
+- สำหรับ central_admin หรือ regional เท่านั้น
+- เลือกไฟล์ Excel และปีงบประมาณ
+- แสดง preview ก่อนนำเข้า
+- รายงานผลการจับคู่
 
-### 3. สร้างหน้า BudgetReport.tsx
-**องค์ประกอบ UI:**
-- Header แสดงชื่อหน้าและปีงบประมาณที่เลือก
-- Dropdown เลือกปีงบประมาณ
-- การ์ดสรุปยอดรวม
-- ตารางแสดงข้อมูลตามระดับ:
-  - สำหรับ hospital_it/health_office: ตาราง 17 หมวดหมู่ + งบประมาณ
-  - สำหรับ provincial: ตารางหน่วยงานในจังหวัด + งบรวมแต่ละหน่วย + drill-down
-  - สำหรับ regional: ตารางจังหวัด + งบรวม + drill-down ไปหน่วยงาน
-  - สำหรับ central_admin: ตารางเขตสุขภาพ + drill-down ไปจังหวัด/หน่วยงาน
+### 3. Algorithm สำหรับ Fuzzy Matching
+```text
+1. ทำให้ชื่อเป็นมาตรฐาน:
+   - "สสจ." → "สำนักงานสาธารณสุขจังหวัด"
+   - "รพ." → "รพ."
+   - ลบช่องว่างพิเศษ
 
-### 4. เพิ่ม Route ใน App.tsx
-- Path: `/reports/budget`
-- Protected Route สำหรับทุก authenticated users
+2. จับคู่แบบ Exact Match ก่อน
 
----
+3. ถ้าไม่ตรง ใช้ Fuzzy Match:
+   - คำนวณ Levenshtein distance
+   - เลือกที่ใกล้เคียงที่สุดและ > 80% similarity
 
-## Database Migration (เพิ่ม RLS Policies)
-
-```sql
--- Policy: Provincial can view budget records in their province
-CREATE POLICY "Provincial can view province budget records"
-  ON public.budget_records FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles p
-      WHERE p.user_id = auth.uid()
-        AND p.role = 'provincial'::user_role
-        AND (
-          budget_records.hospital_id IN (
-            SELECT h.id FROM hospitals h WHERE h.province_id = p.province_id
-          )
-          OR budget_records.health_office_id IN (
-            SELECT ho.id FROM health_offices ho WHERE ho.province_id = p.province_id
-          )
-        )
-    )
-  );
-
--- Policy: Regional can view budget records in their region
-CREATE POLICY "Regional can view region budget records"
-  ON public.budget_records FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles p
-      JOIN provinces prov ON prov.health_region_id = p.health_region_id
-      WHERE p.user_id = auth.uid()
-        AND p.role = 'regional'::user_role
-        AND (
-          budget_records.hospital_id IN (
-            SELECT h.id FROM hospitals h WHERE h.province_id = prov.id
-          )
-          OR budget_records.health_office_id IN (
-            SELECT ho.id FROM health_offices ho WHERE ho.health_region_id = p.health_region_id
-          )
-        )
-    )
-  );
-
--- Policy: Central admin can view all budget records
-CREATE POLICY "Central admin can view all budget records"
-  ON public.budget_records FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles p
-      WHERE p.user_id = auth.uid()
-        AND p.role = 'central_admin'::user_role
-    )
-  );
-
--- Policy: Supervisor can view budget records in their region
-CREATE POLICY "Supervisor can view region budget records"
-  ON public.budget_records FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles p
-      JOIN provinces prov ON prov.health_region_id = p.health_region_id
-      WHERE p.user_id = auth.uid()
-        AND p.role = 'supervisor'::user_role
-        AND (
-          budget_records.hospital_id IN (
-            SELECT h.id FROM hospitals h WHERE h.province_id = prov.id
-          )
-          OR budget_records.health_office_id IN (
-            SELECT ho.id FROM health_offices ho WHERE ho.health_region_id = p.health_region_id
-          )
-        )
-    )
-  );
+4. ใช้ข้อมูลจังหวัดช่วย validate
 ```
 
 ---
 
-## ไฟล์ที่ต้องสร้าง/แก้ไข
+## สิ่งที่จะสร้าง/แก้ไข
 
 | ไฟล์ | การดำเนินการ |
 |------|-------------|
-| `src/pages/BudgetReport.tsx` | สร้างใหม่ |
-| `src/components/layout/AppSidebar.tsx` | เพิ่มเมนู |
-| `src/App.tsx` | เพิ่ม Route |
-| Database migration | เพิ่ม RLS policies |
+| `supabase/functions/import-budget/index.ts` | สร้างใหม่ - Edge function สำหรับ import |
+| `src/pages/BudgetRecording.tsx` หรือ `BudgetReport.tsx` | เพิ่มปุ่มนำเข้า |
+| `src/components/budget/BudgetImportDialog.tsx` | สร้างใหม่ - Dialog สำหรับ import |
 
 ---
 
-## โครงสร้าง Component หลัก
+## รายละเอียด Edge Function
 
-```text
-BudgetReport.tsx
-├── Header (ชื่อหน้า + ปีงบประมาณ dropdown)
-├── Summary Cards (ยอดรวมงบประมาณ, จำนวนหน่วยงาน)
-├── Main Content (ขึ้นอยู่กับ role)
-│   ├── [hospital_it/health_office] ตารางหมวดหมู่ 17 ข้อ
-│   ├── [provincial] ตารางหน่วยงานในจังหวัด + drill-down
-│   ├── [regional/supervisor] ตารางจังหวัด + drill-down
-│   └── [central_admin] ตารางเขตสุขภาพ + drill-down
-└── Footer (Export buttons - อนาคต)
+### Input
+```json
+{
+  "fiscal_year": 2568,
+  "data": [
+    {
+      "unit_name": "รพ.ดอยหลวง",
+      "province": "เชียงราย", 
+      "budgets": {
+        "BACKUP": 0,
+        "ANTIVIRUS": 10000,
+        ...
+      }
+    }
+  ]
+}
+```
+
+### Output
+```json
+{
+  "success": true,
+  "imported": 70,
+  "failed": 5,
+  "unmatched": [
+    {"unit_name": "สนง.เขต", "reason": "ไม่พบหน่วยงานที่ตรงกัน"}
+  ],
+  "matched": [
+    {"unit_name": "สสจ. พะเยา", "matched_to": "สำนักงานสาธารณสุขจังหวัดพะเยา"}
+  ]
+}
 ```
 
 ---
 
-## UI สำหรับแต่ละระดับผู้ใช้
+## การทำงานของ Fuzzy Matching
 
-### hospital_it / health_office
-- แสดงตาราง 17 หมวดหมู่ CTAM พร้อมงบประมาณของหน่วยงานตัวเอง
-- ยอดรวมงบประมาณ
+### ขั้นตอน Normalize ชื่อ
+```text
+Input: "สสจ. พะเยา"
+Step 1: Replace "สสจ." → "สำนักงานสาธารณสุขจังหวัด"
+Step 2: Remove extra spaces
+Output: "สำนักงานสาธารณสุขจังหวัดพะเยา"
+→ Exact match ✓
 
-### provincial
-- Summary: จำนวนโรงพยาบาล/สสอ. ที่บันทึกงบประมาณ, ยอดรวมทั้งจังหวัด
-- ตารางแสดงรายชื่อหน่วยงาน + ยอดรวมงบแต่ละหน่วย
-- คลิกเพื่อดูรายละเอียด 17 หมวดหมู่ของแต่ละหน่วยงาน
+Input: "สนง.เขต" + จังหวัด "เชียงใหม่"
+Step 1: Recognize as regional office
+Step 2: Match to "สำนักงานเขตสุขภาพที่ 1" (based on เชียงใหม่ = เขต 1)
+→ Matched ✓
+```
 
-### regional / supervisor
-- Summary: จำนวนจังหวัด, จำนวนหน่วยงานที่บันทึก, ยอดรวมทั้งเขต
-- ตารางแสดงรายชื่อจังหวัด + ยอดรวมงบแต่ละจังหวัด
-- คลิกจังหวัดเพื่อดูรายชื่อหน่วยงาน
-- คลิกหน่วยงานเพื่อดูรายละเอียด 17 หมวดหมู่
+---
 
-### central_admin
-- Summary: ยอดรวมทั้งประเทศ, จำนวนหน่วยงานที่บันทึก
-- ตารางแสดงรายชื่อเขตสุขภาพ + ยอดรวมงบแต่ละเขต
-- Drill-down: เขต → จังหวัด → หน่วยงาน → รายละเอียด 17 ข้อ
+## UI สำหรับการ Import
+
+```text
+┌─────────────────────────────────────────────────┐
+│ นำเข้าข้อมูลงบประมาณ                              │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│ ปีงบประมาณ: [2568 ▼]                            │
+│                                                 │
+│ ไฟล์ Excel: [เลือกไฟล์...]                       │
+│                                                 │
+│ ┌───────────────────────────────────────────┐   │
+│ │ Preview (แสดง 5 รายการแรก)                 │   │
+│ │ ─────────────────────────────────────────  │   │
+│ │ ✓ รพ.ดอยหลวง → รพ.ดอยหลวง                 │   │
+│ │ ✓ สสจ. พะเยา → สำนักงานสาธารณสุข...       │   │
+│ │ ⚠ สนง.เขต → สำนักงานเขตสุขภาพที่ 1?       │   │
+│ └───────────────────────────────────────────┘   │
+│                                                 │
+│ สรุป: จับคู่ได้ 70/75 หน่วยงาน                   │
+│                                                 │
+│        [ยกเลิก]         [นำเข้าข้อมูล]           │
+└─────────────────────────────────────────────────┘
+```
 
 ---
 
 ## ขั้นตอนการ Implement
 
-1. สร้าง migration สำหรับ RLS policies ใหม่
-2. สร้างหน้า `BudgetReport.tsx` พร้อม UI ตาม role
-3. เพิ่มเมนูใน `AppSidebar.tsx`
-4. เพิ่ม Route ใน `App.tsx`
-5. ทดสอบการทำงานกับแต่ละ role
+1. สร้าง Edge Function `import-budget` พร้อม fuzzy matching logic
+2. สร้าง `BudgetImportDialog.tsx` component สำหรับ UI
+3. เพิ่มปุ่มนำเข้าในหน้า `BudgetRecording.tsx` (สำหรับ central_admin)
+4. Parse Excel client-side ด้วย `xlsx` library (มีอยู่แล้ว)
+5. ส่งข้อมูลไป Edge Function เพื่อ match และ insert
+6. แสดงผลลัพธ์การนำเข้า
 
