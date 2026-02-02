@@ -194,7 +194,7 @@ export default function BudgetRecording() {
 
           <div className="flex items-center gap-3">
             <Select value={fiscalYear.toString()} onValueChange={(v) => setFiscalYear(parseInt(v))}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[220px]">
                 <SelectValue placeholder="เลือกปีงบประมาณ" />
               </SelectTrigger>
               <SelectContent>
