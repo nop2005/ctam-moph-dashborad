@@ -6,8 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, Building2, Layers } from "lucide-react";
-import { BudgetPieChart, DrillLevel } from "@/components/reports/BudgetPieChart";
+import { DollarSign, Building2, Layers, Filter, MapPin } from "lucide-react";
+import { BudgetPieChart } from "@/components/reports/BudgetPieChart";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 // Types
 interface BudgetRecord {
@@ -70,6 +71,9 @@ const formatCurrency = (amount: number) => {
 export default function BudgetReportPieChart() {
   const { profile } = useAuth();
   const [fiscalYear, setFiscalYear] = useState(getCurrentFiscalYear());
+  const [selectedRegion, setSelectedRegion] = useState<string>("all");
+  const [selectedProvince, setSelectedProvince] = useState<string>("all");
+  const [selectedUnit, setSelectedUnit] = useState<string>("all");
 
   const fiscalYears = Array.from({ length: 9 }, (_, i) => getCurrentFiscalYear() - 4 + i);
 
@@ -103,7 +107,7 @@ export default function BudgetReportPieChart() {
   const { data: hospitals = [] } = useQuery({
     queryKey: ["hospitals"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("hospitals").select("*");
+      const { data, error } = await supabase.from("hospitals").select("*").order("name");
       if (error) throw error;
       return data as Hospital[];
     },
@@ -112,7 +116,7 @@ export default function BudgetReportPieChart() {
   const { data: healthOffices = [] } = useQuery({
     queryKey: ["health-offices"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("health_offices").select("*");
+      const { data, error } = await supabase.from("health_offices").select("*").order("name");
       if (error) throw error;
       return data as HealthOffice[];
     },
@@ -121,7 +125,7 @@ export default function BudgetReportPieChart() {
   const { data: provinces = [] } = useQuery({
     queryKey: ["provinces"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("provinces").select("*");
+      const { data, error } = await supabase.from("provinces").select("*").order("name");
       if (error) throw error;
       return data as Province[];
     },
@@ -143,74 +147,48 @@ export default function BudgetReportPieChart() {
   const isRegional = userRole === "regional" || userRole === "supervisor";
   const isCentralAdmin = userRole === "central_admin";
 
-  // Calculate summary statistics
-  const summaryStats = useMemo(() => {
-    const hospitalMap = new Map(hospitals.map((h) => [h.id, h]));
-    const officeMap = new Map(healthOffices.map((o) => [o.id, o]));
-    const provinceMap = new Map(provinces.map((p) => [p.id, p]));
+  // Filter provinces based on selected region
+  const filteredProvinces = useMemo(() => {
+    if (selectedRegion === "all") return provinces;
+    return provinces.filter((p) => p.health_region_id === selectedRegion);
+  }, [provinces, selectedRegion]);
 
-    let filteredRecords = budgetRecords;
-
-    // Filter based on user role
-    if (isOrgLevel) {
-      const orgId = profile?.hospital_id || profile?.health_office_id;
-      filteredRecords = budgetRecords.filter(
-        (r) => r.hospital_id === orgId || r.health_office_id === orgId
-      );
-    } else if (isProvincial) {
-      filteredRecords = budgetRecords.filter((r) => {
-        if (r.hospital_id) {
-          const hospital = hospitalMap.get(r.hospital_id);
-          return hospital?.province_id === profile?.province_id;
-        }
-        if (r.health_office_id) {
-          const office = officeMap.get(r.health_office_id);
-          return office?.province_id === profile?.province_id;
-        }
-        return false;
-      });
-    } else if (isRegional) {
-      filteredRecords = budgetRecords.filter((r) => {
-        if (r.hospital_id) {
-          const hospital = hospitalMap.get(r.hospital_id);
-          if (hospital) {
-            const province = provinceMap.get(hospital.province_id);
-            return province?.health_region_id === profile?.health_region_id;
-          }
-        }
-        if (r.health_office_id) {
-          const office = officeMap.get(r.health_office_id);
-          return office?.health_region_id === profile?.health_region_id;
-        }
-        return false;
-      });
+  // Filter units (hospitals + health offices) based on selected province
+  const filteredUnits = useMemo(() => {
+    let targetProvinces = filteredProvinces;
+    if (selectedProvince !== "all") {
+      targetProvinces = provinces.filter((p) => p.id === selectedProvince);
     }
+    const provinceIds = new Set(targetProvinces.map((p) => p.id));
 
-    // Calculate totals
-    const totalBudget = filteredRecords.reduce((sum, r) => sum + (Number(r.budget_amount) || 0), 0);
-    
-    const unitIds = new Set<string>();
-    filteredRecords.forEach((r) => {
-      if (r.hospital_id) unitIds.add(r.hospital_id);
-      if (r.health_office_id) unitIds.add(r.health_office_id);
-    });
+    const hospitalsInScope = hospitals.filter((h) => provinceIds.has(h.province_id));
+    const officesInScope = healthOffices.filter((ho) => ho.province_id && provinceIds.has(ho.province_id));
 
-    // Count categories with budget
-    const categoriesWithBudget = new Set<string>();
-    filteredRecords.forEach((r) => {
-      if (r.budget_amount > 0) {
-        categoriesWithBudget.add(r.category_id);
-      }
-    });
+    return [
+      ...hospitalsInScope.map((h) => ({ id: h.id, name: h.name, type: "hospital" as const })),
+      ...officesInScope.map((ho) => ({ id: ho.id, name: ho.name, type: "health_office" as const })),
+    ];
+  }, [hospitals, healthOffices, filteredProvinces, selectedProvince, provinces]);
 
-    return {
-      totalBudget,
-      unitCount: unitIds.size,
-      categoryCount: categoriesWithBudget.size,
-    };
-  }, [budgetRecords, hospitals, healthOffices, provinces, profile, isOrgLevel, isProvincial, isRegional]);
+  // Apply role-based restrictions
+  const accessibleRegions = useMemo(() => {
+    if (isRegional && profile?.health_region_id) {
+      return healthRegions.filter((r) => r.id === profile.health_region_id);
+    }
+    return healthRegions;
+  }, [healthRegions, isRegional, profile]);
 
-  // Filter data based on role for chart
+  const accessibleProvinces = useMemo(() => {
+    if (isProvincial && profile?.province_id) {
+      return provinces.filter((p) => p.id === profile.province_id);
+    }
+    if (isRegional && profile?.health_region_id) {
+      return provinces.filter((p) => p.health_region_id === profile.health_region_id);
+    }
+    return filteredProvinces;
+  }, [provinces, filteredProvinces, isProvincial, isRegional, profile]);
+
+  // Filter budget records based on selections
   const filteredBudgetRecords = useMemo(() => {
     const hospitalMap = new Map(hospitals.map((h) => [h.id, h]));
     const officeMap = new Map(healthOffices.map((o) => [o.id, o]));
@@ -218,7 +196,7 @@ export default function BudgetReportPieChart() {
 
     let records = budgetRecords;
 
-    // Apply role-based filtering
+    // Apply role-based filtering first
     if (isOrgLevel) {
       const orgId = profile?.hospital_id || profile?.health_office_id;
       records = records.filter((r) => r.hospital_id === orgId || r.health_office_id === orgId);
@@ -251,43 +229,109 @@ export default function BudgetReportPieChart() {
       });
     }
 
+    // Apply user filter selections
+    if (selectedUnit !== "all") {
+      records = records.filter((r) => r.hospital_id === selectedUnit || r.health_office_id === selectedUnit);
+    } else if (selectedProvince !== "all") {
+      records = records.filter((r) => {
+        if (r.hospital_id) {
+          const hospital = hospitalMap.get(r.hospital_id);
+          return hospital?.province_id === selectedProvince;
+        }
+        if (r.health_office_id) {
+          const office = officeMap.get(r.health_office_id);
+          return office?.province_id === selectedProvince;
+        }
+        return false;
+      });
+    } else if (selectedRegion !== "all") {
+      records = records.filter((r) => {
+        if (r.hospital_id) {
+          const hospital = hospitalMap.get(r.hospital_id);
+          if (hospital) {
+            const province = provinceMap.get(hospital.province_id);
+            return province?.health_region_id === selectedRegion;
+          }
+        }
+        if (r.health_office_id) {
+          const office = officeMap.get(r.health_office_id);
+          return office?.health_region_id === selectedRegion;
+        }
+        return false;
+      });
+    }
+
     return records;
-  }, [budgetRecords, hospitals, healthOffices, provinces, profile, isOrgLevel, isProvincial, isRegional]);
+  }, [budgetRecords, hospitals, healthOffices, provinces, profile, isOrgLevel, isProvincial, isRegional, selectedRegion, selectedProvince, selectedUnit]);
 
-  // Filter regions/provinces based on user role
-  const filteredRegions = useMemo(() => {
-    if (isRegional && profile?.health_region_id) {
-      return healthRegions.filter((r) => r.id === profile.health_region_id);
-    }
-    return healthRegions;
-  }, [healthRegions, isRegional, profile]);
+  // Calculate summary statistics
+  const summaryStats = useMemo(() => {
+    const totalBudget = filteredBudgetRecords.reduce((sum, r) => sum + (Number(r.budget_amount) || 0), 0);
+    
+    const unitIds = new Set<string>();
+    filteredBudgetRecords.forEach((r) => {
+      if (r.hospital_id) unitIds.add(r.hospital_id);
+      if (r.health_office_id) unitIds.add(r.health_office_id);
+    });
 
-  const filteredProvinces = useMemo(() => {
-    if (isProvincial && profile?.province_id) {
-      return provinces.filter((p) => p.id === profile.province_id);
-    }
-    if (isRegional && profile?.health_region_id) {
-      return provinces.filter((p) => p.health_region_id === profile.health_region_id);
-    }
-    return provinces;
-  }, [provinces, isProvincial, isRegional, profile]);
+    const categoriesWithBudget = new Set<string>();
+    filteredBudgetRecords.forEach((r) => {
+      if (r.budget_amount > 0) {
+        categoriesWithBudget.add(r.category_id);
+      }
+    });
 
-  // Access control for drill-down
-  const canDrillToProvince = (regionId: string) => {
-    if (isCentralAdmin) return true;
-    if (isRegional && profile?.health_region_id === regionId) return true;
-    return false;
+    return {
+      totalBudget,
+      unitCount: unitIds.size,
+      categoryCount: categoriesWithBudget.size,
+    };
+  }, [filteredBudgetRecords]);
+
+  // Generate chart title based on selection
+  const chartTitle = useMemo(() => {
+    if (selectedUnit !== "all") {
+      const unit = filteredUnits.find((u) => u.id === selectedUnit);
+      return `สัดส่วนงบประมาณ - ${unit?.name || "หน่วยงาน"}`;
+    }
+    if (selectedProvince !== "all") {
+      const province = provinces.find((p) => p.id === selectedProvince);
+      return `สัดส่วนงบประมาณ - ${province?.name || "จังหวัด"}`;
+    }
+    if (selectedRegion !== "all") {
+      const region = healthRegions.find((r) => r.id === selectedRegion);
+      return `สัดส่วนงบประมาณ - เขตสุขภาพที่ ${region?.region_number || ""}`;
+    }
+    return "สัดส่วนงบประมาณตามหมวดหมู่ CTAM (ทั้งประเทศ)";
+  }, [selectedRegion, selectedProvince, selectedUnit, healthRegions, provinces, filteredUnits]);
+
+  // Reset dependent filters when parent changes
+  const handleRegionChange = (value: string) => {
+    setSelectedRegion(value);
+    setSelectedProvince("all");
+    setSelectedUnit("all");
   };
 
-  const canDrillToHospital = (provinceId: string) => {
-    if (isCentralAdmin) return true;
-    if (isProvincial && profile?.province_id === provinceId) return true;
-    if (isRegional) {
-      const province = provinces.find((p) => p.id === provinceId);
-      return province?.health_region_id === profile?.health_region_id;
-    }
-    return false;
+  const handleProvinceChange = (value: string) => {
+    setSelectedProvince(value);
+    setSelectedUnit("all");
   };
+
+  // Build options for SearchableSelect
+  const regionOptions = useMemo(() => [
+    { value: "all", label: "ทุกเขตสุขภาพ" },
+    ...accessibleRegions.map((r) => ({ value: r.id, label: `เขต ${r.region_number}` })),
+  ], [accessibleRegions]);
+
+  const provinceOptions = useMemo(() => [
+    { value: "all", label: "ทุกจังหวัด" },
+    ...accessibleProvinces.map((p) => ({ value: p.id, label: p.name })),
+  ], [accessibleProvinces]);
+
+  const unitOptions = useMemo(() => [
+    { value: "all", label: "ทุกหน่วยงาน" },
+    ...filteredUnits.map((u) => ({ value: u.id, label: u.name })),
+  ], [filteredUnits]);
 
   if (isLoadingBudget) {
     return (
@@ -309,28 +353,77 @@ export default function BudgetReportPieChart() {
     <DashboardLayout>
       <div className="space-y-6 p-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">สัดส่วนงบประมาณตามหมวดหมู่ CTAM</h1>
-            <p className="text-muted-foreground">
-              แสดงสัดส่วนงบประมาณแยกตาม 17 หมวดหมู่ พร้อม drill-down รายเขต จังหวัด และหน่วยงาน
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Select value={fiscalYear.toString()} onValueChange={(v) => setFiscalYear(parseInt(v))}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="เลือกปีงบประมาณ" />
-              </SelectTrigger>
-              <SelectContent>
-                {fiscalYears.map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    ปีงบประมาณ {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold">สัดส่วนงบประมาณตามหมวดหมู่ CTAM</h1>
+          <p className="text-muted-foreground">
+            แสดงสัดส่วนงบประมาณแยกตาม 17 หมวดหมู่ พร้อมตัวกรองรายเขต จังหวัด และหน่วยงาน
+          </p>
         </div>
+
+        {/* Filters */}
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+              ตัวกรอง
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="w-full">
+                <label className="text-sm font-medium mb-1.5 block">เขตสุขภาพ</label>
+                <SearchableSelect
+                  options={regionOptions}
+                  value={selectedRegion}
+                  onValueChange={handleRegionChange}
+                  placeholder="ทุกเขตสุขภาพ"
+                  searchPlaceholder="ค้นหาเขต..."
+                  disabled={isProvincial || isOrgLevel}
+                />
+              </div>
+
+              <div className="w-full">
+                <label className="text-sm font-medium mb-1.5 block">จังหวัด</label>
+                <SearchableSelect
+                  options={provinceOptions}
+                  value={selectedProvince}
+                  onValueChange={handleProvinceChange}
+                  placeholder="ทุกจังหวัด"
+                  searchPlaceholder="ค้นหาจังหวัด..."
+                  disabled={isProvincial || isOrgLevel}
+                />
+              </div>
+
+              <div className="w-full">
+                <label className="text-sm font-medium mb-1.5 block">หน่วยงาน</label>
+                <SearchableSelect
+                  options={unitOptions}
+                  value={selectedUnit}
+                  onValueChange={setSelectedUnit}
+                  placeholder="ทุกหน่วยงาน"
+                  searchPlaceholder="ค้นหาหน่วยงาน..."
+                  disabled={isOrgLevel}
+                />
+              </div>
+
+              <div className="w-full">
+                <label className="text-sm font-medium mb-1.5 block">ปีงบประมาณ</label>
+                <Select value={fiscalYear.toString()} onValueChange={(v) => setFiscalYear(parseInt(v))}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="เลือกปีงบประมาณ" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    {fiscalYears.map((year) => (
+                      <SelectItem key={year} value={year.toString()} className="text-sm">
+                        ปีงบประมาณ {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -372,15 +465,10 @@ export default function BudgetReportPieChart() {
 
         {/* Budget Pie Chart */}
         <BudgetPieChart
-          healthRegions={filteredRegions}
-          provinces={filteredProvinces}
-          hospitals={hospitals}
-          healthOffices={healthOffices}
           categories={categories}
           budgetRecords={filteredBudgetRecords}
           selectedFiscalYear={fiscalYear}
-          canDrillToProvince={canDrillToProvince}
-          canDrillToHospital={canDrillToHospital}
+          title={chartTitle}
         />
       </div>
     </DashboardLayout>
