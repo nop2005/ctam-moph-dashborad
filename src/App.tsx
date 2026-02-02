@@ -28,6 +28,7 @@ import Personnel from "./pages/Personnel";
 import PersonnelAdmin from "./pages/PersonnelAdmin";
 import BudgetRecording from "./pages/BudgetRecording";
 import BudgetReport from "./pages/BudgetReport";
+import BudgetReportChart from "./pages/BudgetReportChart";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 // Public pages (no login required)
@@ -224,6 +225,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <BudgetReport />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/reports/budget/chart" 
+              element={
+                <ProtectedRoute>
+                  <BudgetReportChart />
                 </ProtectedRoute>
               } 
             />
