@@ -96,39 +96,64 @@ export function BudgetPieChart({
     return null;
   };
 
-  // Custom label with line
+  // Custom label with colored line
   const renderCustomLabel = ({
     cx,
     cy,
     midAngle,
-    innerRadius,
     outerRadius,
     percent,
     index,
-    name,
   }: any) => {
     const RADIAN = Math.PI / 180;
-    const radius = outerRadius * 1.35;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-    
     const percentage = (percent * 100).toFixed(0);
     
     // Don't show label if too small
-    if (percent < 0.01) return null;
+    if (percent < 0.02) return null;
+    
+    // Calculate positions for the label line
+    const sin = Math.sin(-midAngle * RADIAN);
+    const cos = Math.cos(-midAngle * RADIAN);
+    
+    // Start point (on the pie edge)
+    const sx = cx + outerRadius * cos;
+    const sy = cy + outerRadius * sin;
+    
+    // Middle point (elbow)
+    const mx = cx + (outerRadius + 20) * cos;
+    const my = cy + (outerRadius + 20) * sin;
+    
+    // End point (where text starts)
+    const ex = mx + (cos >= 0 ? 1 : -1) * 25;
+    const ey = my;
+    
+    const textAnchor = cos >= 0 ? 'start' : 'end';
+    const color = pieData[index]?.color || '#666';
     
     return (
-      <text
-        x={x}
-        y={y}
-        fill={pieData[index]?.color || '#666'}
-        textAnchor={x > cx ? 'start' : 'end'}
-        dominantBaseline="central"
-        fontSize={12}
-        fontWeight="500"
-      >
-        {percentage}%
-      </text>
+      <g>
+        {/* Line from pie to elbow */}
+        <path
+          d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`}
+          stroke={color}
+          strokeWidth={1.5}
+          fill="none"
+        />
+        {/* Small circle at the end */}
+        <circle cx={ex} cy={ey} r={2} fill={color} />
+        {/* Percentage text */}
+        <text
+          x={ex + (cos >= 0 ? 6 : -6)}
+          y={ey}
+          textAnchor={textAnchor}
+          dominantBaseline="central"
+          fill={color}
+          fontSize={13}
+          fontWeight="600"
+        >
+          {percentage}%
+        </text>
+      </g>
     );
   };
 
@@ -153,48 +178,27 @@ export function BudgetPieChart({
         {pieData.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูลงบประมาณ</div>
         ) : (
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Pie Chart - Left side */}
-            <div className="h-[500px] w-full lg:w-1/2 flex-shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={120}
-                    paddingAngle={1}
-                    dataKey="value"
-                    label={renderCustomLabel}
-                    labelLine={{
-                      stroke: '#888',
-                      strokeWidth: 1,
-                    }}
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            
-            {/* Legend - Right side */}
-            <div className="flex items-center lg:w-1/2">
-              <div className="flex flex-col gap-2">
-                {pieData.map((entry, index) => (
-                  <div key={`legend-${index}`} className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: entry.color }} 
-                    />
-                    <span className="text-sm">{entry.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="h-[450px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={130}
+                  paddingAngle={1}
+                  dataKey="value"
+                  label={renderCustomLabel}
+                  labelLine={false}
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         )}
 
