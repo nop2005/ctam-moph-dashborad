@@ -29,6 +29,7 @@ import PersonnelAdmin from "./pages/PersonnelAdmin";
 import BudgetRecording from "./pages/BudgetRecording";
 import BudgetReport from "./pages/BudgetReport";
 import BudgetReportChart from "./pages/BudgetReportChart";
+import BudgetReportPieChart from "./pages/BudgetReportPieChart";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 // Public pages (no login required)
@@ -233,6 +234,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <BudgetReportChart />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/reports/budget/pie" 
+              element={
+                <ProtectedRoute>
+                  <BudgetReportPieChart />
                 </ProtectedRoute>
               } 
             />

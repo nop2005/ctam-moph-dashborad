@@ -117,9 +117,14 @@ const budgetReportSubItems = [
     icon: Table2,
   },
   {
-    title: "กราฟงบประมาณ (Drill-down)",
+    title: "กราฟแท่ง (Drill-down)",
     url: "/reports/budget/chart",
     icon: BarChart3,
+  },
+  {
+    title: "กราฟวงกลม (17 หมวดหมู่)",
+    url: "/reports/budget/pie",
+    icon: PieChart,
   },
 ];
 const inspectionSubItems = [
