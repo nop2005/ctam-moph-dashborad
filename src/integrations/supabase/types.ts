@@ -280,6 +280,71 @@ export type Database = {
           },
         ]
       }
+      budget_records: {
+        Row: {
+          budget_amount: number
+          category_id: string
+          created_at: string
+          created_by: string | null
+          fiscal_year: number
+          health_office_id: string | null
+          hospital_id: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          budget_amount?: number
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          fiscal_year: number
+          health_office_id?: string | null
+          hospital_id?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          budget_amount?: number
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          fiscal_year?: number
+          health_office_id?: string | null
+          hospital_id?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_records_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ctam_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_records_health_office_id_fkey"
+            columns: ["health_office_id"]
+            isOneToOne: false
+            referencedRelation: "health_offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_records_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ctam_categories: {
         Row: {
           code: string
