@@ -42,26 +42,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-// CTAM category codes in order (17 categories)
-const CTAM_CODES = [
-  "BACKUP",
-  "ANTIVIRUS",
-  "NETWORK_SECURITY",
-  "STANDARD_SECURITY",
-  "USER_SECURITY",
-  "IT_POLICY",
-  "SERVER_SECURITY",
-  "APPLICATION_SECURITY",
-  "DATABASE_SECURITY",
-  "IT_AUDIT",
-  "INCIDENT_RESPONSE",
-  "BACKUP_PLAN",
-  "DISASTER_RECOVERY",
-  "EMAIL_SECURITY",
-  "WEB_SECURITY",
-  "IT_TRAINING",
-  "IT_GOVERNANCE",
-];
+// Number of CTAM categories (17 categories)
+const CTAM_CATEGORY_COUNT = 17;
 
 interface MatchResult {
   unit_name: string;
@@ -146,11 +128,12 @@ export function BudgetImportDialog({
             const unitName = String(row[0] || "").trim();
             const province = String(row[1] || "").trim();
 
-            // Parse 17 category budgets (columns 3-19)
+            // Parse 17 category budgets (columns 3-19) - use order number as key (1-17)
             const budgets: Record<string, number> = {};
-            for (let j = 0; j < CTAM_CODES.length; j++) {
+            for (let j = 0; j < CTAM_CATEGORY_COUNT; j++) {
               const value = row[j + 2];
-              budgets[CTAM_CODES[j]] = typeof value === "number" ? value : 0;
+              // Use order number (1-indexed) as the key
+              budgets[(j + 1).toString()] = typeof value === "number" ? value : (parseFloat(String(value)) || 0);
             }
 
             rows.push({ unit_name: unitName, province, budgets });

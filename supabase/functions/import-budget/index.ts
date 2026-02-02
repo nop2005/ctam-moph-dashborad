@@ -352,18 +352,24 @@ serve(async (req: Request) => {
     const provinces = provincesRes.data || [];
     const categories = categoriesRes.data || [];
 
-    // Build category code to ID map
-    const categoryMap = new Map(categories.map((c) => [c.code, c.id]));
+    // Build category order_number to ID map (1-17)
+    const categoryByOrder = new Map(categories.map((c: { id: string; code: string; order_number?: number }) => {
+      // Get order from the database order_number field
+      return [(c as { order_number: number }).order_number, c.id];
+    }));
+    
+    // Also build code to ID map for reference
+    const categoryByCode = new Map(categories.map((c: { id: string; code: string }) => [c.code, c.id]));
 
     // Combine all units for matching
     const allUnits: UnitData[] = [
-      ...hospitals.map((h) => ({
+      ...hospitals.map((h: { id: string; name: string; province_id: string }) => ({
         id: h.id,
         name: h.name,
         type: "hospital" as const,
         province_id: h.province_id,
       })),
-      ...healthOffices.map((o) => ({
+      ...healthOffices.map((o: { id: string; name: string; province_id: string | null; health_region_id: string }) => ({
         id: o.id,
         name: o.name,
         type: "health_office" as const,
@@ -435,12 +441,13 @@ serve(async (req: Request) => {
         await deleteQuery.eq("health_office_id", match.matched_id);
       }
 
-      // Prepare insert data
+      // Prepare insert data - budgets keys are now order numbers (1-17)
       const insertData = [];
-      for (const [categoryCode, amount] of Object.entries(row.budgets)) {
-        const categoryId = categoryMap.get(categoryCode);
+      for (const [orderStr, amount] of Object.entries(row.budgets)) {
+        const orderNum = parseInt(orderStr, 10);
+        const categoryId = categoryByOrder.get(orderNum);
         if (!categoryId) {
-          console.warn(`Unknown category code: ${categoryCode}`);
+          console.warn(`Unknown category order: ${orderStr}`);
           continue;
         }
 
@@ -450,7 +457,7 @@ serve(async (req: Request) => {
           fiscal_year: fiscal_year,
           category_id: categoryId,
           budget_amount: amount || 0,
-          created_by: user.id,
+          created_by: null, // Don't set created_by to avoid foreign key issues
         });
       }
 
