@@ -96,19 +96,39 @@ export function BudgetPieChart({
     return null;
   };
 
-  const CustomLegend = () => {
+  // Custom label with line
+  const renderCustomLabel = ({
+    cx,
+    cy,
+    midAngle,
+    innerRadius,
+    outerRadius,
+    percent,
+    index,
+    name,
+  }: any) => {
+    const RADIAN = Math.PI / 180;
+    const radius = outerRadius * 1.35;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    
+    const percentage = (percent * 100).toFixed(0);
+    
+    // Don't show label if too small
+    if (percent < 0.01) return null;
+    
     return (
-      <div className="flex flex-col gap-1.5 text-xs">
-        {pieData.map((entry, index) => (
-          <div key={`legend-${index}`} className="flex items-center gap-2">
-            <div 
-              className="w-3 h-3 rounded-sm flex-shrink-0" 
-              style={{ backgroundColor: entry.color }} 
-            />
-            <span className="text-sm">{entry.name}</span>
-          </div>
-        ))}
-      </div>
+      <text
+        x={x}
+        y={y}
+        fill={pieData[index]?.color || '#666'}
+        textAnchor={x > cx ? 'start' : 'end'}
+        dominantBaseline="central"
+        fontSize={12}
+        fontWeight="500"
+      >
+        {percentage}%
+      </text>
     );
   };
 
@@ -135,19 +155,22 @@ export function BudgetPieChart({
         ) : (
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Pie Chart - Left side */}
-            <div className="h-[400px] w-full lg:w-1/2 flex-shrink-0">
+            <div className="h-[500px] w-full lg:w-1/2 flex-shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={pieData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={140}
-                    paddingAngle={2}
+                    innerRadius={50}
+                    outerRadius={120}
+                    paddingAngle={1}
                     dataKey="value"
-                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                    labelLine={false}
+                    label={renderCustomLabel}
+                    labelLine={{
+                      stroke: '#888',
+                      strokeWidth: 1,
+                    }}
                   >
                     {pieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -160,7 +183,17 @@ export function BudgetPieChart({
             
             {/* Legend - Right side */}
             <div className="flex items-center lg:w-1/2">
-              <CustomLegend />
+              <div className="flex flex-col gap-2">
+                {pieData.map((entry, index) => (
+                  <div key={`legend-${index}`} className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: entry.color }} 
+                    />
+                    <span className="text-sm">{entry.name}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
