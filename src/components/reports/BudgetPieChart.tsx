@@ -96,7 +96,7 @@ export function BudgetPieChart({
     return null;
   };
 
-  // Custom label with colored line
+  // Custom label with colored line and category name
   const renderCustomLabel = ({
     cx,
     cy,
@@ -107,6 +107,7 @@ export function BudgetPieChart({
   }: any) => {
     const RADIAN = Math.PI / 180;
     const percentage = (percent * 100).toFixed(0);
+    const categoryName = pieData[index]?.name || '';
     
     // Don't show label if too small
     if (percent < 0.02) return null;
@@ -120,11 +121,11 @@ export function BudgetPieChart({
     const sy = cy + outerRadius * sin;
     
     // Middle point (elbow)
-    const mx = cx + (outerRadius + 20) * cos;
-    const my = cy + (outerRadius + 20) * sin;
+    const mx = cx + (outerRadius + 25) * cos;
+    const my = cy + (outerRadius + 25) * sin;
     
     // End point (where text starts)
-    const ex = mx + (cos >= 0 ? 1 : -1) * 25;
+    const ex = mx + (cos >= 0 ? 1 : -1) * 30;
     const ey = my;
     
     const textAnchor = cos >= 0 ? 'start' : 'end';
@@ -141,17 +142,17 @@ export function BudgetPieChart({
         />
         {/* Small circle at the end */}
         <circle cx={ex} cy={ey} r={2} fill={color} />
-        {/* Percentage text */}
+        {/* Percentage and category name */}
         <text
-          x={ex + (cos >= 0 ? 6 : -6)}
+          x={ex + (cos >= 0 ? 8 : -8)}
           y={ey}
           textAnchor={textAnchor}
           dominantBaseline="central"
           fill={color}
-          fontSize={13}
+          fontSize={12}
           fontWeight="600"
         >
-          {percentage}%
+          {percentage}% {categoryName}
         </text>
       </g>
     );
