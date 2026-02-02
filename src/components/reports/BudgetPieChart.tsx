@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { PieChart as PieChartIcon } from 'lucide-react';
 
 interface CtamCategory {
@@ -96,17 +96,16 @@ export function BudgetPieChart({
     return null;
   };
 
-  const renderCustomLegend = (props: any) => {
-    const { payload } = props;
+  const CustomLegend = () => {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs max-h-[200px] overflow-y-auto">
-        {payload.map((entry: any, index: number) => (
+      <div className="flex flex-col gap-1.5 text-xs">
+        {pieData.map((entry, index) => (
           <div key={`legend-${index}`} className="flex items-center gap-2">
             <div 
               className="w-3 h-3 rounded-sm flex-shrink-0" 
               style={{ backgroundColor: entry.color }} 
             />
-            <span className="truncate">{entry.value}</span>
+            <span className="text-sm">{entry.name}</span>
           </div>
         ))}
       </div>
@@ -134,31 +133,35 @@ export function BudgetPieChart({
         {pieData.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูลงบประมาณ</div>
         ) : (
-          <div className="h-[400px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={120}
-                  paddingAngle={2}
-                  dataKey="value"
-                  label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-                <Legend 
-                  content={renderCustomLegend}
-                  wrapperStyle={{ paddingTop: '20px' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Pie Chart - Left side */}
+            <div className="h-[400px] w-full lg:w-1/2 flex-shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={140}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            
+            {/* Legend - Right side */}
+            <div className="flex items-center lg:w-1/2">
+              <CustomLegend />
+            </div>
           </div>
         )}
 
