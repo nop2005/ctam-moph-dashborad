@@ -1,146 +1,201 @@
 
 
-# แผนการพัฒนาเมนู "บันทึกงบประมาณประจำปี"
+# แผนการพัฒนาเมนู "รายงานงบประมาณประจำปี"
 
 ## สรุปภาพรวม
-เพิ่มเมนูหลักใหม่ "บันทึกงบประมาณประจำปี" ให้หน่วยงาน (โรงพยาบาล/สสจ.) บันทึกงบประมาณแยกตามปีงบประมาณ และแยกรายข้อ CTAM 17 หมวดหมู่ พร้อมแก้ไขได้ตลอดเวลา
+เพิ่มเมนูหลักใหม่ "รายงานงบประมาณประจำปี" ให้ผู้ใช้แต่ละระดับสามารถดูรายงานภาพรวมงบประมาณตามสิทธิ์ที่ควรได้ โดยจะแสดงข้อมูลงบประมาณจากตาราง `budget_records` ที่มีอยู่แล้ว
+
+---
+
+## สิทธิ์การเข้าถึงข้อมูลตามบทบาท
+
+| บทบาท (Role) | ขอบเขตการเห็นข้อมูล |
+|--------------|-------------------|
+| hospital_it | เฉพาะโรงพยาบาลของตัวเอง |
+| health_office | เฉพาะหน่วยงานของตัวเอง |
+| provincial | โรงพยาบาลและหน่วยงานทั้งหมดในจังหวัด |
+| regional | โรงพยาบาลและหน่วยงานทั้งหมดในเขตสุขภาพ |
+| central_admin | ข้อมูลทุกหน่วยงานทั่วประเทศ |
+| supervisor | ข้อมูลหน่วยงานในเขตสุขภาพที่รับผิดชอบ |
 
 ---
 
 ## ฟีเจอร์หลัก
 
-1. **เลือกปีงบประมาณ** - Dropdown เลือกปี พ.ศ.
-2. **แสดง 17 หมวดหมู่ CTAM** - แต่ละข้อมีช่องกรอกตัวเลขงบประมาณ
-3. **คำนวณยอดรวม** - รวมงบทุกหมวดหมู่อัตโนมัติ
-4. **แก้ไขได้ตลอดเวลา** - ไม่มี lock ผู้ใช้สามารถแก้ไขตัวเลขได้เสมอ
-5. **บันทึกอัตโนมัติ** - Auto-save เมื่อเปลี่ยนค่า
+1. **เลือกปีงบประมาณ** - Dropdown เลือกปีงบประมาณ (พ.ศ.)
+2. **ตารางสรุปภาพรวม** - แสดงข้อมูลงบประมาณแยกตาม 17 หมวดหมู่ CTAM
+3. **การรวมข้อมูล**:
+   - hospital_it/health_office: แสดงเฉพาะข้อมูลหน่วยงานของตัวเอง
+   - provincial: รวมยอดของทุกหน่วยงานในจังหวัด พร้อมตาราง drill-down
+   - regional: รวมยอดของทุกหน่วยงานในเขตสุขภาพ พร้อมตาราง drill-down
+   - central_admin: รวมยอดทั้งประเทศ พร้อม drill-down เป็นเขต/จังหวัด/หน่วยงาน
+4. **Export** - สามารถดาวน์โหลดรายงานได้ (อนาคต)
 
 ---
 
 ## สิ่งที่ต้องทำ
 
-### 1. สร้างตารางฐานข้อมูลใหม่
+### 1. เพิ่มเมนูใน Sidebar
+- เพิ่มเมนู "รายงานงบประมาณประจำปี" หลังจากเมนู "คู่มือเอกสารสำหรับการนิเทศ"
+- ใช้ icon `FileText` หรือ `DollarSign` จาก lucide-react
+- แสดงสำหรับทุก roles ที่ authenticated
 
-| คอลัมน์ | ชนิด | คำอธิบาย |
-|---------|------|----------|
-| id | UUID | Primary Key |
-| hospital_id | UUID | FK → hospitals (nullable) |
-| health_office_id | UUID | FK → health_offices (nullable) |
-| fiscal_year | INTEGER | ปีงบประมาณ เช่น 2568, 2569 |
-| category_id | UUID | FK → ctam_categories |
-| budget_amount | NUMERIC(15,2) | จำนวนเงิน (บาท) |
-| created_at | TIMESTAMP | วันที่สร้าง |
-| updated_at | TIMESTAMP | วันที่แก้ไขล่าสุด |
-| created_by | UUID | FK → profiles |
+### 2. เพิ่ม RLS Policy สำหรับการอ่านข้อมูลตามสิทธิ์
+ต้องเพิ่ม RLS policies เพื่อให้ผู้ใช้ระดับสูงสามารถดูข้อมูลของหน่วยงานในขอบเขตได้:
+- provincial: ดูข้อมูลหน่วยงานในจังหวัด
+- regional: ดูข้อมูลหน่วยงานในเขตสุขภาพ
+- central_admin: ดูข้อมูลทุกหน่วยงาน
+- supervisor: ดูข้อมูลหน่วยงานในเขตสุขภาพ
 
-- เพิ่ม UNIQUE constraint: (hospital_id/health_office_id, fiscal_year, category_id)
-- เพิ่ม RLS policies สำหรับ hospital_it และ health_office roles
-
-### 2. เพิ่มเมนูใน Sidebar
-- เพิ่มเมนู "บันทึกงบประมาณประจำปี" หลังจากเมนู "บุคลากรในหน่วยงาน"
-- ใช้ icon `Wallet` หรือ `Banknote` จาก lucide-react
-- แสดงเฉพาะ roles: `hospital_it`, `health_office`
-
-### 3. สร้างหน้า BudgetRecording.tsx
+### 3. สร้างหน้า BudgetReport.tsx
 **องค์ประกอบ UI:**
 - Header แสดงชื่อหน้าและปีงบประมาณที่เลือก
-- Dropdown เลือกปีงบประมาณ (พ.ศ. 2567-2575)
-- ตารางแสดง 17 หมวดหมู่ CTAM พร้อม:
-  - ลำดับที่
-  - ชื่อหมวดหมู่ (ภาษาไทย)
-  - ช่อง Input สำหรับกรอกงบประมาณ (format: เลขทศนิยม 2 ตำแหน่ง)
-- แถวสรุปยอดรวมทั้งหมดด้านล่าง
-- ปุ่มบันทึก (หรือ auto-save)
+- Dropdown เลือกปีงบประมาณ
+- การ์ดสรุปยอดรวม
+- ตารางแสดงข้อมูลตามระดับ:
+  - สำหรับ hospital_it/health_office: ตาราง 17 หมวดหมู่ + งบประมาณ
+  - สำหรับ provincial: ตารางหน่วยงานในจังหวัด + งบรวมแต่ละหน่วย + drill-down
+  - สำหรับ regional: ตารางจังหวัด + งบรวม + drill-down ไปหน่วยงาน
+  - สำหรับ central_admin: ตารางเขตสุขภาพ + drill-down ไปจังหวัด/หน่วยงาน
 
 ### 4. เพิ่ม Route ใน App.tsx
-- Path: `/budget-recording`
-- Protected Route สำหรับ roles: `hospital_it`, `health_office`
+- Path: `/reports/budget`
+- Protected Route สำหรับทุก authenticated users
 
 ---
 
-## รายละเอียดทางเทคนิค
+## Database Migration (เพิ่ม RLS Policies)
 
-### Database Migration SQL
 ```sql
-CREATE TABLE public.budget_records (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  hospital_id UUID REFERENCES public.hospitals(id) ON DELETE CASCADE,
-  health_office_id UUID REFERENCES public.health_offices(id) ON DELETE CASCADE,
-  fiscal_year INTEGER NOT NULL,
-  category_id UUID NOT NULL REFERENCES public.ctam_categories(id),
-  budget_amount NUMERIC(15,2) NOT NULL DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  created_by UUID REFERENCES public.profiles(id),
-  
-  CONSTRAINT budget_hospital_or_office CHECK (
-    (hospital_id IS NOT NULL AND health_office_id IS NULL) OR
-    (hospital_id IS NULL AND health_office_id IS NOT NULL)
-  ),
-  CONSTRAINT unique_budget_hospital UNIQUE (hospital_id, fiscal_year, category_id),
-  CONSTRAINT unique_budget_health_office UNIQUE (health_office_id, fiscal_year, category_id)
-);
-
--- Trigger for updated_at
-CREATE TRIGGER update_budget_records_updated_at
-  BEFORE UPDATE ON public.budget_records
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- RLS Policies
-ALTER TABLE public.budget_records ENABLE ROW LEVEL SECURITY;
-
--- Policy: Users can view/edit their own organization's budget
-CREATE POLICY "Users can view own organization budget"
+-- Policy: Provincial can view budget records in their province
+CREATE POLICY "Provincial can view province budget records"
   ON public.budget_records FOR SELECT
   USING (
-    hospital_id IN (SELECT hospital_id FROM profiles WHERE user_id = auth.uid())
-    OR health_office_id IN (SELECT health_office_id FROM profiles WHERE user_id = auth.uid())
+    EXISTS (
+      SELECT 1 FROM profiles p
+      WHERE p.user_id = auth.uid()
+        AND p.role = 'provincial'::user_role
+        AND (
+          budget_records.hospital_id IN (
+            SELECT h.id FROM hospitals h WHERE h.province_id = p.province_id
+          )
+          OR budget_records.health_office_id IN (
+            SELECT ho.id FROM health_offices ho WHERE ho.province_id = p.province_id
+          )
+        )
+    )
   );
 
-CREATE POLICY "Users can insert own organization budget"
-  ON public.budget_records FOR INSERT
-  WITH CHECK (
-    hospital_id IN (SELECT hospital_id FROM profiles WHERE user_id = auth.uid())
-    OR health_office_id IN (SELECT health_office_id FROM profiles WHERE user_id = auth.uid())
-  );
-
-CREATE POLICY "Users can update own organization budget"
-  ON public.budget_records FOR UPDATE
+-- Policy: Regional can view budget records in their region
+CREATE POLICY "Regional can view region budget records"
+  ON public.budget_records FOR SELECT
   USING (
-    hospital_id IN (SELECT hospital_id FROM profiles WHERE user_id = auth.uid())
-    OR health_office_id IN (SELECT health_office_id FROM profiles WHERE user_id = auth.uid())
+    EXISTS (
+      SELECT 1 FROM profiles p
+      JOIN provinces prov ON prov.health_region_id = p.health_region_id
+      WHERE p.user_id = auth.uid()
+        AND p.role = 'regional'::user_role
+        AND (
+          budget_records.hospital_id IN (
+            SELECT h.id FROM hospitals h WHERE h.province_id = prov.id
+          )
+          OR budget_records.health_office_id IN (
+            SELECT ho.id FROM health_offices ho WHERE ho.health_region_id = p.health_region_id
+          )
+        )
+    )
+  );
+
+-- Policy: Central admin can view all budget records
+CREATE POLICY "Central admin can view all budget records"
+  ON public.budget_records FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles p
+      WHERE p.user_id = auth.uid()
+        AND p.role = 'central_admin'::user_role
+    )
+  );
+
+-- Policy: Supervisor can view budget records in their region
+CREATE POLICY "Supervisor can view region budget records"
+  ON public.budget_records FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles p
+      JOIN provinces prov ON prov.health_region_id = p.health_region_id
+      WHERE p.user_id = auth.uid()
+        AND p.role = 'supervisor'::user_role
+        AND (
+          budget_records.hospital_id IN (
+            SELECT h.id FROM hospitals h WHERE h.province_id = prov.id
+          )
+          OR budget_records.health_office_id IN (
+            SELECT ho.id FROM health_offices ho WHERE ho.health_region_id = p.health_region_id
+          )
+        )
+    )
   );
 ```
 
-### ไฟล์ที่ต้องสร้าง/แก้ไข
+---
+
+## ไฟล์ที่ต้องสร้าง/แก้ไข
 
 | ไฟล์ | การดำเนินการ |
 |------|-------------|
-| `src/pages/BudgetRecording.tsx` | สร้างใหม่ |
+| `src/pages/BudgetReport.tsx` | สร้างใหม่ |
 | `src/components/layout/AppSidebar.tsx` | เพิ่มเมนู |
 | `src/App.tsx` | เพิ่ม Route |
+| Database migration | เพิ่ม RLS policies |
 
-### โครงสร้าง Component หลัก
+---
 
-```
-BudgetRecording.tsx
+## โครงสร้าง Component หลัก
+
+```text
+BudgetReport.tsx
 ├── Header (ชื่อหน้า + ปีงบประมาณ dropdown)
-├── Card
-│   └── Table
-│       ├── TableHeader (ลำดับ, หมวดหมู่, งบประมาณ)
-│       ├── TableBody (17 rows จาก ctam_categories)
-│       │   └── Input (number) สำหรับแต่ละหมวด
-│       └── TableFooter (รวมทั้งหมด)
-└── Save Button / Auto-save indicator
+├── Summary Cards (ยอดรวมงบประมาณ, จำนวนหน่วยงาน)
+├── Main Content (ขึ้นอยู่กับ role)
+│   ├── [hospital_it/health_office] ตารางหมวดหมู่ 17 ข้อ
+│   ├── [provincial] ตารางหน่วยงานในจังหวัด + drill-down
+│   ├── [regional/supervisor] ตารางจังหวัด + drill-down
+│   └── [central_admin] ตารางเขตสุขภาพ + drill-down
+└── Footer (Export buttons - อนาคต)
 ```
+
+---
+
+## UI สำหรับแต่ละระดับผู้ใช้
+
+### hospital_it / health_office
+- แสดงตาราง 17 หมวดหมู่ CTAM พร้อมงบประมาณของหน่วยงานตัวเอง
+- ยอดรวมงบประมาณ
+
+### provincial
+- Summary: จำนวนโรงพยาบาล/สสอ. ที่บันทึกงบประมาณ, ยอดรวมทั้งจังหวัด
+- ตารางแสดงรายชื่อหน่วยงาน + ยอดรวมงบแต่ละหน่วย
+- คลิกเพื่อดูรายละเอียด 17 หมวดหมู่ของแต่ละหน่วยงาน
+
+### regional / supervisor
+- Summary: จำนวนจังหวัด, จำนวนหน่วยงานที่บันทึก, ยอดรวมทั้งเขต
+- ตารางแสดงรายชื่อจังหวัด + ยอดรวมงบแต่ละจังหวัด
+- คลิกจังหวัดเพื่อดูรายชื่อหน่วยงาน
+- คลิกหน่วยงานเพื่อดูรายละเอียด 17 หมวดหมู่
+
+### central_admin
+- Summary: ยอดรวมทั้งประเทศ, จำนวนหน่วยงานที่บันทึก
+- ตารางแสดงรายชื่อเขตสุขภาพ + ยอดรวมงบแต่ละเขต
+- Drill-down: เขต → จังหวัด → หน่วยงาน → รายละเอียด 17 ข้อ
 
 ---
 
 ## ขั้นตอนการ Implement
 
-1. สร้าง migration สำหรับตาราง `budget_records`
-2. สร้างหน้า `BudgetRecording.tsx` พร้อม UI ครบถ้วน
+1. สร้าง migration สำหรับ RLS policies ใหม่
+2. สร้างหน้า `BudgetReport.tsx` พร้อม UI ตาม role
 3. เพิ่มเมนูใน `AppSidebar.tsx`
 4. เพิ่ม Route ใน `App.tsx`
-5. ทดสอบการทำงาน
+5. ทดสอบการทำงานกับแต่ละ role
 
