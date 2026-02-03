@@ -384,7 +384,8 @@ export default function BudgetReport() {
     return records.reduce((sum, r) => sum + (Number(r.budget_amount) || 0), 0);
   }, [aggregatedData.enrichedRecords, isOrgLevel, isProvincial, isRegional, profile]);
 
-  const unitCount = useMemo(() => {
+  // Count of units that have recorded budget
+  const unitWithBudgetCount = useMemo(() => {
     const units = new Set<string>();
     let records = aggregatedData.enrichedRecords;
     
@@ -403,6 +404,33 @@ export default function BudgetReport() {
 
     return units.size;
   }, [aggregatedData.enrichedRecords, isOrgLevel, isProvincial, isRegional, profile]);
+
+  // Total units in scope (hospitals + health offices)
+  const totalUnitsInScope = useMemo(() => {
+    if (isOrgLevel) {
+      return 1;
+    }
+    
+    let filteredHospitals = hospitals;
+    let filteredOffices = healthOffices;
+    
+    if (isProvincial && profile?.province_id) {
+      filteredHospitals = hospitals.filter((h) => h.province_id === profile.province_id);
+      filteredOffices = healthOffices.filter((o) => o.province_id === profile.province_id);
+    } else if (isRegional && profile?.health_region_id) {
+      const provincesInRegion = provinces.filter((p) => p.health_region_id === profile.health_region_id);
+      const provinceIds = new Set(provincesInRegion.map((p) => p.id));
+      filteredHospitals = hospitals.filter((h) => provinceIds.has(h.province_id));
+      filteredOffices = healthOffices.filter((o) => o.health_region_id === profile.health_region_id);
+    }
+    
+    return filteredHospitals.length + filteredOffices.length;
+  }, [hospitals, healthOffices, provinces, isOrgLevel, isProvincial, isRegional, profile]);
+
+  // Units without budget
+  const unitsWithoutBudget = useMemo(() => {
+    return Math.max(0, totalUnitsInScope - unitWithBudgetCount);
+  }, [totalUnitsInScope, unitWithBudgetCount]);
 
   // Handle drill navigation
   const handleRegionClick = (regionId: string) => {
@@ -770,7 +798,7 @@ export default function BudgetReport() {
         />
 
         {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">งบประมาณรวม</CardTitle>
@@ -783,11 +811,11 @@ export default function BudgetReport() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">จำนวนหน่วยงาน</CardTitle>
+              <CardTitle className="text-sm font-medium">หน่วยงานที่บันทึกแล้ว</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{unitCount}</div>
+              <div className="text-2xl font-bold">{unitWithBudgetCount}</div>
               <p className="text-xs text-muted-foreground">หน่วยงานที่บันทึกงบประมาณ</p>
             </CardContent>
           </Card>
@@ -795,12 +823,22 @@ export default function BudgetReport() {
             <>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">หมวดหมู่</CardTitle>
+                  <CardTitle className="text-sm font-medium">หน่วยงานทั้งหมด</CardTitle>
                   <Building2 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">17</div>
-                  <p className="text-xs text-muted-foreground">หมวดหมู่ CTAM</p>
+                  <div className="text-2xl font-bold">{totalUnitsInScope}</div>
+                  <p className="text-xs text-muted-foreground">หน่วยงานในขอบเขต</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">ยังไม่ได้บันทึก</CardTitle>
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-destructive">{unitsWithoutBudget}</div>
+                  <p className="text-xs text-muted-foreground">หน่วยงานที่ยังไม่บันทึกงบประมาณ</p>
                 </CardContent>
               </Card>
               <Card>
