@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, Building2, MapPin, DollarSign, Users, Upload, Download, AlertCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ChevronLeft, Building2, MapPin, DollarSign, Users, Upload, Download, AlertCircle, CheckCircle2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { BudgetImportDialog } from "@/components/budget/BudgetImportDialog";
 
@@ -84,6 +85,8 @@ export default function BudgetReport() {
   const [selectedUnitType, setSelectedUnitType] = useState<"hospital" | "health_office" | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [initialFiltersSet, setInitialFiltersSet] = useState(false);
+  const [showUnitsDialog, setShowUnitsDialog] = useState(false);
+  const [unitsDialogType, setUnitsDialogType] = useState<"recorded" | "not_recorded">("recorded");
 
   const fiscalYears = Array.from({ length: 9 }, (_, i) => getCurrentFiscalYear() - 4 + i);
 
@@ -432,6 +435,92 @@ export default function BudgetReport() {
   const unitsWithoutBudget = useMemo(() => {
     return Math.max(0, totalUnitsInScope - unitWithBudgetCount);
   }, [totalUnitsInScope, unitWithBudgetCount]);
+
+  // Get list of units with budget and without budget for dialog
+  const unitsWithBudgetList = useMemo(() => {
+    const unitsWithRecords = new Set<string>();
+    let records = aggregatedData.enrichedRecords;
+    
+    if (isProvincial && profile?.province_id) {
+      records = records.filter((r) => r.provinceId === profile.province_id);
+    } else if (isRegional && profile?.health_region_id) {
+      records = records.filter((r) => r.regionId === profile.health_region_id);
+    }
+    
+    records.forEach((r) => {
+      if (r.hospital_id) unitsWithRecords.add(r.hospital_id);
+      if (r.health_office_id) unitsWithRecords.add(r.health_office_id);
+    });
+    
+    // Build list with names and types
+    const result: { id: string; name: string; type: "hospital" | "health_office" }[] = [];
+    
+    unitsWithRecords.forEach((unitId) => {
+      const hospital = aggregatedData.hospitalMap.get(unitId);
+      if (hospital) {
+        result.push({ id: unitId, name: hospital.name, type: "hospital" });
+        return;
+      }
+      const office = aggregatedData.officeMap.get(unitId);
+      if (office) {
+        result.push({ id: unitId, name: office.name, type: "health_office" });
+      }
+    });
+    
+    return result.sort((a, b) => a.name.localeCompare(b.name, 'th'));
+  }, [aggregatedData.enrichedRecords, aggregatedData.hospitalMap, aggregatedData.officeMap, isProvincial, isRegional, profile]);
+
+  const unitsWithoutBudgetList = useMemo(() => {
+    const unitsWithRecords = new Set<string>();
+    let records = aggregatedData.enrichedRecords;
+    
+    if (isProvincial && profile?.province_id) {
+      records = records.filter((r) => r.provinceId === profile.province_id);
+    } else if (isRegional && profile?.health_region_id) {
+      records = records.filter((r) => r.regionId === profile.health_region_id);
+    }
+    
+    records.forEach((r) => {
+      if (r.hospital_id) unitsWithRecords.add(r.hospital_id);
+      if (r.health_office_id) unitsWithRecords.add(r.health_office_id);
+    });
+    
+    // Get all units in scope
+    let filteredHospitals = hospitals;
+    let filteredOffices = healthOffices;
+    
+    if (isProvincial && profile?.province_id) {
+      filteredHospitals = hospitals.filter((h) => h.province_id === profile.province_id);
+      filteredOffices = healthOffices.filter((o) => o.province_id === profile.province_id);
+    } else if (isRegional && profile?.health_region_id) {
+      const provincesInRegion = provinces.filter((p) => p.health_region_id === profile.health_region_id);
+      const provinceIds = new Set(provincesInRegion.map((p) => p.id));
+      filteredHospitals = hospitals.filter((h) => provinceIds.has(h.province_id));
+      filteredOffices = healthOffices.filter((o) => o.health_region_id === profile.health_region_id);
+    }
+    
+    // Find units without budget
+    const result: { id: string; name: string; type: "hospital" | "health_office" }[] = [];
+    
+    filteredHospitals.forEach((hospital) => {
+      if (!unitsWithRecords.has(hospital.id)) {
+        result.push({ id: hospital.id, name: hospital.name, type: "hospital" });
+      }
+    });
+    
+    filteredOffices.forEach((office) => {
+      if (!unitsWithRecords.has(office.id)) {
+        result.push({ id: office.id, name: office.name, type: "health_office" });
+      }
+    });
+    
+    return result.sort((a, b) => a.name.localeCompare(b.name, 'th'));
+  }, [aggregatedData.enrichedRecords, hospitals, healthOffices, provinces, isProvincial, isRegional, profile]);
+
+  const handleOpenUnitsDialog = (type: "recorded" | "not_recorded") => {
+    setUnitsDialogType(type);
+    setShowUnitsDialog(true);
+  };
 
   // Handle drill navigation
   const handleRegionClick = (regionId: string) => {
@@ -861,6 +950,55 @@ export default function BudgetReport() {
           onSuccess={() => queryClient.invalidateQueries({ queryKey: ["budget-records-report"] })}
         />
 
+        {/* Units List Dialog */}
+        <Dialog open={showUnitsDialog} onOpenChange={setShowUnitsDialog}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {unitsDialogType === "recorded" ? (
+                  <>
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                    หน่วยงานที่บันทึกงบประมาณแล้ว
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="h-5 w-5 text-destructive" />
+                    หน่วยงานที่ยังไม่ได้บันทึกงบประมาณ
+                  </>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="mt-4">
+              {(unitsDialogType === "recorded" ? unitsWithBudgetList : unitsWithoutBudgetList).length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">ไม่พบข้อมูล</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">ลำดับ</TableHead>
+                      <TableHead>ชื่อหน่วยงาน</TableHead>
+                      <TableHead className="text-center">ประเภท</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(unitsDialogType === "recorded" ? unitsWithBudgetList : unitsWithoutBudgetList).map((unit, index) => (
+                      <TableRow key={unit.id}>
+                        <TableCell className="font-medium">{index + 1}</TableCell>
+                        <TableCell>{unit.name}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={unit.type === "hospital" ? "default" : "outline"}>
+                            {unit.type === "hospital" ? "โรงพยาบาล" : "สำนักงานสาธารณสุข"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
@@ -885,25 +1023,33 @@ export default function BudgetReport() {
               </CardContent>
             </Card>
           )}
-          <Card>
+          <Card 
+            className={!isOrgLevel ? "cursor-pointer transition-colors hover:bg-muted/50" : ""}
+            onClick={() => !isOrgLevel && handleOpenUnitsDialog("recorded")}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">หน่วยงานที่บันทึกแล้ว</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{unitWithBudgetCount}</div>
-              <p className="text-xs text-muted-foreground">หน่วยงานที่บันทึกงบประมาณ</p>
+              <p className="text-xs text-muted-foreground">
+                {!isOrgLevel ? "คลิกเพื่อดูรายชื่อ" : "หน่วยงานที่บันทึกงบประมาณ"}
+              </p>
             </CardContent>
           </Card>
           {!isOrgLevel && (
-            <Card>
+            <Card 
+              className="cursor-pointer transition-colors hover:bg-muted/50"
+              onClick={() => handleOpenUnitsDialog("not_recorded")}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">ยังไม่ได้บันทึก</CardTitle>
                 <AlertCircle className="h-4 w-4 text-destructive" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-destructive">{unitsWithoutBudget}</div>
-                <p className="text-xs text-muted-foreground">หน่วยงานที่ยังไม่บันทึกงบประมาณ</p>
+                <p className="text-xs text-muted-foreground">คลิกเพื่อดูรายชื่อ</p>
               </CardContent>
             </Card>
           )}
