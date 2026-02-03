@@ -82,6 +82,7 @@ export default function BudgetReport() {
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [selectedUnitType, setSelectedUnitType] = useState<"hospital" | "health_office" | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [initialFiltersSet, setInitialFiltersSet] = useState(false);
 
   const fiscalYears = Array.from({ length: 9 }, (_, i) => getCurrentFiscalYear() - 4 + i);
 
@@ -156,18 +157,25 @@ export default function BudgetReport() {
   const isCentralAdmin = userRole === "central_admin";
   const canImport = isCentralAdmin || isRegional;
 
-  // Get initial drill level based on role
+  // Get initial drill level and auto-select province based on role
   useMemo(() => {
+    if (initialFiltersSet) return;
     if (isOrgLevel) {
       setDrillLevel("detail");
-    } else if (isProvincial) {
+      setInitialFiltersSet(true);
+    } else if (isProvincial && profile?.province_id) {
       setDrillLevel("unit");
-    } else if (isRegional) {
+      setSelectedProvinceId(profile.province_id);
+      setInitialFiltersSet(true);
+    } else if (isRegional && profile?.health_region_id) {
       setDrillLevel("province");
-    } else {
+      setSelectedRegionId(profile.health_region_id);
+      setInitialFiltersSet(true);
+    } else if (isCentralAdmin) {
       setDrillLevel("region");
+      setInitialFiltersSet(true);
     }
-  }, [isOrgLevel, isProvincial, isRegional]);
+  }, [isOrgLevel, isProvincial, isRegional, isCentralAdmin, profile, initialFiltersSet]);
 
   // Calculate aggregated data
   const aggregatedData = useMemo(() => {

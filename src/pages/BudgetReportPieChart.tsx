@@ -74,6 +74,7 @@ export default function BudgetReportPieChart() {
   const [selectedRegion, setSelectedRegion] = useState<string>("all");
   const [selectedProvince, setSelectedProvince] = useState<string>("all");
   const [selectedUnit, setSelectedUnit] = useState<string>("all");
+  const [initialFiltersSet, setInitialFiltersSet] = useState(false);
 
   const fiscalYears = Array.from({ length: 9 }, (_, i) => getCurrentFiscalYear() - 4 + i);
 
@@ -146,6 +147,20 @@ export default function BudgetReportPieChart() {
   const isProvincial = userRole === "provincial";
   const isRegional = userRole === "regional" || userRole === "supervisor";
   const isCentralAdmin = userRole === "central_admin";
+
+  // Auto-set initial filters based on role
+  useMemo(() => {
+    if (initialFiltersSet) return;
+    if (isProvincial && profile?.province_id) {
+      setSelectedProvince(profile.province_id);
+      setInitialFiltersSet(true);
+    } else if (isRegional && profile?.health_region_id) {
+      setSelectedRegion(profile.health_region_id);
+      setInitialFiltersSet(true);
+    } else if (isOrgLevel) {
+      setInitialFiltersSet(true);
+    }
+  }, [isProvincial, isRegional, isOrgLevel, profile, initialFiltersSet]);
 
   // Filter provinces based on selected region
   const filteredProvinces = useMemo(() => {

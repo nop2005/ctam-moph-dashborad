@@ -66,6 +66,7 @@ export default function BudgetReportChart() {
   const [currentDrillLevel, setCurrentDrillLevel] = useState<DrillLevel>('region');
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [selectedProvinceId, setSelectedProvinceId] = useState<string | null>(null);
+  const [initialFiltersSet, setInitialFiltersSet] = useState(false);
 
   const fiscalYears = Array.from({ length: 9 }, (_, i) => getCurrentFiscalYear() - 4 + i);
 
@@ -125,6 +126,23 @@ export default function BudgetReportChart() {
   const isProvincial = userRole === "provincial";
   const isRegional = userRole === "regional" || userRole === "supervisor";
   const isCentralAdmin = userRole === "central_admin";
+
+  // Auto-set initial drill level and filters based on role
+  useMemo(() => {
+    if (initialFiltersSet) return;
+    if (isProvincial && profile?.province_id) {
+      setCurrentDrillLevel('hospital');
+      setSelectedProvinceId(profile.province_id);
+      setInitialFiltersSet(true);
+    } else if (isRegional && profile?.health_region_id) {
+      setCurrentDrillLevel('province');
+      setSelectedRegionId(profile.health_region_id);
+      setInitialFiltersSet(true);
+    } else if (isOrgLevel) {
+      setCurrentDrillLevel('hospital');
+      setInitialFiltersSet(true);
+    }
+  }, [isProvincial, isRegional, isOrgLevel, profile, initialFiltersSet]);
 
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
