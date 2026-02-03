@@ -100,9 +100,40 @@ export function BudgetChart({
   canDrillToProvince,
   canDrillToHospital 
 }: BudgetChartProps) {
-  const [drillLevel, setDrillLevel] = useState<DrillLevel>('region');
-  const [selectedRegion, setSelectedRegion] = useState<HealthRegion | null>(null);
-  const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
+  // Determine initial drill level based on available data
+  const getInitialDrillLevel = (): DrillLevel => {
+    // If only one region and we can drill into it, check provinces
+    if (healthRegions.length === 1 && canDrillToProvince?.(healthRegions[0].id)) {
+      // If only one province and we can drill into it, go to hospital level
+      const regionProvinces = provinces.filter(p => p.health_region_id === healthRegions[0].id);
+      if (regionProvinces.length === 1 && canDrillToHospital?.(regionProvinces[0].id)) {
+        return 'hospital';
+      }
+      return 'province';
+    }
+    return 'region';
+  };
+
+  const getInitialRegion = (): HealthRegion | null => {
+    if (healthRegions.length === 1) {
+      return healthRegions[0];
+    }
+    return null;
+  };
+
+  const getInitialProvince = (): Province | null => {
+    if (healthRegions.length === 1) {
+      const regionProvinces = provinces.filter(p => p.health_region_id === healthRegions[0].id);
+      if (regionProvinces.length === 1 && canDrillToHospital?.(regionProvinces[0].id)) {
+        return regionProvinces[0];
+      }
+    }
+    return null;
+  };
+
+  const [drillLevel, setDrillLevel] = useState<DrillLevel>(getInitialDrillLevel);
+  const [selectedRegion, setSelectedRegion] = useState<HealthRegion | null>(getInitialRegion);
+  const [selectedProvince, setSelectedProvince] = useState<Province | null>(getInitialProvince);
 
   // Calculate totals by unit
   const unitTotals = useMemo(() => {

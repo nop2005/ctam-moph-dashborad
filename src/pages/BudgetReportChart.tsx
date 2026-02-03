@@ -294,6 +294,11 @@ export default function BudgetReportChart() {
   const canDrillToProvince = (regionId: string) => {
     if (isCentralAdmin) return true;
     if (isRegional && profile?.health_region_id === regionId) return true;
+    // Provincial can view their own province (within their region)
+    if (isProvincial && profile?.province_id) {
+      const userProvince = provinces.find((p) => p.id === profile.province_id);
+      return userProvince?.health_region_id === regionId;
+    }
     return false;
   };
 
