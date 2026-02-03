@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, Building2, MapPin, Landmark, DollarSign, Users, Upload } from "lucide-react";
+import { ChevronLeft, Building2, MapPin, DollarSign, Users, Upload, Download, AlertCircle } from "lucide-react";
+import * as XLSX from "xlsx";
 import { BudgetImportDialog } from "@/components/budget/BudgetImportDialog";
 
 // Types
@@ -752,6 +753,65 @@ export default function BudgetReport() {
     return drillLevel !== "region";
   };
 
+  // Export to Excel
+  const handleExportExcel = () => {
+    const categoryMap = new Map(categories.map((c) => [c.id, c]));
+    const rows: Record<string, unknown>[] = [];
+
+    if (drillLevel === "detail" || isOrgLevel) {
+      // Export category details
+      const filteredRecords = getFilteredRecords();
+      const categoryTotals = new Map<string, number>();
+      filteredRecords.forEach((record) => {
+        const current = categoryTotals.get(record.category_id) || 0;
+        categoryTotals.set(record.category_id, current + (Number(record.budget_amount) || 0));
+      });
+
+      categories.forEach((cat) => {
+        rows.push({
+          "รหัส": cat.code,
+          "หมวดหมู่": cat.name_th,
+          "งบประมาณ (บาท)": categoryTotals.get(cat.id) || 0,
+        });
+      });
+    } else if (drillLevel === "unit") {
+      // Export unit data
+      const unitRecords = getUnitRecords();
+      unitRecords.forEach((unit) => {
+        rows.push({
+          "หน่วยงาน": unit.name,
+          "ประเภท": unit.type === "hospital" ? "โรงพยาบาล" : "สำนักงานสาธารณสุข",
+          "งบประมาณรวม (บาท)": unit.total,
+        });
+      });
+    } else if (drillLevel === "province") {
+      // Export province data
+      const provinceRecords = getProvinceRecords();
+      provinceRecords.forEach((prov) => {
+        rows.push({
+          "จังหวัด": prov.name,
+          "จำนวนหน่วยงาน": prov.unitCount,
+          "งบประมาณรวม (บาท)": prov.total,
+        });
+      });
+    } else {
+      // Export region data
+      const regionRecords = getRegionRecords();
+      regionRecords.forEach((reg) => {
+        rows.push({
+          "เขตสุขภาพ": `เขต ${reg.regionNumber}`,
+          "จำนวนหน่วยงาน": reg.unitCount,
+          "งบประมาณรวม (บาท)": reg.total,
+        });
+      });
+    }
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "รายงานงบประมาณ");
+    XLSX.writeFile(wb, `รายงานงบประมาณ_ปี${fiscalYear}.xlsx`);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -769,6 +829,10 @@ export default function BudgetReport() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleExportExcel}>
+              <Download className="h-4 w-4 mr-2" />
+              ส่งออก Excel
+            </Button>
             {canImport && (
               <Button variant="outline" onClick={() => setShowImportDialog(true)}>
                 <Upload className="h-4 w-4 mr-2" />
@@ -798,7 +862,7 @@ export default function BudgetReport() {
         />
 
         {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">งบประมาณรวม</CardTitle>
@@ -809,6 +873,18 @@ export default function BudgetReport() {
               <p className="text-xs text-muted-foreground">บาท</p>
             </CardContent>
           </Card>
+          {!isOrgLevel && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">หน่วยงานทั้งหมด</CardTitle>
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalUnitsInScope}</div>
+                <p className="text-xs text-muted-foreground">หน่วยงานในขอบเขต</p>
+              </CardContent>
+            </Card>
+          )}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">หน่วยงานที่บันทึกแล้ว</CardTitle>
@@ -820,43 +896,16 @@ export default function BudgetReport() {
             </CardContent>
           </Card>
           {!isOrgLevel && (
-            <>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">หน่วยงานทั้งหมด</CardTitle>
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalUnitsInScope}</div>
-                  <p className="text-xs text-muted-foreground">หน่วยงานในขอบเขต</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">ยังไม่ได้บันทึก</CardTitle>
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-destructive">{unitsWithoutBudget}</div>
-                  <p className="text-xs text-muted-foreground">หน่วยงานที่ยังไม่บันทึกงบประมาณ</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">ระดับการแสดงผล</CardTitle>
-                  <Landmark className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold capitalize">
-                    {drillLevel === "region" && "เขตสุขภาพ"}
-                    {drillLevel === "province" && "จังหวัด"}
-                    {drillLevel === "unit" && "หน่วยงาน"}
-                    {drillLevel === "detail" && "รายละเอียด"}
-                  </div>
-                  <p className="text-xs text-muted-foreground">คลิกเพื่อดูรายละเอียด</p>
-                </CardContent>
-              </Card>
-            </>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">ยังไม่ได้บันทึก</CardTitle>
+                <AlertCircle className="h-4 w-4 text-destructive" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-destructive">{unitsWithoutBudget}</div>
+                <p className="text-xs text-muted-foreground">หน่วยงานที่ยังไม่บันทึกงบประมาณ</p>
+              </CardContent>
+            </Card>
           )}
         </div>
 
