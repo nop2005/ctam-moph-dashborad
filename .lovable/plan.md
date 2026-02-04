@@ -1,161 +1,131 @@
 
+# แผนการเพิ่มเมนู "รายงานบุคลากร" เป็นเมนูหลัก
 
-# แผนการนำเข้าข้อมูลงบประมาณจากไฟล์ Excel
-
-## สรุปข้อมูลจากไฟล์ Excel
-ไฟล์มีข้อมูลงบประมาณจาก **75 หน่วยงาน** (โรงพยาบาลและ สสจ.) แยกตาม 17 หมวดหมู่ CTAM โดยมีโครงสร้างดังนี้:
-
-| คอลัมน์ | ข้อมูล |
-|---------|--------|
-| โรงพยาบาล | ชื่อหน่วยงาน (เช่น รพ.ดอยหลวง, สสจ. พะเยา) |
-| จังหวัด | จังหวัดที่ตั้ง |
-| คอลัมน์ 3-19 | งบประมาณ 17 หมวดหมู่ CTAM |
+## สรุปความต้องการ
+เพิ่มเมนูหลัก "รายงานบุคลากร" แยกต่างหากจากเมนูย่อยอื่นๆ พร้อมตัวกรองแบบลำดับขั้น (เขต -> จังหวัด -> หน่วยงาน) และแสดงคอลัมน์จำนวนใบรับรอง + ชื่อใบรับรองของบุคลากรแต่ละคน
 
 ---
 
-## ความท้าทาย: การจับคู่ชื่อหน่วยงาน
-
-ชื่อในไฟล์ Excel กับฐานข้อมูลมีความแตกต่าง เช่น:
-
-| Excel | Database |
-|-------|----------|
-| `รพ.ดอยหลวง` | `รพ.ดอยหลวง` ✓ (ตรงกัน) |
-| `สสจ. พะเยา` | `สำนักงานสาธารณสุขจังหวัดพะเยา` ✗ (ต้อง fuzzy match) |
-| `สนง.เขต` | `สำนักงานเขตสุขภาพที่ 1` ✗ (ต้องระบุเพิ่ม) |
-
----
-
-## สิ่งที่ต้องทำ
-
-### 1. สร้าง Edge Function สำหรับนำเข้าข้อมูล
-สร้าง edge function ที่:
-- รับไฟล์ Excel และ fiscal_year
-- Parse ข้อมูลจาก Excel
-- จับคู่ชื่อหน่วยงานกับฐานข้อมูล (Fuzzy Matching)
-- Insert/Update ข้อมูลลงตาราง `budget_records`
-
-### 2. เพิ่มปุ่ม "นำเข้าข้อมูล" ในหน้า BudgetRecording หรือ BudgetReport
-- สำหรับ central_admin หรือ regional เท่านั้น
-- เลือกไฟล์ Excel และปีงบประมาณ
-- แสดง preview ก่อนนำเข้า
-- รายงานผลการจับคู่
-
-### 3. Algorithm สำหรับ Fuzzy Matching
-```text
-1. ทำให้ชื่อเป็นมาตรฐาน:
-   - "สสจ." → "สำนักงานสาธารณสุขจังหวัด"
-   - "รพ." → "รพ."
-   - ลบช่องว่างพิเศษ
-
-2. จับคู่แบบ Exact Match ก่อน
-
-3. ถ้าไม่ตรง ใช้ Fuzzy Match:
-   - คำนวณ Levenshtein distance
-   - เลือกที่ใกล้เคียงที่สุดและ > 80% similarity
-
-4. ใช้ข้อมูลจังหวัดช่วย validate
-```
-
----
-
-## สิ่งที่จะสร้าง/แก้ไข
+## ไฟล์ที่ต้องสร้าง/แก้ไข
 
 | ไฟล์ | การดำเนินการ |
-|------|-------------|
-| `supabase/functions/import-budget/index.ts` | สร้างใหม่ - Edge function สำหรับ import |
-| `src/pages/BudgetRecording.tsx` หรือ `BudgetReport.tsx` | เพิ่มปุ่มนำเข้า |
-| `src/components/budget/BudgetImportDialog.tsx` | สร้างใหม่ - Dialog สำหรับ import |
+|------|--------------|
+| `src/pages/PersonnelReport.tsx` | สร้างใหม่ |
+| `src/App.tsx` | เพิ่ม route `/reports/personnel` |
+| `src/components/layout/AppSidebar.tsx` | เพิ่มเมนูหลักใน `menuItems` |
 
 ---
 
-## รายละเอียด Edge Function
+## 1. สร้างหน้ารายงานบุคลากรใหม่
 
-### Input
-```json
+### ตัวกรองแบบ Cascade (ลำดับขั้น)
+
+| ตัวกรอง | รายละเอียด |
+|---------|------------|
+| เขตสุขภาพ | เลือกเขต 1-13 (SearchableSelect) |
+| จังหวัด | กรองตามเขตที่เลือก (auto-reset เมื่อเปลี่ยนเขต) |
+| หน่วยงาน | กรองตามจังหวัด (รวมทั้ง hospitals และ health_offices) |
+| ตำแหน่ง | กรองตามตำแหน่งบุคลากร |
+
+### ตารางแสดงผล
+
+| คอลัมน์ | ที่มาข้อมูล |
+|---------|------------|
+| ลำดับ | Running number |
+| ชื่อ-นามสกุล | `personnel.title_prefix + first_name + last_name` |
+| หน่วยงาน | `hospitals.name` หรือ `health_offices.name` |
+| จังหวัด | `provinces.name` |
+| ตำแหน่ง | `personnel.position` |
+| เบอร์โทร | `personnel.phone` |
+| วันที่เริ่มทำงาน | `personnel.start_date` (พ.ศ.) |
+| จำนวนใบรับรอง | นับจาก `personnel_certificates` |
+| ชื่อใบรับรอง | รายชื่อใบรับรองคั่นด้วย `, ` |
+
+### สิทธิ์การเข้าถึง (Role-Based)
+
+| Role | การเข้าถึง |
+|------|-----------|
+| central_admin | เห็นทุกเขต/จังหวัด/หน่วยงาน |
+| regional | เห็นเฉพาะเขตของตนเอง |
+| provincial | เห็นเฉพาะจังหวัดของตนเอง (ตัวกรองจังหวัดถูก lock) |
+
+---
+
+## 2. เพิ่มเมนูหลักใน Sidebar
+
+เพิ่มใน `menuItems` array (ไม่ใช่ analyticalReportSubItems):
+
+```text
 {
-  "fiscal_year": 2568,
-  "data": [
-    {
-      "unit_name": "รพ.ดอยหลวง",
-      "province": "เชียงราย", 
-      "budgets": {
-        "BACKUP": 0,
-        "ANTIVIRUS": 10000,
-        ...
-      }
-    }
-  ]
+  title: "รายงานบุคลากร",
+  url: "/reports/personnel",
+  icon: Users,
+  roles: ["provincial", "regional", "central_admin"]
 }
 ```
 
-### Output
-```json
-{
-  "success": true,
-  "imported": 70,
-  "failed": 5,
-  "unmatched": [
-    {"unit_name": "สนง.เขต", "reason": "ไม่พบหน่วยงานที่ตรงกัน"}
-  ],
-  "matched": [
-    {"unit_name": "สสจ. พะเยา", "matched_to": "สำนักงานสาธารณสุขจังหวัดพะเยา"}
-  ]
-}
-```
+ตำแหน่ง: วางหลังเมนู "บุคลากร" (personnel-admin) ซึ่งมีสำหรับ provincial/regional อยู่แล้ว
 
 ---
 
-## การทำงานของ Fuzzy Matching
-
-### ขั้นตอน Normalize ชื่อ
-```text
-Input: "สสจ. พะเยา"
-Step 1: Replace "สสจ." → "สำนักงานสาธารณสุขจังหวัด"
-Step 2: Remove extra spaces
-Output: "สำนักงานสาธารณสุขจังหวัดพะเยา"
-→ Exact match ✓
-
-Input: "สนง.เขต" + จังหวัด "เชียงใหม่"
-Step 1: Recognize as regional office
-Step 2: Match to "สำนักงานเขตสุขภาพที่ 1" (based on เชียงใหม่ = เขต 1)
-→ Matched ✓
-```
-
----
-
-## UI สำหรับการ Import
+## 3. เพิ่ม Route ใน App.tsx
 
 ```text
-┌─────────────────────────────────────────────────┐
-│ นำเข้าข้อมูลงบประมาณ                              │
-├─────────────────────────────────────────────────┤
-│                                                 │
-│ ปีงบประมาณ: [2568 ▼]                            │
-│                                                 │
-│ ไฟล์ Excel: [เลือกไฟล์...]                       │
-│                                                 │
-│ ┌───────────────────────────────────────────┐   │
-│ │ Preview (แสดง 5 รายการแรก)                 │   │
-│ │ ─────────────────────────────────────────  │   │
-│ │ ✓ รพ.ดอยหลวง → รพ.ดอยหลวง                 │   │
-│ │ ✓ สสจ. พะเยา → สำนักงานสาธารณสุข...       │   │
-│ │ ⚠ สนง.เขต → สำนักงานเขตสุขภาพที่ 1?       │   │
-│ └───────────────────────────────────────────┘   │
-│                                                 │
-│ สรุป: จับคู่ได้ 70/75 หน่วยงาน                   │
-│                                                 │
-│        [ยกเลิก]         [นำเข้าข้อมูล]           │
-└─────────────────────────────────────────────────┘
+<Route 
+  path="/reports/personnel" 
+  element={
+    <ProtectedRoute allowedRoles={['provincial', 'regional', 'central_admin']}>
+      <PersonnelReport />
+    </ProtectedRoute>
+  } 
+/>
 ```
 
 ---
 
-## ขั้นตอนการ Implement
+## 4. ฟีเจอร์เสริม
 
-1. สร้าง Edge Function `import-budget` พร้อม fuzzy matching logic
-2. สร้าง `BudgetImportDialog.tsx` component สำหรับ UI
-3. เพิ่มปุ่มนำเข้าในหน้า `BudgetRecording.tsx` (สำหรับ central_admin)
-4. Parse Excel client-side ด้วย `xlsx` library (มีอยู่แล้ว)
-5. ส่งข้อมูลไป Edge Function เพื่อ match และ insert
-6. แสดงผลลัพธ์การนำเข้า
+- ปุ่ม "Export Excel" ส่งออกข้อมูลพร้อมจำนวนและชื่อใบรับรอง
+- ปุ่ม "ล้างตัวกรอง" เคลียร์ค่าทั้งหมด
+- แสดงจำนวนบุคลากรทั้งหมดที่กรองได้
 
+---
+
+## รายละเอียดทางเทคนิค
+
+### การดึงข้อมูล
+
+1. **Reference Data**: ดึง health_regions, provinces, hospitals, health_offices สำหรับตัวกรอง
+2. **Personnel Data**: ดึง personnel พร้อม joins กับ hospitals/health_offices และ provinces
+3. **Certificates**: ดึง personnel_certificates แยกแล้ว group by personnel_id ใน client-side
+
+### Cascade Filter Logic
+
+```text
+1. เมื่อเลือกเขต -> reset จังหวัด และ หน่วยงาน เป็น "all"
+2. เมื่อเลือกจังหวัด -> reset หน่วยงาน เป็น "all"
+3. กรองตำแหน่ง client-side
+```
+
+### การแสดงใบรับรอง
+
+```text
+- ดึง personnel_certificates ทั้งหมดสำหรับ personnel_ids ที่แสดง
+- Group by personnel_id และนับจำนวน
+- รวมชื่อใบรับรองด้วย .join(", ")
+- แสดงในคอลัมน์ตาราง
+```
+
+---
+
+## ลำดับขั้นตอนการพัฒนา
+
+1. สร้างไฟล์ `PersonnelReport.tsx` พร้อม layout และ filter พื้นฐาน
+2. เพิ่มการดึงข้อมูล reference (regions, provinces, hospitals, health_offices)
+3. เพิ่มการดึงข้อมูล personnel พร้อม joins
+4. เพิ่มการดึง personnel_certificates และ group ตาม personnel_id
+5. สร้างตารางแสดงผลพร้อมคอลัมน์ใบรับรอง
+6. เพิ่ม role-based access control
+7. เพิ่มปุ่ม Export Excel
+8. เพิ่ม route ใน App.tsx
+9. เพิ่มเมนูหลักใน AppSidebar.tsx (menuItems array)
