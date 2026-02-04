@@ -70,12 +70,6 @@ const menuItems = [
     icon: UserCheck,
     roles: ["provincial", "regional"],
   },
-  {
-    title: "รายงานบุคลากร",
-    url: "/reports/personnel",
-    icon: Users,
-    roles: ["provincial", "regional", "central_admin"],
-  },
 ];
 const reportSubItems = [
   {
@@ -455,6 +449,24 @@ export function AppSidebar() {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
+
+              {/* Personnel Report - For provincial, regional, central_admin */}
+              {profile?.role && ["provincial", "regional", "central_admin"].includes(profile.role) && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate("/reports/personnel")}
+                    isActive={currentPath === "/reports/personnel"}
+                    tooltip="รายงานบุคลากร"
+                    className={`
+                      text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                      data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                    `}
+                  >
+                    <Users className="h-4 w-4" />
+                    <span>รายงานบุคลากร</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
