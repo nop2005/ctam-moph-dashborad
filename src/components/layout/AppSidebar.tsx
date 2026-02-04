@@ -70,6 +70,12 @@ const menuItems = [
     icon: UserCheck,
     roles: ["provincial", "regional"],
   },
+  {
+    title: "รายงานบุคลากร",
+    url: "/reports/personnel",
+    icon: Users,
+    roles: ["provincial", "regional", "central_admin"],
+  },
 ];
 const reportSubItems = [
   {

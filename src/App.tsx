@@ -26,6 +26,7 @@ import InspectionManual from "./pages/InspectionManual";
 import ProfileSettings from "./pages/ProfileSettings";
 import Personnel from "./pages/Personnel";
 import PersonnelAdmin from "./pages/PersonnelAdmin";
+import PersonnelReport from "./pages/PersonnelReport";
 import BudgetRecording from "./pages/BudgetRecording";
 import BudgetReport from "./pages/BudgetReport";
 import BudgetReportChart from "./pages/BudgetReportChart";
@@ -254,7 +255,15 @@ const App = () => (
               } 
             />
             <Route 
-              path="/admin/system-dashboard" 
+              path="/reports/personnel" 
+              element={
+                <ProtectedRoute allowedRoles={['provincial', 'regional', 'central_admin']}>
+                  <PersonnelReport />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/system-dashboard"
               element={
                 <ProtectedRoute allowedRoles={['central_admin']}>
                   <SystemDashboard />
