@@ -92,6 +92,8 @@ export default function PersonnelPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addCertificateDialogOpen, setAddCertificateDialogOpen] = useState(false);
+  const [editCertificateDialogOpen, setEditCertificateDialogOpen] = useState(false);
+  const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
   const [expandedPersonnelId, setExpandedPersonnelId] = useState<string | null>(null);
   const [certificatesMap, setCertificatesMap] = useState<Record<string, Certificate[]>>({});
@@ -113,7 +115,13 @@ export default function PersonnelPage() {
     issue_date: "",
     file: null as File | null,
   });
+  const [editCertificateData, setEditCertificateData] = useState({
+    name: "",
+    issue_date: "",
+    file: null as File | null,
+  });
   const [uploadingCertificate, setUploadingCertificate] = useState(false);
+  const [updatingCertificate, setUpdatingCertificate] = useState(false);
 
   useEffect(() => {
     fetchPersonnel();
@@ -201,7 +209,80 @@ export default function PersonnelPage() {
 
   const handleOpenAddCertificateDialog = (person: Personnel) => {
     setSelectedPersonnel(person);
+    setNewCertificate({ name: "", issue_date: "", file: null });
     setAddCertificateDialogOpen(true);
+  };
+
+  const handleOpenEditCertificateDialog = (cert: Certificate, person: Personnel) => {
+    setSelectedCertificate(cert);
+    setSelectedPersonnel(person);
+    setEditCertificateData({
+      name: cert.certificate_name,
+      issue_date: cert.issue_date || "",
+      file: null,
+    });
+    setEditCertificateDialogOpen(true);
+  };
+
+  const handleUpdateCertificate = async () => {
+    if (!selectedCertificate || !editCertificateData.name.trim()) {
+      toast.error("กรุณากรอกชื่อใบประกาศ");
+      return;
+    }
+
+    setUpdatingCertificate(true);
+    try {
+      let filePath = selectedCertificate.file_path;
+      let fileName = selectedCertificate.file_name;
+      let fileSize = selectedCertificate.file_size;
+
+      // Upload new file if provided
+      if (editCertificateData.file) {
+        // Delete old file if exists
+        if (selectedCertificate.file_path) {
+          await supabase.storage.from("certificates").remove([selectedCertificate.file_path]);
+        }
+
+        const fileExt = editCertificateData.file.name.split(".").pop();
+        const uniqueName = `${selectedCertificate.personnel_id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("certificates")
+          .upload(uniqueName, editCertificateData.file);
+
+        if (uploadError) throw uploadError;
+
+        filePath = uniqueName;
+        fileName = editCertificateData.file.name;
+        fileSize = editCertificateData.file.size;
+      }
+
+      const { error } = await supabase
+        .from("personnel_certificates")
+        .update({
+          certificate_name: editCertificateData.name.trim(),
+          issue_date: editCertificateData.issue_date || null,
+          file_path: filePath,
+          file_name: fileName,
+          file_size: fileSize,
+        })
+        .eq("id", selectedCertificate.id);
+
+      if (error) throw error;
+
+      toast.success("แก้ไขใบประกาศสำเร็จ");
+      setEditCertificateDialogOpen(false);
+      setSelectedCertificate(null);
+      // Refresh certificates for this personnel
+      const personnelId = selectedCertificate.personnel_id;
+      setCertificatesMap(prev => ({ ...prev, [personnelId]: [] }));
+      fetchCertificates(personnelId);
+    } catch (error: any) {
+      console.error("Error updating certificate:", error);
+      toast.error("ไม่สามารถแก้ไขใบประกาศได้");
+    } finally {
+      setUpdatingCertificate(false);
+    }
   };
 
   const handleSave = async () => {
@@ -573,6 +654,13 @@ export default function PersonnelPage() {
                                           <Button
                                             variant="ghost"
                                             size="icon"
+                                            onClick={() => handleOpenEditCertificateDialog(cert, person)}
+                                          >
+                                            <Pencil className="h-4 w-4" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
                                             onClick={() => handleDeleteCertificate(cert)}
                                           >
                                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -809,6 +897,101 @@ export default function PersonnelPage() {
                 <>
                   <Plus className="h-4 w-4 mr-2" />
                   เพิ่มใบประกาศ
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Certificate Dialog */}
+      <Dialog open={editCertificateDialogOpen} onOpenChange={setEditCertificateDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              แก้ไขใบประกาศ
+            </DialogTitle>
+            <DialogDescription>
+              แก้ไขข้อมูลใบประกาศ
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit_cert_name">ชื่อใบประกาศ *</Label>
+              <Input
+                id="edit_cert_name"
+                value={editCertificateData.name}
+                onChange={(e) =>
+                  setEditCertificateData({ ...editCertificateData, name: e.target.value })
+                }
+                placeholder="เช่น ใบรับรอง PDPA"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>วันที่ได้รับ</Label>
+              <ThaiDatePicker
+                value={editCertificateData.issue_date}
+                onChange={(value) =>
+                  setEditCertificateData({ ...editCertificateData, issue_date: value })
+                }
+                placeholder="เลือกวันที่ได้รับ"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>เปลี่ยนไฟล์ใบประกาศ (ไม่บังคับ)</Label>
+              {selectedCertificate?.file_name && !editCertificateData.file && (
+                <p className="text-xs text-muted-foreground mb-2">
+                  ไฟล์ปัจจุบัน: {selectedCertificate.file_name}
+                </p>
+              )}
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) =>
+                    setEditCertificateData({
+                      ...editCertificateData,
+                      file: e.target.files?.[0] || null,
+                    })
+                  }
+                  className="flex-1"
+                />
+                {editCertificateData.file && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      setEditCertificateData({ ...editCertificateData, file: null })
+                    }
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              {editCertificateData.file && (
+                <p className="text-xs text-muted-foreground">
+                  ไฟล์ใหม่: {editCertificateData.file.name} ({formatFileSize(editCertificateData.file.size)})
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditCertificateDialogOpen(false)}>
+              ยกเลิก
+            </Button>
+            <Button
+              onClick={handleUpdateCertificate}
+              disabled={updatingCertificate}
+            >
+              {updatingCertificate ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  กำลังบันทึก...
+                </>
+              ) : (
+                <>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  บันทึก
                 </>
               )}
             </Button>
