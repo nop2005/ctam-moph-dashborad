@@ -94,6 +94,7 @@ export default function ReportsQuantitativeByArea() {
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
+  const [selectedSafetyFilter, setSelectedSafetyFilter] = useState<string>('all');
 
   const isProvincialAdmin = profile?.role === 'provincial' || profile?.role === 'ceo';
   const userProvinceId = profile?.province_id;
@@ -181,6 +182,7 @@ export default function ReportsQuantitativeByArea() {
     if (!isProvincialAdmin) {
       setSelectedProvince('all');
     }
+    setSelectedSafetyFilter('all');
   }, [selectedRegion, isProvincialAdmin]);
 
   const fiscalYears = useMemo(() => generateFiscalYears(assessments), [assessments]);
@@ -375,6 +377,38 @@ export default function ReportsQuantitativeByArea() {
     }
   }, [selectedRegion, selectedProvince, healthRegions, provinces, hospitals, healthOffices, categories, filteredAssessmentItems, latestApprovedByUnit]);
 
+  // Safety filter counts and filtered data for hospital-level view
+  const { filteredTableData, safetyCounts } = useMemo(() => {
+    if (selectedProvince === 'all') {
+      return { filteredTableData: tableData, safetyCounts: { all: 0, green: 0, yellow: 0, red: 0, notSubmitted: 0 } };
+    }
+
+    let green = 0, yellow = 0, red = 0, notSubmitted = 0;
+
+    const dataWithLevel = tableData.map(row => {
+      const latestAssessment = latestApprovedByUnit.get(row.id);
+      if (!latestAssessment) {
+        notSubmitted++;
+        return { ...row, safetyLevel: 'notSubmitted' as const };
+      }
+      const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
+      const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
+      const percentage = totalCount > 0 ? (passedCount / totalCount) * 100 : 0;
+      if (percentage === 100) { green++; return { ...row, safetyLevel: 'green' as const }; }
+      if (percentage >= 50) { yellow++; return { ...row, safetyLevel: 'yellow' as const }; }
+      red++;
+      return { ...row, safetyLevel: 'red' as const };
+    });
+
+    const all = dataWithLevel.length;
+    const filtered = selectedSafetyFilter === 'all' ? dataWithLevel : dataWithLevel.filter(r => r.safetyLevel === selectedSafetyFilter);
+
+    return {
+      filteredTableData: filtered,
+      safetyCounts: { all, green, yellow, red, notSubmitted }
+    };
+  }, [tableData, selectedProvince, latestApprovedByUnit, selectedSafetyFilter]);
+
   const getTitle = () => {
     if (selectedProvince !== 'all') {
       const province = provinces.find(p => p.id === selectedProvince);
@@ -488,12 +522,38 @@ export default function ReportsQuantitativeByArea() {
                 return <div className="text-center py-12 text-muted-foreground">กำลังโหลดข้อมูล...</div>;
               }
 
-              if (tableData.length === 0) {
+              if (filteredTableData.length === 0 && selectedSafetyFilter === 'all') {
                 return <div className="text-center py-12 text-muted-foreground">ไม่พบข้อมูล</div>;
               }
 
               return (
                 <div className="space-y-4">
+                  {/* Safety Filter Buttons - show when province selected */}
+                  {selectedProvince !== 'all' && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {[
+                        { key: 'all', label: 'ทั้งหมด', count: safetyCounts.all, bg: 'bg-primary text-primary-foreground', outline: 'border-primary text-primary' },
+                        { key: 'red', label: 'แดง', count: safetyCounts.red, bg: 'bg-red-500 text-white', outline: 'border-red-500 text-red-500' },
+                        { key: 'yellow', label: 'เหลือง', count: safetyCounts.yellow, bg: 'bg-yellow-500 text-white', outline: 'border-yellow-500 text-yellow-600' },
+                        { key: 'green', label: 'เขียว', count: safetyCounts.green, bg: 'bg-green-500 text-white', outline: 'border-green-500 text-green-600' },
+                        { key: 'notSubmitted', label: 'ยังไม่ประเมิน', count: safetyCounts.notSubmitted, bg: 'bg-gray-400 text-white', outline: 'border-gray-400 text-gray-500' },
+                      ].map(f => (
+                        <button
+                          key={f.key}
+                          onClick={() => setSelectedSafetyFilter(f.key)}
+                          className={`px-4 py-1.5 rounded-full text-sm font-medium border-2 transition-colors ${
+                            selectedSafetyFilter === f.key ? f.bg : `bg-background ${f.outline}`
+                          }`}
+                        >
+                          {f.label} ({f.count})
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {filteredTableData.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">ไม่พบข้อมูลที่ตรงตามตัวกรอง</div>
+                  ) : (
                   <div className="w-full overflow-x-auto">
                     <Table className="min-w-max">
                       <TableHeader>
@@ -551,7 +611,7 @@ export default function ReportsQuantitativeByArea() {
                       </TableHeader>
 
                       <TableBody>
-                        {tableData.map(row => {
+                        {filteredTableData.map(row => {
                           const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
                           const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
                           const passedPercentage = totalCount > 0 ? (passedCount / totalCount) * 100 : null;
@@ -660,6 +720,7 @@ export default function ReportsQuantitativeByArea() {
                       </TableBody>
                     </Table>
                   </div>
+                  )}
 
                   {/* Color Legend */}
                   <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground border border-primary/30 rounded-lg p-4 bg-primary/5">
