@@ -156,7 +156,7 @@ export default function BudgetReport() {
   // Determine user's view scope based on role
   const userRole = profile?.role;
   const isOrgLevel = userRole === "hospital_it" || userRole === "health_office";
-  const isProvincial = userRole === "provincial";
+  const isProvincial = userRole === "provincial" || userRole === "ceo";
   const isRegional = userRole === "regional" || userRole === "supervisor";
   const isCentralAdmin = userRole === "central_admin";
   const canImport = isCentralAdmin || isRegional;
