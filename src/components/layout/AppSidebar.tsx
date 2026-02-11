@@ -89,11 +89,6 @@ const reportSubItems = [
     url: "/reports/impact",
     icon: AlertTriangle,
   },
-  {
-    title: "แดชบอร์ดศูนย์เทคโนโลยีสารสนเทศ",
-    url: "/reports/tableau-dashboard",
-    icon: MonitorDot,
-  },
 ];
 const analyticalReportSubItems = [
   {
@@ -105,11 +100,6 @@ const analyticalReportSubItems = [
     title: "CTAM เเยกตามหน่วยงาน",
     url: "/reports/quantitative-by-area",
     icon: MapPinned,
-  },
-  {
-    title: "การใช้อุปกรณ์/ซอฟต์แวร์",
-    url: "/reports/equipment-usage",
-    icon: Wrench,
   },
 ];
 const budgetReportSubItems = [
@@ -182,11 +172,10 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + "/");
   const isReportsActive =
-    currentPath === "/reports" || currentPath === "/reports/quantitative" || currentPath === "/reports/impact" || currentPath === "/reports/tableau-dashboard";
+    currentPath === "/reports" || currentPath === "/reports/quantitative" || currentPath === "/reports/impact";
   const isAnalyticalReportsActive =
     currentPath === "/reports/quantitative-by-area" ||
-    currentPath === "/reports/quantitative-detail" ||
-    currentPath === "/reports/equipment-usage";
+    currentPath === "/reports/quantitative-detail";
   const isInspectionActive = currentPath.startsWith("/inspection") && currentPath !== "/inspection/manual";
   const isBudgetReportActive = currentPath.startsWith("/reports/budget");
 
@@ -412,7 +401,41 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               )}
 
-              {/* Inspection Reports with Submenu */}
+              {/* Equipment Usage Report - standalone */}
+              {profile?.role && !["hospital_it", "health_office"].includes(profile.role) && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate("/reports/equipment-usage")}
+                    isActive={currentPath === "/reports/equipment-usage"}
+                    tooltip="รายงานอุปกรณ์/ซอฟต์แวร์"
+                    className={`
+                      text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                      data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                    `}
+                  >
+                    <Wrench className="h-4 w-4" />
+                    <span>รายงานอุปกรณ์/ซอฟต์แวร์</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
+              {/* IT Center Dashboard - standalone */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate("/reports/tableau-dashboard")}
+                  isActive={currentPath === "/reports/tableau-dashboard"}
+                  tooltip="แดชบอร์ดศูนย์เทคโนโลยีสารสนเทศ"
+                  className={`
+                    text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                    data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                  `}
+                >
+                  <MonitorDot className="h-4 w-4" />
+                  <span>แดชบอร์ดศูนย์เทคโนโลยีฯ</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+
               <Collapsible open={inspectionOpen} onOpenChange={setInspectionOpen} className="group/collapsible">
                 <SidebarMenuItem>
                   <SidebarMenuButton
