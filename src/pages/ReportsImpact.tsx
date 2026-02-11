@@ -306,6 +306,7 @@ export default function ReportsImpact() {
     let notAssessed = 0;
     let totalIncidents = 0;
     let totalBreaches = 0;
+    const rawScores: number[] = [];
 
     const processUnit = (unitId: string) => {
       const latestAssessment = latestApprovedByUnit.get(unitId);
@@ -320,6 +321,8 @@ export default function ReportsImpact() {
         return;
       }
 
+      if (snap.rawScore !== null) rawScores.push(snap.rawScore);
+
       if (snap.percentScore >= 86) level5++;
       else if (snap.percentScore >= 71) level4++;
       else if (snap.percentScore >= 56) level3++;
@@ -333,6 +336,10 @@ export default function ReportsImpact() {
     hospitalIds.forEach(processUnit);
     healthOfficeIds.forEach(processUnit);
 
+    const avgImpactScore = rawScores.length > 0
+      ? rawScores.reduce((s, v) => s + v, 0) / rawScores.length
+      : null;
+
     return {
       total: hospitalIds.length + healthOfficeIds.length,
       level5,
@@ -343,6 +350,7 @@ export default function ReportsImpact() {
       notAssessed,
       totalIncidents,
       totalBreaches,
+      avgImpactScore,
     };
   };
 
@@ -831,6 +839,12 @@ export default function ReportsImpact() {
                         <>
                           <TableHead className="text-center">รพ. ทั้งหมด</TableHead>
                           <TableHead className="text-center">รพ. ประเมินแล้ว</TableHead>
+                          <TableHead className="text-center bg-orange-100 dark:bg-orange-900/30">
+                            <div className="flex flex-col items-center">
+                              <span>คะแนนเฉลี่ย</span>
+                              <span>ผลกระทบ (/3)</span>
+                            </div>
+                          </TableHead>
                           <TableHead className="text-center text-green-600">ระดับ 5</TableHead>
                           <TableHead className="text-center text-lime-600">ระดับ 4</TableHead>
                           <TableHead className="text-center text-yellow-600">ระดับ 3</TableHead>
@@ -895,6 +909,9 @@ export default function ReportsImpact() {
                             <>
                               <TableCell className="text-center">{row.total}</TableCell>
                               <TableCell className="text-center">{row.total - row.notAssessed}</TableCell>
+                              <TableCell className="text-center font-medium bg-orange-50 dark:bg-orange-900/20">
+                                {row.avgImpactScore !== null ? row.avgImpactScore.toFixed(2) : '-'}
+                              </TableCell>
                               <TableCell className="text-center text-green-600 font-medium">{row.level5}</TableCell>
                               <TableCell className="text-center text-lime-600">{row.level4}</TableCell>
                               <TableCell className="text-center text-yellow-600">{row.level3}</TableCell>
