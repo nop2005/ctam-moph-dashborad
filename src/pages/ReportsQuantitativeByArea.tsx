@@ -95,7 +95,7 @@ export default function ReportsQuantitativeByArea() {
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
 
-  const isProvincialAdmin = profile?.role === 'provincial';
+  const isProvincialAdmin = profile?.role === 'provincial' || profile?.role === 'ceo';
   const userProvinceId = profile?.province_id;
 
   const { canDrillToProvince, canDrillToHospital } = useReportAccessPolicy('quantitative', provinces, healthOffices);
