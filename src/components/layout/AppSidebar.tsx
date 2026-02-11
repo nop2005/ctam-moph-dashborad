@@ -75,7 +75,7 @@ const menuItems = [
 // CEO does NOT see: หน้าหลักแบบประเมิน, บุคลากรในหน่วยงาน, บันทึกงบประมาณ, บุคลากร (admin), จัดการระบบ
 const reportSubItems = [
   {
-    title: "คะเเนนรวม 70:30",
+    title: "คะเเนนรวม",
     url: "/reports",
     icon: PieChart,
   },
@@ -262,7 +262,7 @@ export function AppSidebar() {
                     `}
                   >
                     <BarChart3 className="h-4 w-4" />
-                    <span>เเดชบอร์ดทั่วไป</span>
+                    <span>รายงานคะเเนน 70:30</span>
                     <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                   <CollapsibleContent>
