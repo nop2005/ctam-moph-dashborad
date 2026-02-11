@@ -845,11 +845,7 @@ export default function ReportsImpact() {
                               <span>ผลกระทบ (/3)</span>
                             </div>
                           </TableHead>
-                          <TableHead className="text-center text-green-600">ระดับ 5</TableHead>
-                          <TableHead className="text-center text-lime-600">ระดับ 4</TableHead>
-                          <TableHead className="text-center text-yellow-600">ระดับ 3</TableHead>
-                          <TableHead className="text-center text-orange-600">ระดับ 2</TableHead>
-                          <TableHead className="text-center text-red-600">ระดับ 1</TableHead>
+                          
                           <TableHead className="text-center">มีเหตุการณ์</TableHead>
                           <TableHead className="text-center">ละเมิดข้อมูล</TableHead>
                         </>
@@ -912,11 +908,7 @@ export default function ReportsImpact() {
                               <TableCell className="text-center font-medium bg-orange-50 dark:bg-orange-900/20">
                                 {row.avgImpactScore !== null ? row.avgImpactScore.toFixed(2) : '-'}
                               </TableCell>
-                              <TableCell className="text-center text-green-600 font-medium">{row.level5}</TableCell>
-                              <TableCell className="text-center text-lime-600">{row.level4}</TableCell>
-                              <TableCell className="text-center text-yellow-600">{row.level3}</TableCell>
-                              <TableCell className="text-center text-orange-600">{row.level2}</TableCell>
-                              <TableCell className="text-center text-red-600">{row.level1}</TableCell>
+                              
                               <TableCell className="text-center text-orange-600">{row.totalIncidents}</TableCell>
                               <TableCell className="text-center text-red-600">{row.totalBreaches}</TableCell>
                             </>
