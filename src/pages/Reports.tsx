@@ -101,7 +101,7 @@ const statusLabels: Record<string, {
   'submitted': { label: 'รอ สสจ. ตรวจสอบ', variant: 'outline' },
   'returned': { label: 'ต้องแก้ไข', variant: 'destructive' },
   'approved_provincial': { label: 'รอเขตสุขภาพตรวจสอบ', variant: 'outline' },
-  'approved_regional': { label: 'ผ่านการประเมิน', variant: 'default' },
+  'approved_regional': { label: 'ส่งแบบประเมินแล้ว', variant: 'default' },
   'completed': { label: 'เสร็จสิ้น', variant: 'default' }
 };
 
