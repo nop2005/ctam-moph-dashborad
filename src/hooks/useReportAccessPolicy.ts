@@ -87,6 +87,10 @@ export function useReportAccessPolicy(
       return profile.province_id || null;
     }
     
+    if (profile.role === 'ceo') {
+      return profile.province_id || null;
+    }
+    
     return null;
   }, [profile, healthOffices]);
 

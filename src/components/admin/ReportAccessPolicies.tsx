@@ -26,6 +26,7 @@ const ROLES = [
   { value: 'regional', label: 'ผู้ประเมินระดับเขต' },
   { value: 'central_admin', label: 'Super Admin' },
   { value: 'supervisor', label: 'ผู้นิเทศ' },
+  { value: 'ceo', label: 'ผู้อำนวยการ รพ.' },
 ];
 
 const REPORT_TYPES = [
