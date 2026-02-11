@@ -7,11 +7,11 @@ import { Shield, BarChart3, PieChart, TrendingUp, AlertTriangle, ClipboardCheck,
 import { SidebarFooter, SidebarSeparator } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 const reportSubItems = [{
-  title: "รายงานภาพรวม",
+  title: "คะเเนนรวม 70:30",
   url: "/public/reports",
   icon: PieChart
 }, {
-  title: "เชิงปริมาณ ( 17 ข้อ )",
+  title: "คะเเนนเชิงปริมาณ (17ข้อ)",
   url: "/public/reports/quantitative",
   icon: TrendingUp
 }, {
