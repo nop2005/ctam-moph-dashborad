@@ -4,7 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { TrendingUp, Filter, ArrowLeft } from 'lucide-react';
+import { TrendingUp, Filter, ArrowLeft, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import * as XLSX from 'xlsx';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -421,6 +423,62 @@ export default function ReportsQuantitativeByArea() {
     return 'คะแนนเฉลี่ยเชิงปริมาณ รายเขตสุขภาพ';
   };
 
+  const handleExportExcel = () => {
+    const title = getTitle();
+    const showSummaryCols = selectedProvince === 'all';
+
+    const headers: string[] = [
+      selectedProvince !== 'all' ? 'โรงพยาบาล' : selectedRegion !== 'all' ? 'จังหวัด' : 'เขตสุขภาพ',
+    ];
+    if (selectedProvince !== 'all') headers.push('รหัส');
+    if (showSummaryCols) {
+      headers.push('จำนวน รพ.', 'รพ.ที่ประเมินแล้ว', 'รพ.ผ่านครบ 17 ข้อ');
+    }
+    headers.push('ผ่านร้อยละ');
+    categories.forEach((cat, i) => headers.push(`ข้อ ${i + 1} ${cat.code}`));
+
+    const rows = filteredTableData.map(row => {
+      const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
+      const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
+      const passedPercentage = totalCount > 0 ? (passedCount / totalCount) * 100 : null;
+
+      let percentage: number;
+      if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row && 'hospitalCount' in row) {
+        percentage = row.hospitalCount > 0 ? ((row.hospitalsPassedAll17 as number) / row.hospitalCount) * 100 : 0;
+      } else {
+        percentage = passedPercentage ?? 0;
+      }
+
+      const rowData: (string | number)[] = [row.name];
+      if (selectedProvince !== 'all') rowData.push('code' in row ? row.code : '');
+      if (showSummaryCols) {
+        rowData.push(
+          'hospitalCount' in row ? row.hospitalCount : 0,
+          'hospitalsAssessed' in row ? row.hospitalsAssessed : 0,
+          'hospitalsPassedAll17' in row ? row.hospitalsPassedAll17 : 0,
+        );
+      }
+      rowData.push(Number(percentage.toFixed(1)));
+
+      row.categoryAverages.forEach(catAvg => {
+        if (catAvg.average === null) { rowData.push('-'); return; }
+        if (row.type === 'region' || row.type === 'province') {
+          rowData.push(`${catAvg.passedCount ?? 0} (${catAvg.average?.toFixed(2)}%)`);
+        } else {
+          rowData.push(catAvg.average === 1 ? 'ผ่าน' : catAvg.average === 0 ? 'ไม่ผ่าน' : Number(catAvg.average.toFixed(2)));
+        }
+      });
+
+      return rowData;
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'CTAM');
+    XLSX.writeFile(wb, `${title}.xlsx`);
+    toast.success('ส่งออก Excel สำเร็จ');
+  };
+
   const formatScore = (catAvg: { average: number | null; passedCount?: number; totalCount?: number }, rowType: string) => {
     if (catAvg.average === null) return '-';
     if (rowType === 'region' || rowType === 'province') {
@@ -485,23 +543,29 @@ export default function ReportsQuantitativeByArea() {
         {/* Data Table */}
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-3">
-              {(selectedRegion !== 'all' || selectedProvince !== 'all') && !isProvincialAdmin && (
-                <button
-                  onClick={() => {
-                    if (selectedProvince !== 'all') {
-                      setSelectedProvince('all');
-                    } else if (selectedRegion !== 'all') {
-                      setSelectedRegion('all');
-                    }
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  ย้อนกลับ
-                </button>
-              )}
-              <CardTitle className="text-lg">{getTitle()}</CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {(selectedRegion !== 'all' || selectedProvince !== 'all') && !isProvincialAdmin && (
+                  <button
+                    onClick={() => {
+                      if (selectedProvince !== 'all') {
+                        setSelectedProvince('all');
+                      } else if (selectedRegion !== 'all') {
+                        setSelectedRegion('all');
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    ย้อนกลับ
+                  </button>
+                )}
+                <CardTitle className="text-lg">{getTitle()}</CardTitle>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-2">
+                <Download className="w-4 h-4" />
+                Export Excel
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
