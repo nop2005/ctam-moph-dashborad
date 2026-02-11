@@ -350,66 +350,6 @@ export function AppSidebar() {
                 </Collapsible>
               )}
 
-              {/* Inspection Reports with Submenu */}
-              <Collapsible open={inspectionOpen} onOpenChange={setInspectionOpen} className="group/collapsible">
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    tooltip="รายงานตรวจราชการ"
-                    isActive={false}
-                    onClick={() => {
-                      if (collapsed) {
-                        navigate("/inspection/supervisor");
-                      } else {
-                        setInspectionOpen(!inspectionOpen);
-                      }
-                    }}
-                    className={`
-                      text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
-                    `}
-                  >
-                    <ClipboardCheck className="h-4 w-4" />
-                    <span>รายงานตรวจราชการ</span>
-                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                  </SidebarMenuButton>
-                  <CollapsibleContent>
-                    <SidebarMenuSub className="border-sidebar-border">
-                      {inspectionSubItems.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton
-                            onClick={() => navigate(subItem.url)}
-                            isActive={currentPath === subItem.url || currentPath.startsWith(subItem.url + "/")}
-                            title={subItem.title}
-                            className={`
-                              text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
-                              data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
-                            `}
-                          >
-                            <subItem.icon className="h-3 w-3" />
-                            <span className="truncate">{subItem.title}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
-
-              {/* Inspection Manual - Standalone menu item */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => navigate("/inspection/manual")}
-                  isActive={currentPath === "/inspection/manual"}
-                  tooltip="คู่มือเอกสารสำหรับการนิเทศ"
-                  className={`
-                    text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
-                    data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
-                  `}
-                >
-                  <BookOpen className="h-4 w-4" />
-                  <span>คู่มือเอกสารสำหรับการนิเทศ</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
               {/* Budget Report with Submenu - For all authenticated users */}
               <Collapsible open={budgetReportOpen} onOpenChange={setBudgetReportOpen} className="group/collapsible">
                 <SidebarMenuItem>
@@ -471,6 +411,66 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
+
+              {/* Inspection Reports with Submenu */}
+              <Collapsible open={inspectionOpen} onOpenChange={setInspectionOpen} className="group/collapsible">
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip="รายงานตรวจราชการ"
+                    isActive={false}
+                    onClick={() => {
+                      if (collapsed) {
+                        navigate("/inspection/supervisor");
+                      } else {
+                        setInspectionOpen(!inspectionOpen);
+                      }
+                    }}
+                    className={`
+                      text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                    `}
+                  >
+                    <ClipboardCheck className="h-4 w-4" />
+                    <span>รายงานตรวจราชการ</span>
+                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  </SidebarMenuButton>
+                  <CollapsibleContent>
+                    <SidebarMenuSub className="border-sidebar-border">
+                      {inspectionSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton
+                            onClick={() => navigate(subItem.url)}
+                            isActive={currentPath === subItem.url || currentPath.startsWith(subItem.url + "/")}
+                            title={subItem.title}
+                            className={`
+                              text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer
+                              data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                            `}
+                          >
+                            <subItem.icon className="h-3 w-3" />
+                            <span className="truncate">{subItem.title}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+
+              {/* Inspection Manual - Standalone menu item */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate("/inspection/manual")}
+                  isActive={currentPath === "/inspection/manual"}
+                  tooltip="คู่มือเอกสารสำหรับการนิเทศ"
+                  className={`
+                    text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                    data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                  `}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span>คู่มือเอกสารสำหรับการนิเทศ</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
