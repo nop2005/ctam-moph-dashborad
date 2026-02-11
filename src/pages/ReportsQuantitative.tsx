@@ -1064,12 +1064,15 @@ export default function ReportsQuantitative() {
           <CardContent>
             {(() => {
             const showSummaryCols = selectedProvince === 'all';
+            const isHospitalLevel = selectedProvince !== 'all';
             const sticky = {
               name: 180,
               hospitalCount: 80,
               hospitalsAssessed: 100,
               avgQuantitative: 120,
               passedAll17: 100,
+              unitQuantScore: 110,
+              unitPassedItems: 110,
               percentGreen: 200
             } as const;
             const left = {
@@ -1078,7 +1081,9 @@ export default function ReportsQuantitative() {
               hospitalsAssessed: sticky.name + sticky.hospitalCount,
               avgQuantitative: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
               passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.avgQuantitative,
-              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.avgQuantitative + sticky.passedAll17 : 0)
+              unitQuantScore: sticky.name,
+              unitPassedItems: sticky.name + sticky.unitQuantScore,
+              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.avgQuantitative + sticky.passedAll17 : isHospitalLevel ? sticky.unitQuantScore + sticky.unitPassedItems : 0)
             } as const;
             const stickyHeaderBase = "sticky z-30 border-r border-border/60";
             const stickyCellBase = "sticky z-20 border-r border-border/60 bg-background";
@@ -1132,10 +1137,28 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
+                        {isHospitalLevel && <TableHead className={`${stickyHeaderBase} text-center min-w-[110px] bg-orange-100 dark:bg-orange-900/30`} style={{
+                        left: left.unitQuantScore
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>คะแนนที่ได้</span>
+                              <span>(เต็ม 7)</span>
+                            </div>
+                          </TableHead>}
+
+                        {isHospitalLevel && <TableHead className={`${stickyHeaderBase} text-center min-w-[110px] bg-green-100 dark:bg-green-900/30`} style={{
+                        left: left.unitPassedItems
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>ข้อที่ผ่าน</span>
+                              <span>(17 ข้อ)</span>
+                            </div>
+                          </TableHead>}
+
                         <TableHead className={`${stickyHeaderBase} text-center min-w-[200px] bg-primary/10`} style={{
                         left: left.percentGreen
                       }}>
-                          {selectedProvince !== 'all' ? <div className="flex flex-col items-center">
+                          {isHospitalLevel ? <div className="flex flex-col items-center">
                               <span>ข้อที่ผ่าน</span>
                               <span>(ร้อยละ)</span>
                             </div> : <div className="flex flex-col items-center">
@@ -1206,6 +1229,33 @@ export default function ReportsQuantitative() {
                                 {'hospitalsPassedAll17' in row ? row.hospitalsPassedAll17 : 0}
                               </TableCell>}
 
+                            {isHospitalLevel && (() => {
+                              const latestAssessment = latestApprovedByUnit.get(row.id);
+                              const quantitativeScore = latestAssessment && latestAssessment.quantitative_score !== null
+                                ? Number(latestAssessment.quantitative_score) : null;
+                              return <TableCell className={`${stickyCellBase} text-center font-medium bg-orange-50 dark:bg-orange-900/20`} style={{
+                                left: left.unitQuantScore,
+                                minWidth: sticky.unitQuantScore
+                              }}>
+                                {quantitativeScore !== null ? quantitativeScore.toFixed(2) : '-'}
+                              </TableCell>;
+                            })()}
+
+                            {isHospitalLevel && (() => {
+                              const latestAssessment = latestApprovedByUnit.get(row.id);
+                              let unitPassedCount: number | null = null;
+                              if (latestAssessment) {
+                                const latestItems = filteredAssessmentItems.filter(item => item.assessment_id === latestAssessment.id);
+                                unitPassedCount = latestItems.filter(item => Number(item.score) === 1).length;
+                              }
+                              return <TableCell className={`${stickyCellBase} text-center font-medium bg-green-50 dark:bg-green-900/20`} style={{
+                                left: left.unitPassedItems,
+                                minWidth: sticky.unitPassedItems
+                              }}>
+                                {unitPassedCount !== null ? unitPassedCount : '-'}
+                              </TableCell>;
+                            })()}
+
                             <TableCell className={`${stickyCellBase} text-center bg-primary/5`} style={{
                           left: left.percentGreen,
                           minWidth: 200
@@ -1219,38 +1269,12 @@ export default function ReportsQuantitative() {
                             }
                             const colorClass = percentage === 100 ? '[&>div]:bg-green-500' : percentage >= 50 ? '[&>div]:bg-yellow-500' : '[&>div]:bg-red-500';
                             
-                            // Calculate quantitative score for hospital/health_office level (score out of 7)
-                            const isUnitLevel = row.type === 'hospital' || row.type === 'health_office';
-                            let quantitativeScore: number | null = null;
-                            let passedCount: number | null = null;
-                            if (isUnitLevel) {
-                              const latestAssessment = latestApprovedByUnit.get(row.id);
-                              if (latestAssessment && latestAssessment.quantitative_score !== null) {
-                                quantitativeScore = Number(latestAssessment.quantitative_score);
-                              }
-                              // Count passed items for this unit (from the latest assessment only)
-                              if (latestAssessment) {
-                                const latestAssessmentItems = filteredAssessmentItems.filter(item => 
-                                  item.assessment_id === latestAssessment.id
-                                );
-                                // Pass is determined by score === 1
-                                passedCount = latestAssessmentItems.filter(item => Number(item.score) === 1).length;
-                              }
-                            }
-                            
-                            return <div className="flex flex-col gap-1">
-                                    <div className="flex items-center gap-2">
+                            return <div className="flex items-center gap-2">
                                       <Progress value={percentage} className={`h-4 flex-1 ${colorClass}`} />
                                       <span className="text-sm font-medium min-w-[50px] text-right">
                                         {row.hospitalCount > 0 || passedPercentage !== null ? `${percentage.toFixed(1)}%` : '-'}
                                       </span>
-                                    </div>
-                                    {isUnitLevel && passedCount !== null && quantitativeScore !== null && (
-                                      <span className="text-xs text-muted-foreground">
-                                        (ผ่าน {passedCount}/17 ข้อ = {quantitativeScore.toFixed(2)}/7 คะแนน)
-                                      </span>
-                                    )}
-                                  </div>;
+                                    </div>;
                           })()}
                             </TableCell>
 
