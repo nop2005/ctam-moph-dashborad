@@ -560,7 +560,7 @@ export default function ReportsQuantitativeByArea() {
                 </button>
               )}
               <CardTitle className="text-lg">{getTitle()}</CardTitle>
-              <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-2 ml-auto">
+              <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-2 shrink-0">
                 <Download className="w-4 h-4" />
                 Export Excel
               </Button>
