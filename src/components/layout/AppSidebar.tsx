@@ -298,7 +298,7 @@ export function AppSidebar() {
                 >
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      tooltip="รายงานเชิงวิเคราะห์"
+                      tooltip="รายงาน CTAM 17 ข้อ"
                       isActive={false}
                       onClick={() => {
                         if (collapsed) {
@@ -312,7 +312,7 @@ export function AppSidebar() {
                     `}
                     >
                       <TrendingUp className="h-4 w-4" />
-                      <span>รายงานเชิงวิเคราะห์</span>
+                      <span>รายงาน CTAM 17 ข้อ</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                     <CollapsibleContent>
