@@ -21,7 +21,7 @@ interface Profile {
   email: string;
   full_name: string | null;
   phone: string | null;
-  role: 'hospital_it' | 'provincial' | 'regional' | 'central_admin' | 'health_office' | 'supervisor';
+  role: 'hospital_it' | 'provincial' | 'regional' | 'central_admin' | 'health_office' | 'supervisor' | 'ceo';
   hospital_id: string | null;
   province_id: string | null;
   health_region_id: string | null;
@@ -96,6 +96,11 @@ export default function SuperAdmin() {
   const [supervisorOrganization, setSupervisorOrganization] = useState('');
   const [isCreatingSupervisor, setIsCreatingSupervisor] = useState(false);
 
+  // Bulk create CEO users dialog
+  const [isCeoBulkDialogOpen, setIsCeoBulkDialogOpen] = useState(false);
+  const [bulkCeoProvinceId, setBulkCeoProvinceId] = useState('');
+  const [isBulkCreatingCeo, setIsBulkCreatingCeo] = useState(false);
+  const [ceoBulkResults, setCeoBulkResults] = useState<any[]>([]);
   // Card filter state
   type CardFilter = 'all' | 'pending' | 'active' | 'central_admin' | 'regional' | 'provincial';
   const [cardFilter, setCardFilter] = useState<CardFilter>('all');
@@ -131,7 +136,8 @@ export default function SuperAdmin() {
       regional: 'ผู้ประเมินระดับเขตสุขภาพ',
       central_admin: 'ส่วนกลาง (Super Admin)',
       health_office: 'สำนักงาน สสจ./เขตสุขภาพ',
-      supervisor: 'ผู้นิเทศ'
+      supervisor: 'ผู้นิเทศ',
+      ceo: 'ผู้อำนวยการโรงพยาบาล'
     };
     return labels[role] || role;
   };
@@ -142,7 +148,8 @@ export default function SuperAdmin() {
       regional: 'default',
       central_admin: 'destructive',
       health_office: 'outline',
-      supervisor: 'default'
+      supervisor: 'default',
+      ceo: 'secondary'
     };
     return variants[role] || 'secondary';
   };
@@ -236,7 +243,7 @@ export default function SuperAdmin() {
       } else if (editRole === 'provincial') {
         updateData.hospital_id = null;
         updateData.health_region_id = null;
-      } else if (editRole === 'hospital_it') {
+      } else if (editRole === 'hospital_it' || editRole === 'ceo') {
         updateData.health_region_id = null;
       }
       const {
@@ -465,6 +472,47 @@ export default function SuperAdmin() {
       setIsCreatingSupervisor(false);
     }
   };
+
+  // Create CEO users for a province
+  const handleBulkCreateCeoUsers = async () => {
+    if (!bulkCeoProvinceId) {
+      toast.error('กรุณาเลือกจังหวัด');
+      return;
+    }
+    setIsBulkCreatingCeo(true);
+    setCeoBulkResults([]);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('กรุณาเข้าสู่ระบบใหม่');
+        return;
+      }
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-ceo-users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ province_id: bulkCeoProvinceId })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setCeoBulkResults(data.results);
+        const successCount = data.results.filter((r: any) => r.status === 'success').length;
+        const skippedCount = data.results.filter((r: any) => r.status === 'skipped').length;
+        toast.success(`สร้างผู้ใช้ CEO สำเร็จ ${successCount} ราย, ข้าม ${skippedCount} ราย`);
+        fetchData();
+      } else {
+        toast.error(data.error || 'เกิดข้อผิดพลาด');
+      }
+    } catch (error) {
+      console.error('Error creating CEO users:', error);
+      toast.error('ไม่สามารถสร้างผู้ใช้ CEO ได้');
+    } finally {
+      setIsBulkCreatingCeo(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     if (!selectedProfile) return;
     setIsSaving(true);
@@ -488,7 +536,7 @@ export default function SuperAdmin() {
       } else if (editRole === 'provincial') {
         updateData.hospital_id = null;
         updateData.health_region_id = null;
-      } else if (editRole === 'hospital_it') {
+      } else if (editRole === 'hospital_it' || editRole === 'ceo') {
         updateData.health_region_id = null;
       }
       const {
@@ -663,6 +711,10 @@ export default function SuperAdmin() {
                     <UserPlus className="h-4 w-4" />
                     สร้างผู้ใช้ รพ. แบบ Bulk
                   </Button>
+                  <Button onClick={() => setIsCeoBulkDialogOpen(true)} variant="secondary" className="gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    สร้าง CEO ทั้งจังหวัด
+                  </Button>
                 </>}
             </div>
           </div>
@@ -721,6 +773,7 @@ export default function SuperAdmin() {
               <SelectItem value="provincial">แอดมินจังหวัด</SelectItem>
               <SelectItem value="regional">แอดมินเขตสุขภาพ</SelectItem>
               <SelectItem value="supervisor">ผู้นิเทศ</SelectItem>
+              <SelectItem value="ceo">ผู้อำนวยการ รพ.</SelectItem>
               <SelectItem value="central_admin">Super Admin</SelectItem>
             </SelectContent>
           </Select>
@@ -887,6 +940,7 @@ export default function SuperAdmin() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="hospital_it">IT โรงพยาบาล</SelectItem>
+                  <SelectItem value="ceo">ผู้อำนวยการโรงพยาบาล</SelectItem>
                   <SelectItem value="provincial">ผู้ประเมินระดับจังหวัด (สสจ.)</SelectItem>
                   <SelectItem value="regional">ผู้ประเมินระดับเขตสุขภาพ</SelectItem>
                   <SelectItem value="central_admin">ส่วนกลาง (Super Admin)</SelectItem>
@@ -973,6 +1027,7 @@ export default function SuperAdmin() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="hospital_it">IT โรงพยาบาล</SelectItem>
+                  <SelectItem value="ceo">ผู้อำนวยการโรงพยาบาล</SelectItem>
                   <SelectItem value="provincial">ผู้ประเมินระดับจังหวัด (สสจ.)</SelectItem>
                   <SelectItem value="regional">ผู้ประเมินระดับเขตสุขภาพ</SelectItem>
                   <SelectItem value="central_admin">ส่วนกลาง (Super Admin)</SelectItem>
@@ -1259,6 +1314,56 @@ export default function SuperAdmin() {
             <Button onClick={handleCreateSupervisor} disabled={isCreatingSupervisor || !supervisorEmail || !supervisorPassword}>
               {isCreatingSupervisor ? 'กำลังสร้าง...' : 'สร้างผู้นิเทศ'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* CEO Bulk Create Dialog */}
+      <Dialog open={isCeoBulkDialogOpen} onOpenChange={setIsCeoBulkDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>สร้าง CEO (ผู้อำนวยการ รพ.) ทั้งจังหวัด</DialogTitle>
+            <DialogDescription>
+              สร้างผู้ใช้ผู้อำนวยการโรงพยาบาลสำหรับทุก รพ. ในจังหวัดที่เลือก
+              <br />
+              <span className="text-primary font-medium">Email: ceo@รหัสรพ | Password: รหัสรพ</span>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>เลือกจังหวัด</Label>
+              <SearchableSelect
+                options={provinces.map(p => ({ value: p.id, label: p.name }))}
+                value={bulkCeoProvinceId}
+                onValueChange={setBulkCeoProvinceId}
+                placeholder="ค้นหาจังหวัด..."
+              />
+            </div>
+
+            {ceoBulkResults.length > 0 && <div className="space-y-2">
+                <Label>ผลลัพธ์การสร้างผู้ใช้</Label>
+                <div className="max-h-60 overflow-y-auto border rounded-md p-2 space-y-1">
+                  {ceoBulkResults.map((result: any, index: number) => <div key={index} className={`text-sm p-2 rounded ${result.status === 'success' ? 'bg-success/10 text-success' : result.status === 'skipped' ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'}`}>
+                      <span className="font-medium">{result.hospital_code}</span> - {result.hospital_name}
+                      {result.email && <span className="text-xs block">Email: {result.email} | Password: {result.hospital_code}</span>}
+                      <span className="text-xs block">{result.message}</span>
+                    </div>)}
+                </div>
+              </div>}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsCeoBulkDialogOpen(false);
+              setCeoBulkResults([]);
+              setBulkCeoProvinceId('');
+            }}>
+              ปิด
+            </Button>
+            {ceoBulkResults.length === 0 && <Button onClick={handleBulkCreateCeoUsers} disabled={isBulkCreatingCeo || !bulkCeoProvinceId}>
+                {isBulkCreatingCeo ? 'กำลังสร้าง...' : 'สร้างผู้ใช้ CEO'}
+              </Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -257,7 +257,7 @@ const App = () => (
             <Route 
               path="/reports/personnel" 
               element={
-                <ProtectedRoute allowedRoles={['provincial', 'regional', 'central_admin']}>
+                <ProtectedRoute allowedRoles={['provincial', 'regional', 'central_admin', 'ceo']}>
                   <PersonnelReport />
                 </ProtectedRoute>
               } 

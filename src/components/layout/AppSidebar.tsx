@@ -71,6 +71,8 @@ const menuItems = [
     roles: ["provincial", "regional"],
   },
 ];
+// CEO sees: dashboards, reports, inspection, manual, budget reports, personnel report
+// CEO does NOT see: หน้าหลักแบบประเมิน, บุคลากรในหน่วยงาน, บันทึกงบประมาณ, บุคลากร (admin), จัดการระบบ
 const reportSubItems = [
   {
     title: "คะเเนนรวม 70:30",
@@ -210,6 +212,7 @@ export function AppSidebar() {
   const isProvincialAdmin = profile?.role === "provincial";
   const isRegionalAdmin = profile?.role === "regional";
   const isSupervisor = profile?.role === "supervisor";
+  const isCeo = profile?.role === "ceo";
   const hasAdminMenu = isCentralAdmin || isProvincialAdmin || isRegionalAdmin;
   return (
     <Sidebar collapsible="icon" className="border-r bg-sidebar text-sidebar-foreground">
@@ -298,6 +301,7 @@ export function AppSidebar() {
 
               {/* Analytical Reports with Submenu - Hide from hospital_it and health_office */}
               {profile?.role && !["hospital_it", "health_office"].includes(profile.role) && (
+
                 <Collapsible
                   open={analyticalReportsOpen}
                   onOpenChange={setAnalyticalReportsOpen}
@@ -450,8 +454,8 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {/* Personnel Report - For provincial, regional, central_admin */}
-              {profile?.role && ["provincial", "regional", "central_admin"].includes(profile.role) && (
+              {/* Personnel Report - For provincial, regional, central_admin, ceo */}
+              {profile?.role && ["provincial", "regional", "central_admin", "ceo"].includes(profile.role) && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     onClick={() => navigate("/reports/personnel")}
