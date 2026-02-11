@@ -46,7 +46,7 @@ export default function PersonnelReport() {
   // Determine role-based access
   const isCentralAdmin = profile?.role === "central_admin";
   const isRegionalAdmin = profile?.role === "regional";
-  const isProvincialAdmin = profile?.role === "provincial";
+  const isProvincialAdmin = profile?.role === "provincial" || profile?.role === "ceo";
 
   // Fetch health regions
   const { data: regions = [] } = useQuery({
