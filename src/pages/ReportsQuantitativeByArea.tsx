@@ -543,26 +543,24 @@ export default function ReportsQuantitativeByArea() {
         {/* Data Table */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {(selectedRegion !== 'all' || selectedProvince !== 'all') && !isProvincialAdmin && (
-                  <button
-                    onClick={() => {
-                      if (selectedProvince !== 'all') {
-                        setSelectedProvince('all');
-                      } else if (selectedRegion !== 'all') {
-                        setSelectedRegion('all');
-                      }
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    ย้อนกลับ
-                  </button>
-                )}
-                <CardTitle className="text-lg">{getTitle()}</CardTitle>
-              </div>
-              <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-2">
+            <div className="flex items-center gap-3">
+              {(selectedRegion !== 'all' || selectedProvince !== 'all') && !isProvincialAdmin && (
+                <button
+                  onClick={() => {
+                    if (selectedProvince !== 'all') {
+                      setSelectedProvince('all');
+                    } else if (selectedRegion !== 'all') {
+                      setSelectedRegion('all');
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  ย้อนกลับ
+                </button>
+              )}
+              <CardTitle className="text-lg">{getTitle()}</CardTitle>
+              <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-2 ml-auto">
                 <Download className="w-4 h-4" />
                 Export Excel
               </Button>
