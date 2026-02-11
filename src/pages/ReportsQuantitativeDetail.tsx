@@ -100,12 +100,13 @@ export default function ReportsQuantitativeDetail() {
   const [viewLevel, setViewLevel] = useState<ViewLevel>('country');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
+  const [selectedUnit, setSelectedUnit] = useState<string>('all');
   
   // Sorting
   const [sortOrder, setSortOrder] = useState<SortOrder>('default');
 
   // Check user role for access control
-  const isProvincialAdmin = profile?.role === 'provincial';
+  const isProvincialAdmin = profile?.role === 'provincial' || profile?.role === 'ceo';
   const isHospitalIT = profile?.role === 'hospital_it';
   const isHealthOffice = profile?.role === 'health_office';
   const userProvinceId = profile?.province_id;
@@ -206,6 +207,19 @@ export default function ReportsQuantitativeDetail() {
     return regionProvinces;
   }, [selectedRegion, provinces, isProvincialAdmin, userProvinceId]);
 
+  // Filter units (hospitals + health offices) based on selected province
+  const filteredUnits = useMemo(() => {
+    if (selectedProvince === 'all') return [];
+    const provinceHospitals = hospitals.filter(h => h.province_id === selectedProvince);
+    const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === selectedProvince);
+    
+    const units: { id: string; name: string; type: 'hospital' | 'health_office' }[] = [];
+    provinceHospitals.forEach(h => units.push({ id: `hospital_${h.id}`, name: h.name, type: 'hospital' }));
+    provinceHealthOffices.forEach(ho => units.push({ id: `health_office_${ho.id}`, name: ho.name, type: 'health_office' }));
+    
+    return units.sort((a, b) => a.name.localeCompare(b.name, 'th'));
+  }, [selectedProvince, hospitals, healthOffices]);
+
   // Generate fiscal years from assessments
   const fiscalYears = useMemo(() => generateFiscalYears(assessments), [assessments]);
 
@@ -227,13 +241,25 @@ export default function ReportsQuantitativeDetail() {
     let hospitalIds: string[] = [];
     let healthOfficeIds: string[] = [];
 
-    if (viewLevel === 'country') {
+    if (selectedUnit !== 'all') {
+      // Single unit selected
+      if (selectedUnit.startsWith('hospital_')) {
+        hospitalIds = [selectedUnit.replace('hospital_', '')];
+      } else if (selectedUnit.startsWith('health_office_')) {
+        healthOfficeIds = [selectedUnit.replace('health_office_', '')];
+      }
+    } else if (viewLevel === 'country') {
       hospitalIds = hospitals.map(h => h.id);
       healthOfficeIds = healthOffices.map(ho => ho.id);
     } else if (viewLevel === 'region' && selectedRegion !== 'all') {
-      const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
-      hospitalIds = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id)).map(h => h.id);
-      healthOfficeIds = healthOffices.filter(ho => ho.health_region_id === selectedRegion).map(ho => ho.id);
+      if (selectedProvince !== 'all') {
+        hospitalIds = hospitals.filter(h => h.province_id === selectedProvince).map(h => h.id);
+        healthOfficeIds = healthOffices.filter(ho => ho.province_id === selectedProvince).map(ho => ho.id);
+      } else {
+        const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
+        hospitalIds = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id)).map(h => h.id);
+        healthOfficeIds = healthOffices.filter(ho => ho.health_region_id === selectedRegion).map(ho => ho.id);
+      }
     } else if (viewLevel === 'province' && selectedProvince !== 'all') {
       hospitalIds = hospitals.filter(h => h.province_id === selectedProvince).map(h => h.id);
       healthOfficeIds = healthOffices.filter(ho => ho.province_id === selectedProvince).map(ho => ho.id);
@@ -300,7 +326,7 @@ export default function ReportsQuantitativeDetail() {
         passPercentage,
       };
     });
-  }, [categories, hospitals, healthOffices, provinces, viewLevel, selectedRegion, selectedProvince, filteredAssessments, filteredAssessmentItems]);
+  }, [categories, hospitals, healthOffices, provinces, viewLevel, selectedRegion, selectedProvince, selectedUnit, filteredAssessments, filteredAssessmentItems]);
 
   // Sort category stats based on sortOrder
   const sortedCategoryStats = useMemo(() => {
@@ -406,6 +432,7 @@ export default function ReportsQuantitativeDetail() {
                     onValueChange={(value) => {
                       setSelectedRegion(value);
                       setSelectedProvince('all');
+                      setSelectedUnit('all');
                     }}
                     disabled={isProvincialAdmin}
                   >
@@ -429,21 +456,47 @@ export default function ReportsQuantitativeDetail() {
                 </div>
               )}
 
-              {(viewLevel === 'province' || viewLevel === 'hospital') && selectedRegion !== 'all' && (
+              {selectedRegion !== 'all' && (
                 <div className="w-full sm:w-48">
                   <label className="text-sm font-medium mb-1.5 block">จังหวัด</label>
                   <Select 
                     value={selectedProvince} 
-                    onValueChange={setSelectedProvince}
+                    onValueChange={(value) => {
+                      setSelectedProvince(value);
+                      setSelectedUnit('all');
+                    }}
                     disabled={isProvincialAdmin}
                   >
                     <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder="เลือกจังหวัด" />
                     </SelectTrigger>
                     <SelectContent className="bg-background z-50">
+                      <SelectItem value="all" className="text-sm">ทุกจังหวัด</SelectItem>
                       {filteredProvinces.map(province => (
                         <SelectItem key={province.id} value={province.id} className="text-sm">
                           {province.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {selectedProvince !== 'all' && (
+                <div className="w-full sm:w-48">
+                  <label className="text-sm font-medium mb-1.5 block">หน่วยงาน/รพ.</label>
+                  <Select 
+                    value={selectedUnit} 
+                    onValueChange={setSelectedUnit}
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="เลือกหน่วยงาน" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background z-50">
+                      <SelectItem value="all" className="text-sm">ทุกหน่วยงาน</SelectItem>
+                      {filteredUnits.map(unit => (
+                        <SelectItem key={unit.id} value={unit.id} className="text-sm">
+                          {unit.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
