@@ -1,131 +1,108 @@
 
-# แผนการเพิ่มเมนู "รายงานบุคลากร" เป็นเมนูหลัก
 
-## สรุปความต้องการ
-เพิ่มเมนูหลัก "รายงานบุคลากร" แยกต่างหากจากเมนูย่อยอื่นๆ พร้อมตัวกรองแบบลำดับขั้น (เขต -> จังหวัด -> หน่วยงาน) และแสดงคอลัมน์จำนวนใบรับรอง + ชื่อใบรับรองของบุคลากรแต่ละคน
+# แผนการสร้าง Role "CEO" ใหม่
 
----
+## สรุปสิ่งที่ต้องทำ
 
-## ไฟล์ที่ต้องสร้าง/แก้ไข
+สร้าง role ใหม่ชื่อ "ceo" สำหรับผู้อำนวยการโรงพยาบาล โดยสามารถดูรายงานทุกประเภทได้ แต่ไม่เห็น 3 เมนู:
+- หน้าหลักแบบประเมิน (Dashboard)
+- บุคลากร (Personnel Admin)
+- จัดการระบบ > จัดการผู้ใช้งาน (User Management)
 
-| ไฟล์ | การดำเนินการ |
-|------|--------------|
-| `src/pages/PersonnelReport.tsx` | สร้างใหม่ |
-| `src/App.tsx` | เพิ่ม route `/reports/personnel` |
-| `src/components/layout/AppSidebar.tsx` | เพิ่มเมนูหลักใน `menuItems` |
+ทดลองสร้างที่จังหวัดเชียงใหม่ก่อน รูปแบบ: `ceo@รหัสรพ` เช่น `ceo@11130`, รหัสผ่าน = รหัสรพ
 
 ---
 
-## 1. สร้างหน้ารายงานบุคลากรใหม่
+## ขั้นตอนการดำเนินการ
 
-### ตัวกรองแบบ Cascade (ลำดับขั้น)
+### 1. เพิ่ม "ceo" ใน user_role enum (Database Migration)
 
-| ตัวกรอง | รายละเอียด |
-|---------|------------|
-| เขตสุขภาพ | เลือกเขต 1-13 (SearchableSelect) |
-| จังหวัด | กรองตามเขตที่เลือก (auto-reset เมื่อเปลี่ยนเขต) |
-| หน่วยงาน | กรองตามจังหวัด (รวมทั้ง hospitals และ health_offices) |
-| ตำแหน่ง | กรองตามตำแหน่งบุคลากร |
+เพิ่มค่า `'ceo'` เข้าไปใน enum `user_role` ที่มีอยู่แล้วในฐานข้อมูล
 
-### ตารางแสดงผล
+### 2. อัปเดต AuthContext
 
-| คอลัมน์ | ที่มาข้อมูล |
-|---------|------------|
-| ลำดับ | Running number |
-| ชื่อ-นามสกุล | `personnel.title_prefix + first_name + last_name` |
-| หน่วยงาน | `hospitals.name` หรือ `health_offices.name` |
-| จังหวัด | `provinces.name` |
-| ตำแหน่ง | `personnel.position` |
-| เบอร์โทร | `personnel.phone` |
-| วันที่เริ่มทำงาน | `personnel.start_date` (พ.ศ.) |
-| จำนวนใบรับรอง | นับจาก `personnel_certificates` |
-| ชื่อใบรับรอง | รายชื่อใบรับรองคั่นด้วย `, ` |
+เพิ่ม `'ceo'` เข้าไปใน type `UserRole` ใน `src/contexts/AuthContext.tsx`
 
-### สิทธิ์การเข้าถึง (Role-Based)
+### 3. อัปเดต ProtectedRoute
 
-| Role | การเข้าถึง |
-|------|-----------|
-| central_admin | เห็นทุกเขต/จังหวัด/หน่วยงาน |
-| regional | เห็นเฉพาะเขตของตนเอง |
-| provincial | เห็นเฉพาะจังหวัดของตนเอง (ตัวกรองจังหวัดถูก lock) |
+เพิ่ม `'ceo'` เข้าไปใน `allowedRoles` type ใน `src/components/auth/ProtectedRoute.tsx`
 
----
+### 4. อัปเดต Sidebar (AppSidebar.tsx)
 
-## 2. เพิ่มเมนูหลักใน Sidebar
+ปรับเมนูให้ role `ceo` สามารถเห็น:
+- แดชบอร์ดทั่วไป (reports submenu)
+- รายงานเชิงวิเคราะห์
+- รายงานตรวจราชการ
+- คู่มือเอกสารสำหรับการนิเทศ
+- รายงานงบประมาณประจำปี
+- รายงานบุคลากร
 
-เพิ่มใน `menuItems` array (ไม่ใช่ analyticalReportSubItems):
+**ไม่เห็น:**
+- หน้าหลักแบบประเมิน
+- บุคลากรในหน่วยงาน / บุคลากร (personnel-admin)
+- จัดการระบบ (admin section ทั้งหมด)
 
-```text
-{
-  title: "รายงานบุคลากร",
-  url: "/reports/personnel",
-  icon: Users,
-  roles: ["provincial", "regional", "central_admin"]
-}
-```
+### 5. อัปเดต Route permissions (App.tsx)
 
-ตำแหน่ง: วางหลังเมนู "บุคลากร" (personnel-admin) ซึ่งมีสำหรับ provincial/regional อยู่แล้ว
+เพิ่ม `'ceo'` เข้าไปใน `allowedRoles` สำหรับ route ที่ CEO ต้องเข้าถึงได้ เช่น:
+- `/reports`, `/reports/quantitative`, `/reports/impact` ฯลฯ (เปิดอยู่แล้วเพราะไม่มี allowedRoles)
+- `/reports/personnel` - เพิ่ม 'ceo'
 
----
+### 6. กำหนดหน้า Default สำหรับ CEO
 
-## 3. เพิ่ม Route ใน App.tsx
+เมื่อ CEO login จะ redirect ไปที่หน้า `/reports` แทน `/dashboard` เพราะไม่มีสิทธิ์เข้า dashboard
 
-```text
-<Route 
-  path="/reports/personnel" 
-  element={
-    <ProtectedRoute allowedRoles={['provincial', 'regional', 'central_admin']}>
-      <PersonnelReport />
-    </ProtectedRoute>
-  } 
-/>
-```
+### 7. สร้าง Edge Function สำหรับสร้าง CEO Users
 
----
+สร้าง edge function `create-ceo-users` ที่:
+- รับ `province_id` เป็น parameter
+- ดึงรายชื่อ รพ. ทั้งหมดในจังหวัด
+- สร้าง user ด้วย email = `ceo@{hospital_code}` เช่น `ceo@11130`
+- password = hospital_code
+- ตั้ง role = 'ceo', hospital_id, province_id
+- full_name = "ผู้อำนวยการโรงพยาบาล {ชื่อ รพ.}"
+- is_active = false (รอ approve)
 
-## 4. ฟีเจอร์เสริม
+### 8. เพิ่มปุ่มสร้าง CEO Users ในหน้า SuperAdmin
 
-- ปุ่ม "Export Excel" ส่งออกข้อมูลพร้อมจำนวนและชื่อใบรับรอง
-- ปุ่ม "ล้างตัวกรอง" เคลียร์ค่าทั้งหมด
-- แสดงจำนวนบุคลากรทั้งหมดที่กรองได้
+เพิ่มปุ่ม "สร้าง user CEO ทั้งจังหวัด" ในหน้า SuperAdmin ให้ central_admin ใช้งานได้
+
+### 9. อัปเดต RLS Policies
+
+เพิ่ม 'ceo' ใน RLS policies ที่จำเป็นให้ CEO สามารถ SELECT ข้อมูลรายงานได้:
+- assessments (SELECT - เห็นข้อมูล รพ. ตัวเอง)
+- assessment_items, qualitative_scores, impact_scores (SELECT)
+- hospitals, provinces, health_regions (มี public SELECT อยู่แล้ว)
+
+### 10. อัปเดต Dashboard stats function
+
+เพิ่ม 'ceo' เข้าไปใน `get_dashboard_stats` function ให้กรองข้อมูลตาม hospital_id ของ CEO
 
 ---
 
 ## รายละเอียดทางเทคนิค
 
-### การดึงข้อมูล
+### Database Migration SQL
 
-1. **Reference Data**: ดึง health_regions, provinces, hospitals, health_offices สำหรับตัวกรอง
-2. **Personnel Data**: ดึง personnel พร้อม joins กับ hospitals/health_offices และ provinces
-3. **Certificates**: ดึง personnel_certificates แยกแล้ว group by personnel_id ใน client-side
-
-### Cascade Filter Logic
-
-```text
-1. เมื่อเลือกเขต -> reset จังหวัด และ หน่วยงาน เป็น "all"
-2. เมื่อเลือกจังหวัด -> reset หน่วยงาน เป็น "all"
-3. กรองตำแหน่ง client-side
+```sql
+ALTER TYPE public.user_role ADD VALUE 'ceo';
 ```
 
-### การแสดงใบรับรอง
+### RLS Policies ที่ต้องเพิ่ม
 
-```text
-- ดึง personnel_certificates ทั้งหมดสำหรับ personnel_ids ที่แสดง
-- Group by personnel_id และนับจำนวน
-- รวมชื่อใบรับรองด้วย .join(", ")
-- แสดงในคอลัมน์ตาราง
-```
+CEO ต้องการ SELECT access สำหรับ:
+- `assessments` - ดูแบบประเมินของ รพ. ตัวเอง (เพื่อดูรายงาน)
+- `assessment_items` - ดูรายละเอียดแบบประเมิน
+- `qualitative_scores`, `impact_scores` - ดูคะแนน
+- ตารางอื่นๆ ที่เกี่ยวกับรายงานที่มี public/authenticated SELECT อยู่แล้ว
 
----
+### ไฟล์ที่ต้องแก้ไข
 
-## ลำดับขั้นตอนการพัฒนา
+1. `src/contexts/AuthContext.tsx` - เพิ่ม 'ceo' ใน UserRole type
+2. `src/components/auth/ProtectedRoute.tsx` - เพิ่ม 'ceo' ใน allowedRoles type
+3. `src/components/layout/AppSidebar.tsx` - ปรับเมนูสำหรับ role ceo
+4. `src/App.tsx` - เพิ่ม 'ceo' ใน allowedRoles ของ routes ที่เกี่ยวข้อง
+5. `src/pages/Login.tsx` - ปรับ redirect logic สำหรับ ceo
+6. `supabase/functions/create-ceo-users/index.ts` - Edge function ใหม่
+7. `src/pages/SuperAdmin.tsx` - เพิ่มปุ่มสร้าง CEO users
 
-1. สร้างไฟล์ `PersonnelReport.tsx` พร้อม layout และ filter พื้นฐาน
-2. เพิ่มการดึงข้อมูล reference (regions, provinces, hospitals, health_offices)
-3. เพิ่มการดึงข้อมูล personnel พร้อม joins
-4. เพิ่มการดึง personnel_certificates และ group ตาม personnel_id
-5. สร้างตารางแสดงผลพร้อมคอลัมน์ใบรับรอง
-6. เพิ่ม role-based access control
-7. เพิ่มปุ่ม Export Excel
-8. เพิ่ม route ใน App.tsx
-9. เพิ่มเมนูหลักใน AppSidebar.tsx (menuItems array)
