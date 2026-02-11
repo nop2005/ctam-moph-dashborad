@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
           hospital_id: hospital.id,
           province_id: province_id,
           role: "ceo",
-          is_active: false,
+          is_active: true,
           full_name: `ผู้อำนวยการโรงพยาบาล ${hospital.name.replace(/^รพ\.|^โรงพยาบาล/, '').trim()}`,
         })
         .eq("user_id", authData.user.id);
@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
         hospital_name: hospital.name,
         email,
         status: "success",
-        message: "CEO user created successfully (pending approval)",
+        message: "CEO user created and auto-approved",
       });
     }
 
