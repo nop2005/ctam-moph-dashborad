@@ -97,12 +97,12 @@ const reportSubItems = [
 ];
 const analyticalReportSubItems = [
   {
-    title: "รายงาน CTAM+ เพิ่มเติม",
+    title: "CTAM เเยกตามหมวด",
     url: "/reports/quantitative-detail",
     icon: ListOrdered,
   },
   {
-    title: "คะแนน 17 ข้อ แยกตามพื้นที่",
+    title: "CTAM เเยกตามหน่วยงาน",
     url: "/reports/quantitative-by-area",
     icon: MapPinned,
   },
