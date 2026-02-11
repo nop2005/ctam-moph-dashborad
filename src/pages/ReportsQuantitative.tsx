@@ -386,6 +386,16 @@ export default function ReportsQuantitative() {
 
           if (passedAllCategories) unitsPassedAll17++;
         });
+        // Calculate average quantitative score (out of 7)
+        const allUnitIds = [...hospitalIds, ...healthOfficeIds];
+        const quantScores = allUnitIds
+          .map(uid => latestApprovedByUnit.get(uid))
+          .filter(a => a && a.quantitative_score !== null && a.quantitative_score !== undefined)
+          .map(a => Number(a!.quantitative_score));
+        const avgQuantitativeScore = quantScores.length > 0
+          ? quantScores.reduce((s, v) => s + v, 0) / quantScores.length
+          : null;
+
         return {
           id: region.id,
           name: `เขตสุขภาพที่ ${region.region_number}`,
@@ -393,6 +403,7 @@ export default function ReportsQuantitative() {
           hospitalCount: regionHospitals.length + regionHealthOffices.length,
           hospitalsAssessed: unitsAssessed,
           hospitalsPassedAll17: unitsPassedAll17,
+          avgQuantitativeScore,
           categoryAverages
         };
       });
@@ -444,6 +455,16 @@ export default function ReportsQuantitative() {
 
           if (passedAllCategories) unitsPassedAll17++;
         });
+        // Calculate average quantitative score (out of 7)
+        const allUnitIds = [...hospitalIds, ...healthOfficeIds];
+        const quantScores = allUnitIds
+          .map(uid => latestApprovedByUnit.get(uid))
+          .filter(a => a && a.quantitative_score !== null && a.quantitative_score !== undefined)
+          .map(a => Number(a!.quantitative_score));
+        const avgQuantitativeScore = quantScores.length > 0
+          ? quantScores.reduce((s, v) => s + v, 0) / quantScores.length
+          : null;
+
         return {
           id: province.id,
           name: province.name,
@@ -451,6 +472,7 @@ export default function ReportsQuantitative() {
           hospitalCount: provinceHospitals.length + provinceHealthOffices.length,
           hospitalsAssessed: unitsAssessed,
           hospitalsPassedAll17: unitsPassedAll17,
+          avgQuantitativeScore,
           categoryAverages
         };
       });
@@ -1046,6 +1068,7 @@ export default function ReportsQuantitative() {
               name: 180,
               hospitalCount: 80,
               hospitalsAssessed: 100,
+              avgQuantitative: 120,
               passedAll17: 100,
               percentGreen: 200
             } as const;
@@ -1053,8 +1076,9 @@ export default function ReportsQuantitative() {
               name: 0,
               hospitalCount: sticky.name,
               hospitalsAssessed: sticky.name + sticky.hospitalCount,
-              passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
-              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.passedAll17 : 0)
+              avgQuantitative: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
+              passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.avgQuantitative,
+              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.avgQuantitative + sticky.passedAll17 : 0)
             } as const;
             const stickyHeaderBase = "sticky z-30 border-r border-border/60";
             const stickyCellBase = "sticky z-20 border-r border-border/60 bg-background";
@@ -1087,6 +1111,15 @@ export default function ReportsQuantitative() {
                             <div className="flex flex-col items-center">
                               <span>รพ.ที่ประเมิน</span>
                               <span>แล้ว</span>
+                            </div>
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[120px] bg-orange-100 dark:bg-orange-900/30`} style={{
+                        left: left.avgQuantitative
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>คะแนนเชิงปริมาณ</span>
+                              <span>(เฉลี่ย /7)</span>
                             </div>
                           </TableHead>}
 
@@ -1155,6 +1188,15 @@ export default function ReportsQuantitative() {
                           minWidth: sticky.hospitalsAssessed
                         }}>
                                 {'hospitalsAssessed' in row ? row.hospitalsAssessed : 0}
+                              </TableCell>}
+
+                            {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-orange-50 dark:bg-orange-900/20`} style={{
+                          left: left.avgQuantitative,
+                          minWidth: sticky.avgQuantitative
+                        }}>
+                                {'avgQuantitativeScore' in row && row.avgQuantitativeScore !== null
+                                  ? (row.avgQuantitativeScore as number).toFixed(2)
+                                  : '-'}
                               </TableCell>}
 
                             {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-green-50 dark:bg-green-900/20`} style={{
