@@ -117,11 +117,16 @@ export default function Reports() {
 
   // Fiscal year filter
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
+  const [selectedProvince, setSelectedProvince] = useState<string>('all');
+  const [selectedUnit, setSelectedUnit] = useState<string>('all');
 
   // Chart drill state for syncing table
   const [chartDrillLevel, setChartDrillLevel] = useState<DrillLevel>('region');
   const [chartRegionId, setChartRegionId] = useState<string | null>(null);
   const [chartProvinceId, setChartProvinceId] = useState<string | null>(null);
+
+  const isProvincialAdmin = profile?.role === 'provincial' || profile?.role === 'ceo';
+  const userProvinceId = profile?.province_id;
 
   // Filter assessments by fiscal year
   const filteredAssessments = useMemo(() => {
@@ -206,6 +211,41 @@ export default function Reports() {
     fetchData();
   }, [selectedFiscalYear]);
 
+  // Set initial filters for provincial admins / CEO
+  useEffect(() => {
+    if (provinces.length > 0 && isProvincialAdmin && userProvinceId) {
+      const userProvince = provinces.find(p => p.id === userProvinceId);
+      if (userProvince) {
+        setChartRegionId(userProvince.health_region_id);
+        setChartProvinceId(userProvinceId);
+        setSelectedProvince(userProvinceId);
+        setChartDrillLevel('hospital');
+      }
+    }
+  }, [isProvincialAdmin, userProvinceId, provinces]);
+
+  // Filtered provinces based on current region drill
+  const filteredProvinces = useMemo(() => {
+    if (!chartRegionId) return provinces;
+    const regionProvinces = provinces.filter(p => p.health_region_id === chartRegionId);
+    if (isProvincialAdmin && userProvinceId) {
+      return regionProvinces.filter(p => p.id === userProvinceId);
+    }
+    return regionProvinces;
+  }, [chartRegionId, provinces, isProvincialAdmin, userProvinceId]);
+
+  // Filtered units based on selected province
+  const filteredUnits = useMemo(() => {
+    const pid = selectedProvince !== 'all' ? selectedProvince : chartProvinceId;
+    if (!pid) return [];
+    const provinceHospitals = hospitals.filter(h => h.province_id === pid);
+    const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === pid);
+    const units: { id: string; name: string }[] = [];
+    provinceHospitals.forEach(h => units.push({ id: `hospital_${h.id}`, name: h.name }));
+    provinceHealthOffices.forEach(ho => units.push({ id: `health_office_${ho.id}`, name: ho.name }));
+    return units.sort((a, b) => a.name.localeCompare(b.name, 'th'));
+  }, [selectedProvince, chartProvinceId, hospitals, healthOffices]);
+
   // Get latest assessments only (one per hospital/health_office) from filtered assessments
   const latestByUnit = useMemo(() => getLatestAssessmentsByUnit(filteredAssessments), [filteredAssessments]);
   const latestAssessments = useMemo(() => Array.from(latestByUnit.values()), [latestByUnit]);
@@ -281,8 +321,41 @@ export default function Reports() {
             <h1 className="text-2xl font-bold">รายงานและสถิติ</h1>
             <p className="text-muted-foreground">สรุปผลการประเมินตามจังหวัดและเขตสุขภาพ</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Filter className="w-4 h-4 text-muted-foreground" />
+            {chartRegionId && (
+              <Select value={selectedProvince} onValueChange={(value) => {
+                setSelectedProvince(value);
+                setSelectedUnit('all');
+                if (value !== 'all') {
+                  setChartProvinceId(value);
+                  setChartDrillLevel('hospital');
+                }
+              }} disabled={isProvincialAdmin}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="จังหวัด" />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  <SelectItem value="all">ทุกจังหวัด</SelectItem>
+                  {filteredProvinces.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {(selectedProvince !== 'all' || (chartDrillLevel === 'hospital' && chartProvinceId)) && (
+              <Select value={selectedUnit} onValueChange={setSelectedUnit}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="หน่วยงาน/รพ." />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  <SelectItem value="all">ทุกหน่วยงาน</SelectItem>
+                  {filteredUnits.map(u => (
+                    <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Select value={selectedFiscalYear} onValueChange={setSelectedFiscalYear}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="ปีงบประมาณ" />
