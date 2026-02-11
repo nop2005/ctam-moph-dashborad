@@ -32,14 +32,26 @@ export default function Login() {
     '/personnel-admin': ['provincial', 'regional'],
   };
 
+  // Default landing page per role
+  const getDefaultPage = (): string => {
+    if (profile?.role === 'ceo') return '/reports';
+    return '/dashboard';
+  };
+
   // Determine safe redirect path based on user role
   const getSafeRedirectPath = (): string => {
-    if (!requestedPath || !profile?.role) return '/dashboard';
+    const defaultPage = getDefaultPage();
+    if (!requestedPath || !profile?.role) return defaultPage;
+    
+    // CEO cannot access dashboard
+    if (profile.role === 'ceo' && requestedPath === '/dashboard') {
+      return '/reports';
+    }
     
     // Check if the requested path is restricted
     for (const [path, allowedRoles] of Object.entries(restrictedPaths)) {
       if (requestedPath.startsWith(path) && !allowedRoles.includes(profile.role)) {
-        return '/dashboard'; // Redirect to dashboard if not allowed
+        return defaultPage;
       }
     }
     
