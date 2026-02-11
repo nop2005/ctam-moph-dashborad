@@ -80,12 +80,12 @@ const reportSubItems = [
     icon: PieChart,
   },
   {
-    title: "เชิงปริมาณ (17 ข้อ)",
+    title: "คะเเนนเชิงปริมาณ",
     url: "/reports/quantitative",
     icon: TrendingUp,
   },
   {
-    title: "เชิงผลกระทบ (Incident & Recovery)",
+    title: "คะเเนนเชิงผลกระทบ",
     url: "/reports/impact",
     icon: AlertTriangle,
   },
