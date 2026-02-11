@@ -44,6 +44,12 @@ interface PublicQuantitativeSummary {
   province_avg_quantitative_score: { province_id: string; avg_quantitative_score: number | null }[];
 }
 
+const computeAvgScore = (provinceIds: string[], avgMap: Map<string, number | null>): number | null => {
+  const scores = provinceIds.map(id => avgMap.get(id)).filter((s): s is number => s !== null && s !== undefined);
+  if (scores.length === 0) return null;
+  return scores.reduce((a, b) => a + b, 0) / scores.length;
+};
+
 const getCurrentFiscalYear = (): number => {
   const now = new Date();
   const month = now.getMonth();
@@ -143,6 +149,14 @@ const provincePassedAll17Map = useMemo(() => {
     return map;
   }, [summary]);
 
+  const provinceAvgScoreMap = useMemo(() => {
+    const map = new Map<string, number | null>();
+    (summary?.province_avg_quantitative_score || []).forEach(p => {
+      map.set(p.province_id, p.avg_quantitative_score);
+    });
+    return map;
+  }, [summary]);
+
   const regionTableData = useMemo(() => {
     return healthRegions.map(region => {
       const regionProvinces = provinces.filter(p => p.health_region_id === region.id);
@@ -151,16 +165,18 @@ const provincePassedAll17Map = useMemo(() => {
       const totalUnits = regionHospitals.length + regionHealthOffices.length;
 
       const unitsPassedAll17 = regionPassedAll17Map.get(region.id) ?? 0;
+      const avgScore = computeAvgScore(regionProvinces.map(p => p.id), provinceAvgScoreMap);
 
       return {
         id: region.id,
         name: `เขตสุขภาพที่ ${region.region_number}`,
         totalUnits,
         passedAll17: unitsPassedAll17,
+        avgScore,
         percentage: totalUnits > 0 ? (unitsPassedAll17 / totalUnits) * 100 : 0,
       };
     });
-  }, [healthRegions, provinces, hospitals, healthOffices, regionPassedAll17Map]);
+  }, [healthRegions, provinces, hospitals, healthOffices, regionPassedAll17Map, provinceAvgScoreMap]);
 
   const provinceTableData = useMemo(() => {
     if (selectedRegion === 'all') return [];
@@ -172,16 +188,18 @@ const provincePassedAll17Map = useMemo(() => {
       const totalUnits = provinceHospitals.length + provinceHealthOffices.length;
 
       const passedAll17 = provincePassedAll17Map.get(province.id) ?? 0;
+      const avgScore = provinceAvgScoreMap.get(province.id) ?? null;
 
       return {
         id: province.id,
         name: province.name,
         totalUnits,
         passedAll17,
+        avgScore,
         percentage: totalUnits > 0 ? (passedAll17 / totalUnits) * 100 : 0,
       };
     });
-  }, [selectedRegion, provinces, hospitals, healthOffices, provincePassedAll17Map]);
+  }, [selectedRegion, provinces, hospitals, healthOffices, provincePassedAll17Map, provinceAvgScoreMap]);
 
   // Compute province map data for Thailand map
   const provinceMapData = useMemo<ProvinceData[]>(() => {
@@ -395,6 +413,7 @@ const provincePassedAll17Map = useMemo(() => {
                       <TableHead className="sticky left-0 bg-background z-10">เขตสุขภาพ</TableHead>
                       <TableHead className="text-center">จำนวนหน่วยงานทั้งหมด</TableHead>
                       <TableHead className="text-center">ผ่านครบ 17 ข้อ</TableHead>
+                      <TableHead className="text-center">คะแนนเฉลี่ย</TableHead>
                       <TableHead className="text-center min-w-[180px]">ผ่านร้อยละ</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -410,6 +429,7 @@ const provincePassedAll17Map = useMemo(() => {
                         </TableCell>
                         <TableCell className="text-center">{row.totalUnits}</TableCell>
                         <TableCell className="text-center">{row.passedAll17}</TableCell>
+                        <TableCell className="text-center">{row.avgScore !== null ? row.avgScore.toFixed(2) : '-'}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center gap-2">
                             {(() => {
@@ -447,6 +467,7 @@ const provincePassedAll17Map = useMemo(() => {
                       <TableHead className="sticky left-0 bg-background z-10">จังหวัด</TableHead>
                       <TableHead className="text-center">จำนวนหน่วยงานทั้งหมด</TableHead>
                       <TableHead className="text-center">ผ่านครบ 17 ข้อ</TableHead>
+                      <TableHead className="text-center">คะแนนเฉลี่ย</TableHead>
                       <TableHead className="text-center min-w-[180px]">ผ่านร้อยละ</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -456,6 +477,7 @@ const provincePassedAll17Map = useMemo(() => {
                         <TableCell className="font-medium sticky left-0 bg-background z-10">{row.name}</TableCell>
                         <TableCell className="text-center">{row.totalUnits}</TableCell>
                         <TableCell className="text-center">{row.passedAll17}</TableCell>
+                        <TableCell className="text-center">{row.avgScore !== null ? row.avgScore.toFixed(2) : '-'}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center gap-2">
                             {(() => {
