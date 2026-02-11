@@ -412,8 +412,8 @@ const provincePassedAll17Map = useMemo(() => {
                     <TableRow>
                       <TableHead className="sticky left-0 bg-background z-10">เขตสุขภาพ</TableHead>
                       <TableHead className="text-center">จำนวนหน่วยงานทั้งหมด</TableHead>
-                      <TableHead className="text-center">ผ่านครบ 17 ข้อ</TableHead>
                       <TableHead className="text-center">คะแนนเฉลี่ย (เต็ม 7)</TableHead>
+                      <TableHead className="text-center">ผ่านครบ 17 ข้อ</TableHead>
                       <TableHead className="text-center min-w-[180px]">ผ่านร้อยละ</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -428,8 +428,8 @@ const provincePassedAll17Map = useMemo(() => {
                           {row.name}
                         </TableCell>
                         <TableCell className="text-center">{row.totalUnits}</TableCell>
-                        <TableCell className="text-center">{row.passedAll17}</TableCell>
                         <TableCell className="text-center">{row.avgScore !== null ? row.avgScore.toFixed(2) : '-'}</TableCell>
+                        <TableCell className="text-center">{row.passedAll17}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center gap-2">
                             {(() => {
@@ -466,8 +466,8 @@ const provincePassedAll17Map = useMemo(() => {
                     <TableRow>
                       <TableHead className="sticky left-0 bg-background z-10">จังหวัด</TableHead>
                       <TableHead className="text-center">จำนวนหน่วยงานทั้งหมด</TableHead>
-                      <TableHead className="text-center">ผ่านครบ 17 ข้อ</TableHead>
                       <TableHead className="text-center">คะแนนเฉลี่ย (เต็ม 7)</TableHead>
+                      <TableHead className="text-center">ผ่านครบ 17 ข้อ</TableHead>
                       <TableHead className="text-center min-w-[180px]">ผ่านร้อยละ</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -476,8 +476,8 @@ const provincePassedAll17Map = useMemo(() => {
                       <TableRow key={row.id}>
                         <TableCell className="font-medium sticky left-0 bg-background z-10">{row.name}</TableCell>
                         <TableCell className="text-center">{row.totalUnits}</TableCell>
-                        <TableCell className="text-center">{row.passedAll17}</TableCell>
                         <TableCell className="text-center">{row.avgScore !== null ? row.avgScore.toFixed(2) : '-'}</TableCell>
+                        <TableCell className="text-center">{row.passedAll17}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center gap-2">
                             {(() => {
