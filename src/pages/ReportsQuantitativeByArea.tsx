@@ -429,9 +429,10 @@ export default function ReportsQuantitativeByArea() {
         return catAvg.average !== 1;
       });
 
-      const hasAnyPassed = filteredTableData.some(row => {
+      // "ข้อที่ผ่าน" = ทุก รพ. ต้องผ่านข้อนั้น (all passed)
+      const allPassed = filteredTableData.every(row => {
         const catAvg = row.categoryAverages.find(c => c.categoryId === cat.id);
-        if (!catAvg || catAvg.average === null) return false;
+        if (!catAvg || catAvg.average === null) return true; // skip units without data
         if (row.type === 'region' || row.type === 'province') {
           return catAvg.average === 100;
         }
@@ -439,7 +440,7 @@ export default function ReportsQuantitativeByArea() {
       });
 
       if (selectedCategoryFilter === 'failed') return hasAnyFailed;
-      if (selectedCategoryFilter === 'passed') return hasAnyPassed;
+      if (selectedCategoryFilter === 'passed') return allPassed;
       return true;
     });
   }, [categories, filteredTableData, selectedCategoryFilter]);
