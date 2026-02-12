@@ -97,6 +97,7 @@ export default function ReportsQuantitativeByArea() {
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
   const [selectedSafetyFilter, setSelectedSafetyFilter] = useState<string>('all');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('failed');
 
   const isProvincialAdmin = profile?.role === 'provincial' || profile?.role === 'ceo';
   const userProvinceId = profile?.province_id;
@@ -411,6 +412,38 @@ export default function ReportsQuantitativeByArea() {
     };
   }, [tableData, selectedProvince, latestApprovedByUnit, selectedSafetyFilter]);
 
+  // Determine which categories to show based on category filter
+  const filteredCategories = useMemo(() => {
+    if (selectedCategoryFilter === 'all') return categories;
+
+    // Check each category across all rows in filteredTableData
+    return categories.filter(cat => {
+      const hasAnyFailed = filteredTableData.some(row => {
+        const catAvg = row.categoryAverages.find(c => c.categoryId === cat.id);
+        if (!catAvg || catAvg.average === null) return false;
+        if (row.type === 'region' || row.type === 'province') {
+          // For aggregated rows: red = < 100%
+          return catAvg.average < 100;
+        }
+        // For unit rows: red = score not 1
+        return catAvg.average !== 1;
+      });
+
+      const hasAnyPassed = filteredTableData.some(row => {
+        const catAvg = row.categoryAverages.find(c => c.categoryId === cat.id);
+        if (!catAvg || catAvg.average === null) return false;
+        if (row.type === 'region' || row.type === 'province') {
+          return catAvg.average === 100;
+        }
+        return catAvg.average === 1;
+      });
+
+      if (selectedCategoryFilter === 'failed') return hasAnyFailed;
+      if (selectedCategoryFilter === 'passed') return hasAnyPassed;
+      return true;
+    });
+  }, [categories, filteredTableData, selectedCategoryFilter]);
+
   const getTitle = () => {
     if (selectedProvince !== 'all') {
       const province = provinces.find(p => p.id === selectedProvince);
@@ -613,6 +646,26 @@ export default function ReportsQuantitativeByArea() {
                     </div>
                   )}
 
+                  {/* Category Filter Buttons (แยกข้อ) */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground mr-1">แยกข้อ:</span>
+                    {[
+                      { key: 'failed', label: 'ข้อที่ไม่ผ่าน', bg: 'bg-red-500 text-white', outline: 'border-red-500 text-red-500' },
+                      { key: 'passed', label: 'ข้อที่ผ่าน', bg: 'bg-green-500 text-white', outline: 'border-green-500 text-green-600' },
+                      { key: 'all', label: 'แสดงทุกข้อ', bg: 'bg-primary text-primary-foreground', outline: 'border-primary text-primary' },
+                    ].map(f => (
+                      <button
+                        key={f.key}
+                        onClick={() => setSelectedCategoryFilter(f.key)}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium border-2 transition-colors ${
+                          selectedCategoryFilter === f.key ? f.bg : `bg-background ${f.outline}`
+                        }`}
+                      >
+                        {f.label} ({f.key === 'all' ? categories.length : filteredCategories.length})
+                      </button>
+                    ))}
+                  </div>
+
                   {filteredTableData.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">ไม่พบข้อมูลที่ตรงตามตัวกรอง</div>
                   ) : (
@@ -661,14 +714,17 @@ export default function ReportsQuantitativeByArea() {
                             )}
                           </TableHead>
 
-                          {categories.map((cat, index) => (
-                            <TableHead key={cat.id} className="text-center min-w-[80px] text-xs" title={cat.name_th}>
-                              <div className="flex flex-col items-center">
-                                <span className="font-bold">ข้อ {index + 1}</span>
-                                <span className="text-muted-foreground truncate max-w-[70px]">{cat.code}</span>
-                              </div>
-                            </TableHead>
-                          ))}
+                          {filteredCategories.map(cat => {
+                            const originalIndex = categories.findIndex(c => c.id === cat.id);
+                            return (
+                              <TableHead key={cat.id} className="text-center min-w-[80px] text-xs" title={cat.name_th}>
+                                <div className="flex flex-col items-center">
+                                  <span className="font-bold">ข้อ {originalIndex + 1}</span>
+                                  <span className="text-muted-foreground truncate max-w-[70px]">{cat.code}</span>
+                                </div>
+                              </TableHead>
+                            );
+                          })}
                         </TableRow>
                       </TableHeader>
 
@@ -771,7 +827,9 @@ export default function ReportsQuantitativeByArea() {
                                 })()}
                               </TableCell>
 
-                              {row.categoryAverages.map(catAvg => (
+                              {row.categoryAverages
+                                .filter(catAvg => filteredCategories.some(c => c.id === catAvg.categoryId))
+                                .map(catAvg => (
                                 <TableCell key={catAvg.categoryId} className={`text-center ${getScoreColorClass(catAvg.average, row.type)}`}>
                                   {formatScore(catAvg, row.type)}
                                 </TableCell>
