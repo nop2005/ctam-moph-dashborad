@@ -650,6 +650,7 @@ export default function ReportsQuantitativeByArea() {
                   {/* Safety Filter Buttons - show when province selected */}
                   {selectedProvince !== "all" && (
                     <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium text-muted-foreground mr-1">แยกหน่วยงาน:</span>
                       {[
                         {
                           key: "all",
