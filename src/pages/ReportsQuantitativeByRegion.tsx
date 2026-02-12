@@ -884,18 +884,17 @@ export default function ReportsQuantitativeByRegion() {
               const showSummaryCols = selectedProvince === 'all';
               const isHospitalLevel = selectedProvince !== 'all';
               const sticky = {
-                name: 180, hospitalCount: 80, hospitalsAssessed: 100, avgQuantitative: 120, passedAll17: 100,
+                name: 180, hospitalCount: 80, hospitalsAssessed: 100, passedAll17: 100,
                 unitQuantScore: 110, unitPassedItems: 110, percentGreen: 200
               } as const;
               const left = {
                 name: 0,
                 hospitalCount: sticky.name,
                 hospitalsAssessed: sticky.name + sticky.hospitalCount,
-                avgQuantitative: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
-                passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.avgQuantitative,
+                passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
                 unitQuantScore: sticky.name,
                 unitPassedItems: sticky.name + sticky.unitQuantScore,
-                percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.avgQuantitative + sticky.passedAll17 : isHospitalLevel ? sticky.unitQuantScore + sticky.unitPassedItems : 0)
+                percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.passedAll17 : isHospitalLevel ? sticky.unitQuantScore + sticky.unitPassedItems : 0)
               } as const;
               const stickyHeaderBase = "sticky z-30 border-r border-border/60";
               const stickyCellBase = "sticky z-20 border-r border-border/60 bg-background";
@@ -916,9 +915,6 @@ export default function ReportsQuantitativeByRegion() {
                           {showSummaryCols && <TableHead className={`${stickyHeaderBase} bg-muted/50 text-center min-w-[80px]`} style={{ left: left.hospitalCount }}>จำนวน รพ.</TableHead>}
                           {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-blue-100 dark:bg-blue-900/30`} style={{ left: left.hospitalsAssessed }}>
                             <div className="flex flex-col items-center"><span>รพ.ที่ประเมิน</span><span>แล้ว</span></div>
-                          </TableHead>}
-                          {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[120px] bg-orange-100 dark:bg-orange-900/30`} style={{ left: left.avgQuantitative }}>
-                            <div className="flex flex-col items-center"><span>คะแนนเชิงปริมาณ</span><span>(เฉลี่ย /7)</span></div>
                           </TableHead>}
                           {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-green-100 dark:bg-green-900/30`} style={{ left: left.passedAll17 }}>
                             <div className="flex flex-col items-center"><span>รพ.ผ่านครบ</span><span>17 ข้อ</span></div>
@@ -972,7 +968,7 @@ export default function ReportsQuantitativeByRegion() {
 
                               {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium`} style={{ left: left.hospitalCount, minWidth: sticky.hospitalCount }}>{row.hospitalCount}</TableCell>}
                               {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-blue-50 dark:bg-blue-900/20`} style={{ left: left.hospitalsAssessed, minWidth: sticky.hospitalsAssessed }}>{'hospitalsAssessed' in row ? row.hospitalsAssessed : 0}</TableCell>}
-                              {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-orange-50 dark:bg-orange-900/20`} style={{ left: left.avgQuantitative, minWidth: sticky.avgQuantitative }}>{'avgQuantitativeScore' in row && row.avgQuantitativeScore !== null ? (row.avgQuantitativeScore as number).toFixed(2) : '-'}</TableCell>}
+                              
                               {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-green-50 dark:bg-green-900/20`} style={{ left: left.passedAll17, minWidth: sticky.passedAll17 }}>{'hospitalsPassedAll17' in row ? row.hospitalsPassedAll17 : 0}</TableCell>}
 
                               {isHospitalLevel && (() => {
