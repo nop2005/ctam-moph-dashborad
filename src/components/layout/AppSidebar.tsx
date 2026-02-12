@@ -38,6 +38,7 @@ import {
   ListOrdered,
   HardDrive,
   MapPinned,
+  Map,
   Wrench,
   UserCheck,
   MonitorDot,
@@ -100,6 +101,11 @@ const analyticalReportSubItems = [
     title: "CTAM เเยกตามหน่วยงาน",
     url: "/reports/quantitative-by-area",
     icon: MapPinned,
+  },
+  {
+    title: "CTAM แยกตามพื้นที่",
+    url: "/reports/quantitative-by-region",
+    icon: Map as any,
   },
 ];
 const budgetReportSubItems = [
@@ -175,7 +181,8 @@ export function AppSidebar() {
     currentPath === "/reports" || currentPath === "/reports/quantitative" || currentPath === "/reports/impact";
   const isAnalyticalReportsActive =
     currentPath === "/reports/quantitative-by-area" ||
-    currentPath === "/reports/quantitative-detail";
+    currentPath === "/reports/quantitative-detail" ||
+    currentPath === "/reports/quantitative-by-region";
   const isInspectionActive = currentPath.startsWith("/inspection") && currentPath !== "/inspection/manual";
   const isBudgetReportActive = currentPath.startsWith("/reports/budget");
 
