@@ -412,38 +412,39 @@ export default function ReportsQuantitativeByArea() {
     };
   }, [tableData, selectedProvince, latestApprovedByUnit, selectedSafetyFilter]);
 
-  // Determine which categories to show based on category filter
-  const filteredCategories = useMemo(() => {
-    if (selectedCategoryFilter === 'all') return categories;
+  // Pre-compute failed/passed category sets independently
+  const { failedCategoryIds, passedCategoryIds } = useMemo(() => {
+    const failed = new Set<string>();
+    const passed = new Set<string>();
 
-    // Check each category across all rows in filteredTableData
-    return categories.filter(cat => {
+    categories.forEach(cat => {
       const hasAnyFailed = filteredTableData.some(row => {
         const catAvg = row.categoryAverages.find(c => c.categoryId === cat.id);
         if (!catAvg || catAvg.average === null) return false;
-        if (row.type === 'region' || row.type === 'province') {
-          // For aggregated rows: red = < 100%
-          return catAvg.average < 100;
-        }
-        // For unit rows: red = score not 1
+        if (row.type === 'region' || row.type === 'province') return catAvg.average < 100;
         return catAvg.average !== 1;
       });
 
-      // "ข้อที่ผ่าน" = ทุก รพ. ต้องผ่านข้อนั้น (all passed)
       const allPassed = filteredTableData.every(row => {
         const catAvg = row.categoryAverages.find(c => c.categoryId === cat.id);
-        if (!catAvg || catAvg.average === null) return true; // skip units without data
-        if (row.type === 'region' || row.type === 'province') {
-          return catAvg.average === 100;
-        }
+        if (!catAvg || catAvg.average === null) return true;
+        if (row.type === 'region' || row.type === 'province') return catAvg.average === 100;
         return catAvg.average === 1;
       });
 
-      if (selectedCategoryFilter === 'failed') return hasAnyFailed;
-      if (selectedCategoryFilter === 'passed') return allPassed;
-      return true;
+      if (hasAnyFailed) failed.add(cat.id);
+      if (allPassed) passed.add(cat.id);
     });
-  }, [categories, filteredTableData, selectedCategoryFilter]);
+
+    return { failedCategoryIds: failed, passedCategoryIds: passed };
+  }, [categories, filteredTableData]);
+
+  const filteredCategories = useMemo(() => {
+    if (selectedCategoryFilter === 'all') return categories;
+    if (selectedCategoryFilter === 'failed') return categories.filter(c => failedCategoryIds.has(c.id));
+    if (selectedCategoryFilter === 'passed') return categories.filter(c => passedCategoryIds.has(c.id));
+    return categories;
+  }, [categories, selectedCategoryFilter, failedCategoryIds, passedCategoryIds]);
 
   const getTitle = () => {
     if (selectedProvince !== 'all') {
@@ -662,7 +663,7 @@ export default function ReportsQuantitativeByArea() {
                           selectedCategoryFilter === f.key ? f.bg : `bg-background ${f.outline}`
                         }`}
                       >
-                        {f.label} ({f.key === 'all' ? categories.length : filteredCategories.length})
+                        {f.label} ({f.key === 'all' ? categories.length : f.key === 'failed' ? failedCategoryIds.size : passedCategoryIds.size})
                       </button>
                     ))}
                   </div>
