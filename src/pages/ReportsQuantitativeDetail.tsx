@@ -102,10 +102,8 @@ export default function ReportsQuantitativeDetail() {
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
   const [selectedUnit, setSelectedUnit] = useState<string>('all');
   
-  // Sorting & extra filters
+  // Sorting
   const [sortOrder, setSortOrder] = useState<SortOrder>('default');
-  const [safetyFilter, setSafetyFilter] = useState<string>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   // Check user role for access control
   const isProvincialAdmin = profile?.role === 'provincial' || profile?.role === 'ceo';
@@ -330,69 +328,6 @@ export default function ReportsQuantitativeDetail() {
     });
   }, [categories, hospitals, healthOffices, provinces, viewLevel, selectedRegion, selectedProvince, selectedUnit, filteredAssessments, filteredAssessmentItems]);
 
-  // Compute safety counts for units in scope
-  const safetyCounts = useMemo(() => {
-    let hospitalIds: string[] = [];
-    let healthOfficeIds: string[] = [];
-
-    if (selectedUnit !== 'all') {
-      if (selectedUnit.startsWith('hospital_')) {
-        hospitalIds = [selectedUnit.replace('hospital_', '')];
-      } else if (selectedUnit.startsWith('health_office_')) {
-        healthOfficeIds = [selectedUnit.replace('health_office_', '')];
-      }
-    } else if (viewLevel === 'country') {
-      hospitalIds = hospitals.map(h => h.id);
-      healthOfficeIds = healthOffices.map(ho => ho.id);
-    } else if (viewLevel === 'region' && selectedRegion !== 'all') {
-      if (selectedProvince !== 'all') {
-        hospitalIds = hospitals.filter(h => h.province_id === selectedProvince).map(h => h.id);
-        healthOfficeIds = healthOffices.filter(ho => ho.province_id === selectedProvince).map(ho => ho.id);
-      } else {
-        const regionProvinces = provinces.filter(p => p.health_region_id === selectedRegion);
-        hospitalIds = hospitals.filter(h => regionProvinces.some(p => p.id === h.province_id)).map(h => h.id);
-        healthOfficeIds = healthOffices.filter(ho => ho.health_region_id === selectedRegion).map(ho => ho.id);
-      }
-    } else if ((viewLevel === 'province' || viewLevel === 'hospital') && selectedProvince !== 'all') {
-      hospitalIds = hospitals.filter(h => h.province_id === selectedProvince).map(h => h.id);
-      healthOfficeIds = healthOffices.filter(ho => ho.province_id === selectedProvince).map(ho => ho.id);
-    }
-
-    const allUnitIds = [...hospitalIds, ...healthOfficeIds];
-    
-    // Build latest assessment map per unit
-    const latestByUnit = new Map<string, Assessment>();
-    filteredAssessments.forEach(a => {
-      const unitKey = a.hospital_id || a.health_office_id;
-      if (unitKey && allUnitIds.includes(unitKey)) {
-        latestByUnit.set(unitKey, a);
-      }
-    });
-
-    let green = 0, yellow = 0, red = 0, notSubmitted = 0;
-    allUnitIds.forEach(uid => {
-      const assessment = latestByUnit.get(uid);
-      if (!assessment) { notSubmitted++; return; }
-      // Check pass all 17
-      const latestItems = filteredAssessmentItems.filter(i => i.assessment_id === assessment.id);
-      const passedAll = categories.length > 0 && categories.every(cat => {
-        const item = latestItems.find(i => i.category_id === cat.id);
-        return item && Number(item.score) === 1;
-      });
-      if (passedAll) { green++; }
-      else {
-        const passCount = categories.filter(cat => {
-          const item = latestItems.find(i => i.category_id === cat.id);
-          return item && Number(item.score) === 1;
-        }).length;
-        const pct = categories.length > 0 ? (passCount / categories.length) * 100 : 0;
-        if (pct >= 50) { yellow++; } else { red++; }
-      }
-    });
-
-    return { all: allUnitIds.length, green, yellow, red, notSubmitted };
-  }, [hospitals, healthOffices, provinces, viewLevel, selectedRegion, selectedProvince, selectedUnit, filteredAssessments, filteredAssessmentItems, categories]);
-
   // Sort category stats based on sortOrder
   const sortedCategoryStats = useMemo(() => {
     const stats = [...calculateCategoryStats];
@@ -404,22 +339,6 @@ export default function ReportsQuantitativeDetail() {
       return stats.sort((a, b) => b.passPercentage - a.passPercentage);
     }
   }, [calculateCategoryStats, sortOrder]);
-
-  // Apply category filter (passed/failed)
-  const filteredCategoryStats = useMemo(() => {
-    if (categoryFilter === 'all') return sortedCategoryStats;
-    if (categoryFilter === 'failed') return sortedCategoryStats.filter(s => s.failedCount > 0);
-    if (categoryFilter === 'passed') return sortedCategoryStats.filter(s => s.assessedCount > 0 && s.failedCount === 0);
-    return sortedCategoryStats;
-  }, [sortedCategoryStats, categoryFilter]);
-
-  // Category filter counts
-  const categoryFilterCounts = useMemo(() => {
-    const allCount = sortedCategoryStats.length;
-    const failedCount = sortedCategoryStats.filter(s => s.failedCount > 0).length;
-    const passedCount = sortedCategoryStats.filter(s => s.assessedCount > 0 && s.failedCount === 0).length;
-    return { all: allCount, failed: failedCount, passed: passedCount };
-  }, [sortedCategoryStats]);
 
   // Toggle sort order
   const toggleSortOrder = () => {
@@ -608,86 +527,30 @@ export default function ReportsQuantitativeDetail() {
         {/* Data Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <ListOrdered className="w-4 h-4" />
-              {getTitle()}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ListOrdered className="w-4 h-4" />
+                {getTitle()}
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleSortOrder}
+                className="flex items-center gap-2"
+              >
+                {getSortIcon()}
+                <span className="text-sm">
+                  {sortOrder === 'default' && 'เรียงตามลำดับข้อ'}
+                  {sortOrder === 'asc' && 'น้อยไปมาก'}
+                  {sortOrder === 'desc' && 'มากไปน้อย'}
+                </span>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            {/* 3 Filter groups */}
-            <div className="space-y-3 mb-4">
-              {/* 1. แยกหน่วยงาน */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground mr-1">แยกหน่วยงาน:</span>
-                {[
-                  { key: 'all', label: 'ทั้งหมด', count: safetyCounts.all, bg: 'bg-primary text-primary-foreground', outline: 'border-primary text-primary' },
-                  { key: 'red', label: 'แดง', count: safetyCounts.red, bg: 'bg-red-500 text-white', outline: 'border-red-500 text-red-500' },
-                  { key: 'yellow', label: 'เหลือง', count: safetyCounts.yellow, bg: 'bg-yellow-500 text-white', outline: 'border-yellow-500 text-yellow-600' },
-                  { key: 'green', label: 'เขียว', count: safetyCounts.green, bg: 'bg-green-500 text-white', outline: 'border-green-500 text-green-600' },
-                  { key: 'notSubmitted', label: 'ยังไม่ประเมิน', count: safetyCounts.notSubmitted, bg: 'bg-gray-400 text-white', outline: 'border-gray-400 text-gray-500' },
-                ].map(f => (
-                  <button
-                    key={f.key}
-                    onClick={() => setSafetyFilter(f.key)}
-                    className={`px-4 py-1.5 rounded-full text-sm font-medium border-2 transition-colors ${
-                      safetyFilter === f.key ? f.bg : `bg-background ${f.outline}`
-                    }`}
-                  >
-                    {f.label} ({f.count})
-                  </button>
-                ))}
-              </div>
-
-              {/* 2. แยกข้อ */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground mr-1">แยกข้อ:</span>
-                {[
-                  { key: 'all', label: 'แสดงทุกข้อ', count: categoryFilterCounts.all },
-                  { key: 'failed', label: 'ข้อที่ไม่ผ่าน', count: categoryFilterCounts.failed },
-                  { key: 'passed', label: 'ข้อที่ผ่าน', count: categoryFilterCounts.passed },
-                ].map(f => (
-                  <button
-                    key={f.key}
-                    onClick={() => setCategoryFilter(f.key)}
-                    className={`px-4 py-1.5 rounded-full text-sm font-medium border-2 transition-colors ${
-                      categoryFilter === f.key
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-background border-primary text-primary'
-                    }`}
-                  >
-                    {f.label} ({f.count})
-                  </button>
-                ))}
-              </div>
-
-              {/* 3. เรียงลำดับ */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground mr-1">เรียงลำดับ:</span>
-                {[
-                  { key: 'default', label: 'ตามลำดับข้อ' },
-                  { key: 'asc', label: 'น้อยไปมาก' },
-                  { key: 'desc', label: 'มากไปน้อย' },
-                ].map(f => (
-                  <button
-                    key={f.key}
-                    onClick={() => setSortOrder(f.key as SortOrder)}
-                    className={`px-4 py-1.5 rounded-full text-sm font-medium border-2 transition-colors flex items-center gap-1 ${
-                      sortOrder === f.key
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-background border-primary text-primary'
-                    }`}
-                  >
-                    {f.key === 'asc' && <ArrowUp className="w-3 h-3" />}
-                    {f.key === 'desc' && <ArrowDown className="w-3 h-3" />}
-                    {f.key === 'default' && <ArrowUpDown className="w-3 h-3" />}
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-            </div>
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">กำลังโหลดข้อมูล...</div>
-            ) : filteredCategoryStats.length === 0 ? (
+            ) : sortedCategoryStats.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">ไม่พบข้อมูล</div>
             ) : (
               <div className="overflow-x-auto">
@@ -704,7 +567,7 @@ export default function ReportsQuantitativeDetail() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredCategoryStats.map((stat, index) => (
+                    {sortedCategoryStats.map((stat, index) => (
                       <TableRow key={stat.categoryId}>
                         <TableCell className="text-center font-medium">
                           {stat.orderNumber}
