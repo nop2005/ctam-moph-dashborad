@@ -628,6 +628,7 @@ export default function ReportsQuantitativeByArea() {
                   {/* Safety Filter Buttons - show when province selected */}
                   {selectedProvince !== 'all' && (
                     <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium text-muted-foreground mr-1">แยกหน่วยงาน:</span>
                       {[
                         { key: 'all', label: 'ทั้งหมด', count: safetyCounts.all, bg: 'bg-primary text-primary-foreground', outline: 'border-primary text-primary' },
                         { key: 'red', label: 'แดง', count: safetyCounts.red, bg: 'bg-red-500 text-white', outline: 'border-red-500 text-red-500' },
