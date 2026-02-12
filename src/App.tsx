@@ -15,6 +15,7 @@ import UserManagement from "./pages/UserManagement";
 import Reports from "./pages/Reports";
 import ReportsQuantitative from "./pages/ReportsQuantitative";
 import ReportsQuantitativeByArea from "./pages/ReportsQuantitativeByArea";
+import ReportsQuantitativeByRegion from "./pages/ReportsQuantitativeByRegion";
 import ReportsQuantitativeDetail from "./pages/ReportsQuantitativeDetail";
 import ReportsEquipmentUsage from "./pages/ReportsEquipmentUsage";
 import TableauDashboard from "./pages/TableauDashboard";
@@ -123,6 +124,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ReportsQuantitativeByArea />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/reports/quantitative-by-region" 
+              element={
+                <ProtectedRoute>
+                  <ReportsQuantitativeByRegion />
                 </ProtectedRoute>
               } 
             />
