@@ -653,9 +653,9 @@ export default function ReportsQuantitativeByArea() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium text-muted-foreground mr-1">แยกข้อ:</span>
                     {[
+                      { key: 'all', label: 'แสดงทุกข้อ', bg: 'bg-primary text-primary-foreground', outline: 'border-primary text-primary' },
                       { key: 'failed', label: 'ข้อที่ไม่ผ่าน', bg: 'bg-red-500 text-white', outline: 'border-red-500 text-red-500' },
                       { key: 'passed', label: 'ข้อที่ผ่าน', bg: 'bg-green-500 text-white', outline: 'border-green-500 text-green-600' },
-                      { key: 'all', label: 'แสดงทุกข้อ', bg: 'bg-primary text-primary-foreground', outline: 'border-primary text-primary' },
                     ].map(f => (
                       <button
                         key={f.key}
