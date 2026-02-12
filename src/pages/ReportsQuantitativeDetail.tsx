@@ -527,24 +527,49 @@ export default function ReportsQuantitativeDetail() {
         {/* Data Table */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <ListOrdered className="w-4 h-4" />
                 {getTitle()}
               </CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={toggleSortOrder}
-                className="flex items-center gap-2"
-              >
-                {getSortIcon()}
-                <span className="text-sm">
-                  {sortOrder === 'default' && 'เรียงตามลำดับข้อ'}
-                  {sortOrder === 'asc' && 'น้อยไปมาก'}
-                  {sortOrder === 'desc' && 'มากไปน้อย'}
-                </span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">เรียงลำดับ:</span>
+                <div className="inline-flex rounded-full border border-primary/30 overflow-hidden">
+                  <button
+                    onClick={() => setSortOrder('default')}
+                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${
+                      sortOrder === 'default'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-background text-primary hover:bg-primary/10'
+                    }`}
+                  >
+                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    ตามลำดับข้อ
+                  </button>
+                  <button
+                    onClick={() => setSortOrder('asc')}
+                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium transition-colors border-x border-primary/30 whitespace-nowrap ${
+                      sortOrder === 'asc'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-background text-primary hover:bg-primary/10'
+                    }`}
+                  >
+                    <ArrowUp className="w-3.5 h-3.5" />
+                    น้อยไปมาก
+                  </button>
+                  <button
+                    onClick={() => setSortOrder('desc')}
+                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${
+                      sortOrder === 'desc'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-background text-primary hover:bg-primary/10'
+                    }`}
+                  >
+                    <ArrowDown className="w-3.5 h-3.5" />
+                    มากไปน้อย
+                  </button>
+                </div>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
