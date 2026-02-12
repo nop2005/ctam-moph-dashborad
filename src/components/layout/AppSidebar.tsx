@@ -98,7 +98,7 @@ const analyticalReportSubItems = [
     icon: Map as any,
   },
   {
-    title: "CTAM เเยกตามหน่วยงาน",
+    title: "CTAM เเยกข้อตามหน่วยงาน",
     url: "/reports/quantitative-by-area",
     icon: MapPinned,
   },
@@ -297,7 +297,6 @@ export function AppSidebar() {
 
               {/* Analytical Reports with Submenu - Hide from hospital_it and health_office */}
               {profile?.role && !["hospital_it", "health_office"].includes(profile.role) && (
-
                 <Collapsible
                   open={analyticalReportsOpen}
                   onOpenChange={setAnalyticalReportsOpen}
@@ -441,7 +440,6 @@ export function AppSidebar() {
                   <span>แดชบอร์ดศูนย์เทคโนโลยีฯ</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-
 
               <Collapsible open={inspectionOpen} onOpenChange={setInspectionOpen} className="group/collapsible">
                 <SidebarMenuItem>
