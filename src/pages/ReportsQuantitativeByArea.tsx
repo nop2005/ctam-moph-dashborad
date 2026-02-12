@@ -97,6 +97,7 @@ export default function ReportsQuantitativeByArea() {
   const [selectedProvince, setSelectedProvince] = useState<string>("all");
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
   const [selectedSafetyFilter, setSelectedSafetyFilter] = useState<string>("all");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("all");
 
   const isProvincialAdmin = profile?.role === "provincial" || profile?.role === "ceo";
   const userProvinceId = profile?.province_id;
@@ -699,6 +700,44 @@ export default function ReportsQuantitativeByArea() {
                     </div>
                   )}
 
+                  {/* Category Filter Buttons - แยกข้อ */}
+                  {selectedProvince !== "all" && (() => {
+                    const passedCatCount = categories.filter(cat => {
+                      return filteredTableData.every(row => {
+                        const catAvg = row.categoryAverages.find(c => c.categoryId === cat.id);
+                        return catAvg && catAvg.average === 1;
+                      });
+                    }).length;
+                    const failedCatCount = categories.filter(cat => {
+                      return filteredTableData.some(row => {
+                        const catAvg = row.categoryAverages.find(c => c.categoryId === cat.id);
+                        return catAvg && catAvg.average !== null && catAvg.average !== 1;
+                      });
+                    }).length;
+                    return (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-medium text-muted-foreground mr-1">แยกข้อ:</span>
+                        {[
+                          { key: 'all', label: 'แสดงทุกข้อ', count: categories.length },
+                          { key: 'failed', label: 'ข้อที่ไม่ผ่าน', count: failedCatCount },
+                          { key: 'passed', label: 'ข้อที่ผ่าน', count: passedCatCount },
+                        ].map(f => (
+                          <button
+                            key={f.key}
+                            onClick={() => setSelectedCategoryFilter(f.key)}
+                            className={`px-4 py-1.5 rounded-full text-sm font-medium border-2 transition-colors ${
+                              selectedCategoryFilter === f.key
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'bg-background border-primary/40 text-primary'
+                            }`}
+                          >
+                            {f.label} ({f.count})
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
                   {filteredTableData.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">ไม่พบข้อมูลที่ตรงตามตัวกรอง</div>
                   ) : (
@@ -766,14 +805,24 @@ export default function ReportsQuantitativeByArea() {
                               )}
                             </TableHead>
 
-                            {categories.map((cat, index) => (
-                              <TableHead key={cat.id} className="text-center min-w-[80px] text-xs" title={cat.name_th}>
-                                <div className="flex flex-col items-center">
-                                  <span className="font-bold">ข้อ {index + 1}</span>
-                                  <span className="text-muted-foreground truncate max-w-[70px]">{cat.code}</span>
-                                </div>
-                              </TableHead>
-                            ))}
+                            {categories.map((cat, index) => {
+                              if (selectedCategoryFilter !== 'all' && selectedProvince !== 'all') {
+                                const allPassed = filteredTableData.every(row => {
+                                  const catAvg = row.categoryAverages.find(c => c.categoryId === cat.id);
+                                  return catAvg && catAvg.average === 1;
+                                });
+                                if (selectedCategoryFilter === 'passed' && !allPassed) return null;
+                                if (selectedCategoryFilter === 'failed' && allPassed) return null;
+                              }
+                              return (
+                                <TableHead key={cat.id} className="text-center min-w-[80px] text-xs" title={cat.name_th}>
+                                  <div className="flex flex-col items-center">
+                                    <span className="font-bold">ข้อ {index + 1}</span>
+                                    <span className="text-muted-foreground truncate max-w-[70px]">{cat.code}</span>
+                                  </div>
+                                </TableHead>
+                              );
+                            })}
                           </TableRow>
                         </TableHeader>
 
@@ -920,14 +969,27 @@ export default function ReportsQuantitativeByArea() {
                                   })()}
                                 </TableCell>
 
-                                {row.categoryAverages.map((catAvg) => (
-                                  <TableCell
-                                    key={catAvg.categoryId}
-                                    className={`text-center ${getScoreColorClass(catAvg.average, row.type)}`}
-                                  >
-                                    {formatScore(catAvg, row.type)}
-                                  </TableCell>
-                                ))}
+                                {row.categoryAverages.map((catAvg) => {
+                                  if (selectedCategoryFilter !== 'all' && selectedProvince !== 'all') {
+                                    const cat = categories.find(c => c.id === catAvg.categoryId);
+                                    if (cat) {
+                                      const allPassed = filteredTableData.every(r => {
+                                        const ca = r.categoryAverages.find(c => c.categoryId === cat.id);
+                                        return ca && ca.average === 1;
+                                      });
+                                      if (selectedCategoryFilter === 'passed' && !allPassed) return null;
+                                      if (selectedCategoryFilter === 'failed' && allPassed) return null;
+                                    }
+                                  }
+                                  return (
+                                    <TableCell
+                                      key={catAvg.categoryId}
+                                      className={`text-center ${getScoreColorClass(catAvg.average, row.type)}`}
+                                    >
+                                      {formatScore(catAvg, row.type)}
+                                    </TableCell>
+                                  );
+                                })}
                               </TableRow>
                             );
                           })}
