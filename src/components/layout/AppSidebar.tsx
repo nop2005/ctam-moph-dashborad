@@ -93,9 +93,9 @@ const reportSubItems = [
 ];
 const analyticalReportSubItems = [
   {
-    title: "CTAM เเยกตามหมวด",
-    url: "/reports/quantitative-detail",
-    icon: ListOrdered,
+    title: "CTAM แยกตามพื้นที่",
+    url: "/reports/quantitative-by-region",
+    icon: Map as any,
   },
   {
     title: "CTAM เเยกตามหน่วยงาน",
@@ -103,9 +103,9 @@ const analyticalReportSubItems = [
     icon: MapPinned,
   },
   {
-    title: "CTAM แยกตามพื้นที่",
-    url: "/reports/quantitative-by-region",
-    icon: Map as any,
+    title: "CTAM เเยกตามหมวด",
+    url: "/reports/quantitative-detail",
+    icon: ListOrdered,
   },
 ];
 const budgetReportSubItems = [
