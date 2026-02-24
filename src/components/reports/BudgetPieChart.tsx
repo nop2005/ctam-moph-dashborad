@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { PieChart as PieChartIcon } from 'lucide-react';
+import { PieChart as PieChartIcon, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface CtamCategory {
   id: string;
@@ -54,6 +54,7 @@ export function BudgetPieChart({
   selectedFiscalYear,
   title = 'สัดส่วนงบประมาณตามหมวดหมู่ CTAM',
 }: BudgetPieChartProps) {
+  const [tableSortOrder, setTableSortOrder] = useState<'default' | 'desc' | 'asc'>('default');
   // Aggregate by category
   const pieData = useMemo((): PieData[] => {
     const categoryTotals = new Map<string, number>();
@@ -76,6 +77,13 @@ export function BudgetPieChart({
   }, [budgetRecords, categories]);
 
   const totalBudget = pieData.reduce((sum, d) => sum + d.value, 0);
+
+  const sortedTableData = useMemo(() => {
+    if (tableSortOrder === 'default') return pieData;
+    return [...pieData].sort((a, b) =>
+      tableSortOrder === 'desc' ? b.value - a.value : a.value - b.value
+    );
+  }, [pieData, tableSortOrder]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -206,7 +214,47 @@ export function BudgetPieChart({
         {/* Category breakdown table */}
         {pieData.length > 0 && (
           <div className="mt-6">
-            <h4 className="font-medium mb-3">รายละเอียดงบประมาณแต่ละหมวดหมู่</h4>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+              <h4 className="font-medium">รายละเอียดงบประมาณแต่ละหมวดหมู่</h4>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">เรียงลำดับ:</span>
+                <div className="inline-flex rounded-full border border-primary/30 overflow-hidden">
+                  <button
+                    onClick={() => setTableSortOrder('default')}
+                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${
+                      tableSortOrder === 'default'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-background text-primary hover:bg-primary/10'
+                    }`}
+                  >
+                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    ตามลำดับข้อ
+                  </button>
+                  <button
+                    onClick={() => setTableSortOrder('desc')}
+                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium transition-colors border-x border-primary/30 whitespace-nowrap ${
+                      tableSortOrder === 'desc'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-background text-primary hover:bg-primary/10'
+                    }`}
+                  >
+                    <ArrowDown className="w-3.5 h-3.5" />
+                    มากไปน้อย
+                  </button>
+                  <button
+                    onClick={() => setTableSortOrder('asc')}
+                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${
+                      tableSortOrder === 'asc'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-background text-primary hover:bg-primary/10'
+                    }`}
+                  >
+                    <ArrowUp className="w-3.5 h-3.5" />
+                    น้อยไปมาก
+                  </button>
+                </div>
+              </div>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -217,7 +265,7 @@ export function BudgetPieChart({
                   </tr>
                 </thead>
                 <tbody>
-                  {pieData.map((item) => (
+                  {sortedTableData.map((item) => (
                     <tr key={item.categoryId} className="border-b hover:bg-muted/50">
                       <td className="py-2 px-2 flex items-center gap-2">
                         <div 
