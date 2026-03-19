@@ -191,11 +191,10 @@ function PublicSidebar({ navigate }: PublicSidebarProps) {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   tooltip="แดชบอร์ด R1-Datacenter"
-                  isActive={currentPath === "/public/r1dc-dashboard"}
-                  onClick={() => navigate("/public/r1dc-dashboard")}
+                  isActive={false}
+                  onClick={() => window.open("/r1dc-dashboard.html", "_blank")}
                   className={`
                     text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
-                    data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
                   `}
                 >
                   <MonitorDot className="h-4 w-4" />
