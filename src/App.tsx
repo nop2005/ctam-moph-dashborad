@@ -42,6 +42,7 @@ import PublicReportsImpact from "./pages/PublicReportsImpact";
 import PublicInspectionSupervisor from "./pages/PublicInspectionSupervisor";
 import PublicInspectionManual from "./pages/PublicInspectionManual";
 import PublicTableauDashboard from "./pages/PublicTableauDashboard";
+import PublicStrategicPlan from "./pages/PublicStrategicPlan";
 
 const queryClient = new QueryClient({
   defaultOptions: {
