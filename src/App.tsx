@@ -78,6 +78,7 @@ const App = () => (
             <Route path="/public/inspection/supervisor" element={<PublicInspectionSupervisor />} />
             <Route path="/public/inspection/manual" element={<PublicInspectionManual />} />
             <Route path="/public/reports/tableau-dashboard" element={<PublicTableauDashboard />} />
+            <Route path="/public/r1dc-dashboard" element={<PublicR1dcDashboard />} />
             <Route path="/public/strategic-plan" element={<PublicStrategicPlan />} />
             
             <Route path="/unauthorized" element={<Unauthorized />} />
