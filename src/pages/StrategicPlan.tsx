@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Target } from "lucide-react";
+import { Target, Presentation } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { StrategySlidesDialog } from "@/components/strategic/StrategySlidesDialog";
 
 export default function StrategicPlan() {
+  const [slidesOpen, setSlidesOpen] = useState(false);
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -14,19 +18,19 @@ export default function StrategicPlan() {
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>แผนยุทธศาสตร์</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <Target className="h-16 w-16 mb-4 opacity-30" />
-              <p className="text-lg font-medium">อยู่ระหว่างการพัฒนา</p>
-              <p className="text-sm">เนื้อหาแผนยุทธศาสตร์จะแสดงที่นี่</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex justify-center py-12">
+          <Button
+            size="lg"
+            onClick={() => setSlidesOpen(true)}
+            className="h-20 px-12 text-xl gap-4 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+          >
+            <Presentation className="h-8 w-8" />
+            แผนกลยุทธ์
+          </Button>
+        </div>
       </div>
+
+      <StrategySlidesDialog open={slidesOpen} onOpenChange={setSlidesOpen} />
     </DashboardLayout>
   );
 }
