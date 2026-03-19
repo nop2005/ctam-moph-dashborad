@@ -11,6 +11,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .topbar{background:#4f46e5;color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between}
 .topbar-title{font-size:14px;font-weight:500}
 .topbar-sub{font-size:11px;opacity:.75}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.back-btn{background:rgba(255,255,255,0.18);border:0.5px solid rgba(255,255,255,0.4);color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;text-decoration:none}
+.back-btn:hover{background:rgba(255,255,255,0.28)}
 .ai-toggle-btn{background:rgba(255,255,255,0.18);border:0.5px solid rgba(255,255,255,0.4);color:#fff;border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px}
 .ai-toggle-btn:hover{background:rgba(255,255,255,0.28)}
 .ai-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite}
@@ -50,14 +53,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .send-btn{width:32px;height:32px;background:#4f46e5;border:none;border-radius:8px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .send-btn:hover{background:#4338ca}
 .send-btn:disabled{opacity:.4;cursor:not-allowed}
-/* api key banner */
-.key-banner{background:#FAEEDA;border:0.5px solid #EF9F27;border-radius:8px;padding:10px 12px;margin:10px 12px;font-size:11px;color:#412402}
-.key-banner strong{display:block;margin-bottom:4px;font-size:12px}
-.key-input{width:100%;border:0.5px solid rgba(0,0,0,0.2);border-radius:6px;padding:6px 8px;font-size:11px;margin-top:6px;outline:none;font-family:monospace;background:#fff}
-.key-input:focus{border-color:#4f46e5}
-.key-save-btn{margin-top:6px;background:#4f46e5;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;width:100%}
-.key-save-btn:hover{background:#4338ca}
-/* dashboard */
 .section-title{font-size:12px;font-weight:500;color:#5f5e5a;margin-bottom:8px}
 .kpi-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:12px}
 .kpi-card{background:#fff;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;padding:12px 14px}
@@ -101,9 +96,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div>
-    <div class="topbar-title">Dashboard สำนักงานเขตสุขภาพที่ 1 เชียงใหม่</div>
-    <div class="topbar-sub">HIS + Non-HIS · 17 มี.ค. 2568 · 110 หน่วยงาน</div>
+  <div class="topbar-left">
+    <a href="/public/strategic-plan" class="back-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      กลับ
+    </a>
+    <div>
+      <div class="topbar-title">Dashboard สำนักงานเขตสุขภาพที่ 1 เชียงใหม่</div>
+      <div class="topbar-sub">HIS + Non-HIS · 17 มี.ค. 2568 · 110 หน่วยงาน</div>
+    </div>
   </div>
   <button class="ai-toggle-btn" onclick="toggleChat()" id="aiBtn">
     <span class="ai-dot"></span>
@@ -234,24 +235,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <!-- AI CHAT PANEL -->
   <div class="chat-panel" id="chatPanel">
 
-    <!-- API KEY SETUP (shown when no key) -->
-    <div id="keyBanner" class="key-banner">
-      <strong>ตั้งค่า Anthropic API Key</strong>
-      กรุณาใส่ API Key เพื่อเปิดใช้งาน AI Assistant
-      (key จะเก็บใน localStorage ของเครื่องคุณเท่านั้น ไม่ส่งที่อื่น)
-      <input type="password" class="key-input" id="keyInput" placeholder="sk-ant-api03-..." />
-      <button class="key-save-btn" onclick="saveKey()">บันทึกและเปิดใช้งาน AI</button>
-      <div style="margin-top:6px;font-size:10px;opacity:.7">
-        รับ API Key ได้ที่ <a href="https://console.anthropic.com" target="_blank" style="color:#185FA5">console.anthropic.com</a>
-      </div>
-    </div>
-
     <div class="chat-header">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="chat-avatar">AI</div>
         <div>
           <div class="chat-header-title">AI Assistant เขตสุขภาพ 1</div>
-          <div class="chat-header-sub" id="chatStatus">กรุณาใส่ API Key ก่อนใช้งาน</div>
+          <div class="chat-header-sub" id="chatStatus" style="color:#0F6E56">พร้อมใช้งาน · Lovable AI</div>
         </div>
       </div>
       <button class="chat-close" onclick="toggleChat()">✕</button>
@@ -259,7 +248,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
     <div class="chat-messages" id="chatMessages">
       <div class="msg ai">
-        <div class="msg-bubble">สวัสดีครับ ผมคือ AI Assistant สำหรับข้อมูลเขตสุขภาพที่ 1<br><br>ครอบคลุม <strong>HIS 103 ระบบ</strong> และ <strong>Non-HIS</strong> ด้านเงิน คน ของ และบริการ<br><br>กรุณาใส่ Anthropic API Key ในช่องด้านบนก่อนเริ่มสนทนาครับ</div>
+        <div class="msg-bubble">สวัสดีครับ ผมคือ AI Assistant สำหรับข้อมูลเขตสุขภาพที่ 1<br><br>ครอบคลุม <strong>HIS 103 ระบบ</strong> และ <strong>Non-HIS</strong> ด้านเงิน คน ของ และบริการ<br><br>พิมพ์คำถามหรือเลือก Quick Chips ด้านล่างได้เลยครับ</div>
         <div class="msg-time">17 มี.ค. 2568</div>
       </div>
     </div>
@@ -345,49 +334,9 @@ function toggleChat(){
   document.getElementById('aiBtnLabel').textContent=chatOpen?'ปิด AI':'AI Assistant';
 }
 
-/* ── API KEY ── */
-let apiKey=localStorage.getItem('rh1_anthropic_key')||'';
-function updateKeyUI(){
-  const banner=document.getElementById('keyBanner');
-  const status=document.getElementById('chatStatus');
-  if(apiKey){
-    banner.style.display='none';
-    status.textContent='พร้อมใช้งาน · Claude Sonnet';
-    status.style.color='#0F6E56';
-    const msg=document.querySelector('.msg.ai .msg-bubble');
-    if(msg) msg.innerHTML='สวัสดีครับ ผมคือ AI Assistant สำหรับข้อมูลเขตสุขภาพที่ 1<br><br>ครอบคลุม <strong>HIS 103 ระบบ</strong> และ <strong>Non-HIS</strong> ด้านเงิน คน ของ และบริการ<br><br>พิมพ์คำถามหรือเลือก Quick Chips ด้านล่างได้เลยครับ';
-  } else {
-    banner.style.display='block';
-    status.textContent='กรุณาใส่ API Key ก่อนใช้งาน';
-    status.style.color='#854F0B';
-  }
-}
-function saveKey(){
-  const val=document.getElementById('keyInput').value.trim();
-  if(!val){alert('กรุณาใส่ API Key');return;}
-  apiKey=val;
-  localStorage.setItem('rh1_anthropic_key',val);
-  updateKeyUI();
-}
-updateKeyUI();
-
-/* ── CHAT ── */
-const systemPrompt=`คุณคือ AI Assistant สำหรับ Dashboard เขตสุขภาพที่ 1 เชียงใหม่ ประเทศไทย
-มีความเชี่ยวชาญด้านข้อมูลสาธารณสุข ระบบ HIS (103 ระบบ HL7 FHIR) และ Non-HIS
-
-ข้อมูล dashboard ปัจจุบัน:
-- งบประมาณรวม 4,820 ล้านบาท เบิกจ่าย 68.4%
-- บุคลากรรวม 35,066 คน ว่าง 2,340 อัตรา แพทย์ขาดแคลน รพช. 12 แห่ง
-- OPD 318,000 ครั้ง/วัน (+4.2% YoY), ผู้ป่วยใน 182,400 ราย Bed Occ. 78.3% ALoS 4.2 วัน
-- ครุภัณฑ์ 14,230 ชิ้น มูลค่า 2,140 ลบ. ชำรุด 8.2%
-- Bed Occ. สูงสุด: ลำพูน 88%, เชียงใหม่ 82%, ลำปาง 79%
-- งบ UC ค้างจ่าย: รพ.เชียงราย, พะเยา, แพร่ รวม 38.5 ลบ.
-- Data Quality Score 91.4% (ML/AI ตรวจสอบ HIS 103 ระบบ)
-- DRG สูงสุด: DM+HTN 48,200, มะเร็ง 38,400, หัวใจ 31,200
-- สิทธิ์: UC 58%, ข้าราชการ 22%, ประกันสังคม 13%
-- 8 จังหวัด: เชียงใหม่ เชียงราย ลำปาง ลำพูน พะเยา แพร่ น่าน แม่ฮ่องสอน
-
-ตอบเป็นภาษาไทย กระชับ เน้นตัวเลขและคำแนะนำเชิงนโยบาย`;
+/* ── CHAT with Lovable AI (streaming) ── */
+const SUPABASE_URL='https://rljbkkwzqnvawizyyzzb.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsamJra3d6cW52YXdpenl5enpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzMjMyNDgsImV4cCI6MjA4MTg5OTI0OH0.1jdv4eBnrGCAWUD94AWXRAtJ0tETNjzI9Pgo8eiInjQ';
 
 let history=[];
 let isTyping=false;
@@ -398,7 +347,6 @@ function sendQuick(text){document.getElementById('chatInput').value=text;sendMes
 
 async function sendMessage(){
   if(isTyping)return;
-  if(!apiKey){alert('กรุณาใส่ Anthropic API Key ก่อนใช้งาน AI');return;}
   const input=document.getElementById('chatInput');
   const text=input.value.trim();
   if(!text)return;
@@ -409,25 +357,97 @@ async function sendMessage(){
   showTyping();
   document.getElementById('sendBtn').disabled=true;
   isTyping=true;
+
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch(SUPABASE_URL+'/functions/v1/r1dc-chat',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:systemPrompt,messages:history})
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+SUPABASE_ANON_KEY
+      },
+      body:JSON.stringify({messages:history})
     });
-    const data=await res.json();
-    if(data.error){removeTyping();appendMsg('ai','เกิดข้อผิดพลาด: '+data.error.message);isTyping=false;document.getElementById('sendBtn').disabled=false;return;}
-    const reply=data.content?.find(b=>b.type==='text')?.text||'ขออภัย ไม่สามารถตอบได้';
+
+    if(!res.ok){
+      const err=await res.json().catch(()=>({error:'Unknown error'}));
+      removeTyping();
+      appendMsg('ai','เกิดข้อผิดพลาด: '+(err.error||'ไม่สามารถเชื่อมต่อ AI ได้'));
+      isTyping=false;
+      document.getElementById('sendBtn').disabled=false;
+      return;
+    }
+
+    // Streaming SSE response
+    const reader=res.body.getReader();
+    const decoder=new TextDecoder();
+    let textBuffer='';
+    let assistantText='';
+    let assistantBubble=null;
+
     removeTyping();
-    appendMsg('ai',reply);
-    history.push({role:'assistant',content:reply});
-    if(history.length>20)history=history.slice(-20);
+
+    while(true){
+      const {done,value}=await reader.read();
+      if(done) break;
+      textBuffer+=decoder.decode(value,{stream:true});
+
+      let newlineIndex;
+      while((newlineIndex=textBuffer.indexOf('\n'))!==-1){
+        let line=textBuffer.slice(0,newlineIndex);
+        textBuffer=textBuffer.slice(newlineIndex+1);
+        if(line.endsWith('\r')) line=line.slice(0,-1);
+        if(line.startsWith(':')||line.trim()==='') continue;
+        if(!line.startsWith('data: ')) continue;
+        const jsonStr=line.slice(6).trim();
+        if(jsonStr==='[DONE]') break;
+        try{
+          const parsed=JSON.parse(jsonStr);
+          const content=parsed.choices&&parsed.choices[0]&&parsed.choices[0].delta&&parsed.choices[0].delta.content;
+          if(content){
+            assistantText+=content;
+            if(!assistantBubble){
+              assistantBubble=createAssistantBubble();
+            }
+            updateBubble(assistantBubble,assistantText);
+          }
+        }catch(e){
+          textBuffer=line+'\n'+textBuffer;
+          break;
+        }
+      }
+    }
+
+    if(assistantText){
+      history.push({role:'assistant',content:assistantText});
+      if(history.length>20) history=history.slice(-20);
+    }
   }catch(e){
     removeTyping();
-    appendMsg('ai','ขออภัย เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาตรวจสอบ API Key และการเชื่อมต่ออินเทอร์เน็ต');
+    appendMsg('ai','ขออภัย เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
   }
   isTyping=false;
   document.getElementById('sendBtn').disabled=false;
+}
+
+function createAssistantBubble(){
+  const c=document.getElementById('chatMessages');
+  const now=new Date();
+  const t=`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  const d=document.createElement('div');
+  d.className='msg ai';
+  d.innerHTML=`<div class="msg-bubble"></div><div class="msg-time">${t}</div>`;
+  c.appendChild(d);
+  c.scrollTop=c.scrollHeight;
+  return d.querySelector('.msg-bubble');
+}
+
+function updateBubble(bubble,text){
+  const safe=text.replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n/g,'<br>');
+  bubble.innerHTML=safe;
+  const c=document.getElementById('chatMessages');
+  c.scrollTop=c.scrollHeight;
 }
 
 function appendMsg(role,text){
