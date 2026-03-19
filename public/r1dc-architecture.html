@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>R1-DC VM & Docker Architecture Diagram</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun','Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;font-size:13px}
+.page{max-width:1400px;margin:0 auto;padding:24px}
+
+/* Header */
+.header{background:linear-gradient(135deg,#1e293b,#1e3a5f,#0369a1);border-radius:16px;padding:28px 36px;margin-bottom:24px;border:1px solid #1e40af}
+.header h1{font-size:24px;font-weight:700;color:#fff;margin-bottom:6px}
+.header .sub{font-size:13px;color:#94a3b8;margin-bottom:14px}
+.badge-row{display:flex;flex-wrap:wrap;gap:8px}
+.badge{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:3px 12px;font-size:11px;color:#e2e8f0}
+
+/* Section */
+.sec{margin-bottom:28px}
+.sec-title{font-size:15px;font-weight:700;color:#38bdf8;border-left:4px solid #0369a1;padding-left:12px;margin-bottom:16px}
+
+/* Physical Server Box */
+.server-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+.server-box{background:#1e293b;border-radius:14px;border:2px solid #334155;overflow:hidden}
+.server-head{padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #334155}
+.server-icon{font-size:28px}
+.server-title{font-size:14px;font-weight:700;color:#fff}
+.server-sub{font-size:11px;color:#94a3b8;margin-top:2px}
+.server-spec{font-size:10px;background:#0f172a;color:#64748b;padding:6px 18px;border-bottom:1px solid #1e293b}
+.server-body{padding:14px 18px;display:flex;flex-direction:column;gap:8px}
+
+/* VM Box */
+.vm-box{background:#0f172a;border-radius:10px;border:1px solid #334155;overflow:hidden}
+.vm-head{padding:7px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e293b}
+.vm-name{font-size:11px;font-weight:700;color:#fff}
+.vm-ram{font-size:10px;color:#64748b;background:#1e293b;padding:2px 7px;border-radius:8px}
+.vm-containers{padding:8px 12px;display:flex;flex-wrap:wrap;gap:5px}
+.c-box{border-radius:6px;padding:3px 9px;font-size:10px;font-weight:500;display:flex;align-items:center;gap:4px;border:1px solid}
+.c-api{background:#0c2945;color:#60a5fa;border-color:#1d4ed8}
+.c-app{background:#062320;color:#34d399;border-color:#059669}
+.c-db{background:#1a0533;color:#c084fc;border-color:#7c3aed}
+.c-sec{background:#2d0a0a;color:#f87171;border-color:#dc2626}
+.c-ai{background:#1e0a33;color:#e879f9;border-color:#9333ea}
+.c-devops{background:#1a1200;color:#fbbf24;border-color:#d97706}
+.c-edge{background:#1a0e00;color:#fb923c;border-color:#c2410c}
+.c-mon{background:#0a1f1f;color:#2dd4bf;border-color:#0d9488}
+
+/* Edge Server Strip */
+.edge-strip{background:#1e293b;border-radius:14px;border:2px solid #c2410c44;padding:16px 20px;margin-bottom:20px}
+.edge-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.edge-title{font-size:14px;font-weight:700;color:#fb923c}
+.edge-body{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.edge-unit{background:#0f172a;border:1px solid #c2410c44;border-radius:8px;padding:6px 12px;font-size:11px;color:#fed7aa;text-align:center}
+.edge-dots{display:flex;gap:4px;align-items:center}
+.edge-dot{width:6px;height:6px;border-radius:50%;background:#c2410c}
+
+/* Data Flow */
+.flow-wrapper{background:#1e293b;border-radius:14px;border:1px solid #334155;padding:20px;margin-bottom:20px;overflow-x:auto}
+.flow-title{font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:20px;text-align:center;letter-spacing:1px;text-transform:uppercase}
+
+/* SVG Flow */
+.flow-svg{width:100%;min-width:900px;height:540px}
+
+/* Container Count Table */
+.count-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.count-card{background:#1e293b;border-radius:10px;border:1px solid #334155;padding:14px 16px}
+.count-label{font-size:11px;color:#64748b;margin-bottom:6px}
+.count-val{font-size:28px;font-weight:700;color:#38bdf8}
+.count-sub{font-size:10px;color:#475569;margin-top:4px}
+
+/* Summary table */
+.stbl{width:100%;border-collapse:collapse;font-size:11px}
+.stbl th{background:#0f172a;color:#64748b;padding:8px 12px;text-align:left;font-weight:600;letter-spacing:.5px;text-transform:uppercase;font-size:10px}
+.stbl td{padding:7px 12px;border-bottom:1px solid #1e293b;vertical-align:top}
+.stbl tr:hover td{background:#0f172a}
+.tag{display:inline-block;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:600}
+.t-api{background:#1d4ed8;color:#bfdbfe}
+.t-app{background:#065f46;color:#a7f3d0}
+.t-db{background:#5b21b6;color:#ede9fe}
+.t-sec{background:#7f1d1d;color:#fecaca}
+.t-ai{background:#6b21a8;color:#f5d0fe}
+.t-devops{background:#78350f;color:#fde68a}
+.t-edge{background:#7c2d12;color:#ffedd5}
+.vm-badge{display:inline-block;background:#0f172a;border:1px solid #334155;border-radius:4px;padding:1px 6px;font-size:9px;color:#64748b;margin-right:4px}
+
+.footer{text-align:center;font-size:11px;color:#475569;margin-top:20px;padding-top:14px;border-top:1px solid #1e293b}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- Header -->
+<div class="header">
+  <h1>🐳 R1-DC VM & Docker Container Architecture</h1>
+  <div class="sub">สรุป VM Layout · Docker Containers · Data Flow — เขตสุขภาพที่ 1 · 103 หน่วยบริการ</div>
+  <div class="badge-row">
+    <span class="badge">🖥️ Physical Server 2 เครื่อง</span>
+    <span class="badge">📦 VM 7 ตัว</span>
+    <span class="badge">🐳 Docker 25 containers (Central)</span>
+    <span class="badge">📡 Edge 103 × 3 = 309 containers</span>
+    <span class="badge">🔧 K3s Orchestration</span>
+    <span class="badge">🤖 Claude API Integration</span>
+  </div>
+</div>
+
+<!-- Section 1: Count Summary -->
+<div class="sec">
+  <div class="sec-title">1. สรุปจำนวน VM & Container</div>
+  <div class="count-grid">
+    <div class="count-card">
+      <div class="count-label">📦 Virtual Machines (Central)</div>
+      <div class="count-val" style="color:#38bdf8">7</div>
+      <div class="count-sub">Server 1: 3 VMs · Server 2: 4 VMs</div>
+    </div>
+    <div class="count-card">
+      <div class="count-label">🐳 Docker Containers (Central)</div>
+      <div class="count-val" style="color:#34d399">25</div>
+      <div class="count-sub">API Server: 12 · Data Lake: 13</div>
+    </div>
+    <div class="count-card">
+      <div class="count-label">📡 Docker Containers (Edge ×103)</div>
+      <div class="count-val" style="color:#fb923c">309</div>
+      <div class="count-sub">3 containers × 103 Edge Servers</div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 2: Server Layout -->
+<div class="sec">
+  <div class="sec-title">2. VM & Container Layout — แยกตาม Physical Server</div>
+  <div class="server-layout">
+
+    <!-- Server 1: API Server -->
+    <div class="server-box">
+      <div class="server-head" style="background:linear-gradient(90deg,#0c2945,#1e293b)">
+        <div class="server-icon">🖥️</div>
+        <div>
+          <div class="server-title">Server 1 — API & Application Server</div>
+          <div class="server-sub">เครื่องแม่ข่าย แบบที่ 2 · ราคากลาง 330,000 บาท</div>
+        </div>
+      </div>
+      <div class="server-spec">16-core × 2 Socket · 64 GB RAM · Ubuntu Server 22.04 LTS · K3s Node</div>
+      <div class="server-body">
+
+        <!-- VM-1 -->
+        <div class="vm-box" style="border-color:#1d4ed8">
+          <div class="vm-head" style="background:#0c2945">
+            <div class="vm-name">🔗 VM-1: api-integration</div>
+            <div class="vm-ram">24 GB RAM · 8 vCPU</div>
+          </div>
+          <div class="vm-containers">
+            <span class="c-box c-api">🚪 kong-gateway</span>
+            <span class="c-box c-api">🔥 hapi-fhir</span>
+            <span class="c-box c-api">📨 kafka-broker</span>
+            <span class="c-box c-api">🔄 zookeeper</span>
+          </div>
+        </div>
+
+        <!-- VM-2 -->
+        <div class="vm-box" style="border-color:#059669">
+          <div class="vm-head" style="background:#062320">
+            <div class="vm-name">📊 VM-2: api-application</div>
+            <div class="vm-ram">24 GB RAM · 6 vCPU</div>
+          </div>
+          <div class="vm-containers">
+            <span class="c-box c-app">🐍 fastapi-backend</span>
+            <span class="c-box c-app">⚛️ react-nginx</span>
+            <span class="c-box c-app">🔑 keycloak</span>
+            <span class="c-box c-ai">🤖 claude-proxy</span>
+            <span class="c-box c-app">🔴 redis-session</span>
+          </div>
+        </div>
+
+        <!-- VM-3 -->
+        <div class="vm-box" style="border-color:#dc2626">
+          <div class="vm-head" style="background:#2d0a0a">
+            <div class="vm-name">🛡️ VM-3: api-security</div>
+            <div class="vm-ram">8 GB RAM · 2 vCPU</div>
+          </div>
+          <div class="vm-containers">
+            <span class="c-box c-sec">🔒 wireguard-vpn</span>
+            <span class="c-box c-sec">👁️ wazuh-agent</span>
+            <span class="c-box c-sec">☁️ cloudflare-tunnel</span>
+          </div>
+        </div>
+
+        <div style="font-size:10px;color:#475569;text-align:right;padding:4px 0">รวม: 3 VMs · 12 Containers · ใช้ RAM 56/64 GB</div>
+      </div>
+    </div>
+
+    <!-- Server 2: Data Lake -->
+    <div class="server-box">
+      <div class="server-head" style="background:linear-gradient(90deg,#1a0533,#1e293b)">
+        <div class="server-icon">🗄️</div>
+        <div>
+          <div class="server-title">Server 2 — Data Lake & Warehouse Server</div>
+          <div class="server-sub">เครื่องแม่ข่าย แบบที่ 3 · ราคากลาง 780,000 บาท</div>
+        </div>
+      </div>
+      <div class="server-spec">32-core × 2 Socket · 512 GB RAM · Ubuntu Server 22.04 LTS · K3s Node</div>
+      <div class="server-body">
+
+        <!-- VM-4 -->
+        <div class="vm-box" style="border-color:#7c3aed">
+          <div class="vm-head" style="background:#1a0533">
+            <div class="vm-name">🪣 VM-4: data-storage</div>
+            <div class="vm-ram">256 GB RAM · 16 vCPU</div>
+          </div>
+          <div class="vm-containers">
+            <span class="c-box c-db">🪣 minio</span>
+            <span class="c-box c-db">⚡ clickhouse</span>
+          </div>
+        </div>
+
+        <!-- VM-5 -->
+        <div class="vm-box" style="border-color:#9333ea">
+          <div class="vm-head" style="background:#1a0533">
+            <div class="vm-name">🐘 VM-5: data-db</div>
+            <div class="vm-ram">96 GB RAM · 8 vCPU</div>
+          </div>
+          <div class="vm-containers">
+            <span class="c-box c-db">🐘 postgresql</span>
+            <span class="c-box c-db">🔴 redis-cache</span>
+            <span class="c-box c-db">🔍 elasticsearch</span>
+            <span class="c-box c-db">📊 kibana</span>
+          </div>
+        </div>
+
+        <!-- VM-6 -->
+        <div class="vm-box" style="border-color:#d97706">
+          <div class="vm-head" style="background:#1a1200">
+            <div class="vm-name">🔄 VM-6: data-etl</div>
+            <div class="vm-ram">64 GB RAM · 12 vCPU</div>
+          </div>
+          <div class="vm-containers">
+            <span class="c-box c-devops">⚡ spark-master</span>
+            <span class="c-box c-devops">⚡ spark-worker-1</span>
+            <span class="c-box c-devops">⚡ spark-worker-2</span>
+          </div>
+        </div>
+
+        <!-- VM-7 -->
+        <div class="vm-box" style="border-color:#0d9488">
+          <div class="vm-head" style="background:#0a1f1f">
+            <div class="vm-name">🔧 VM-7: data-devops</div>
+            <div class="vm-ram">48 GB RAM · 8 vCPU</div>
+          </div>
+          <div class="vm-containers">
+            <span class="c-box c-mon">📦 gitlab-ce</span>
+            <span class="c-box c-mon">📡 prometheus</span>
+            <span class="c-box c-mon">📊 grafana</span>
+            <span class="c-box c-mon">👁️ wazuh-manager</span>
+          </div>
+        </div>
+
+        <div style="font-size:10px;color:#475569;text-align:right;padding:4px 0">รวม: 4 VMs · 13 Containers · ใช้ RAM 464/512 GB</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Edge Servers -->
+  <div class="edge-strip">
+    <div class="edge-head">
+      <div style="font-size:28px">📡</div>
+      <div>
+        <div class="edge-title">Edge Server × 103 — แต่ละหน่วยบริการ (Mini PC)</div>
+        <div style="font-size:11px;color:#94a3b8">ไม่มี VM · Docker containers โดยตรงบน Ubuntu 22.04 · i5/N100, 16GB RAM, 256GB NVMe</div>
+      </div>
+    </div>
+    <div class="edge-body">
+      <div class="edge-unit">🏥 รพ.นำร่อง ×10<br><span style="font-size:9px;color:#9a3412">Phase 1</span></div>
+      <div style="color:#475569;font-size:20px">→</div>
+      <div class="edge-unit">🏥 รพ.ขยาย ×93<br><span style="font-size:9px;color:#9a3412">Phase 2</span></div>
+      <div style="color:#475569;font-size:20px">→</div>
+      <div style="background:#0f172a;border:1px dashed #c2410c44;border-radius:8px;padding:8px 14px">
+        <div style="font-size:11px;color:#fb923c;font-weight:700;margin-bottom:6px">3 containers / เครื่อง:</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span class="c-box c-edge">🔌 i-him-broker</span>
+          <span class="c-box c-edge">🔄 etl-agent</span>
+          <span class="c-box c-edge">🔒 wireguard-client</span>
+        </div>
+      </div>
+      <div style="color:#475569;font-size:20px">→</div>
+      <div style="font-size:11px;color:#fb923c;font-weight:600">103 × 3 = <span style="font-size:18px;color:#f97316">309</span><br>containers รวม</div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 3: Data Flow SVG Diagram -->
+<div class="sec">
+  <div class="sec-title">3. Data Flow Diagram — ข้อมูลไหลอย่างไร</div>
+  <div class="flow-wrapper">
+    <div class="flow-title">▌ R1-DC Data Flow — Single Pipeline Strategy</div>
+    <svg class="flow-svg" viewBox="0 0 1100 520" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#475569"/>
+        </marker>
+        <marker id="arr-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#3b82f6"/>
+        </marker>
+        <marker id="arr-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#10b981"/>
+        </marker>
+        <marker id="arr-purple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#8b5cf6"/>
+        </marker>
+        <marker id="arr-orange" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#f97316"/>
+        </marker>
+      </defs>
+
+      <!-- Background sections -->
+      <!-- Zone: Edge -->
+      <rect x="10" y="10" width="160" height="500" rx="10" fill="#1c0a00" stroke="#c2410c" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+      <text x="90" y="30" text-anchor="middle" fill="#fb923c" font-size="9" font-weight="bold">EDGE ZONE</text>
+
+      <!-- Zone: Integration -->
+      <rect x="185" y="10" width="175" height="500" rx="10" fill="#0c1a2e" stroke="#1d4ed8" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+      <text x="272" y="30" text-anchor="middle" fill="#60a5fa" font-size="9" font-weight="bold">INTEGRATION ZONE</text>
+
+      <!-- Zone: Storage -->
+      <rect x="375" y="10" width="175" height="500" rx="10" fill="#1a0533" stroke="#7c3aed" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+      <text x="462" y="30" text-anchor="middle" fill="#c084fc" font-size="9" font-weight="bold">STORAGE ZONE</text>
+
+      <!-- Zone: AI -->
+      <rect x="565" y="10" width="165" height="500" rx="10" fill="#1a0a33" stroke="#9333ea" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+      <text x="647" y="30" text-anchor="middle" fill="#e879f9" font-size="9" font-weight="bold">AI ZONE</text>
+
+      <!-- Zone: Application -->
+      <rect x="745" y="10" width="170" height="500" rx="10" fill="#062320" stroke="#059669" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+      <text x="830" y="30" text-anchor="middle" fill="#34d399" font-size="9" font-weight="bold">APPLICATION ZONE</text>
+
+      <!-- Zone: User -->
+      <rect x="930" y="10" width="160" height="500" rx="10" fill="#0f2010" stroke="#16a34a" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+      <text x="1010" y="30" text-anchor="middle" fill="#4ade80" font-size="9" font-weight="bold">USER ZONE</text>
+
+      <!-- ===== EDGE ZONE ===== -->
+      <!-- HIS Sources -->
+      <rect x="20" y="45" width="140" height="36" rx="6" fill="#3b1500" stroke="#c2410c" stroke-width="1"/>
+      <text x="90" y="59" text-anchor="middle" fill="#fb923c" font-size="10" font-weight="bold">🏥 HIS Sources</text>
+      <text x="90" y="73" text-anchor="middle" fill="#9a3412" font-size="9">HOSxP · JHCIS · HC2010</text>
+
+      <!-- Non-HIS Sources -->
+      <rect x="20" y="100" width="140" height="36" rx="6" fill="#1a0e00" stroke="#c2410c" stroke-width="1"/>
+      <text x="90" y="114" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="bold">📋 Non-HIS</text>
+      <text x="90" y="128" text-anchor="middle" fill="#92400e" font-size="9">GFMIS · HRMS · CMIS</text>
+
+      <!-- Edge Mini PC (VM-less) -->
+      <rect x="20" y="165" width="140" height="72" rx="8" fill="#0f172a" stroke="#c2410c" stroke-width="1.5"/>
+      <text x="90" y="180" text-anchor="middle" fill="#fb923c" font-size="10" font-weight="bold">📦 Edge Mini PC</text>
+      <text x="90" y="194" text-anchor="middle" fill="#64748b" font-size="9">Docker (no VM)</text>
+      <rect x="28" y="201" width="124" height="16" rx="4" fill="#1c0a00" stroke="#c2410c44" stroke-width="1"/>
+      <text x="90" y="212" text-anchor="middle" fill="#fb923c" font-size="9">🔌 i-him-broker</text>
+      <rect x="28" y="220" width="60" height="13" rx="4" fill="#1c0a00" stroke="#c2410c44" stroke-width="1"/>
+      <text x="58" y="230" text-anchor="middle" fill="#fb923c" font-size="9">🔄 etl-agent</text>
+      <rect x="92" y="220" width="60" height="13" rx="4" fill="#1c0a00" stroke="#c2410c44" stroke-width="1"/>
+      <text x="122" y="230" text-anchor="middle" fill="#fb923c" font-size="9">🔒 vpn-client</text>
+
+      <!-- VPN Tunnel label -->
+      <rect x="20" y="260" width="140" height="22" rx="5" fill="#0a1525" stroke="#1e40af" stroke-width="1"/>
+      <text x="90" y="275" text-anchor="middle" fill="#60a5fa" font-size="9">🔒 WireGuard VPN</text>
+
+      <!-- MOPH Cloud -->
+      <rect x="20" y="370" width="140" height="30" rx="6" fill="#0a2000" stroke="#16a34a" stroke-width="1"/>
+      <text x="90" y="381" text-anchor="middle" fill="#4ade80" font-size="9" font-weight="bold">☁️ MOPH Cloud</text>
+      <text x="90" y="393" text-anchor="middle" fill="#16a34a" font-size="9">HDC · sw.สต. API</text>
+
+      <!-- ===== INTEGRATION ZONE ===== -->
+      <!-- VM-1 Box -->
+      <rect x="193" y="42" width="158" height="165" rx="8" fill="#0c1a2e" stroke="#1d4ed8" stroke-width="1.5"/>
+      <text x="272" y="56" text-anchor="middle" fill="#93c5fd" font-size="9" font-weight="bold">VM-1: api-integration (24GB)</text>
+
+      <!-- Kong -->
+      <rect x="200" y="62" width="144" height="22" rx="5" fill="#0c2945" stroke="#1d4ed8" stroke-width="1"/>
+      <text x="272" y="76" text-anchor="middle" fill="#60a5fa" font-size="10">🚪 kong-gateway</text>
+
+      <!-- HAPI FHIR -->
+      <rect x="200" y="88" width="144" height="22" rx="5" fill="#0c2945" stroke="#1d4ed8" stroke-width="1"/>
+      <text x="272" y="102" text-anchor="middle" fill="#60a5fa" font-size="10">🔥 hapi-fhir</text>
+
+      <!-- Kafka -->
+      <rect x="200" y="114" width="144" height="22" rx="5" fill="#0c2945" stroke="#1d4ed8" stroke-width="1"/>
+      <text x="272" y="128" text-anchor="middle" fill="#60a5fa" font-size="10">📨 kafka-broker</text>
+
+      <!-- Zookeeper -->
+      <rect x="200" y="140" width="144" height="22" rx="5" fill="#0c2945" stroke="#1d4ed8" stroke-width="1"/>
+      <text x="272" y="154" text-anchor="middle" fill="#60a5fa" font-size="10">🔄 zookeeper</text>
+
+      <!-- Spark (ETL) in VM-6 representated here -->
+      <rect x="193" y="218" width="158" height="100" rx="8" fill="#0f1a00" stroke="#d97706" stroke-width="1.5"/>
+      <text x="272" y="232" text-anchor="middle" fill="#fbbf24" font-size="9" font-weight="bold">VM-6: data-etl (64GB)</text>
+      <rect x="200" y="239" width="144" height="18" rx="4" fill="#1a1200" stroke="#d97706" stroke-width="1"/>
+      <text x="272" y="251" text-anchor="middle" fill="#fbbf24" font-size="9">⚡ spark-master</text>
+      <rect x="200" y="261" width="68" height="18" rx="4" fill="#1a1200" stroke="#d97706" stroke-width="1"/>
+      <text x="234" y="273" text-anchor="middle" fill="#fbbf24" font-size="9">⚡ worker-1</text>
+      <rect x="274" y="261" width="70" height="18" rx="4" fill="#1a1200" stroke="#d97706" stroke-width="1"/>
+      <text x="309" y="273" text-anchor="middle" fill="#fbbf24" font-size="9">⚡ worker-2</text>
+      <text x="272" y="305" text-anchor="middle" fill="#92400e" font-size="9">Non-HIS ETL Pipeline</text>
+
+      <!-- ===== STORAGE ZONE ===== -->
+      <!-- VM-4 -->
+      <rect x="383" y="42" width="158" height="90" rx="8" fill="#1a0533" stroke="#7c3aed" stroke-width="1.5"/>
+      <text x="462" y="56" text-anchor="middle" fill="#c084fc" font-size="9" font-weight="bold">VM-4: data-storage (256GB)</text>
+      <rect x="390" y="62" width="144" height="22" rx="5" fill="#2a0a45" stroke="#7c3aed" stroke-width="1"/>
+      <text x="462" y="76" text-anchor="middle" fill="#c084fc" font-size="10">🪣 minio (Data Lake)</text>
+      <rect x="390" y="88" width="144" height="22" rx="5" fill="#2a0a45" stroke="#7c3aed" stroke-width="1"/>
+      <text x="462" y="102" text-anchor="middle" fill="#c084fc" font-size="10">⚡ clickhouse (OLAP)</text>
+
+      <!-- VM-5 -->
+      <rect x="383" y="145" width="158" height="115" rx="8" fill="#1a0533" stroke="#9333ea" stroke-width="1.5"/>
+      <text x="462" y="159" text-anchor="middle" fill="#e879f9" font-size="9" font-weight="bold">VM-5: data-db (96GB)</text>
+      <rect x="390" y="166" width="144" height="18" rx="4" fill="#2a0a45" stroke="#9333ea" stroke-width="1"/>
+      <text x="462" y="178" text-anchor="middle" fill="#e879f9" font-size="9">🐘 postgresql</text>
+      <rect x="390" y="188" width="68" height="18" rx="4" fill="#2a0a45" stroke="#9333ea" stroke-width="1"/>
+      <text x="424" y="200" text-anchor="middle" fill="#e879f9" font-size="9">🔴 redis</text>
+      <rect x="462" y="188" width="72" height="18" rx="4" fill="#2a0a45" stroke="#9333ea" stroke-width="1"/>
+      <text x="498" y="200" text-anchor="middle" fill="#e879f9" font-size="9">🔍 elasticsearch</text>
+      <rect x="390" y="210" width="144" height="18" rx="4" fill="#2a0a45" stroke="#9333ea" stroke-width="1"/>
+      <text x="462" y="222" text-anchor="middle" fill="#e879f9" font-size="9">📊 kibana</text>
+      <text x="462" y="250" text-anchor="middle" fill="#6d28d9" font-size="9">NAS ×4 (Veeam Target)</text>
+
+      <!-- ===== AI ZONE ===== -->
+      <!-- Claude API (External) -->
+      <rect x="573" y="42" width="148" height="110" rx="8" fill="#1a0a33" stroke="#9333ea" stroke-width="2"/>
+      <text x="647" y="58" text-anchor="middle" fill="#e879f9" font-size="10" font-weight="bold">🤖 Claude API</text>
+      <text x="647" y="72" text-anchor="middle" fill="#9333ea" font-size="9">api.anthropic.com</text>
+
+      <!-- claude-proxy container -->
+      <rect x="580" y="80" width="134" height="20" rx="4" fill="#2a0a45" stroke="#9333ea" stroke-width="1"/>
+      <text x="647" y="93" text-anchor="middle" fill="#c084fc" font-size="9">🤖 claude-proxy (VM-2)</text>
+
+      <rect x="580" y="104" width="134" height="20" rx="4" fill="#0a0220" stroke="#6d28d9" stroke-width="1"/>
+      <text x="647" y="117" text-anchor="middle" fill="#8b5cf6" font-size="9">📊 context-builder</text>
+
+      <text x="647" y="140" text-anchor="middle" fill="#6b21a8" font-size="9">ส่งเฉพาะ KPI รวม</text>
+      <text x="647" y="153" text-anchor="middle" fill="#6b21a8" font-size="9">ไม่มีชื่อผู้ป่วย</text>
+
+      <!-- ===== APPLICATION ZONE ===== -->
+      <!-- VM-2 -->
+      <rect x="753" y="42" width="153" height="145" rx="8" fill="#062320" stroke="#059669" stroke-width="1.5"/>
+      <text x="829" y="56" text-anchor="middle" fill="#6ee7b7" font-size="9" font-weight="bold">VM-2: api-application (24GB)</text>
+      <rect x="760" y="62" width="139" height="19" rx="4" fill="#042e1a" stroke="#059669" stroke-width="1"/>
+      <text x="829" y="74" text-anchor="middle" fill="#34d399" font-size="9">🐍 fastapi-backend</text>
+      <rect x="760" y="85" width="139" height="19" rx="4" fill="#042e1a" stroke="#059669" stroke-width="1"/>
+      <text x="829" y="97" text-anchor="middle" fill="#34d399" font-size="9">⚛️ react-nginx</text>
+      <rect x="760" y="108" width="139" height="19" rx="4" fill="#042e1a" stroke="#059669" stroke-width="1"/>
+      <text x="829" y="120" text-anchor="middle" fill="#34d399" font-size="9">🔑 keycloak (SSO)</text>
+      <rect x="760" y="131" width="139" height="19" rx="4" fill="#042e1a" stroke="#059669" stroke-width="1"/>
+      <text x="829" y="143" text-anchor="middle" fill="#34d399" font-size="9">🔴 redis-session</text>
+      <text x="829" y="178" text-anchor="middle" fill="#047857" font-size="9">Layer 5: Application</text>
+
+      <!-- VM-3 (Security) -->
+      <rect x="753" y="200" width="153" height="80" rx="8" fill="#2d0a0a" stroke="#dc2626" stroke-width="1.5"/>
+      <text x="829" y="215" text-anchor="middle" fill="#fca5a5" font-size="9" font-weight="bold">VM-3: api-security (8GB)</text>
+      <rect x="760" y="221" width="139" height="17" rx="4" fill="#1f0606" stroke="#dc2626" stroke-width="1"/>
+      <text x="829" y="232" text-anchor="middle" fill="#f87171" font-size="9">🔒 wireguard-vpn</text>
+      <rect x="760" y="242" width="67" height="17" rx="4" fill="#1f0606" stroke="#dc2626" stroke-width="1"/>
+      <text x="793" y="253" text-anchor="middle" fill="#f87171" font-size="9">👁️ wazuh</text>
+      <rect x="831" y="242" width="68" height="17" rx="4" fill="#1f0606" stroke="#dc2626" stroke-width="1"/>
+      <text x="865" y="253" text-anchor="middle" fill="#f87171" font-size="9">☁️ cf-tunnel</text>
+
+      <!-- ===== USER ZONE ===== -->
+      <!-- Dashboard -->
+      <rect x="938" y="42" width="143" height="160" rx="8" fill="#0f2010" stroke="#16a34a" stroke-width="1.5"/>
+      <text x="1009" y="58" text-anchor="middle" fill="#4ade80" font-size="10" font-weight="bold">📊 Executive Dashboard</text>
+      <rect x="945" y="65" width="129" height="17" rx="4" fill="#062010" stroke="#16a34a" stroke-width="1"/>
+      <text x="1009" y="76" text-anchor="middle" fill="#4ade80" font-size="9">📋 CHRO — บุคลากร</text>
+      <rect x="945" y="86" width="129" height="17" rx="4" fill="#062010" stroke="#16a34a" stroke-width="1"/>
+      <text x="1009" y="97" text-anchor="middle" fill="#4ade80" font-size="9">💊 CSO — คลินิก</text>
+      <rect x="945" y="107" width="129" height="17" rx="4" fill="#062010" stroke="#16a34a" stroke-width="1"/>
+      <text x="1009" y="118" text-anchor="middle" fill="#4ade80" font-size="9">💰 CFO — การเงิน</text>
+      <rect x="945" y="128" width="129" height="17" rx="4" fill="#062010" stroke="#16a34a" stroke-width="1"/>
+      <text x="1009" y="139" text-anchor="middle" fill="#4ade80" font-size="9">🛡️ Cyber Security</text>
+      <rect x="945" y="149" width="129" height="17" rx="4" fill="#0c2a33" stroke="#0d9488" stroke-width="1"/>
+      <text x="1009" y="160" text-anchor="middle" fill="#2dd4bf" font-size="9">🤖 AI Chat (Claude)</text>
+      <text x="1009" y="193" text-anchor="middle" fill="#14532d" font-size="9">~50-100 concurrent users</text>
+
+      <!-- DevOps Zone (VM-7) -->
+      <rect x="938" y="210" width="143" height="100" rx="8" fill="#0a1f1f" stroke="#0d9488" stroke-width="1.5"/>
+      <text x="1009" y="224" text-anchor="middle" fill="#2dd4bf" font-size="9" font-weight="bold">VM-7: data-devops (48GB)</text>
+      <rect x="945" y="230" width="60" height="17" rx="4" fill="#051a1a" stroke="#0d9488" stroke-width="1"/>
+      <text x="975" y="241" text-anchor="middle" fill="#2dd4bf" font-size="9">📦 gitlab</text>
+      <rect x="1009" y="230" width="65" height="17" rx="4" fill="#051a1a" stroke="#0d9488" stroke-width="1"/>
+      <text x="1041" y="241" text-anchor="middle" fill="#2dd4bf" font-size="9">📡 prometheus</text>
+      <rect x="945" y="251" width="60" height="17" rx="4" fill="#051a1a" stroke="#0d9488" stroke-width="1"/>
+      <text x="975" y="262" text-anchor="middle" fill="#2dd4bf" font-size="9">📊 grafana</text>
+      <rect x="1009" y="251" width="65" height="17" rx="4" fill="#051a1a" stroke="#0d9488" stroke-width="1"/>
+      <text x="1041" y="262" text-anchor="middle" fill="#2dd4bf" font-size="9">👁️ wazuh-mgr</text>
+      <text x="1009" y="300" text-anchor="middle" fill="#134e4a" font-size="9">Monitoring &amp; DevOps</text>
+
+      <!-- ===== ARROWS / FLOW ===== -->
+      <!-- HIS → Edge -->
+      <line x1="90" y1="81" x2="90" y2="165" stroke="#c2410c" stroke-width="1.5" marker-end="url(#arr-orange)"/>
+      <!-- Non-HIS → Edge -->
+      <line x1="90" y1="136" x2="90" y2="165" stroke="#c2410c" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#arr-orange)"/>
+
+      <!-- Edge VPN → Kong (FHIR flow) -->
+      <line x1="160" y1="212" x2="193" y2="90" stroke="#1d4ed8" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+      <!-- Edge ETL → Spark -->
+      <line x1="160" y1="225" x2="193" y2="255" stroke="#d97706" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#arr)"/>
+      <!-- MOPH → Kong -->
+      <line x1="160" y1="385" x2="193" y2="125" stroke="#16a34a" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arr-green)"/>
+
+      <!-- Kong → HAPI FHIR (internal, shown by stack) -->
+      <!-- HAPI FHIR → Kafka (internal) -->
+      <!-- Kafka → MinIO (FHIR Raw) -->
+      <line x1="351" y1="114" x2="383" y2="74" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+      <!-- Spark → ClickHouse -->
+      <line x1="351" y1="270" x2="383" y2="94" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#arr-purple)"/>
+      <!-- Kafka → PostgreSQL -->
+      <line x1="351" y1="128" x2="383" y2="175" stroke="#9333ea" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arr-purple)"/>
+
+      <!-- ClickHouse → Claude Proxy -->
+      <line x1="541" y1="94" x2="573" y2="93" stroke="#9333ea" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+      <!-- ClickHouse → FastAPI -->
+      <line x1="541" y1="74" x2="753" y2="74" stroke="#059669" stroke-width="1.5" marker-end="url(#arr-green)"/>
+      <!-- PostgreSQL → FastAPI -->
+      <line x1="541" y1="175" x2="753" y2="100" stroke="#059669" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arr-green)"/>
+
+      <!-- Claude Proxy → Anthropic (external) -->
+      <path d="M 647 80 Q 647 420 647 460" stroke="#9333ea" stroke-width="1" stroke-dasharray="4,3" fill="none"/>
+      <text x="655" y="440" fill="#6d28d9" font-size="9">→ api.anthropic.com</text>
+
+      <!-- FastAPI → Dashboard -->
+      <line x1="906" y1="80" x2="938" y2="100" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr-green)"/>
+      <!-- Claude Response → AI Chat -->
+      <line x1="721" y1="114" x2="938" y2="158" stroke="#9333ea" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#arr-purple)"/>
+
+      <!-- NAS Backup label -->
+      <rect x="383" y="350" width="155" height="26" rx="6" fill="#062310" stroke="#16a34a" stroke-width="1"/>
+      <text x="460" y="360" text-anchor="middle" fill="#4ade80" font-size="9" font-weight="bold">💾 NAS Backup ×4</text>
+      <text x="460" y="371" text-anchor="middle" fill="#16a34a" font-size="9">Veeam Target · Immutable</text>
+      <!-- VM-4 → NAS -->
+      <line x1="462" y1="262" x2="462" y2="350" stroke="#16a34a" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arr-green)"/>
+
+      <!-- UPS -->
+      <rect x="195" y="430" width="140" height="22" rx="5" fill="#1a0e00" stroke="#d97706" stroke-width="1"/>
+      <text x="265" y="444" text-anchor="middle" fill="#fbbf24" font-size="9">⚡ UPS 10kVA ×2</text>
+
+      <!-- Legend -->
+      <rect x="20" y="460" width="890" height="50" rx="6" fill="#0f172a" stroke="#1e293b" stroke-width="1"/>
+      <text x="35" y="475" fill="#64748b" font-size="9" font-weight="bold">LEGEND:</text>
+      <line x1="95" y1="472" x2="115" y2="472" stroke="#1d4ed8" stroke-width="2" marker-end="url(#arr-blue)"/>
+      <text x="120" y="476" fill="#60a5fa" font-size="9">FHIR HIS Data</text>
+      <line x1="195" y1="472" x2="215" y2="472" stroke="#d97706" stroke-width="2" stroke-dasharray="3,2" marker-end="url(#arr)"/>
+      <text x="220" y="476" fill="#fbbf24" font-size="9">Non-HIS ETL</text>
+      <line x1="295" y1="472" x2="315" y2="472" stroke="#7c3aed" stroke-width="2" marker-end="url(#arr-purple)"/>
+      <text x="320" y="476" fill="#c084fc" font-size="9">Storage Write</text>
+      <line x1="395" y1="472" x2="415" y2="472" stroke="#059669" stroke-width="2" marker-end="url(#arr-green)"/>
+      <text x="420" y="476" fill="#34d399" font-size="9">API Read/Response</text>
+      <line x1="510" y1="472" x2="530" y2="472" stroke="#9333ea" stroke-width="2" stroke-dasharray="3,2" marker-end="url(#arr-purple)"/>
+      <text x="535" y="476" fill="#e879f9" font-size="9">Claude AI</text>
+      <line x1="590" y1="472" x2="610" y2="472" stroke="#16a34a" stroke-width="2" stroke-dasharray="3,2" marker-end="url(#arr-green)"/>
+      <text x="615" y="476" fill="#4ade80" font-size="9">Backup</text>
+
+      <text x="35" y="500" fill="#64748b" font-size="9">⬛ VMs: Server 1 = VM-1,2,3 (API) · Server 2 = VM-4,5,6,7 (Data) · Edge = no VM (direct Docker)</text>
+    </svg>
+  </div>
+</div>
+
+<!-- Section 4: Container Summary Table -->
+<div class="sec">
+  <div class="sec-title">4. ตารางสรุป Container ทั้งหมด</div>
+  <table class="stbl">
+    <thead>
+      <tr><th>VM</th><th>Server</th><th>Container Name</th><th>หน้าที่</th><th>Layer</th><th>RAM</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="vm-badge">VM-1</span>api-integration</td><td>Server 1</td><td>🚪 kong-gateway</td><td>API Gateway · Rate Limit · Auth · Route</td><td><span class="tag t-api">Integration</span></td><td>4 GB</td></tr>
+      <tr><td><span class="vm-badge">VM-1</span>api-integration</td><td>Server 1</td><td>🔥 hapi-fhir</td><td>แปลง HIS → HL7 FHIR R4 · 43 แฟ้ม</td><td><span class="tag t-api">Integration</span></td><td>8 GB</td></tr>
+      <tr><td><span class="vm-badge">VM-1</span>api-integration</td><td>Server 1</td><td>📨 kafka-broker</td><td>Message Queue · Buffer · Streaming</td><td><span class="tag t-api">Integration</span></td><td>6 GB</td></tr>
+      <tr><td><span class="vm-badge">VM-1</span>api-integration</td><td>Server 1</td><td>🔄 zookeeper</td><td>Kafka Coordination Service</td><td><span class="tag t-api">Integration</span></td><td>2 GB</td></tr>
+      <tr style="background:#0a1520"><td><span class="vm-badge">VM-2</span>api-application</td><td>Server 1</td><td>🐍 fastapi-backend</td><td>REST API + WebSocket · ดึง ClickHouse · Auth</td><td><span class="tag t-app">Application</span></td><td>6 GB</td></tr>
+      <tr style="background:#0a1520"><td><span class="vm-badge">VM-2</span>api-application</td><td>Server 1</td><td>⚛️ react-nginx</td><td>Dashboard Frontend · SPA · Chart.js</td><td><span class="tag t-app">Application</span></td><td>2 GB</td></tr>
+      <tr style="background:#0a1520"><td><span class="vm-badge">VM-2</span>api-application</td><td>Server 1</td><td>🔑 keycloak</td><td>SSO · RBAC · MFA · LDAP</td><td><span class="tag t-app">Application</span></td><td>4 GB</td></tr>
+      <tr style="background:#0a1520"><td><span class="vm-badge">VM-2</span>api-application</td><td>Server 1</td><td>🤖 claude-proxy</td><td>ส่ง KPI รวม → Claude API → ตอบ</td><td><span class="tag t-ai">AI</span></td><td>2 GB</td></tr>
+      <tr style="background:#0a1520"><td><span class="vm-badge">VM-2</span>api-application</td><td>Server 1</td><td>🔴 redis-session</td><td>Session + Cache Dashboard</td><td><span class="tag t-app">Application</span></td><td>2 GB</td></tr>
+      <tr><td><span class="vm-badge">VM-3</span>api-security</td><td>Server 1</td><td>🔒 wireguard-vpn</td><td>VPN Server · Tunnel Edge 103 แห่ง</td><td><span class="tag t-sec">Security</span></td><td>1 GB</td></tr>
+      <tr><td><span class="vm-badge">VM-3</span>api-security</td><td>Server 1</td><td>👁️ wazuh-agent</td><td>Security Monitor · Log Collect</td><td><span class="tag t-sec">Security</span></td><td>2 GB</td></tr>
+      <tr><td><span class="vm-badge">VM-3</span>api-security</td><td>Server 1</td><td>☁️ cloudflare-tunnel</td><td>DDoS Protection · CDN Tunnel</td><td><span class="tag t-sec">Security</span></td><td>1 GB</td></tr>
+      <tr style="background:#0d0020"><td><span class="vm-badge">VM-4</span>data-storage</td><td>Server 2</td><td>🪣 minio</td><td>Data Lake · Raw FHIR JSON · S3-Compatible</td><td><span class="tag t-db">Storage</span></td><td>64 GB</td></tr>
+      <tr style="background:#0d0020"><td><span class="vm-badge">VM-4</span>data-storage</td><td>Server 2</td><td>⚡ clickhouse</td><td>OLAP Warehouse · Dashboard Query</td><td><span class="tag t-db">Storage</span></td><td>128 GB</td></tr>
+      <tr><td><span class="vm-badge">VM-5</span>data-db</td><td>Server 2</td><td>🐘 postgresql</td><td>Transactional DB · User/Config/Master</td><td><span class="tag t-db">Storage</span></td><td>32 GB</td></tr>
+      <tr><td><span class="vm-badge">VM-5</span>data-db</td><td>Server 2</td><td>🔴 redis-cache</td><td>Cache KPI · ลด DB Load</td><td><span class="tag t-db">Storage</span></td><td>16 GB</td></tr>
+      <tr><td><span class="vm-badge">VM-5</span>data-db</td><td>Server 2</td><td>🔍 elasticsearch</td><td>Full-text Search · Log Index</td><td><span class="tag t-db">Storage</span></td><td>24 GB</td></tr>
+      <tr><td><span class="vm-badge">VM-5</span>data-db</td><td>Server 2</td><td>📊 kibana</td><td>Log Visualization · Search UI</td><td><span class="tag t-db">Storage</span></td><td>4 GB</td></tr>
+      <tr style="background:#0a1200"><td><span class="vm-badge">VM-6</span>data-etl</td><td>Server 2</td><td>⚡ spark-master</td><td>ETL Coordinator · Job Scheduler</td><td><span class="tag t-devops">ETL</span></td><td>16 GB</td></tr>
+      <tr style="background:#0a1200"><td><span class="vm-badge">VM-6</span>data-etl</td><td>Server 2</td><td>⚡ spark-worker-1</td><td>Non-HIS Processing (GFMIS, HRMS)</td><td><span class="tag t-devops">ETL</span></td><td>24 GB</td></tr>
+      <tr style="background:#0a1200"><td><span class="vm-badge">VM-6</span>data-etl</td><td>Server 2</td><td>⚡ spark-worker-2</td><td>CMIS, Excel, HDC Processing</td><td><span class="tag t-devops">ETL</span></td><td>24 GB</td></tr>
+      <tr><td><span class="vm-badge">VM-7</span>data-devops</td><td>Server 2</td><td>📦 gitlab-ce</td><td>Git · CI/CD · Code Review</td><td><span class="tag t-devops">DevOps</span></td><td>8 GB</td></tr>
+      <tr><td><span class="vm-badge">VM-7</span>data-devops</td><td>Server 2</td><td>📡 prometheus</td><td>Metrics Collect · Alert Rules</td><td><span class="tag t-devops">DevOps</span></td><td>4 GB</td></tr>
+      <tr><td><span class="vm-badge">VM-7</span>data-devops</td><td>Server 2</td><td>📊 grafana</td><td>Infrastructure Dashboard</td><td><span class="tag t-devops">DevOps</span></td><td>2 GB</td></tr>
+      <tr><td><span class="vm-badge">VM-7</span>data-devops</td><td>Server 2</td><td>👁️ wazuh-manager</td><td>SIEM Central · Alert 103+ แห่ง</td><td><span class="tag t-sec">Security</span></td><td>16 GB</td></tr>
+      <tr style="background:#150a00"><td><span class="vm-badge" style="color:#fb923c;border-color:#c2410c">Edge</span>ไม่มี VM</td><td>Mini PC ×103</td><td>🔌 i-him-broker</td><td>Local HIS → FHIR → ส่ง Kafka</td><td><span class="tag t-edge">Edge</span></td><td>4 GB/เครื่อง</td></tr>
+      <tr style="background:#150a00"><td><span class="vm-badge" style="color:#fb923c;border-color:#c2410c">Edge</span>ไม่มี VM</td><td>Mini PC ×103</td><td>🔄 etl-agent</td><td>Non-HIS Local → Cloud ETL</td><td><span class="tag t-edge">Edge</span></td><td>4 GB/เครื่อง</td></tr>
+      <tr style="background:#150a00"><td><span class="vm-badge" style="color:#fb923c;border-color:#c2410c">Edge</span>ไม่มี VM</td><td>Mini PC ×103</td><td>🔒 wireguard-client</td><td>VPN Tunnel → R1-DC</td><td><span class="tag t-edge">Edge</span></td><td>1 GB/เครื่อง</td></tr>
+      <tr style="background:#0d2137"><td colspan="2" style="color:#38bdf8;font-weight:700">📊 Central Total</td><td colspan="2" style="color:#38bdf8;font-weight:700">7 VMs · 25 Containers</td><td colspan="2" style="color:#38bdf8;font-weight:700">Server 1: ~56GB · Server 2: ~462GB</td></tr>
+      <tr style="background:#1a0a00"><td colspan="2" style="color:#fb923c;font-weight:700">📡 Edge Total</td><td colspan="2" style="color:#fb923c;font-weight:700">103 × 3 = 309 Containers</td><td colspan="2" style="color:#fb923c;font-weight:700">~9GB/เครื่อง จาก 16GB</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">
+  R1-DC VM & Docker Diagram · เขตสุขภาพที่ 1 · 7 VMs · 25 Central Containers · 309 Edge Containers · จัดทำ 19 มีนาคม 2569
+</div>
+
+</div>
+</body>
+</html>
