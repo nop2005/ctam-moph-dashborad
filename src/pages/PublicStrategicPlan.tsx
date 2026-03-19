@@ -51,6 +51,7 @@ export default function PublicStrategicPlan() {
               <Button
                 variant="ghost"
                 className="w-full justify-start h-12 text-base gap-3 hover:bg-primary/5"
+                onClick={() => setArchOpen(true)}
               >
                 <Network className="h-5 w-5 text-primary" />
                 สถาปัตยกรรม R1- Datacenter
