@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>R1-DC System Design v2 — ราคากลาง ธ.ค. 2568</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun','Segoe UI',sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:14px}
+.page{max-width:1280px;margin:0 auto;padding:24px}
+
+/* Header */
+.header{background:linear-gradient(135deg,#0d2137 0%,#1a4a7a 60%,#0e7490 100%);color:#fff;border-radius:16px;padding:32px 40px;margin-bottom:24px;position:relative;overflow:hidden}
+.header::before{content:'';position:absolute;right:-60px;top:-60px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,0.04)}
+.header h1{font-size:26px;font-weight:700;margin-bottom:6px}
+.header .sub{font-size:14px;opacity:.8;margin-bottom:16px}
+.badge-row{display:flex;flex-wrap:wrap;gap:8px}
+.hbadge{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:20px;padding:4px 14px;font-size:12px}
+.hbadge-green{background:rgba(34,197,94,0.25);border:1px solid rgba(34,197,94,0.5);border-radius:20px;padding:4px 14px;font-size:12px}
+.hbadge-red{background:rgba(239,68,68,0.25);border:1px solid rgba(239,68,68,0.5);border-radius:20px;padding:4px 14px;font-size:12px}
+
+/* Section */
+.section{margin-bottom:28px}
+.sec-title{font-size:16px;font-weight:700;color:#0d2137;border-left:4px solid #0e7490;padding-left:12px;margin-bottom:16px}
+.sec-sub{font-size:13px;color:#555;margin-bottom:16px}
+
+/* Notice */
+.notice{border-radius:10px;padding:14px 18px;margin-bottom:14px;font-size:12px;line-height:1.7}
+.notice-yellow{background:#fefce8;border:1px solid #fde047}
+.notice-blue{background:#eff6ff;border:1px solid #93c5fd}
+.notice-red{background:#fef2f2;border:1px solid #fca5a5}
+.notice-green{background:#f0fdf4;border:1px solid #86efac}
+.notice strong{font-size:13px;display:block;margin-bottom:4px}
+.notice ul{margin-left:16px}
+
+/* Architecture */
+.arch{background:#fff;border-radius:12px;border:1px solid #e0e0e0;padding:24px;margin-bottom:20px;overflow-x:auto}
+.arch-title{font-size:13px;font-weight:600;color:#0d2137;margin-bottom:20px;text-align:center}
+.layers{display:flex;flex-direction:column;gap:0}
+.layer{display:flex;align-items:stretch;min-height:80px;border-radius:10px;overflow:hidden;margin-bottom:6px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.layer-label{width:130px;flex-shrink:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;font-weight:700;padding:8px;color:#fff;line-height:1.4}
+.layer-body{flex:1;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 14px;background:#f8fafc}
+.l1 .layer-label{background:#7c3aed} .l1 .layer-body{border-left:3px solid #7c3aed}
+.l2 .layer-label{background:#0369a1} .l2 .layer-body{border-left:3px solid #0369a1}
+.l3 .layer-label{background:#0d9488} .l3 .layer-body{border-left:3px solid #0d9488}
+.l4 .layer-label{background:#b45309} .l4 .layer-body{border-left:3px solid #b45309}
+.l5 .layer-label{background:#dc2626} .l5 .layer-body{border-left:3px solid #dc2626}
+.box{border-radius:8px;padding:5px 10px;font-size:11px;font-weight:500;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.b-his{background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd}
+.b-nonhis{background:#ede9fe;color:#6d28d9;border:1px solid #ddd6fe}
+.b-fhir{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+.b-api{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.b-db{background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd}
+.b-ai{background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff}
+.b-sec{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}
+.b-app{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.b-edge{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}
+.arrow-down{text-align:center;font-size:20px;color:#94a3b8;margin:2px 0;line-height:1}
+
+/* Data Flow */
+.flow-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:stretch;margin-bottom:20px}
+.flow-step{background:#fff;border:1px solid #e0e0e0;padding:16px 12px;text-align:center;position:relative}
+.flow-step:first-child{border-radius:10px 0 0 10px}
+.flow-step:last-child{border-radius:0 10px 10px 0}
+.flow-step::after{content:'→';position:absolute;right:-14px;top:50%;transform:translateY(-50%);font-size:20px;color:#94a3b8;z-index:2}
+.flow-step:last-child::after{display:none}
+.fs-icon{font-size:28px;margin-bottom:6px}
+.fs-title{font-size:12px;font-weight:700;color:#0d2137;margin-bottom:4px}
+.fs-body{font-size:10px;color:#64748b;line-height:1.4}
+.fs1{border-top:3px solid #7c3aed}.fs2{border-top:3px solid #0369a1}.fs3{border-top:3px solid #0d9488}.fs4{border-top:3px solid #b45309}.fs5{border-top:3px solid #166534}
+
+/* HW Cards */
+.hw-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.hw-card{background:#fff;border-radius:10px;border:1px solid #e0e0e0;overflow:hidden}
+.hw-head{padding:10px 14px;font-size:12px;font-weight:700;color:#fff;display:flex;justify-content:space-between;align-items:center}
+.hw-badge-std{background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.4);border-radius:10px;padding:2px 8px;font-size:10px;flex-shrink:0}
+.hw-body{padding:14px}
+.hw-row{display:flex;justify-content:space-between;align-items:flex-start;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:11px}
+.hw-row:last-child{border:none}
+.hw-key{color:#64748b;width:110px;flex-shrink:0}
+.hw-val{color:#0d2137;font-weight:500;text-align:right;flex:1}
+.hw-purpose{font-size:10px;color:#64748b;margin-top:8px;padding:6px 8px;background:#f8fafc;border-radius:6px}
+.hw-qty{display:inline-block;background:#e0f2fe;color:#0369a1;border-radius:4px;padding:1px 6px;font-size:10px;margin-left:4px}
+.hw-price{font-size:13px;font-weight:700;color:#0d2137;margin-top:10px;padding:8px 10px;background:#f1f5f9;border-radius:6px;display:flex;justify-content:space-between;align-items:center;gap:4px}
+.price-label{font-size:10px;color:#64748b;font-weight:400;display:block}
+.price-ref{font-size:9px;color:#fff;padding:2px 6px;border-radius:8px;font-weight:600;flex-shrink:0}
+.ref-std{background:#16a34a}
+.ref-mkt{background:#d97706}
+.ref-free{background:#0369a1}
+
+/* SW Cards */
+.sw-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:20px}
+.sw-card{background:#fff;border-radius:10px;border:1px solid #e0e0e0;overflow:hidden}
+.sw-head{padding:10px 14px;font-size:12px;font-weight:700;color:#fff}
+.sw-item{display:flex;align-items:flex-start;gap:8px;padding:8px 14px;border-bottom:1px solid #f5f5f5}
+.sw-item:last-child{border:none}
+.sw-icon{font-size:16px;flex-shrink:0;margin-top:2px}
+.sw-name{font-size:12px;font-weight:600;color:#0d2137}
+.sw-desc{font-size:10px;color:#64748b;line-height:1.4}
+
+/* Network */
+.net-box{background:#fff;border-radius:12px;border:1px solid #e0e0e0;padding:20px;margin-bottom:20px}
+.net-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.net-node{border-radius:8px;padding:8px 12px;font-size:11px;font-weight:600;text-align:center;min-width:100px;flex:1}
+.n-internet{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.n-fw{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.n-lb{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+.n-app{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7}
+.n-db{background:#ede9fe;color:#5b21b6;border:1px solid #ddd6fe}
+.n-edge{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}
+.n-soc{background:#fce7f3;color:#9d174d;border:1px solid #fbcfe8}
+.n-api{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.net-arrow{text-align:center;color:#94a3b8;font-size:12px;margin:4px 0}
+.net-sep{height:1px;background:#e0e0e0;margin:8px 0}
+
+/* Spec table */
+.spec-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:20px}
+.spec-table th{background:#0d2137;color:#fff;padding:8px 12px;text-align:left;font-weight:600}
+.spec-table td{padding:7px 12px;border-bottom:1px solid #f0f0f0;color:#1a1a2e;vertical-align:top}
+.spec-table tr:nth-child(even) td{background:#f8fafc}
+.spec-table .cat{background:#e0f2fe;color:#0369a1;font-weight:600;font-size:10px}
+.spec-table .cat-green{background:#dcfce7;color:#166534;font-weight:600;font-size:10px}
+.price-std{color:#16a34a;font-weight:700}
+.price-mkt{color:#d97706;font-weight:700}
+.total-row td{background:#0d2137 !important;color:#fff !important;font-weight:700}
+
+/* Phase roadmap */
+.roadmap{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-radius:10px;overflow:hidden;border:1px solid #e0e0e0;margin-bottom:20px}
+.phase{padding:16px}
+.phase-head{font-size:12px;font-weight:700;color:#fff;margin-bottom:12px;padding:6px 10px;border-radius:6px;text-align:center}
+.phase-item{font-size:11px;color:#374151;padding:4px 0;border-bottom:1px solid #f0f0f0;display:flex;gap:6px;align-items:flex-start}
+.phase-item:last-child{border:none}
+.phase-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;margin-top:1px}
+.ph1{background:#eff6ff}.ph2{background:#f0fdf4}.ph3{background:#fdf4ff}
+
+/* Budget */
+.budget-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.bcard{background:#fff;border-radius:10px;border:1px solid #e0e0e0;padding:14px 16px}
+.bcard-label{font-size:11px;color:#64748b;margin-bottom:4px}
+.bcard-val{font-size:20px;font-weight:700;color:#0d2137}
+.bcard-sub{font-size:10px;color:#94a3b8;margin-top:3px}
+.bc1{border-top:3px solid #0369a1}.bc2{border-top:3px solid #0d9488}.bc3{border-top:3px solid #d97706}.bc4{border-top:3px solid #7c3aed}
+
+/* Tags */
+.tag{display:inline-block;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:600;margin-right:4px}
+.t-hw{background:#dbeafe;color:#1e40af}
+.t-sw{background:#d1fae5;color:#065f46}
+.t-sec{background:#fee2e2;color:#991b1b}
+.t-ai{background:#ede9fe;color:#5b21b6}
+.tag-std{display:inline-block;background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:600}
+.tag-mkt{display:inline-block;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:600}
+.tag-na{display:inline-block;background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:600}
+.legend{display:flex;gap:16px;align-items:center;font-size:11px;margin-bottom:16px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+.footer{text-align:center;font-size:11px;color:#94a3b8;margin-top:24px;padding-top:16px;border-top:1px solid #e0e0e0}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- Header -->
+<div class="header">
+  <h1>🏥 R1-DC System Design v2</h1>
+  <div class="sub">ออกแบบระบบ Hardware & Software · เขตสุขภาพที่ 1 · ราคากลาง ธ.ค. 2568 · ใช้ Claude API + Ubuntu (ประหยัดงบ ~1.64 ล้านบาท)</div>
+  <div class="badge-row">
+    <span class="hbadge">🔗 103 หน่วยงาน · 8 จังหวัด</span>
+    <span class="hbadge">📊 HIS + Non-HIS</span>
+    <span class="hbadge">⚡ Single Pipeline Strategy</span>
+    <span class="hbadge">🤖 Claude API (AI Chat)</span>
+    <span class="hbadge">📋 เกณฑ์ราคากลาง ธ.ค. 2568</span>
+    <span class="hbadge-red">❌ ตัด: GPU Server + Backup Server + Network/Security</span>
+    <span class="hbadge-green">✅ เพิ่ม: Claude API + NAS + Veeam + UPS 10kVA</span>
+  </div>
+</div>
+
+<!-- Section 1: Architecture -->
+<div class="section">
+  <div class="sec-title">1. สถาปัตยกรรมระบบภาพรวม (System Architecture)</div>
+  <div class="sec-sub">Single Pipeline Strategy — รวมข้อมูล HIS และ Non-HIS ผ่านชั้นเดียว เพื่อลดความซ้ำซ้อนและส่งข้อมูลถึงผู้บริหารแบบ Real-time</div>
+  <div class="arch">
+    <div class="arch-title">▌ System Layer Diagram — R1-DC Health Region 1 (v2)</div>
+    <div class="layer l1">
+      <div class="layer-label">Layer 1<br>Data Sources<br>แหล่งข้อมูล</div>
+      <div class="layer-body">
+        <span class="box b-his">🏥 HIS (HOSxP)</span>
+        <span class="box b-his">🏥 HIS (JHCIS)</span>
+        <span class="box b-his">🏥 Health Care 2010</span>
+        <span class="box b-his">🏥 HIS ยี่ห้ออื่น (103 sw.)</span>
+        <span class="box b-nonhis">💰 GFMIS (งบประมาณ)</span>
+        <span class="box b-nonhis">👥 HRMS (บุคลากร)</span>
+        <span class="box b-nonhis">🔧 CMIS (ครุภัณฑ์)</span>
+        <span class="box b-nonhis">📋 HDC / sw.สต.</span>
+        <span class="box b-nonhis">📊 Excel / Google Sheets</span>
+        <span class="box b-nonhis">☁️ MOPH Cloud</span>
+      </div>
+    </div>
+    <div class="arrow-down">↓</div>
+    <div class="layer l2">
+      <div class="layer-label">Layer 2<br>Edge / Connector<br>ระดับหน่วยบริการ</div>
+      <div class="layer-body">
+        <span class="box b-edge">🖥️ Edge Server (Mini PC) — HIS Sites</span>
+        <span class="box b-fhir">⚙️ i-HIM Broker / HAPI FHIR Converter</span>
+        <span class="box b-api">🔄 ETL Agent (Non-HIS)</span>
+        <span class="box b-api">📡 API Client Module</span>
+        <span class="box b-edge">🔒 Local Firewall / VPN Client</span>
+        <span class="box b-edge">⚡ Auto-retry / Queue Buffer</span>
+      </div>
+    </div>
+    <div class="arrow-down">↓</div>
+    <div class="layer l3">
+      <div class="layer-label">Layer 3<br>Integration Hub<br>R1-DC ศูนย์กลาง</div>
+      <div class="layer-body">
+        <span class="box b-api">🚪 API Gateway (Kong)</span>
+        <span class="box b-fhir">🔥 HAPI FHIR Server (R4)</span>
+        <span class="box b-api">📨 Message Broker (Kafka)</span>
+        <span class="box b-db">🗄️ Data Lake (MinIO)</span>
+        <span class="box b-db">📦 Data Warehouse (ClickHouse)</span>
+        <span class="box b-fhir">✅ Data Quality Engine</span>
+        <span class="box b-api">🔄 ETL Pipeline (Spark)</span>
+        <span class="box b-db">🔍 Elasticsearch</span>
+      </div>
+    </div>
+    <div class="arrow-down">↓</div>
+    <div class="layer l4">
+      <div class="layer-label">Layer 4<br>AI Engine<br>ปัญญาประดิษฐ์</div>
+      <div class="layer-body">
+        <span class="box b-ai">🤖 Claude API — AI Chat Assistant (Anthropic)</span>
+        <span class="box b-ai">📊 สถิติรวม → วิเคราะห์ → ตอบ Natural Language</span>
+        <span class="box b-ai">📈 KPI Analysis + Trend Detection</span>
+        <span class="box b-ai">🔍 Anomaly Alert + Executive Summary</span>
+        <span class="box b-ai" style="background:#fef3c7;color:#92400e;border-color:#fde68a">🕐 Phase 2: ML Models (DM/Stroke/Bed Forecast)</span>
+      </div>
+    </div>
+    <div class="arrow-down">↓</div>
+    <div class="layer l5">
+      <div class="layer-label">Layer 5<br>Application<br>ระดับผู้ใช้งาน</div>
+      <div class="layer-body">
+        <span class="box b-app">📊 Executive Dashboard (Single Monitor)</span>
+        <span class="box b-app">💬 AI Chat Assistant (Claude API)</span>
+        <span class="box b-app">📋 CHRO — บุคลากร</span>
+        <span class="box b-app">💊 CSO — คลินิก/บริการ</span>
+        <span class="box b-app">💰 CFO — การเงิน</span>
+        <span class="box b-app">🔧 CIO — ครุภัณฑ์</span>
+        <span class="box b-app">🛡️ Cyber Security Dashboard</span>
+        <span class="box b-app">📅 CPPO — แผนงาน</span>
+        <span class="box b-sec">🛡️ CTAM / SOC Monitor</span>
+        <span class="box b-sec">📜 Report Template Engine</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 2: Data Flow -->
+<div class="section">
+  <div class="sec-title">2. Data Flow — Single Pipeline Strategy</div>
+  <div class="flow-grid">
+    <div class="flow-step fs1">
+      <div class="fs-icon">🏥</div>
+      <div class="fs-title">INPUT LAYER</div>
+      <div class="fs-body">103 HIS ทุกยี่ห้อ<br>+ Non-HIS (Excel, GFMIS, HRMS)<br>sw.สต. / HDC / MOPH</div>
+    </div>
+    <div class="flow-step fs2">
+      <div class="fs-icon">⚙️</div>
+      <div class="fs-title">CONVERT</div>
+      <div class="fs-body">HAPI FHIR Converter<br>แปลง HIS → HL7 FHIR R4<br>ETL สำหรับ Non-HIS</div>
+    </div>
+    <div class="flow-step fs3">
+      <div class="fs-icon">🗄️</div>
+      <div class="fs-title">PROCESSING HUB</div>
+      <div class="fs-body">API Gateway + Kafka<br>Data Lake / ClickHouse<br>Data Quality Check</div>
+    </div>
+    <div class="flow-step fs4">
+      <div class="fs-icon">🤖</div>
+      <div class="fs-title">AI (Claude API)</div>
+      <div class="fs-body">สถิติรวม → Claude<br>วิเคราะห์ + ตอบคำถาม<br>ไม่ส่งข้อมูลผู้ป่วย</div>
+    </div>
+    <div class="flow-step fs5">
+      <div class="fs-icon">📊</div>
+      <div class="fs-title">OUTPUT</div>
+      <div class="fs-body">Executive Dashboard<br>Real-time 6 มุมมอง<br>AI-powered Insights</div>
+    </div>
+  </div>
+  <div class="notice notice-blue">
+    <strong>🔒 หลักการสำคัญ — Privacy by Design</strong>
+    Claude API จะรับเฉพาะ <strong>ข้อมูลสถิติรวม</strong> เท่านั้น เช่น "DM เขต 1 ควบคุมได้ 68.2%" — ไม่ส่งชื่อ-นามสกุล, HN, เลขบัตรประชาชน หรือข้อมูลส่วนบุคคลใดๆ เพื่อปฏิบัติตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล (PDPA 2562)
+  </div>
+</div>
+
+<!-- Section 3: Hardware Design -->
+<div class="section">
+  <div class="sec-title">3. ออกแบบ Hardware — R1-DC Central (สสจ.เชียงใหม่)</div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div><span>ราคากลาง — เกณฑ์ราคากลาง ธ.ค. 2568 (รวม VAT 7% + ขนส่ง + ติดตั้ง)</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#d97706"></div><span>ราคาตลาด — ไม่มีในเกณฑ์ราคากลาง</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#0369a1"></div><span>ฟรี — Open Source</span></div>
+  </div>
+  <div class="hw-grid">
+
+    <!-- API Server -->
+    <div class="hw-card">
+      <div class="hw-head" style="background:#0369a1">
+        🖥️ API & Application Server
+        <span class="hw-badge-std">ราคากลาง</span>
+      </div>
+      <div class="hw-body">
+        <div class="hw-row"><span class="hw-key">อ้างอิง</span><span class="hw-val">เครื่องแม่ข่าย แบบที่ 2</span></div>
+        <div class="hw-row"><span class="hw-key">CPU</span><span class="hw-val">≥ 16-core × 2 ซ็อกเกต</span></div>
+        <div class="hw-row"><span class="hw-key">RAM</span><span class="hw-val">≥ 64 GB DDR4 ECC</span></div>
+        <div class="hw-row"><span class="hw-key">Storage</span><span class="hw-val">≥ 1 TB</span></div>
+        <div class="hw-row"><span class="hw-key">OS</span><span class="hw-val">Ubuntu Server 22.04 LTS (ฟรี)</span></div>
+        <div class="hw-row"><span class="hw-key">จำนวน</span><span class="hw-val"><span class="hw-qty">× 1 เครื่อง</span></span></div>
+        <div class="hw-purpose">🎯 Kong API Gateway · HAPI FHIR Server · Kafka Broker · Claude API Proxy · FastAPI Backend</div>
+        <div class="hw-price">
+          <span><span class="price-label">ราคากลาง/เครื่อง</span>330,000 บาท</span>
+          <span class="price-ref ref-std">ราคากลาง</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Lake -->
+    <div class="hw-card">
+      <div class="hw-head" style="background:#0d9488">
+        🗄️ Data Lake & Warehouse Server
+        <span class="hw-badge-std">ราคากลาง</span>
+      </div>
+      <div class="hw-body">
+        <div class="hw-row"><span class="hw-key">อ้างอิง</span><span class="hw-val">เครื่องแม่ข่าย แบบที่ 3</span></div>
+        <div class="hw-row"><span class="hw-key">CPU</span><span class="hw-val">≥ 32-core × 2 ซ็อกเกต</span></div>
+        <div class="hw-row"><span class="hw-key">RAM</span><span class="hw-val">≥ 512 GB DDR4 ECC</span></div>
+        <div class="hw-row"><span class="hw-key">Storage</span><span class="hw-val">SAS/NVMe หลาย TB (RAID)</span></div>
+        <div class="hw-row"><span class="hw-key">OS</span><span class="hw-val">Ubuntu Server 22.04 LTS (ฟรี)</span></div>
+        <div class="hw-row"><span class="hw-key">จำนวน</span><span class="hw-val"><span class="hw-qty">× 1 เครื่อง</span></span></div>
+        <div class="hw-purpose">🎯 MinIO (Data Lake) · ClickHouse (OLAP) · PostgreSQL · Elasticsearch · Redis Cache</div>
+        <div class="hw-price">
+          <span><span class="price-label">ราคากลาง/เครื่อง</span>780,000 บาท</span>
+          <span class="price-ref ref-std">ราคากลาง</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Claude API -->
+    <div class="hw-card" style="border:2px solid #7c3aed">
+      <div class="hw-head" style="background:#7c3aed">
+        🤖 Claude API — AI Assistant ✨
+        <span class="hw-badge-std">Subscribe</span>
+      </div>
+      <div class="hw-body">
+        <div class="hw-row"><span class="hw-key">ผู้ให้บริการ</span><span class="hw-val">Anthropic (api.anthropic.com)</span></div>
+        <div class="hw-row"><span class="hw-key">Model</span><span class="hw-val">Claude Haiku 4.5 / Sonnet 4.5</span></div>
+        <div class="hw-row"><span class="hw-key">ชำระเงิน</span><span class="hw-val">Pay-per-use Token</span></div>
+        <div class="hw-row"><span class="hw-key">ราคา Haiku</span><span class="hw-val">$0.80 Input / $4.00 Output per 1M tokens</span></div>
+        <div class="hw-row"><span class="hw-key">ข้อมูลที่ส่ง</span><span class="hw-val">สถิติรวม (ไม่มีชื่อผู้ป่วย)</span></div>
+        <div class="hw-row"><span class="hw-key">ประมาณการ</span><span class="hw-val">~200 queries/วัน → ~20,000 บาท/ปี</span></div>
+        <div class="hw-purpose">🎯 ถามตอบ + วิเคราะห์ + สรุป KPI Dashboard — ไม่ต้องซื้อ Hardware ประหยัด ~1.46 ล้านบาท</div>
+        <div class="hw-price">
+          <span><span class="price-label">ประมาณ/ปี</span>~20,000 บาท</span>
+          <span class="price-ref ref-mkt">Pay-per-use</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- NAS Backup -->
+    <div class="hw-card" style="border:2px solid #16a34a">
+      <div class="hw-head" style="background:#15803d">
+        💾 NAS Backup Storage ✨
+        <span class="hw-badge-std">ข้อ 16</span>
+      </div>
+      <div class="hw-body">
+        <div class="hw-row"><span class="hw-key">อ้างอิง</span><span class="hw-val">อุปกรณ์จัดเก็บ NAS ข้อ 16</span></div>
+        <div class="hw-row"><span class="hw-key">HDD Bay</span><span class="hw-val">≥ 4 ช่อง (Hot-swappable)</span></div>
+        <div class="hw-row"><span class="hw-key">Storage</span><span class="hw-val">≥ 4 TB × 4 drives</span></div>
+        <div class="hw-row"><span class="hw-key">RAID</span><span class="hw-val">RAID 0, 1, 5 รองรับ</span></div>
+        <div class="hw-row"><span class="hw-key">Network</span><span class="hw-val">≥ 2× 1GbE</span></div>
+        <div class="hw-row"><span class="hw-key">จำนวน</span><span class="hw-val"><span class="hw-qty">× 4 เครื่อง</span> (~64TB raw)</span></div>
+        <div class="hw-purpose">🎯 เป้าหมาย Veeam Backup — Immutable Storage — Ransomware Recovery</div>
+        <div class="hw-price">
+          <span><span class="price-label">35,000 × 4 เครื่อง</span>140,000 บาท</span>
+          <span class="price-ref ref-std">ราคากลาง</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Veeam -->
+    <div class="hw-card" style="border:2px solid #16a34a">
+      <div class="hw-head" style="background:#166534">
+        🔒 Veeam Backup & Replication ✨
+        <span class="hw-badge-std">ราคาตลาด</span>
+      </div>
+      <div class="hw-body">
+        <div class="hw-row"><span class="hw-key">License</span><span class="hw-val">Enterprise Plus / Per-Socket / 1 ปี</span></div>
+        <div class="hw-row"><span class="hw-key">Backup Type</span><span class="hw-val">Full + Incremental + CDP</span></div>
+        <div class="hw-row"><span class="hw-key">RPO / RTO</span><span class="hw-val">RPO ≤ 4 hr / RTO ≤ 8 hr</span></div>
+        <div class="hw-row"><span class="hw-key">Off-site</span><span class="hw-val">Replication → MOPH Cloud / GCC</span></div>
+        <div class="hw-row"><span class="hw-key">Target</span><span class="hw-val">NAS (4 เครื่อง) + MinIO Object Store</span></div>
+        <div class="hw-row"><span class="hw-key">จำนวน</span><span class="hw-val"><span class="hw-qty">× 1 ชุด</span> (3 Socket)</span></div>
+        <div class="hw-purpose">🎯 สำรอง VM ทุกตัวใน R1-DC · Instant Recovery · Anti-ransomware Immutable Backup</div>
+        <div class="hw-price">
+          <span><span class="price-label">ประมาณ/ปี (ราคาตลาด)</span>150,000 บาท</span>
+          <span class="price-ref ref-mkt">ราคาตลาด</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- UPS -->
+    <div class="hw-card" style="border:2px solid #16a34a">
+      <div class="hw-head" style="background:#b45309">
+        ⚡ UPS เครื่องสำรองไฟฟ้า 10 kVA ✨
+        <span class="hw-badge-std">ข้อ 63</span>
+      </div>
+      <div class="hw-body">
+        <div class="hw-row"><span class="hw-key">อ้างอิง</span><span class="hw-val">เครื่องสำรองไฟฟ้า ข้อ 63</span></div>
+        <div class="hw-row"><span class="hw-key">กำลัง</span><span class="hw-val">10 kVA (8,000 Watts)</span></div>
+        <div class="hw-row"><span class="hw-key">ระบบไฟ</span><span class="hw-val">3 เฟส · Input 380 VAC ±20%</span></div>
+        <div class="hw-row"><span class="hw-key">Output</span><span class="hw-val">220 VAC ±1%</span></div>
+        <div class="hw-row"><span class="hw-key">Backup Time</span><span class="hw-val">≥ 10 นาที (Full Load)</span></div>
+        <div class="hw-row"><span class="hw-key">จำนวน</span><span class="hw-val"><span class="hw-qty">× 2 เครื่อง</span> (Redundant)</span></div>
+        <div class="hw-purpose">🎯 สำรองไฟ Server Room R1-DC — ป้องกันไฟดับ/ตก กระทบระบบ — ราคารวม VAT+ขนส่ง+ติดตั้งแล้ว</div>
+        <div class="hw-price">
+          <span><span class="price-label">260,000 × 2 เครื่อง</span>520,000 บาท</span>
+          <span class="price-ref ref-std">ราคากลาง</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edge Server -->
+    <div class="hw-card">
+      <div class="hw-head" style="background:#0f766e">
+        📦 Edge Server (แต่ละหน่วยบริการ)
+        <span class="hw-badge-std">ราคาตลาด</span>
+      </div>
+      <div class="hw-body">
+        <div class="hw-row"><span class="hw-key">ประเภท</span><span class="hw-val">Mini PC / Small Form Factor</span></div>
+        <div class="hw-row"><span class="hw-key">CPU</span><span class="hw-val">Intel Core i5/i7 หรือ N100 (4–8C)</span></div>
+        <div class="hw-row"><span class="hw-key">RAM</span><span class="hw-val">16 GB DDR4</span></div>
+        <div class="hw-row"><span class="hw-key">Storage</span><span class="hw-val">256 GB NVMe SSD</span></div>
+        <div class="hw-row"><span class="hw-key">Network</span><span class="hw-val">2× 1GbE + WireGuard VPN</span></div>
+        <div class="hw-row"><span class="hw-key">OS</span><span class="hw-val">Ubuntu 22.04 LTS (ฟรี)</span></div>
+        <div class="hw-row"><span class="hw-key">จำนวน</span><span class="hw-val"><span class="hw-qty">× 103 เครื่อง</span> (103 หน่วยบริการ)</span></div>
+        <div class="hw-purpose">🎯 ติดตั้งที่แต่ละ รพ./รพ.สต. รัน i-HIM Broker / ETL Agent ดึงข้อมูล Local HIS → ส่ง R1-DC</div>
+        <div class="hw-price">
+          <span><span class="price-label">~20,000 × 103 (ราคาตลาด)</span>~2,060,000 บาท</span>
+          <span class="price-ref ref-mkt">ราคาตลาด</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="notice notice-red">
+    <strong>🔴 รายการที่มีอยู่แล้ว — ไม่จัดซื้อใหม่</strong>
+    <ul>
+      <li><strong>Backup & DR Server</strong> — มีระบบสำรองข้อมูลอยู่แล้ว</li>
+      <li><strong>Network & Security Hardware</strong> — Firewall, Core Switch, SIEM, WAF, Load Balancer — มีโครงสร้างพื้นฐานเครือข่ายอยู่แล้ว</li>
+      <li><strong>AI/ML GPU Server</strong> — ตัดออก ใช้ Claude API แทน ประหยัดงบ ~1,480,000 บาท (Phase 2 ค่อยพิจารณา)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Section 4: Hardware Spec Table -->
+<div class="section">
+  <div class="sec-title">4. ตารางรายการครุภัณฑ์ Hardware พร้อมราคากลาง</div>
+  <table class="spec-table">
+    <thead>
+      <tr><th>#</th><th>รายการ</th><th>Spec / อ้างอิง</th><th>จำนวน</th><th>ราคา/หน่วย (บาท)</th><th>รวม (บาท)</th><th>อ้างอิง</th></tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="7" class="cat">🖥️ Central Server — R1-DC (สสจ.เชียงใหม่)</td></tr>
+      <tr>
+        <td>1</td><td>API & Application Server</td><td>เครื่องแม่ข่าย แบบที่ 2 — ≥16C×2, ≥64GB</td>
+        <td>1</td><td class="price-std">330,000</td><td class="price-std">330,000</td><td><span class="tag-std">ราคากลาง แบบที่ 2</span></td>
+      </tr>
+      <tr>
+        <td>2</td><td>Data Lake & Warehouse Server</td><td>เครื่องแม่ข่าย แบบที่ 3 — ≥32C×2, ≥512GB</td>
+        <td>1</td><td class="price-std">780,000</td><td class="price-std">780,000</td><td><span class="tag-std">ราคากลาง แบบที่ 3</span></td>
+      </tr>
+      <tr><td colspan="7" class="cat-green">✨ รายการใหม่ — NAS, UPS (ราคากลาง)</td></tr>
+      <tr>
+        <td>3</td><td>NAS Backup Storage</td><td>NAS ข้อ 16 — ≥4 Bay, ≥4TB×4, RAID 0/1/5</td>
+        <td>4</td><td class="price-std">35,000</td><td class="price-std">140,000</td><td><span class="tag-std">ราคากลาง ข้อ 16</span></td>
+      </tr>
+      <tr>
+        <td>4</td><td>UPS เครื่องสำรองไฟฟ้า 10 kVA (3 เฟส)</td><td>UPS ข้อ 63 — 8,000W, 380VAC, ≥10 นาที</td>
+        <td>2</td><td class="price-std">260,000</td><td class="price-std">520,000</td><td><span class="tag-std">ราคากลาง ข้อ 63</span></td>
+      </tr>
+      <tr><td colspan="7" class="cat">📦 Edge Server — 103 หน่วยบริการ</td></tr>
+      <tr>
+        <td>5</td><td>Edge Server Mini PC</td><td>Core i5/N100, 16GB RAM, 256GB NVMe, Ubuntu</td>
+        <td>103</td><td class="price-mkt">~20,000</td><td class="price-mkt">~2,060,000</td><td><span class="tag-mkt">ราคาตลาด</span> <span class="tag-na">ไม่มีในราคากลาง</span></td>
+      </tr>
+      <tr><td colspan="7" class="cat">💿 Software & AI Service</td></tr>
+      <tr>
+        <td>6</td><td>Ubuntu Server 22.04 LTS</td><td>Open Source OS — ฟรี</td>
+        <td>2</td><td class="price-std">0</td><td class="price-std">0</td><td><span class="tag-std">ฟรี</span></td>
+      </tr>
+      <tr>
+        <td>7</td><td>Veeam Backup Enterprise Plus (1 ปี)</td><td>Per-Socket, 3 Socket, CDP + Immutable</td>
+        <td>1</td><td class="price-mkt">150,000</td><td class="price-mkt">150,000</td><td><span class="tag-mkt">ราคาตลาด</span></td>
+      </tr>
+      <tr>
+        <td>8</td><td>Claude API (Anthropic)</td><td>Pay-per-use Token — ส่งสถิติรวมเท่านั้น</td>
+        <td>—</td><td class="price-mkt">~20,000/ปี</td><td class="price-mkt">~20,000</td><td><span class="tag-mkt">Subscribe API</span></td>
+      </tr>
+      <tr class="total-row">
+        <td colspan="5" style="text-align:right;padding-right:20px">🟢 รวมทั้งหมด (Ubuntu ฟรี + Claude API)</td>
+        <td colspan="2"><strong>~4,000,000 บาท</strong></td>
+      </tr>
+      <tr style="background:#fef9c3">
+        <td colspan="5" style="text-align:right;padding-right:20px;font-weight:600;color:#854d0e">💡 ประหยัดจากการตัด GPU Server + ใช้ Ubuntu</td>
+        <td colspan="2" style="font-weight:700;color:#854d0e"><strong>~1,640,000 บาท</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Section 5: Software Stack -->
+<div class="section">
+  <div class="sec-title">5. Software Stack — แยกตามชั้น (ทั้งหมด Open Source ยกเว้น Veeam + Claude API)</div>
+  <div class="sw-grid">
+
+    <div class="sw-card">
+      <div class="sw-head" style="background:#0369a1">🔗 Data Integration Layer</div>
+      <div class="sw-item"><span class="sw-icon">🔥</span><div><div class="sw-name">HAPI FHIR Server (R4) <span class="tag t-sw">Open Source</span></div><div class="sw-desc">แปลงข้อมูล HIS ทุกยี่ห้อเป็นมาตรฐาน HL7 FHIR R4 · REST API · ใช้กับ i-HIMS/HIPPO</div></div></div>
+      <div class="sw-item"><span class="sw-icon">🔌</span><div><div class="sw-name">i-HIM Broker <span class="tag t-sw">MOPH</span></div><div class="sw-desc">Connector สำหรับ HIS ทุกยี่ห้อ · ส่งข้อมูลผ่าน API มาตรฐาน MOPH · รองรับ 43 แฟ้ม</div></div></div>
+      <div class="sw-item"><span class="sw-icon">📨</span><div><div class="sw-name">Apache Kafka <span class="tag t-sw">Open Source</span></div><div class="sw-desc">Message Broker รับส่ง Streaming · Queue Buffer กันข้อมูลหาย · Throughput สูง</div></div></div>
+      <div class="sw-item"><span class="sw-icon">🔄</span><div><div class="sw-name">Apache Spark (PySpark) <span class="tag t-sw">Open Source</span></div><div class="sw-desc">ETL Pipeline ประมวลผล Non-HIS (Excel, GFMIS, HRMS) · Batch + Streaming Processing</div></div></div>
+      <div class="sw-item"><span class="sw-icon">🚪</span><div><div class="sw-name">Kong API Gateway <span class="tag t-sw">Open Source</span></div><div class="sw-desc">จัดการ API ทั้งหมด · Rate Limiting · Authentication · Claude API Proxy (ซ่อน API Key)</div></div></div>
+    </div>
+
+    <div class="sw-card">
+      <div class="sw-head" style="background:#0d9488">🗄️ Data Storage Layer</div>
+      <div class="sw-item"><span class="sw-icon">🪣</span><div><div class="sw-name">MinIO Object Storage <span class="tag t-sw">Open Source</span></div><div class="sw-desc">Data Lake สำหรับเก็บข้อมูลดิบ (Raw FHIR JSON, Excel) · S3-Compatible · High Performance</div></div></div>
+      <div class="sw-item"><span class="sw-icon">⚡</span><div><div class="sw-name">ClickHouse OLAP <span class="tag t-sw">Open Source</span></div><div class="sw-desc">Data Warehouse สำหรับ Dashboard Query · เร็วมากสำหรับ Analytical Query · รองรับ Billion rows</div></div></div>
+      <div class="sw-item"><span class="sw-icon">🐘</span><div><div class="sw-name">PostgreSQL <span class="tag t-sw">Open Source</span></div><div class="sw-desc">Relational DB สำหรับ User/Config/Master Data · ACID Compliance · JSON Support</div></div></div>
+      <div class="sw-item"><span class="sw-icon">🔍</span><div><div class="sw-name">Elasticsearch + Kibana <span class="tag t-sw">Open Source</span></div><div class="sw-desc">Full-text Search · Log Analysis · Real-time Monitoring สำหรับ Ops Team</div></div></div>
+      <div class="sw-item"><span class="sw-icon">🔴</span><div><div class="sw-name">Redis Cache <span class="tag t-sw">Open Source</span></div><div class="sw-desc">In-memory Cache สำหรับ Dashboard KPI · ลด Load บน DB · Session Management</div></div></div>
+    </div>
+
+    <div class="sw-card">
+      <div class="sw-head" style="background:#7c3aed">🤖 AI Layer — Claude API (Short-term)</div>
+      <div class="sw-item"><span class="sw-icon">🤖</span><div><div class="sw-name">Claude API (Anthropic) <span class="tag t-ai">Subscribe</span></div><div class="sw-desc">AI Chat + วิเคราะห์ข้อมูลสถิติรวม · ถาม-ตอบ Natural Language · ส่งเฉพาะ KPI รวม (ไม่ส่งข้อมูลผู้ป่วย)</div></div></div>
+      <div class="sw-item"><span class="sw-icon">🐍</span><div><div class="sw-name">Claude API Proxy (FastAPI) <span class="tag t-sw">Open Source</span></div><div class="sw-desc">Middleware บน API Server · ซ่อน API Key · ดึงสถิติรวมจาก ClickHouse → ส่งให้ Claude → Return คำตอบ</div></div></div>
+      <div class="sw-item"><span class="sw-icon">📊</span><div><div class="sw-name">Dashboard Context Builder <span class="tag t-sw">In-house</span></div><div class="sw-desc">สร้าง Prompt อัตโนมัติจากข้อมูล KPI ปัจจุบัน · เช่น DM%, OPD Visit, Budget สรุปรายจังหวัด</div></div></div>
+      <div class="sw-item"><span class="sw-icon">🕐</span><div><div class="sw-name">Phase 2: ML Models (DM/Stroke/Bed) <span class="tag t-ai">In-house</span></div><div class="sw-desc">ยังไม่ดำเนินการในระยะนี้ — รอ Phase 2 เมื่อมีข้อมูลเพียงพอ · ใช้ Claude API ไปก่อน</div></div></div>
+    </div>
+
+    <div class="sw-card">
+      <div class="sw-head" style="background:#dc2626">🛡️ Security Layer</div>
+      <div class="sw-item"><span class="sw-icon">👁️</span><div><div class="sw-name">Wazuh SIEM/XDR <span class="tag t-sec">Open Source</span></div><div class="sw-desc">SIEM ระดับ Enterprise · เฝ้าระวัง 103+ แห่ง · Alert อัตโนมัติ · Incident Response</div></div></div>
+      <div class="sw-item"><span class="sw-icon">☁️</span><div><div class="sw-name">Cloudflare (CDN + DDoS) <span class="tag t-sec">SaaS</span></div><div class="sw-desc">ป้องกัน DDoS · CDN ลด Latency · Zero Trust Access · Bot Protection สำหรับ Dashboard</div></div></div>
+      <div class="sw-item"><span class="sw-icon">🔑</span><div><div class="sw-name">Keycloak (IAM/SSO) <span class="tag t-sw">Open Source</span></div><div class="sw-desc">Single Sign-On · RBAC (Role-Based Access) · MFA · LDAP Integration</div></div></div>
+      <div class="sw-item"><span class="sw-icon">🏰</span><div><div class="sw-name">CTAM Platform (ctam.cmhis.org) <span class="tag t-sec">In-house</span></div><div class="sw-desc">Cyber Threat Assessment & Monitoring · NIST Framework · Dashboard ผู้บริหาร</div></div></div>
+      <div class="sw-item"><span class="sw-icon">💾</span><div><div class="sw-name">Veeam Backup <span class="tag t-sw">Commercial</span></div><div class="sw-desc">Multi-layer Backup · Ransomware Protection · Instant VM Recovery · Off-site → MOPH Cloud</div></div></div>
+    </div>
+
+    <div class="sw-card">
+      <div class="sw-head" style="background:#166534">📊 Application Layer (Dashboard)</div>
+      <div class="sw-item"><span class="sw-icon">🖥️</span><div><div class="sw-name">R1DC Executive Dashboard <span class="tag t-sw">In-house</span></div><div class="sw-desc">Single Monitor · 7 Tab (ภาพรวม, CHRO, CSO, CFO, CIO, Cyber, CPPO) · Real-time</div></div></div>
+      <div class="sw-item"><span class="sw-icon">⚛️</span><div><div class="sw-name">React.js + Vite (Frontend) <span class="tag t-sw">Open Source</span></div><div class="sw-desc">SPA Dashboard · Chart.js / Recharts · WebSocket Real-time · AI Chat Panel</div></div></div>
+      <div class="sw-item"><span class="sw-icon">🐍</span><div><div class="sw-name">FastAPI (Python Backend) <span class="tag t-sw">Open Source</span></div><div class="sw-desc">REST + WebSocket API · ดึงข้อมูลจาก ClickHouse · Claude API Proxy Endpoint</div></div></div>
+      <div class="sw-item"><span class="sw-icon">📋</span><div><div class="sw-name">Report Template Engine <span class="tag t-ai">AI-powered</span></div><div class="sw-desc">AI สร้าง Report Template อัตโนมัติ · ลดภาระ Manual · Export PDF / Excel</div></div></div>
+      <div class="sw-item"><span class="sw-icon">🐳</span><div><div class="sw-name">Docker + K3s (Kubernetes) <span class="tag t-sw">Open Source</span></div><div class="sw-desc">Container Orchestration · Auto-scaling · Rolling Updates · ง่ายต่อ Deploy บน 2 Server</div></div></div>
+    </div>
+
+    <div class="sw-card">
+      <div class="sw-head" style="background:#b45309">🔧 DevOps & Operations</div>
+      <div class="sw-item"><span class="sw-icon">📦</span><div><div class="sw-name">GitLab CE (Source Control) <span class="tag t-sw">Open Source</span></div><div class="sw-desc">Self-hosted Git · CI/CD Pipeline · Code Review · Issue Tracking สำหรับทีม In-house</div></div></div>
+      <div class="sw-item"><span class="sw-icon">📡</span><div><div class="sw-name">Prometheus + Grafana <span class="tag t-sw">Open Source</span></div><div class="sw-desc">Infrastructure Monitoring · Server Metrics · Alert Rules · On-call Notification</div></div></div>
+      <div class="sw-item"><span class="sw-icon">🔁</span><div><div class="sw-name">Ansible (Config Management) <span class="tag t-sw">Open Source</span></div><div class="sw-desc">Automate ติดตั้ง Edge Server 103 แห่ง · Update Configuration จากส่วนกลาง</div></div></div>
+      <div class="sw-item"><span class="sw-icon">🌐</span><div><div class="sw-name">WireGuard VPN <span class="tag t-sw">Open Source</span></div><div class="sw-desc">Secure Tunnel Edge Server 103 แห่ง → R1-DC · เร็ว เบา ปลอดภัยสูง · ฟรี</div></div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Section 6: Network Topology -->
+<div class="section">
+  <div class="sec-title">6. Network Topology</div>
+  <div class="net-box">
+    <div style="font-size:12px;font-weight:600;color:#0d2137;margin-bottom:12px">🌐 Logical Network Architecture — R1-DC v2</div>
+    <div class="net-row">
+      <div class="net-node n-internet">🌐 Internet / WAN<br><span style="font-size:10px">NECTEC / CAT Telecom</span></div>
+      <div class="net-node n-fw" style="background:#fdf4ff;color:#7e22ce;border-color:#e9d5ff">🤖 Claude API<br><span style="font-size:10px">api.anthropic.com (HTTPS)</span></div>
+    </div>
+    <div class="net-arrow">↓ DDoS Protection (Cloudflare) · Firewall มีอยู่แล้ว</div>
+    <div class="net-row">
+      <div class="net-node n-fw">🛡️ NGFW (มีอยู่แล้ว)<br><span style="font-size:10px">IPS · SSL Inspection · Zone</span></div>
+      <div class="net-node n-soc">👁️ SOC / SIEM (Wazuh)<br><span style="font-size:10px">Log Collection · Alert</span></div>
+    </div>
+    <div class="net-arrow">↓ Application Zone</div>
+    <div class="net-row">
+      <div class="net-node n-app" style="flex:2">🖥️ API Server (1 เครื่อง)<br><span style="font-size:10px">Kong + HAPI FHIR + Kafka + FastAPI + Claude Proxy</span></div>
+    </div>
+    <div class="net-arrow">↓ Data Zone</div>
+    <div class="net-row">
+      <div class="net-node n-db">🗄️ Data Lake (MinIO)<br>Raw FHIR + Non-HIS</div>
+      <div class="net-node n-db">📦 ClickHouse<br>OLAP Warehouse</div>
+      <div class="net-node n-db">🐘 PostgreSQL<br>Transactional DB</div>
+      <div class="net-node" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0">💾 NAS Backup ×4<br>Veeam Target</div>
+    </div>
+    <div class="net-sep"></div>
+    <div style="font-size:11px;color:#0369a1;font-weight:600;margin:8px 0">🔐 WireGuard VPN Tunnel — Edge Network</div>
+    <div class="net-row">
+      <div class="net-node n-edge">🏥 HIS Sites (103)<br><span style="font-size:10px">Edge Mini PC + i-HIM Broker<br>Local HIS Database</span></div>
+      <div class="net-node n-edge">📋 Non-HIS Sources<br><span style="font-size:10px">GFMIS · HRMS · CMIS<br>Excel · Google Sheets</span></div>
+      <div class="net-node n-soc">🛡️ Province SOC ×8<br><span style="font-size:10px">Wazuh Agent<br>FortiGate 80F</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 7: Data Standards -->
+<div class="section">
+  <div class="sec-title">7. มาตรฐานข้อมูล (Data Standards)</div>
+  <table class="spec-table">
+    <thead>
+      <tr><th>ประเภทข้อมูล</th><th>แหล่งที่มา</th><th>มาตรฐาน</th><th>Format</th><th>วิธีเชื่อมต่อ</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="tag t-hw">HIS</span> ข้อมูลผู้ป่วย OPD/IPD</td><td>HOSxP, JHCIS, HC2010</td><td>HL7 FHIR R4 / 43 แฟ้ม</td><td>JSON / XML</td><td>i-HIM Broker → HAPI FHIR → Kafka</td></tr>
+      <tr><td><span class="tag t-hw">HIS</span> ข้อมูล DRG / ค่าใช้จ่าย</td><td>HIS ทุกแห่ง</td><td>ICD-10 / DRG</td><td>JSON</td><td>FHIR Claim Resource</td></tr>
+      <tr><td><span class="tag t-ai">Non-HIS</span> งบประมาณ</td><td>GFMIS / MOPH</td><td>Custom Schema</td><td>CSV / Excel</td><td>ETL Agent → Spark → ClickHouse</td></tr>
+      <tr><td><span class="tag t-ai">Non-HIS</span> บุคลากร</td><td>HRMS / กพ.</td><td>Custom Schema</td><td>CSV / API</td><td>ETL Agent → PostgreSQL</td></tr>
+      <tr><td><span class="tag t-ai">Non-HIS</span> ครุภัณฑ์</td><td>CMIS / กคร.</td><td>Custom Schema</td><td>Excel / API</td><td>ETL Agent → PostgreSQL</td></tr>
+      <tr><td><span class="tag t-sec">Security</span> Log Events</td><td>Server, Firewall, Network</td><td>CEF / Syslog</td><td>JSON / Syslog</td><td>Wazuh Agent → SIEM</td></tr>
+      <tr><td><span class="tag t-sw">Health</span> sw.สต. / HDC</td><td>HDC.moph.go.th</td><td>43 แฟ้ม</td><td>XML / CSV</td><td>API Pull → ETL → FHIR</td></tr>
+      <tr style="background:#fdf4ff"><td><span class="tag t-ai">AI</span> สถิติรวม → Claude API</td><td>ClickHouse (Aggregated)</td><td>JSON Summary (ไม่มี PII)</td><td>JSON</td><td>FastAPI Proxy → Claude API → Dashboard</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Section 8: Roadmap -->
+<div class="section">
+  <div class="sec-title">8. Roadmap การติดตั้ง 24 เดือน</div>
+  <div class="roadmap">
+    <div class="phase ph1">
+      <div class="phase-head" style="background:#1e40af">Phase 1: Foundation (0–6 เดือน)</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#1e40af">1</span>ติดตั้ง R1-DC Hardware (API Server + Data Lake + NAS + UPS)</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#1e40af">2</span>Deploy HAPI FHIR + Kafka + Data Lake + ClickHouse</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#1e40af">3</span>เชื่อม i-HIM API นำร่อง 5–10 รพ. ใน สสจ.เชียงใหม่</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#1e40af">4</span>เปิดใช้ Claude API บน Dashboard (AI Chat ถามตอบ)</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#1e40af">5</span>Dashboard Prototype (ภาพรวมเขต + CFO + CHRO)</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#1e40af">6</span>ตั้ง SOC จังหวัด + CTAM Assessment</div>
+    </div>
+    <div class="phase ph2">
+      <div class="phase-head" style="background:#065f46">Phase 2: Expansion (6–12 เดือน)</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#065f46">1</span>ขยาย Edge Server ครบ 103 แห่ง ทั่วเขต 1</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#065f46">2</span>เชื่อม Non-HIS ครบทุกระบบ (GFMIS, HRMS, CMIS)</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#065f46">3</span>เปิด Dashboard ครบ 7 Tab สำหรับผู้บริหารทุกระดับ</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#065f46">4</span>NIST Documents ครบถ้วน (พรบ.ไซเบอร์ 67)</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#065f46">5</span>พัฒนา Report Template Engine (AI-powered)</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#065f46">6</span>สร้างทีม In-house Cyber Warrior + Data Analyst</div>
+    </div>
+    <div class="phase ph3">
+      <div class="phase-head" style="background:#6d28d9">Phase 3: Autonomy (12–24 เดือน)</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#6d28d9">1</span>Full Real-time Single Monitor Ecosystem ครบ 8 จังหวัด</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#6d28d9">2</span>ผ่าน CTAM+ 100% · SOC Online 24/7</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#6d28d9">3</span>พิจารณา ML Models (DM/Stroke/Bed) หากข้อมูลพร้อม</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#6d28d9">4</span>Predictive Analytics ใช้จริง 3 Use Cases</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#6d28d9">5</span>ลดการ Outsource ≥ 50% ด้วยทีม In-house</div>
+      <div class="phase-item"><span class="phase-dot" style="background:#6d28d9">6</span>ประเมินผล ROI และขยายสู่เขตสุขภาพอื่น</div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 9: Budget Summary -->
+<div class="section">
+  <div class="sec-title">9. สรุปงบประมาณระบบ (System Budget)</div>
+  <div class="budget-grid">
+    <div class="bcard bc1">
+      <div class="bcard-label">🖥️ Server Central (ราคากลาง)</div>
+      <div class="bcard-val">1,110,000</div>
+      <div class="bcard-sub">บาท — API ×1 (330k) + Data Lake ×1 (780k)</div>
+    </div>
+    <div class="bcard bc2">
+      <div class="bcard-label">💾 NAS + UPS (ราคากลาง)</div>
+      <div class="bcard-val">660,000</div>
+      <div class="bcard-sub">บาท — NAS ×4 (140k) + UPS 10kVA ×2 (520k)</div>
+    </div>
+    <div class="bcard bc3">
+      <div class="bcard-label">📦 Edge Server (103 แห่ง)</div>
+      <div class="bcard-val">~2,060,000</div>
+      <div class="bcard-sub">บาท — Mini PC ×103 (~20k/เครื่อง ราคาตลาด)</div>
+    </div>
+    <div class="bcard bc4">
+      <div class="bcard-label">💿 Software + AI API + Dev Tool</div>
+      <div class="bcard-val">~254,000</div>
+      <div class="bcard-sub">บาท — Veeam (150k) + Claude API (~20k/ปี) + Claude Max Dev (~84k/ปี) Ubuntu ฟรี</div>
+    </div>
+  </div>
+
+  <table class="spec-table">
+    <thead><tr><th>หมวด</th><th>รายการหลัก</th><th>งบประมาณ (บาท)</th><th>อ้างอิง</th></tr></thead>
+    <tbody>
+      <tr><td>HW-1</td><td>API & Application Server (แบบที่ 2 ×1)</td><td class="price-std">330,000</td><td><span class="tag-std">ราคากลาง</span></td></tr>
+      <tr><td>HW-2</td><td>Data Lake & Warehouse Server (แบบที่ 3 ×1)</td><td class="price-std">780,000</td><td><span class="tag-std">ราคากลาง</span></td></tr>
+      <tr><td>HW-3</td><td>NAS Backup Storage ×4 (ข้อ 16)</td><td class="price-std">140,000</td><td><span class="tag-std">ราคากลาง</span></td></tr>
+      <tr><td>HW-4</td><td>UPS 10 kVA 3 เฟส ×2 (ข้อ 63)</td><td class="price-std">520,000</td><td><span class="tag-std">ราคากลาง</span></td></tr>
+      <tr><td>HW-5</td><td>Edge Server Mini PC ×103</td><td class="price-mkt">~2,060,000</td><td><span class="tag-mkt">ราคาตลาด</span></td></tr>
+      <tr><td>SW-1</td><td>Ubuntu Server 22.04 LTS (OS)</td><td class="price-std">0</td><td><span class="tag-std">ฟรี Open Source</span></td></tr>
+      <tr><td>SW-2</td><td>Veeam Backup Enterprise Plus (1 ปี)</td><td class="price-mkt">150,000</td><td><span class="tag-mkt">ราคาตลาด</span></td></tr>
+      <tr><td>SW-3</td><td>Claude API (Anthropic) — AI Dashboard Chat (Pay-per-use)</td><td class="price-mkt">~20,000/ปี</td><td><span class="tag-mkt">Pay-per-use</span></td></tr>
+      <tr style="background:#fdf4ff"><td>SW-4</td><td>🤖 <strong>Claude Max Plan ($200/เดือน)</strong> — พัฒนาระบบ In-house เต็มที่ ไม่จำกัดการใช้งาน</td><td class="price-mkt" style="color:#7c3aed;font-weight:700">~84,000/ปี</td><td><span class="tag-mkt" style="background:#f3e8ff;color:#7c3aed;border-color:#d8b4fe">Subscribe</span></td></tr>
+      <tr><td>SW-5</td><td>Open Source Stack (Kong, Kafka, MinIO, ClickHouse ฯลฯ)</td><td class="price-std">0</td><td><span class="tag-std">ฟรี</span></td></tr>
+      <tr style="background:#fef3c7;font-weight:700">
+        <td colspan="2">💰 รวมทั้งหมด (Ubuntu ฟรี + Claude API + Claude Max Dev)</td>
+        <td>~4,084,000 บาท</td>
+        <td>Phase 1–2</td>
+      </tr>
+      <tr style="background:#dcfce7">
+        <td colspan="2" style="color:#166534;font-weight:600">✅ ราคากลาง (Server + NAS + UPS) รวม VAT+ขนส่ง+ติดตั้ง</td>
+        <td style="color:#16a34a;font-weight:700">1,950,000 บาท</td>
+        <td>จัดซื้อได้ทันที</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="notice notice-yellow">
+    <strong>📊 เปรียบเทียบงบ v1 (เดิม) vs v2 (ใหม่)</strong>
+    <ul>
+      <li>v1 (เดิม): ~5,790,000 บาท — มี GPU Server + API ×2 + Windows Server OS</li>
+      <li>v2 (ใหม่): <strong>~4,084,000 บาท</strong> — ใช้ Claude API + Claude Max Dev + API Server ×1 + Ubuntu ฟรี</li>
+      <li style="color:#16a34a;font-weight:600">✅ ประหยัด ~1,706,000 บาท (~29%) โดยไม่กระทบความสามารถหลักของระบบ</li>
+      <li style="color:#7c3aed;font-weight:600">🤖 เพิ่ม Claude Max Plan ~84,000 บาท/ปี ($200/เดือน) สำหรับพัฒนาโค้ดระบบทั้งหมด In-house ไม่จำกัด</li>
+      <li><em>หมายเหตุ: ไม่รวม Backup & DR Server และ Network/Security Hardware (มีอยู่แล้ว) · GPU Server พิจารณาใหม่ใน Phase 3</em></li>
+    </ul>
+  </div>
+</div>
+
+<!-- Section 10: Capacity -->
+<div class="section">
+  <div class="sec-title">10. ความสามารถรองรับโหลด (Capacity Planning) — 103 แห่ง เขต 1</div>
+  <table class="spec-table">
+    <thead>
+      <tr><th>ตัวชี้วัด</th><th>ปริมาณจริง (ประมาณ)</th><th>รองรับได้ (Hardware ที่เลือก)</th><th>สถานะ</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>OPD Visit / วัน</td><td>~51,500 records</td><td>API Server แบบที่ 2: รับได้ 50,000+ req/นาที</td><td style="color:#16a34a;font-weight:600">✅ เกินพอมาก</td></tr>
+      <tr><td>ข้อมูล FHIR ดิบ / วัน</td><td>~260 MB/วัน (~50MB compressed)</td><td>Data Lake แบบที่ 3: Storage หลาย TB</td><td style="color:#16a34a;font-weight:600">✅ รองรับ 20+ ปี</td></tr>
+      <tr><td>ข้อมูลสะสม 5 ปี</td><td>~90 GB (structured)</td><td>RAM 512 GB ใน Data Lake — โหลด in-memory ได้ทั้งหมด</td><td style="color:#16a34a;font-weight:600">✅ Query เร็วมาก</td></tr>
+      <tr><td>Concurrent Dashboard Users</td><td>~50–100 คน</td><td>API Server รองรับ 500–1,000 concurrent</td><td style="color:#16a34a;font-weight:600">✅ รองรับได้</td></tr>
+      <tr><td>Edge → R1-DC Network</td><td>~4.6 Mbps peak</td><td>Internet 100 Mbps ปกติก็พอ</td><td style="color:#16a34a;font-weight:600">✅ ไม่มีปัญหา</td></tr>
+      <tr><td>Claude API Queries</td><td>~200 queries/วัน</td><td>Anthropic รองรับ Rate Limit สูง (ไม่จำกัด token ต่อวัน)</td><td style="color:#16a34a;font-weight:600">✅ ค่าใช้จ่าย ~20k/ปี</td></tr>
+      <tr><td>API Server Downtime Risk</td><td>1 เครื่อง (ไม่มี HA)</td><td>ถ้าล่ม: Veeam Restore ภายใน 4–8 ชั่วโมง</td><td style="color:#d97706;font-weight:600">⚠️ ยอมรับได้ (Support Tool)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="notice notice-blue">
+  <strong>📌 หมายเหตุสำคัญ</strong>
+  <ul>
+    <li>ราคาตามเกณฑ์ราคากลางฯ ฉบับเดือนธันวาคม 2568 ประกาศ ณ วันที่ 1 ธันวาคม 2568 โดยกระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม — รวม VAT 7%, ค่าขนส่ง และค่าติดตั้ง แล้ว</li>
+    <li>Edge Server Mini PC และ Veeam ไม่มีในเกณฑ์ราคากลาง ต้องดำเนินการสอบราคา/ประกวดราคาตามระเบียบพัสดุ</li>
+    <li>Claude API ชำระเงินผ่านบัตรเครดิต (Pay-as-you-go) — ควรประสานฝ่ายการเงินสำหรับการเบิกจ่าย</li>
+    <li><strong style="color:#7c3aed">🤖 Claude Max Plan ($200/เดือน ≈ 7,000 บาท)</strong> — ใช้สำหรับพัฒนาโค้ดระบบทั้งหมด In-house: Frontend (React), Backend (FastAPI), Infrastructure (Docker/Ansible), ETL Pipeline · ใช้ได้ไม่จำกัด 20× กว่า Pro Plan · ชำระผ่านบัตรเครดิตรายเดือน</li>
+    <li>ใช้ Ubuntu Server 22.04 LTS แทน Windows Server ประหยัดค่า License ~182,000 บาท ซอฟต์แวร์มีความเสถียรสูงสำหรับ Server workload</li>
+  </ul>
+</div>
+
+<div class="footer">
+  R1-DC System Design v2 · เขตสุขภาพที่ 1 · แผนยุทธศาสตร์ดิจิทัลและไซเบอร์ 2569–2570<br>
+  ราคากลาง ธ.ค. 2568 · Ubuntu + Claude API + Claude Max Dev · ประหยัดงบ ~1,706,000 บาท · จัดทำ 19 มีนาคม 2569
+</div>
+
+</div>
+</body>
+</html>

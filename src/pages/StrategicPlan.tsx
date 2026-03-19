@@ -3,9 +3,12 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Target, Presentation, Cpu, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StrategySlidesDialog } from "@/components/strategic/StrategySlidesDialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { X } from "lucide-react";
 
 export default function StrategicPlan() {
   const [slidesOpen, setSlidesOpen] = useState(false);
+  const [pricingOpen, setPricingOpen] = useState(false);
 
   return (
     <DashboardLayout>
@@ -39,6 +42,7 @@ export default function StrategicPlan() {
               <Button
                 variant="ghost"
                 className="w-full justify-start h-12 text-base gap-3 hover:bg-primary/5"
+                onClick={() => setPricingOpen(true)}
               >
                 <FileSpreadsheet className="h-5 w-5 text-primary" />
                 แผนงบประมาณ R1- Datacenter
@@ -49,6 +53,22 @@ export default function StrategicPlan() {
       </div>
 
       <StrategySlidesDialog open={slidesOpen} onOpenChange={setSlidesOpen} />
+
+      <Dialog open={pricingOpen} onOpenChange={setPricingOpen}>
+        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] p-0 overflow-hidden border-0">
+          <button
+            onClick={() => setPricingOpen(false)}
+            className="absolute right-4 top-4 z-50 rounded-full bg-black/50 p-2 text-white hover:bg-black/70 transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <iframe
+            src="/r1dc-pricing.html"
+            className="w-full h-full border-0"
+            title="แผนงบประมาณ R1- Datacenter"
+          />
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
