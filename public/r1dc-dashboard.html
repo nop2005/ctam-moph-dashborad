@@ -113,14 +113,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- NAV TABS -->
-<div class="nav">
-  <div class="nav-tab active">ภาพรวมเขต</div>
-  <div class="nav-tab">CHRO — คน</div>
-  <div class="nav-tab">CSO — คลินิก</div>
-  <div class="nav-tab">CFO — เงิน</div>
-  <div class="nav-tab">CIO — ของ</div>
-  <div class="nav-tab">Cyber Security</div>
-  <div class="nav-tab">CPPO — แผน</div>
+<div class="nav" id="navTabs">
+  <div class="nav-tab active" onclick="switchTab(0)">ภาพรวมเขต</div>
+  <div class="nav-tab" onclick="switchTab(1)">CHRO — คน</div>
+  <div class="nav-tab" onclick="switchTab(2)">CSO — คลินิก</div>
+  <div class="nav-tab" onclick="switchTab(3)">CFO — เงิน</div>
+  <div class="nav-tab" onclick="switchTab(4)">CIO — ของ</div>
+  <div class="nav-tab" onclick="switchTab(5)">Cyber Security</div>
+  <div class="nav-tab" onclick="switchTab(6)">CPPO — แผน</div>
 </div>
 
 <!-- MAIN LAYOUT -->
@@ -128,6 +128,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
   <!-- DASHBOARD AREA -->
   <div class="dashboard-area">
+
+    <!-- TAB 0: ภาพรวมเขต -->
+    <div class="tab-content" id="tab-0">
     <div class="section-title">KPI ภาพรวม — เงิน คน ของ บริการ</div>
     <div class="kpi-grid">
       <div class="kpi-card">
@@ -230,8 +233,195 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <tbody id="tbl-body"></tbody>
       </table>
     </div>
-  </div>
+    </div><!-- end tab-0 -->
 
+    <!-- TAB 1: CHRO — คน -->
+    <div class="tab-content" id="tab-1" style="display:none">
+    <div class="section-title">CHRO — บริหารทรัพยากรบุคคล</div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">บุคลากรทั้งหมด <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="kpi-value" style="color:#185FA5">35,066 <span style="font-size:12px">คน</span></div>
+        <div class="kpi-sub">8 จังหวัด · 110 หน่วยงาน</div>
+        <span class="kpi-badge badge-up">+1.8% YoY</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">แพทย์ <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="kpi-value" style="color:#4f46e5">2,480 <span style="font-size:12px">คน</span></div>
+        <div class="kpi-sub">อัตราส่วน 1:2,100 ต่อประชากร</div>
+        <span class="kpi-badge badge-dn">ขาดแคลน 48 อัตรา</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">พยาบาล <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="kpi-value" style="color:#1D9E75">12,840 <span style="font-size:12px">คน</span></div>
+        <div class="kpi-sub">อัตราส่วน 1:410 ต่อประชากร</div>
+        <span class="kpi-badge badge-up">เพียงพอ</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">อัตราว่าง <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="kpi-value" style="color:#E24B4A">2,340 <span style="font-size:12px">อัตรา</span></div>
+        <div class="kpi-sub">คิดเป็น 6.7% ของทั้งหมด</div>
+        <span class="kpi-badge badge-dn">สูงกว่าเกณฑ์</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">อัตราลาออก <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="kpi-value" style="color:#854F0B">4.2<span style="font-size:12px">%</span></div>
+        <div class="kpi-sub">ปีงบ 2568 (6 เดือนแรก)</div>
+        <span class="kpi-badge badge-warn">เพิ่มจาก 3.8%</span>
+      </div>
+    </div>
+
+    <div class="alert-row">
+      <div class="alert-card danger">
+        <div class="al-title">⚠ รพช. 12 แห่ง ขาดแพทย์วิกฤต</div>
+        <div class="al-body">อัตราแพทย์ต่อประชากร &lt;1:10,000 · น่าน, แม่ฮ่องสอน วิกฤตสุด</div>
+      </div>
+      <div class="alert-card warn">
+        <div class="al-title">พยาบาล Burn-out 18%</div>
+        <div class="al-body">ผลสำรวจความเหนื่อยหน่าย 6 เดือน · เชียงใหม่-ลำพูน สูงสุด</div>
+      </div>
+      <div class="alert-card info">
+        <div class="al-title">โครงการ Retention ใหม่</div>
+        <div class="al-body">ทุนเรียนต่อ 120 ทุน · เบี้ยเลี้ยงพื้นที่ห่างไกล +15%</div>
+      </div>
+    </div>
+
+    <div class="chart-row">
+      <div class="card">
+        <div class="card-title">จำนวนบุคลากรรายจังหวัด <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="legend"><span><span class="dot" style="background:#4f46e5"></span>แพทย์</span><span><span class="dot" style="background:#1D9E75"></span>พยาบาล</span><span><span class="dot" style="background:#EF9F27"></span>สหวิชาชีพ</span></div>
+        <div style="position:relative;height:180px"><canvas id="chro-c1"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">อัตราว่างรายจังหวัด <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div style="position:relative;height:180px"><canvas id="chro-c2"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">อัตราลาออกรายเดือน <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="legend"><span><span class="dot" style="background:#E24B4A"></span>ลาออก</span><span><span class="dot" style="background:#185FA5"></span>บรรจุใหม่</span></div>
+        <div style="position:relative;height:180px"><canvas id="chro-c3"></canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-row-2">
+      <div class="card">
+        <div class="card-title">สัดส่วนบุคลากรตามประเภท <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div style="position:relative;height:180px"><canvas id="chro-c4"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">ประเภทการจ้าง <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="legend"><span><span class="dot" style="background:#4f46e5"></span>ข้าราชการ 25.4%</span><span><span class="dot" style="background:#1D9E75"></span>พกส. 42.1%</span><span><span class="dot" style="background:#EF9F27"></span>ลูกจ้าง 32.5%</span></div>
+        <div style="position:relative;height:180px"><canvas id="chro-c5"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title">ตารางอัตรากำลังรายจังหวัด</div>
+    <div class="card" style="margin-bottom:20px;overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th>จังหวัด</th><th>บุคลากร</th><th>แพทย์</th><th>พยาบาล</th><th>อัตราว่าง</th><th>ลาออก (%)</th><th>แพทย์/หมื่นปชก.</th><th>Burn-out</th></tr></thead>
+        <tbody id="chro-tbl"></tbody>
+      </table>
+    </div>
+    </div><!-- end tab-1 -->
+
+    <!-- TAB 2: CSO — คลินิก -->
+    <div class="tab-content" id="tab-2" style="display:none">
+    <div class="section-title">CSO — บริการคลินิกและคุณภาพ</div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">OPD Visit รวม <span class="src-badge src-his">HIS</span></div>
+        <div class="kpi-value" style="color:#0F6E56">318,000 <span style="font-size:12px">ครั้ง/วัน</span></div>
+        <div class="kpi-sub">เฉลี่ยทั้งเขต</div>
+        <span class="kpi-badge badge-up">+4.2% YoY</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">ผู้ป่วยใน IPD <span class="src-badge src-his">HIS</span></div>
+        <div class="kpi-value" style="color:#185FA5">182,400 <span style="font-size:12px">ราย</span></div>
+        <div class="kpi-sub">ALoS 4.2 วัน</div>
+        <span class="kpi-badge badge-warn">ALoS สูง 3 แห่ง</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">อัตราตาย (CMR) <span class="src-badge src-his">HIS</span></div>
+        <div class="kpi-value" style="color:#E24B4A">1.8<span style="font-size:12px">%</span></div>
+        <div class="kpi-sub">เป้าหมาย ≤2.0%</div>
+        <span class="kpi-badge badge-up">ผ่านเกณฑ์</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Re-admit 28 วัน <span class="src-badge src-his">HIS</span></div>
+        <div class="kpi-value" style="color:#854F0B">3.4<span style="font-size:12px">%</span></div>
+        <div class="kpi-sub">เป้าหมาย ≤3.5%</div>
+        <span class="kpi-badge badge-warn">ใกล้เกณฑ์</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">ส่งต่อนอกเขต <span class="src-badge src-his">HIS</span></div>
+        <div class="kpi-value" style="color:#993C1D">4,280 <span style="font-size:12px">ราย</span></div>
+        <div class="kpi-sub">คิดเป็น 2.3% ของ Admit</div>
+        <span class="kpi-badge badge-dn">เพิ่ม 0.4%</span>
+      </div>
+    </div>
+
+    <div class="alert-row">
+      <div class="alert-card danger">
+        <div class="al-title">⚠ Sepsis mortality สูง 3 แห่ง</div>
+        <div class="al-body">รพ.น่าน 18.2%, แม่ฮ่องสอน 16.8%, พะเยา 15.4% · เกณฑ์ ≤12%</div>
+      </div>
+      <div class="alert-card warn">
+        <div class="al-title">ER Wait Time เกิน 4 ชม.</div>
+        <div class="al-body">รพ.นครพิงค์ 4.2 ชม., รพ.เชียงรายฯ 3.8 ชม. · เป้า ≤2 ชม.</div>
+      </div>
+      <div class="alert-card info">
+        <div class="al-title">Telemedicine ขยายผล</div>
+        <div class="al-body">เปิดบริการ 42 แห่ง · OPD ทางไกล 12,400 ครั้ง/เดือน · ลดส่งต่อ 8%</div>
+      </div>
+    </div>
+
+    <div class="chart-row">
+      <div class="card">
+        <div class="card-title">OPD Visit รายจังหวัด <span class="src-badge src-his">HIS</span></div>
+        <div style="position:relative;height:180px"><canvas id="cso-c1"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Bed Occupancy & ALoS <span class="src-badge src-his">HIS</span></div>
+        <div class="legend"><span><span class="dot" style="background:#4f46e5"></span>Bed Occ. (%)</span><span><span class="dot" style="background:#EF9F27"></span>ALoS (วัน)</span></div>
+        <div style="position:relative;height:180px"><canvas id="cso-c2"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">อัตราตาย (CMR) รายจังหวัด <span class="src-badge src-his">HIS</span></div>
+        <div style="position:relative;height:180px"><canvas id="cso-c3"></canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-row-2">
+      <div class="card">
+        <div class="card-title">ER Visit รายเดือน <span class="src-badge src-his">HIS</span></div>
+        <div class="legend"><span><span class="dot" style="background:#E24B4A"></span>Urgent/Emergency</span><span><span class="dot" style="background:#EF9F27"></span>Non-urgent</span></div>
+        <div style="position:relative;height:180px"><canvas id="cso-c4"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">สัดส่วนการส่งต่อ <span class="src-badge src-his">HIS</span></div>
+        <div class="legend"><span><span class="dot" style="background:#4f46e5"></span>ภายในเขต 72%</span><span><span class="dot" style="background:#E24B4A"></span>นอกเขต 18%</span><span><span class="dot" style="background:#EF9F27"></span>เอกชน 10%</span></div>
+        <div style="position:relative;height:180px"><canvas id="cso-c5"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title">ตารางตัวชี้วัดคลินิกรายจังหวัด</div>
+    <div class="card" style="margin-bottom:20px;overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th>จังหวัด</th><th>OPD/วัน</th><th>IPD (ราย)</th><th>Bed Occ.</th><th>ALoS</th><th>CMR</th><th>Re-admit</th><th>ส่งต่อนอกเขต</th><th>ER Wait</th></tr></thead>
+        <tbody id="cso-tbl"></tbody>
+      </table>
+    </div>
+    </div><!-- end tab-2 -->
+
+    <!-- TAB 3-6: placeholder -->
+    <div class="tab-content" id="tab-3" style="display:none"><div class="section-title">CFO — การเงินและงบประมาณ</div><div class="card"><div class="card-title" style="text-align:center;padding:40px;color:#5f5e5a">เนื้อหาอยู่ระหว่างพัฒนา</div></div></div>
+    <div class="tab-content" id="tab-4" style="display:none"><div class="section-title">CIO — ครุภัณฑ์และพัสดุ</div><div class="card"><div class="card-title" style="text-align:center;padding:40px;color:#5f5e5a">เนื้อหาอยู่ระหว่างพัฒนา</div></div></div>
+    <div class="tab-content" id="tab-5" style="display:none"><div class="section-title">Cyber Security</div><div class="card"><div class="card-title" style="text-align:center;padding:40px;color:#5f5e5a">เนื้อหาอยู่ระหว่างพัฒนา</div></div></div>
+    <div class="tab-content" id="tab-6" style="display:none"><div class="section-title">CPPO — แผนยุทธศาสตร์</div><div class="card"><div class="card-title" style="text-align:center;padding:40px;color:#5f5e5a">เนื้อหาอยู่ระหว่างพัฒนา</div></div></div>
+
+  </div>
   <!-- AI CHAT PANEL -->
   <div class="chat-panel" id="chatPanel">
 
