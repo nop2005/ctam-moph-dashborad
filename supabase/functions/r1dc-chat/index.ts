@@ -200,16 +200,21 @@ serve(async (req) => {
                 const candidate = parsed.candidates?.[0];
                 const text = candidate?.content?.parts?.[0]?.text;
 
-                // Extract grounding metadata for citations
+                // Extract grounding metadata for short citations
                 const groundingMeta = candidate?.groundingMetadata;
                 let citations = "";
                 if (groundingMeta?.groundingChunks?.length > 0) {
                   const sources = groundingMeta.groundingChunks
                     .filter((c: any) => c.web?.uri)
-                    .map((c: any) => `${c.web.title || c.web.uri}: ${c.web.uri}`)
-                    .slice(0, 5);
+                    .map((c: any) => {
+                      const title = c.web.title || new URL(c.web.uri).hostname;
+                      // Keep title short
+                      const shortTitle = title.length > 30 ? title.slice(0, 30) + "…" : title;
+                      return `[${shortTitle}](${c.web.uri})`;
+                    })
+                    .slice(0, 3);
                   if (sources.length > 0) {
-                    citations = "\n\n📌 **แหล่งอ้างอิงภายนอก:**\n" + sources.map((s: string, i: number) => `${i + 1}. ${s}`).join("\n");
+                    citations = "\n\n📌 อ้างอิง: " + sources.join(" · ");
                   }
                 }
 

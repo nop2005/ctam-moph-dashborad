@@ -37,9 +37,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .msg{display:flex;flex-direction:column;max-width:90%}
 .msg.user{align-self:flex-end;align-items:flex-end}
 .msg.ai{align-self:flex-start;align-items:flex-start}
-.msg-bubble{padding:9px 12px;border-radius:12px;font-size:12px;line-height:1.55}
+.msg-bubble{padding:9px 12px;border-radius:12px;font-size:12px;line-height:1.55;word-wrap:break-word;overflow-wrap:break-word;white-space:pre-wrap;max-width:100%}
 .msg.user .msg-bubble{background:#4f46e5;color:#fff;border-bottom-right-radius:3px}
 .msg.ai .msg-bubble{background:#f0efe8;color:#1a1a18;border-bottom-left-radius:3px;border:0.5px solid rgba(0,0,0,0.08)}
+.msg-bubble a{color:#4f46e5;text-decoration:underline;word-break:break-all}
+.msg-bubble .ref-section{margin-top:6px;padding-top:5px;border-top:1px solid rgba(0,0,0,0.08);font-size:10px;color:#666}
 .msg-time{font-size:10px;color:#888;margin-top:3px;padding:0 2px}
 .typing{display:flex;align-items:center;gap:4px;padding:10px 12px;background:#f0efe8;border-radius:12px;border-bottom-left-radius:3px;align-self:flex-start}
 .typing-dot{width:6px;height:6px;border-radius:50%;background:#888;animation:blink 1.2s infinite}
@@ -769,8 +771,9 @@ function createAssistantBubble(){
 }
 
 function updateBubble(bubble,text){
-  const safe=text.replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  let safe=text.replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
     .replace(/\n/g,'<br>');
   bubble.innerHTML=safe;
   const c=document.getElementById('chatMessages');
@@ -783,8 +786,9 @@ function appendMsg(role,text){
   const t=`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
   const d=document.createElement('div');
   d.className='msg '+role;
-  const safe=text.replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  let safe=text.replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
     .replace(/\n/g,'<br>');
   d.innerHTML=`<div class="msg-bubble">${safe}</div><div class="msg-time">${t}</div>`;
   c.appendChild(d);
