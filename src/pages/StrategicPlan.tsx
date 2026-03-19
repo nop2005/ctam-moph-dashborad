@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Target, Presentation, Cpu, FileSpreadsheet } from "lucide-react";
+import { Target, Presentation, Cpu, FileSpreadsheet, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StrategySlidesDialog } from "@/components/strategic/StrategySlidesDialog";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
