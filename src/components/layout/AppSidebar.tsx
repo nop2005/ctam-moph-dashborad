@@ -45,6 +45,7 @@ import {
   Wallet,
   DollarSign,
   Table2,
+  Target,
 } from "lucide-react";
 const menuItems = [
   {
@@ -52,6 +53,12 @@ const menuItems = [
     url: "/dashboard",
     icon: LayoutDashboard,
     roles: ["hospital_it", "provincial", "regional", "central_admin", "health_office", "supervisor"],
+  },
+  {
+    title: "แผนยุทธศาสตร์ประจำปี",
+    url: "/strategic-plan",
+    icon: Target,
+    roles: ["hospital_it", "provincial", "regional", "central_admin", "health_office", "supervisor", "ceo"],
   },
   {
     title: "บุคลากรในหน่วยงาน",

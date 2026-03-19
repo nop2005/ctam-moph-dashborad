@@ -141,7 +141,7 @@ export function QuantitativeSection({
   const [subOptionSelections, setSubOptionSelections] = useState<Record<string, string>>({});
   const [fileCounts, setFileCounts] = useState<Record<string, number>>({});
   const [fileCountsLoaded, setFileCountsLoaded] = useState(false);
-  const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
+  const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   // Load file counts from database on mount (before FileUpload components render)
   useEffect(() => {
