@@ -47,6 +47,13 @@ export default function StrategicPlan() {
                 <FileSpreadsheet className="h-5 w-5 text-primary" />
                 แผนงบประมาณ R1- Datacenter
               </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-12 text-base gap-3 hover:bg-primary/5"
+              >
+                <Network className="h-5 w-5 text-primary" />
+                สถาปัตยกรรม R1- Datacenter
+              </Button>
             </div>
           </div>
         </div>
