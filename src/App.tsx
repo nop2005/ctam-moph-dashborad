@@ -89,6 +89,14 @@ const App = () => (
             {/* Redirect /assessments to /dashboard */}
             <Route path="/assessments" element={<Navigate to="/dashboard" replace />} />
             <Route 
+              path="/strategic-plan" 
+              element={
+                <ProtectedRoute>
+                  <StrategicPlan />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/assessment/:id" 
               element={
                 <ProtectedRoute>
