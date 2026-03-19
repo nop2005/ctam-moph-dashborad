@@ -34,6 +34,7 @@ import {
   Building2,
   Info,
   MonitorDot,
+  Target,
 } from "lucide-react";
 import { SidebarFooter, SidebarSeparator } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
