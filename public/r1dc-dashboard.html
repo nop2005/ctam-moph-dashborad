@@ -113,14 +113,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- NAV TABS -->
-<div class="nav">
-  <div class="nav-tab active">ภาพรวมเขต</div>
-  <div class="nav-tab">CHRO — คน</div>
-  <div class="nav-tab">CSO — คลินิก</div>
-  <div class="nav-tab">CFO — เงิน</div>
-  <div class="nav-tab">CIO — ของ</div>
-  <div class="nav-tab">Cyber Security</div>
-  <div class="nav-tab">CPPO — แผน</div>
+<div class="nav" id="navTabs">
+  <div class="nav-tab active" onclick="switchTab(0)">ภาพรวมเขต</div>
+  <div class="nav-tab" onclick="switchTab(1)">CHRO — คน</div>
+  <div class="nav-tab" onclick="switchTab(2)">CSO — คลินิก</div>
+  <div class="nav-tab" onclick="switchTab(3)">CFO — เงิน</div>
+  <div class="nav-tab" onclick="switchTab(4)">CIO — ของ</div>
+  <div class="nav-tab" onclick="switchTab(5)">Cyber Security</div>
+  <div class="nav-tab" onclick="switchTab(6)">CPPO — แผน</div>
 </div>
 
 <!-- MAIN LAYOUT -->
@@ -128,6 +128,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
   <!-- DASHBOARD AREA -->
   <div class="dashboard-area">
+
+    <!-- TAB 0: ภาพรวมเขต -->
+    <div class="tab-content" id="tab-0">
     <div class="section-title">KPI ภาพรวม — เงิน คน ของ บริการ</div>
     <div class="kpi-grid">
       <div class="kpi-card">
@@ -230,8 +233,195 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <tbody id="tbl-body"></tbody>
       </table>
     </div>
-  </div>
+    </div><!-- end tab-0 -->
 
+    <!-- TAB 1: CHRO — คน -->
+    <div class="tab-content" id="tab-1" style="display:none">
+    <div class="section-title">CHRO — บริหารทรัพยากรบุคคล</div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">บุคลากรทั้งหมด <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="kpi-value" style="color:#185FA5">35,066 <span style="font-size:12px">คน</span></div>
+        <div class="kpi-sub">8 จังหวัด · 110 หน่วยงาน</div>
+        <span class="kpi-badge badge-up">+1.8% YoY</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">แพทย์ <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="kpi-value" style="color:#4f46e5">2,480 <span style="font-size:12px">คน</span></div>
+        <div class="kpi-sub">อัตราส่วน 1:2,100 ต่อประชากร</div>
+        <span class="kpi-badge badge-dn">ขาดแคลน 48 อัตรา</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">พยาบาล <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="kpi-value" style="color:#1D9E75">12,840 <span style="font-size:12px">คน</span></div>
+        <div class="kpi-sub">อัตราส่วน 1:410 ต่อประชากร</div>
+        <span class="kpi-badge badge-up">เพียงพอ</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">อัตราว่าง <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="kpi-value" style="color:#E24B4A">2,340 <span style="font-size:12px">อัตรา</span></div>
+        <div class="kpi-sub">คิดเป็น 6.7% ของทั้งหมด</div>
+        <span class="kpi-badge badge-dn">สูงกว่าเกณฑ์</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">อัตราลาออก <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="kpi-value" style="color:#854F0B">4.2<span style="font-size:12px">%</span></div>
+        <div class="kpi-sub">ปีงบ 2568 (6 เดือนแรก)</div>
+        <span class="kpi-badge badge-warn">เพิ่มจาก 3.8%</span>
+      </div>
+    </div>
+
+    <div class="alert-row">
+      <div class="alert-card danger">
+        <div class="al-title">⚠ รพช. 12 แห่ง ขาดแพทย์วิกฤต</div>
+        <div class="al-body">อัตราแพทย์ต่อประชากร &lt;1:10,000 · น่าน, แม่ฮ่องสอน วิกฤตสุด</div>
+      </div>
+      <div class="alert-card warn">
+        <div class="al-title">พยาบาล Burn-out 18%</div>
+        <div class="al-body">ผลสำรวจความเหนื่อยหน่าย 6 เดือน · เชียงใหม่-ลำพูน สูงสุด</div>
+      </div>
+      <div class="alert-card info">
+        <div class="al-title">โครงการ Retention ใหม่</div>
+        <div class="al-body">ทุนเรียนต่อ 120 ทุน · เบี้ยเลี้ยงพื้นที่ห่างไกล +15%</div>
+      </div>
+    </div>
+
+    <div class="chart-row">
+      <div class="card">
+        <div class="card-title">จำนวนบุคลากรรายจังหวัด <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="legend"><span><span class="dot" style="background:#4f46e5"></span>แพทย์</span><span><span class="dot" style="background:#1D9E75"></span>พยาบาล</span><span><span class="dot" style="background:#EF9F27"></span>สหวิชาชีพ</span></div>
+        <div style="position:relative;height:180px"><canvas id="chro-c1"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">อัตราว่างรายจังหวัด <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div style="position:relative;height:180px"><canvas id="chro-c2"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">อัตราลาออกรายเดือน <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="legend"><span><span class="dot" style="background:#E24B4A"></span>ลาออก</span><span><span class="dot" style="background:#185FA5"></span>บรรจุใหม่</span></div>
+        <div style="position:relative;height:180px"><canvas id="chro-c3"></canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-row-2">
+      <div class="card">
+        <div class="card-title">สัดส่วนบุคลากรตามประเภท <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div style="position:relative;height:180px"><canvas id="chro-c4"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">ประเภทการจ้าง <span class="src-badge src-nonhis">Non-HIS</span></div>
+        <div class="legend"><span><span class="dot" style="background:#4f46e5"></span>ข้าราชการ 25.4%</span><span><span class="dot" style="background:#1D9E75"></span>พกส. 42.1%</span><span><span class="dot" style="background:#EF9F27"></span>ลูกจ้าง 32.5%</span></div>
+        <div style="position:relative;height:180px"><canvas id="chro-c5"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title">ตารางอัตรากำลังรายจังหวัด</div>
+    <div class="card" style="margin-bottom:20px;overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th>จังหวัด</th><th>บุคลากร</th><th>แพทย์</th><th>พยาบาล</th><th>อัตราว่าง</th><th>ลาออก (%)</th><th>แพทย์/หมื่นปชก.</th><th>Burn-out</th></tr></thead>
+        <tbody id="chro-tbl"></tbody>
+      </table>
+    </div>
+    </div><!-- end tab-1 -->
+
+    <!-- TAB 2: CSO — คลินิก -->
+    <div class="tab-content" id="tab-2" style="display:none">
+    <div class="section-title">CSO — บริการคลินิกและคุณภาพ</div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">OPD Visit รวม <span class="src-badge src-his">HIS</span></div>
+        <div class="kpi-value" style="color:#0F6E56">318,000 <span style="font-size:12px">ครั้ง/วัน</span></div>
+        <div class="kpi-sub">เฉลี่ยทั้งเขต</div>
+        <span class="kpi-badge badge-up">+4.2% YoY</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">ผู้ป่วยใน IPD <span class="src-badge src-his">HIS</span></div>
+        <div class="kpi-value" style="color:#185FA5">182,400 <span style="font-size:12px">ราย</span></div>
+        <div class="kpi-sub">ALoS 4.2 วัน</div>
+        <span class="kpi-badge badge-warn">ALoS สูง 3 แห่ง</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">อัตราตาย (CMR) <span class="src-badge src-his">HIS</span></div>
+        <div class="kpi-value" style="color:#E24B4A">1.8<span style="font-size:12px">%</span></div>
+        <div class="kpi-sub">เป้าหมาย ≤2.0%</div>
+        <span class="kpi-badge badge-up">ผ่านเกณฑ์</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Re-admit 28 วัน <span class="src-badge src-his">HIS</span></div>
+        <div class="kpi-value" style="color:#854F0B">3.4<span style="font-size:12px">%</span></div>
+        <div class="kpi-sub">เป้าหมาย ≤3.5%</div>
+        <span class="kpi-badge badge-warn">ใกล้เกณฑ์</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">ส่งต่อนอกเขต <span class="src-badge src-his">HIS</span></div>
+        <div class="kpi-value" style="color:#993C1D">4,280 <span style="font-size:12px">ราย</span></div>
+        <div class="kpi-sub">คิดเป็น 2.3% ของ Admit</div>
+        <span class="kpi-badge badge-dn">เพิ่ม 0.4%</span>
+      </div>
+    </div>
+
+    <div class="alert-row">
+      <div class="alert-card danger">
+        <div class="al-title">⚠ Sepsis mortality สูง 3 แห่ง</div>
+        <div class="al-body">รพ.น่าน 18.2%, แม่ฮ่องสอน 16.8%, พะเยา 15.4% · เกณฑ์ ≤12%</div>
+      </div>
+      <div class="alert-card warn">
+        <div class="al-title">ER Wait Time เกิน 4 ชม.</div>
+        <div class="al-body">รพ.นครพิงค์ 4.2 ชม., รพ.เชียงรายฯ 3.8 ชม. · เป้า ≤2 ชม.</div>
+      </div>
+      <div class="alert-card info">
+        <div class="al-title">Telemedicine ขยายผล</div>
+        <div class="al-body">เปิดบริการ 42 แห่ง · OPD ทางไกล 12,400 ครั้ง/เดือน · ลดส่งต่อ 8%</div>
+      </div>
+    </div>
+
+    <div class="chart-row">
+      <div class="card">
+        <div class="card-title">OPD Visit รายจังหวัด <span class="src-badge src-his">HIS</span></div>
+        <div style="position:relative;height:180px"><canvas id="cso-c1"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Bed Occupancy & ALoS <span class="src-badge src-his">HIS</span></div>
+        <div class="legend"><span><span class="dot" style="background:#4f46e5"></span>Bed Occ. (%)</span><span><span class="dot" style="background:#EF9F27"></span>ALoS (วัน)</span></div>
+        <div style="position:relative;height:180px"><canvas id="cso-c2"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">อัตราตาย (CMR) รายจังหวัด <span class="src-badge src-his">HIS</span></div>
+        <div style="position:relative;height:180px"><canvas id="cso-c3"></canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-row-2">
+      <div class="card">
+        <div class="card-title">ER Visit รายเดือน <span class="src-badge src-his">HIS</span></div>
+        <div class="legend"><span><span class="dot" style="background:#E24B4A"></span>Urgent/Emergency</span><span><span class="dot" style="background:#EF9F27"></span>Non-urgent</span></div>
+        <div style="position:relative;height:180px"><canvas id="cso-c4"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">สัดส่วนการส่งต่อ <span class="src-badge src-his">HIS</span></div>
+        <div class="legend"><span><span class="dot" style="background:#4f46e5"></span>ภายในเขต 72%</span><span><span class="dot" style="background:#E24B4A"></span>นอกเขต 18%</span><span><span class="dot" style="background:#EF9F27"></span>เอกชน 10%</span></div>
+        <div style="position:relative;height:180px"><canvas id="cso-c5"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title">ตารางตัวชี้วัดคลินิกรายจังหวัด</div>
+    <div class="card" style="margin-bottom:20px;overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th>จังหวัด</th><th>OPD/วัน</th><th>IPD (ราย)</th><th>Bed Occ.</th><th>ALoS</th><th>CMR</th><th>Re-admit</th><th>ส่งต่อนอกเขต</th><th>ER Wait</th></tr></thead>
+        <tbody id="cso-tbl"></tbody>
+      </table>
+    </div>
+    </div><!-- end tab-2 -->
+
+    <!-- TAB 3-6: placeholder -->
+    <div class="tab-content" id="tab-3" style="display:none"><div class="section-title">CFO — การเงินและงบประมาณ</div><div class="card"><div class="card-title" style="text-align:center;padding:40px;color:#5f5e5a">เนื้อหาอยู่ระหว่างพัฒนา</div></div></div>
+    <div class="tab-content" id="tab-4" style="display:none"><div class="section-title">CIO — ครุภัณฑ์และพัสดุ</div><div class="card"><div class="card-title" style="text-align:center;padding:40px;color:#5f5e5a">เนื้อหาอยู่ระหว่างพัฒนา</div></div></div>
+    <div class="tab-content" id="tab-5" style="display:none"><div class="section-title">Cyber Security</div><div class="card"><div class="card-title" style="text-align:center;padding:40px;color:#5f5e5a">เนื้อหาอยู่ระหว่างพัฒนา</div></div></div>
+    <div class="tab-content" id="tab-6" style="display:none"><div class="section-title">CPPO — แผนยุทธศาสตร์</div><div class="card"><div class="card-title" style="text-align:center;padding:40px;color:#5f5e5a">เนื้อหาอยู่ระหว่างพัฒนา</div></div></div>
+
+  </div>
   <!-- AI CHAT PANEL -->
   <div class="chat-panel" id="chatPanel">
 
@@ -334,7 +524,121 @@ function toggleChat(){
   document.getElementById('aiBtnLabel').textContent=chatOpen?'ปิด AI':'AI Assistant';
 }
 
-/* ── CHAT with Lovable AI (streaming) ── */
+/* ── TAB SWITCHING ── */
+let chartsInitialized = {1:false, 2:false};
+
+function switchTab(idx) {
+  document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + idx).style.display = '';
+  document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+  if (idx === 1 && !chartsInitialized[1]) { initCHROCharts(); chartsInitialized[1] = true; }
+  if (idx === 2 && !chartsInitialized[2]) { initCSOCharts(); chartsInitialized[2] = true; }
+}
+
+function initCHROCharts() {
+  // Staff by province
+  new Chart(document.getElementById('chro-c1'),{type:'bar',data:{labels:provs,datasets:[
+    {label:'แพทย์',data:[520,380,340,280,240,210,180,130],backgroundColor:'#4f46e5'},
+    {label:'พยาบาล',data:[2800,2200,1900,1600,1400,1280,1100,760],backgroundColor:'#1D9E75'},
+    {label:'สหวิชาชีพ',data:[1200,980,860,720,640,580,480,340],backgroundColor:'#EF9F27'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true,ticks:{font:{size:9}}}}}});
+
+  // Vacancy by province
+  const vac=[180,220,148,92,186,172,208,234];
+  new Chart(document.getElementById('chro-c2'),{type:'bar',data:{labels:provs,datasets:[{data:vac,backgroundColor:vac.map(v=>v>=200?'#E24B4A':v>=150?'#EF9F27':'#1D9E75')}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+
+  // Turnover monthly
+  new Chart(document.getElementById('chro-c3'),{type:'line',data:{labels:months,datasets:[
+    {data:[48,52,61,44,58,42],borderColor:'#E24B4A',backgroundColor:'rgba(226,75,74,0.08)',tension:.3,fill:true,pointRadius:3},
+    {data:[38,42,35,52,46,55],borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.08)',tension:.3,fill:true,pointRadius:3}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{font:{size:10}}},x:{ticks:{font:{size:10}}}}}});
+
+  // Staff by type bar
+  new Chart(document.getElementById('chro-c4'),{type:'bar',data:{labels:['แพทย์','ทันตแพทย์','เภสัชกร','พยาบาล','เทคนิคการแพทย์','กายภาพ','รังสี','อื่นๆ'],datasets:[{data:[2480,620,840,12840,1420,680,540,15646],backgroundColor:'#4f46e5'}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>(v/1000).toFixed(1)+'K',font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+
+  // Employment type doughnut
+  new Chart(document.getElementById('chro-c5'),{type:'doughnut',data:{labels:['ข้าราชการ','พนักงานกระทรวง','ลูกจ้างชั่วคราว'],datasets:[{data:[25.4,42.1,32.5],backgroundColor:['#4f46e5','#1D9E75','#EF9F27'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false}}}});
+
+  // Table
+  const chroRows=[
+    ['เชียงใหม่',8420,520,2800,180,3.2,1.8,'14%'],
+    ['เชียงราย',6180,380,2200,220,4.1,1.2,'16%'],
+    ['ลำปาง',5240,340,1900,148,3.8,1.4,'12%'],
+    ['ลำพูน',3640,280,1600,92,2.9,1.6,'22%'],
+    ['พะเยา',3480,240,1400,186,5.2,0.9,'18%'],
+    ['แพร่',3240,210,1280,172,4.8,0.8,'15%'],
+    ['น่าน',2920,180,1100,208,5.6,0.7,'11%'],
+    ['แม่ฮ่องสอน',1946,130,760,234,6.4,0.5,'20%']
+  ];
+  const chroTbl=document.getElementById('chro-tbl');
+  chroRows.forEach(r=>{
+    const resign=parseFloat(r[5]),doc=parseFloat(r[6]),burn=parseFloat(r[7]);
+    chroTbl.innerHTML+=`<tr>
+      <td style="font-weight:500">${r[0]}</td>
+      <td>${r[1].toLocaleString()}</td>
+      <td>${r[2]}</td>
+      <td>${r[3].toLocaleString()}</td>
+      <td style="color:${parseInt(r[4])>=200?'#A32D2D':parseInt(r[4])>=150?'#854F0B':'#27500A'}">${r[4]}</td>
+      <td style="color:${resign>=5?'#A32D2D':resign>=4?'#854F0B':'#27500A'}">${r[5]}%</td>
+      <td style="color:${doc<1?'#A32D2D':doc<1.5?'#854F0B':'#27500A'}">${r[6]}</td>
+      <td style="color:${burn>=18?'#A32D2D':burn>=15?'#854F0B':'#27500A'}">${r[7]}</td>
+    </tr>`;
+  });
+}
+
+function initCSOCharts() {
+  // OPD by province
+  new Chart(document.getElementById('cso-c1'),{type:'bar',data:{labels:provs,datasets:[{data:[68000,58000,52000,34000,30000,28000,26000,22000],backgroundColor:'#0F6E56'}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>(v/1000)+'K',font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+
+  // Bed Occ + ALoS combo
+  new Chart(document.getElementById('cso-c2'),{type:'bar',data:{labels:provs,datasets:[
+    {label:'Bed Occ.',data:[82,74,79,88,71,68,63,55],backgroundColor:'#4f46e5',yAxisID:'y'},
+    {label:'ALoS',data:[4.5,3.8,4.2,4.8,3.6,3.4,3.2,2.8],type:'line',borderColor:'#EF9F27',backgroundColor:'rgba(239,159,39,0.1)',tension:.3,pointRadius:4,yAxisID:'y1'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{position:'left',max:100,ticks:{callback:v=>v+'%',font:{size:9}}},y1:{position:'right',max:8,grid:{drawOnChartArea:false},ticks:{callback:v=>v+'d',font:{size:9}}},x:{ticks:{font:{size:9}}}}}});
+
+  // CMR by province
+  const cmr=[1.6,1.9,1.7,1.4,2.1,2.3,2.6,2.8];
+  new Chart(document.getElementById('cso-c3'),{type:'bar',data:{labels:provs,datasets:[{data:cmr,backgroundColor:cmr.map(v=>v>2?'#E24B4A':v>1.8?'#EF9F27':'#1D9E75')}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{max:4,ticks:{callback:v=>v+'%',font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+
+  // ER visits monthly
+  new Chart(document.getElementById('cso-c4'),{type:'bar',data:{labels:months,datasets:[
+    {label:'Urgent',data:[4200,4500,4800,4100,4600,4400],backgroundColor:'#E24B4A'},
+    {label:'Non-urgent',data:[8200,8600,9100,7800,8400,8000],backgroundColor:'#EF9F27'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{font:{size:10}}}}}});
+
+  // Referral doughnut
+  new Chart(document.getElementById('cso-c5'),{type:'doughnut',data:{labels:['ภายในเขต','นอกเขต','เอกชน'],datasets:[{data:[72,18,10],backgroundColor:['#4f46e5','#E24B4A','#EF9F27'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false}}}});
+
+  // Table
+  const csoRows=[
+    ['เชียงใหม่',68000,42000,'82%',4.5,'1.6%','3.2%',680,'4.2 ชม.'],
+    ['เชียงราย',58000,36000,'74%',3.8,'1.9%','3.4%',820,'3.8 ชม.'],
+    ['ลำปาง',52000,31000,'79%',4.2,'1.7%','2.8%',540,'2.4 ชม.'],
+    ['ลำพูน',34000,22000,'88%',4.8,'1.4%','2.2%',280,'1.8 ชม.'],
+    ['พะเยา',30000,18000,'71%',3.6,'2.1%','3.8%',460,'2.6 ชม.'],
+    ['แพร่',28000,16000,'68%',3.4,'2.3%','4.1%',520,'2.2 ชม.'],
+    ['น่าน',26000,14000,'63%',3.2,'2.6%','4.4%',580,'3.1 ชม.'],
+    ['แม่ฮ่องสอน',22000,10000,'55%',2.8,'2.8%','5.2%',640,'3.6 ชม.']
+  ];
+  const csoTbl=document.getElementById('cso-tbl');
+  csoRows.forEach(r=>{
+    const cmrV=parseFloat(r[5]),readm=parseFloat(r[6]);
+    csoTbl.innerHTML+=`<tr>
+      <td style="font-weight:500">${r[0]}</td>
+      <td>${r[1].toLocaleString()}</td>
+      <td>${r[2].toLocaleString()}</td>
+      <td>${r[3]}</td>
+      <td>${r[4]}</td>
+      <td style="color:${cmrV>2?'#A32D2D':cmrV>1.8?'#854F0B':'#27500A'}">${r[5]}</td>
+      <td style="color:${readm>4?'#A32D2D':readm>3?'#854F0B':'#27500A'}">${r[6]}</td>
+      <td>${r[7]}</td>
+      <td>${r[8]}</td>
+    </tr>`;
+  });
+}
+
+/* ── CHAT with Gemini AI (streaming) ── */
 const SUPABASE_URL='https://rljbkkwzqnvawizyyzzb.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsamJra3d6cW52YXdpenl5enpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzMjMyNDgsImV4cCI6MjA4MTg5OTI0OH0.1jdv4eBnrGCAWUD94AWXRAtJ0tETNjzI9Pgo8eiInjQ';
 
