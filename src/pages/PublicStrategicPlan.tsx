@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { PublicLayout } from "@/components/layout/PublicLayout";
-import { Target, Presentation } from "lucide-react";
+import { Target, Presentation, ChevronDown, ChevronRight, Cpu, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StrategySlidesDialog } from "@/components/strategic/StrategySlidesDialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function PublicStrategicPlan() {
   const [slidesOpen, setSlidesOpen] = useState(false);
+  const [strategy1Open, setStrategy1Open] = useState(false);
 
   return (
     <PublicLayout>
@@ -18,7 +20,7 @@ export default function PublicStrategicPlan() {
           </div>
         </div>
 
-        <div className="flex justify-center py-12">
+        <div className="flex justify-center py-8">
           <Button
             size="lg"
             onClick={() => setSlidesOpen(true)}
@@ -27,6 +29,39 @@ export default function PublicStrategicPlan() {
             <Presentation className="h-8 w-8" />
             แผนกลยุทธ์
           </Button>
+        </div>
+
+        {/* Strategy Menus */}
+        <div className="max-w-3xl mx-auto space-y-3">
+          <Collapsible open={strategy1Open} onOpenChange={setStrategy1Open}>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-between h-14 text-lg font-semibold border-2 border-primary/30 hover:border-primary hover:bg-primary/5"
+              >
+                <span className="flex items-center gap-3">
+                  <Cpu className="h-6 w-6 text-primary" />
+                  กลยุทธ์ที่ 1 : Smart Operation
+                </span>
+                {strategy1Open ? (
+                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-1">
+              <div className="ml-8 space-y-1">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-12 text-base gap-3 hover:bg-primary/5"
+                >
+                  <FileSpreadsheet className="h-5 w-5 text-primary" />
+                  แผนงบประมาณ R1- Datacenter
+                </Button>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       </div>
 
