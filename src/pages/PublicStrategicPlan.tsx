@@ -78,6 +78,22 @@ export default function PublicStrategicPlan() {
           />
         </DialogContent>
       </Dialog>
+
+      <Dialog open={archOpen} onOpenChange={setArchOpen}>
+        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] p-0 overflow-hidden border-0">
+          <button
+            onClick={() => setArchOpen(false)}
+            className="absolute right-4 top-4 z-50 rounded-full bg-black/50 p-2 text-white hover:bg-black/70 transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <iframe
+            src="/r1dc-architecture.html"
+            className="w-full h-full border-0"
+            title="สถาปัตยกรรม R1- Datacenter"
+          />
+        </DialogContent>
+      </Dialog>
     </PublicLayout>
   );
 }
