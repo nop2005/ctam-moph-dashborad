@@ -524,7 +524,121 @@ function toggleChat(){
   document.getElementById('aiBtnLabel').textContent=chatOpen?'ปิด AI':'AI Assistant';
 }
 
-/* ── CHAT with Lovable AI (streaming) ── */
+/* ── TAB SWITCHING ── */
+let chartsInitialized = {1:false, 2:false};
+
+function switchTab(idx) {
+  document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + idx).style.display = '';
+  document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+  if (idx === 1 && !chartsInitialized[1]) { initCHROCharts(); chartsInitialized[1] = true; }
+  if (idx === 2 && !chartsInitialized[2]) { initCSOCharts(); chartsInitialized[2] = true; }
+}
+
+function initCHROCharts() {
+  // Staff by province
+  new Chart(document.getElementById('chro-c1'),{type:'bar',data:{labels:provs,datasets:[
+    {label:'แพทย์',data:[520,380,340,280,240,210,180,130],backgroundColor:'#4f46e5'},
+    {label:'พยาบาล',data:[2800,2200,1900,1600,1400,1280,1100,760],backgroundColor:'#1D9E75'},
+    {label:'สหวิชาชีพ',data:[1200,980,860,720,640,580,480,340],backgroundColor:'#EF9F27'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true,ticks:{font:{size:9}}}}}});
+
+  // Vacancy by province
+  const vac=[180,220,148,92,186,172,208,234];
+  new Chart(document.getElementById('chro-c2'),{type:'bar',data:{labels:provs,datasets:[{data:vac,backgroundColor:vac.map(v=>v>=200?'#E24B4A':v>=150?'#EF9F27':'#1D9E75')}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+
+  // Turnover monthly
+  new Chart(document.getElementById('chro-c3'),{type:'line',data:{labels:months,datasets:[
+    {data:[48,52,61,44,58,42],borderColor:'#E24B4A',backgroundColor:'rgba(226,75,74,0.08)',tension:.3,fill:true,pointRadius:3},
+    {data:[38,42,35,52,46,55],borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.08)',tension:.3,fill:true,pointRadius:3}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{font:{size:10}}},x:{ticks:{font:{size:10}}}}}});
+
+  // Staff by type bar
+  new Chart(document.getElementById('chro-c4'),{type:'bar',data:{labels:['แพทย์','ทันตแพทย์','เภสัชกร','พยาบาล','เทคนิคการแพทย์','กายภาพ','รังสี','อื่นๆ'],datasets:[{data:[2480,620,840,12840,1420,680,540,15646],backgroundColor:'#4f46e5'}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>(v/1000).toFixed(1)+'K',font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+
+  // Employment type doughnut
+  new Chart(document.getElementById('chro-c5'),{type:'doughnut',data:{labels:['ข้าราชการ','พนักงานกระทรวง','ลูกจ้างชั่วคราว'],datasets:[{data:[25.4,42.1,32.5],backgroundColor:['#4f46e5','#1D9E75','#EF9F27'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false}}}});
+
+  // Table
+  const chroRows=[
+    ['เชียงใหม่',8420,520,2800,180,3.2,1.8,'14%'],
+    ['เชียงราย',6180,380,2200,220,4.1,1.2,'16%'],
+    ['ลำปาง',5240,340,1900,148,3.8,1.4,'12%'],
+    ['ลำพูน',3640,280,1600,92,2.9,1.6,'22%'],
+    ['พะเยา',3480,240,1400,186,5.2,0.9,'18%'],
+    ['แพร่',3240,210,1280,172,4.8,0.8,'15%'],
+    ['น่าน',2920,180,1100,208,5.6,0.7,'11%'],
+    ['แม่ฮ่องสอน',1946,130,760,234,6.4,0.5,'20%']
+  ];
+  const chroTbl=document.getElementById('chro-tbl');
+  chroRows.forEach(r=>{
+    const resign=parseFloat(r[5]),doc=parseFloat(r[6]),burn=parseFloat(r[7]);
+    chroTbl.innerHTML+=`<tr>
+      <td style="font-weight:500">${r[0]}</td>
+      <td>${r[1].toLocaleString()}</td>
+      <td>${r[2]}</td>
+      <td>${r[3].toLocaleString()}</td>
+      <td style="color:${parseInt(r[4])>=200?'#A32D2D':parseInt(r[4])>=150?'#854F0B':'#27500A'}">${r[4]}</td>
+      <td style="color:${resign>=5?'#A32D2D':resign>=4?'#854F0B':'#27500A'}">${r[5]}%</td>
+      <td style="color:${doc<1?'#A32D2D':doc<1.5?'#854F0B':'#27500A'}">${r[6]}</td>
+      <td style="color:${burn>=18?'#A32D2D':burn>=15?'#854F0B':'#27500A'}">${r[7]}</td>
+    </tr>`;
+  });
+}
+
+function initCSOCharts() {
+  // OPD by province
+  new Chart(document.getElementById('cso-c1'),{type:'bar',data:{labels:provs,datasets:[{data:[68000,58000,52000,34000,30000,28000,26000,22000],backgroundColor:'#0F6E56'}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>(v/1000)+'K',font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+
+  // Bed Occ + ALoS combo
+  new Chart(document.getElementById('cso-c2'),{type:'bar',data:{labels:provs,datasets:[
+    {label:'Bed Occ.',data:[82,74,79,88,71,68,63,55],backgroundColor:'#4f46e5',yAxisID:'y'},
+    {label:'ALoS',data:[4.5,3.8,4.2,4.8,3.6,3.4,3.2,2.8],type:'line',borderColor:'#EF9F27',backgroundColor:'rgba(239,159,39,0.1)',tension:.3,pointRadius:4,yAxisID:'y1'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{position:'left',max:100,ticks:{callback:v=>v+'%',font:{size:9}}},y1:{position:'right',max:8,grid:{drawOnChartArea:false},ticks:{callback:v=>v+'d',font:{size:9}}},x:{ticks:{font:{size:9}}}}}});
+
+  // CMR by province
+  const cmr=[1.6,1.9,1.7,1.4,2.1,2.3,2.6,2.8];
+  new Chart(document.getElementById('cso-c3'),{type:'bar',data:{labels:provs,datasets:[{data:cmr,backgroundColor:cmr.map(v=>v>2?'#E24B4A':v>1.8?'#EF9F27':'#1D9E75')}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{max:4,ticks:{callback:v=>v+'%',font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+
+  // ER visits monthly
+  new Chart(document.getElementById('cso-c4'),{type:'bar',data:{labels:months,datasets:[
+    {label:'Urgent',data:[4200,4500,4800,4100,4600,4400],backgroundColor:'#E24B4A'},
+    {label:'Non-urgent',data:[8200,8600,9100,7800,8400,8000],backgroundColor:'#EF9F27'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{font:{size:10}}}}}});
+
+  // Referral doughnut
+  new Chart(document.getElementById('cso-c5'),{type:'doughnut',data:{labels:['ภายในเขต','นอกเขต','เอกชน'],datasets:[{data:[72,18,10],backgroundColor:['#4f46e5','#E24B4A','#EF9F27'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false}}}});
+
+  // Table
+  const csoRows=[
+    ['เชียงใหม่',68000,42000,'82%',4.5,'1.6%','3.2%',680,'4.2 ชม.'],
+    ['เชียงราย',58000,36000,'74%',3.8,'1.9%','3.4%',820,'3.8 ชม.'],
+    ['ลำปาง',52000,31000,'79%',4.2,'1.7%','2.8%',540,'2.4 ชม.'],
+    ['ลำพูน',34000,22000,'88%',4.8,'1.4%','2.2%',280,'1.8 ชม.'],
+    ['พะเยา',30000,18000,'71%',3.6,'2.1%','3.8%',460,'2.6 ชม.'],
+    ['แพร่',28000,16000,'68%',3.4,'2.3%','4.1%',520,'2.2 ชม.'],
+    ['น่าน',26000,14000,'63%',3.2,'2.6%','4.4%',580,'3.1 ชม.'],
+    ['แม่ฮ่องสอน',22000,10000,'55%',2.8,'2.8%','5.2%',640,'3.6 ชม.']
+  ];
+  const csoTbl=document.getElementById('cso-tbl');
+  csoRows.forEach(r=>{
+    const cmrV=parseFloat(r[5]),readm=parseFloat(r[6]);
+    csoTbl.innerHTML+=`<tr>
+      <td style="font-weight:500">${r[0]}</td>
+      <td>${r[1].toLocaleString()}</td>
+      <td>${r[2].toLocaleString()}</td>
+      <td>${r[3]}</td>
+      <td>${r[4]}</td>
+      <td style="color:${cmrV>2?'#A32D2D':cmrV>1.8?'#854F0B':'#27500A'}">${r[5]}</td>
+      <td style="color:${readm>4?'#A32D2D':readm>3?'#854F0B':'#27500A'}">${r[6]}</td>
+      <td>${r[7]}</td>
+      <td>${r[8]}</td>
+    </tr>`;
+  });
+}
+
+/* ── CHAT with Gemini AI (streaming) ── */
 const SUPABASE_URL='https://rljbkkwzqnvawizyyzzb.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsamJra3d6cW52YXdpenl5enpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzMjMyNDgsImV4cCI6MjA4MTg5OTI0OH0.1jdv4eBnrGCAWUD94AWXRAtJ0tETNjzI9Pgo8eiInjQ';
 
