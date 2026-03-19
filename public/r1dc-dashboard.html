@@ -786,8 +786,9 @@ function appendMsg(role,text){
   const t=`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
   const d=document.createElement('div');
   d.className='msg '+role;
-  const safe=text.replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  let safe=text.replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
     .replace(/\n/g,'<br>');
   d.innerHTML=`<div class="msg-bubble">${safe}</div><div class="msg-time">${t}</div>`;
   c.appendChild(d);
