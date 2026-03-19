@@ -9,6 +9,7 @@ import { X } from "lucide-react";
 export default function StrategicPlan() {
   const [slidesOpen, setSlidesOpen] = useState(false);
   const [pricingOpen, setPricingOpen] = useState(false);
+  const [archOpen, setArchOpen] = useState(false);
 
   return (
     <DashboardLayout>
