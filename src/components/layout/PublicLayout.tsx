@@ -191,8 +191,8 @@ function PublicSidebar({ navigate }: PublicSidebarProps) {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   tooltip="แดชบอร์ด R1-Datacenter"
-                  isActive={currentPath === "/public/reports/tableau-dashboard"}
-                  onClick={() => navigate("/public/reports/tableau-dashboard")}
+                  isActive={currentPath === "/public/r1dc-dashboard"}
+                  onClick={() => navigate("/public/r1dc-dashboard")}
                   className={`
                     text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
                     data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
