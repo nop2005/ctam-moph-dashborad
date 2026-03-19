@@ -771,8 +771,9 @@ function createAssistantBubble(){
 }
 
 function updateBubble(bubble,text){
-  const safe=text.replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  let safe=text.replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
     .replace(/\n/g,'<br>');
   bubble.innerHTML=safe;
   const c=document.getElementById('chatMessages');
