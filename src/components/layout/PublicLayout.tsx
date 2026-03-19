@@ -187,6 +187,22 @@ function PublicSidebar({ navigate }: PublicSidebarProps) {
                 </SidebarMenuItem>
               </Collapsible>
 
+              {/* แผนยุทธศาสตร์ประจำปี */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="แผนยุทธศาสตร์ประจำปี"
+                  isActive={currentPath === "/public/strategic-plan"}
+                  onClick={() => navigate("/public/strategic-plan")}
+                  className={`
+                    text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                    data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                  `}
+                >
+                  <Target className="h-4 w-4" />
+                  <span>แผนยุทธศาสตร์ประจำปี</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* คู่มือเอกสาร - Main Menu Item */}
               <SidebarMenuItem>
                 <SidebarMenuButton
