@@ -43,6 +43,8 @@ import PublicInspectionSupervisor from "./pages/PublicInspectionSupervisor";
 import PublicInspectionManual from "./pages/PublicInspectionManual";
 import PublicTableauDashboard from "./pages/PublicTableauDashboard";
 import PublicStrategicPlan from "./pages/PublicStrategicPlan";
+import PublicR1dcPricing from "./pages/PublicR1dcPricing";
+import PublicR1dcArchitecture from "./pages/PublicR1dcArchitecture";
 
 
 const queryClient = new QueryClient({
