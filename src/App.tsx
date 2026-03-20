@@ -82,6 +82,8 @@ const App = () => (
             <Route path="/public/reports/tableau-dashboard" element={<PublicTableauDashboard />} />
             
             <Route path="/public/strategic-plan" element={<PublicStrategicPlan />} />
+            <Route path="/public/strategic-plan/pricing" element={<PublicR1dcPricing />} />
+            <Route path="/public/strategic-plan/architecture" element={<PublicR1dcArchitecture />} />
             
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route 
