@@ -341,6 +341,7 @@ export default function Assessment() {
               sectionType="quantitative" 
               onRefresh={loadAssessmentData}
               onApproveSuccess={() => setActiveTab('impact')}
+              onAllSectionsApproved={handleAllSectionsApproved}
             />
           </TabsContent>
 
