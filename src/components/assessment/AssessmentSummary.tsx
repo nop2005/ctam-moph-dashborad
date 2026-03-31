@@ -274,6 +274,12 @@ export function AssessmentSummary({
       });
       setDialogOpen(false);
       setComment('');
+      
+      // Navigate back to dashboard after approval
+      if (onAllApproved) {
+        onAllApproved();
+        return;
+      }
       onRefresh?.();
 
     } catch (error: any) {
