@@ -44,6 +44,13 @@ export function AssessmentSummary({
   qualitativeScore,
   impactScore,
   onRefresh,
+  onAllApproved,
+}: AssessmentSummaryProps) {
+  items,
+  categories,
+  qualitativeScore,
+  impactScore,
+  onRefresh,
 }: AssessmentSummaryProps) {
   const { profile } = useAuth();
   const { toast } = useToast();
