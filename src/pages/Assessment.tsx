@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -12,6 +12,7 @@ import { AssessmentSummary } from '@/components/assessment/AssessmentSummary';
 
 import { ApprovalWorkflow } from '@/components/assessment/ApprovalWorkflow';
 import { SectionApproval } from '@/components/assessment/SectionApproval';
+import { invalidateDashboardCache } from '@/pages/Dashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { 
@@ -52,6 +53,12 @@ export default function Assessment() {
   const [healthOffice, setHealthOffice] = useState<HealthOffice | null>(null);
   const [province, setProvince] = useState<Province | null>(null);
   const [activeTab, setActiveTab] = useState('quantitative');
+
+  // Navigate back to dashboard after all sections approved, clearing cache
+  const handleAllSectionsApproved = useCallback(() => {
+    invalidateDashboardCache();
+    navigate('/dashboard');
+  }, [navigate]);
   const [submitting, setSubmitting] = useState(false);
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [allFilesAttached, setAllFilesAttached] = useState(false);
@@ -340,6 +347,7 @@ export default function Assessment() {
               sectionType="quantitative" 
               onRefresh={loadAssessmentData}
               onApproveSuccess={() => setActiveTab('impact')}
+              onAllSectionsApproved={handleAllSectionsApproved}
             />
           </TabsContent>
 
@@ -356,6 +364,7 @@ export default function Assessment() {
               sectionType="impact" 
               onRefresh={loadAssessmentData}
               onApproveSuccess={() => setActiveTab('summary')}
+              onAllSectionsApproved={handleAllSectionsApproved}
             />
           </TabsContent>
 
@@ -367,6 +376,7 @@ export default function Assessment() {
               qualitativeScore={qualitativeScore}
               impactScore={impactScore}
               onRefresh={loadAssessmentData}
+              onAllApproved={handleAllSectionsApproved}
             />
           </TabsContent>
         </Tabs>

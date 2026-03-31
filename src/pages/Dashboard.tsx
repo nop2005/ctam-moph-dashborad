@@ -103,6 +103,12 @@ type DashboardCacheEntry = {
 const dashboardCache = new Map<string, DashboardCacheEntry>();
 let fiscalYearsCache: { ts: number; years: number[] } | null = null;
 
+// Export function to invalidate dashboard cache from other pages
+export const invalidateDashboardCache = () => {
+  dashboardCache.clear();
+  fiscalYearsCache = null;
+};
+
 const getDashboardCacheKey = (p: any, fiscalYear: string) =>
   [p?.role, p?.province_id, p?.health_region_id, p?.hospital_id, p?.health_office_id, fiscalYear].join('|');
 

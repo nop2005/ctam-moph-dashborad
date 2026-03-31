@@ -34,6 +34,7 @@ interface AssessmentSummaryProps {
   qualitativeScore: QualitativeScore | null;
   impactScore: ImpactScore | null;
   onRefresh?: () => void;
+  onAllApproved?: () => void;
 }
 
 export function AssessmentSummary({
@@ -43,6 +44,7 @@ export function AssessmentSummary({
   qualitativeScore,
   impactScore,
   onRefresh,
+  onAllApproved,
 }: AssessmentSummaryProps) {
   const { profile } = useAuth();
   const { toast } = useToast();
@@ -266,6 +268,12 @@ export function AssessmentSummary({
       });
       setDialogOpen(false);
       setComment('');
+      
+      // Navigate back to dashboard after approval
+      if (onAllApproved) {
+        onAllApproved();
+        return;
+      }
       onRefresh?.();
 
     } catch (error: any) {
