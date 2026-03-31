@@ -183,6 +183,12 @@ export function SectionApproval({ assessment, sectionType, onRefresh, onApproveS
           title: 'อนุมัติครบทุกส่วนแล้ว', 
           description: nextStatus === 'completed' ? 'การประเมินเสร็จสมบูรณ์' : 'ส่งต่อให้ระดับถัดไปตรวจสอบ' 
         });
+
+        // Navigate back to dashboard after all sections approved
+        if (onAllSectionsApproved) {
+          onAllSectionsApproved();
+          return;
+        }
       } else {
         toast({ title: `อนุมัติส่วน${sectionLabels[sectionType]}สำเร็จ` });
         // Switch to next tab after successful approval
