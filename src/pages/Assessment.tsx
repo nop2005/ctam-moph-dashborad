@@ -370,6 +370,7 @@ export default function Assessment() {
               qualitativeScore={qualitativeScore}
               impactScore={impactScore}
               onRefresh={loadAssessmentData}
+              onAllApproved={handleAllSectionsApproved}
             />
           </TabsContent>
         </Tabs>
