@@ -46,12 +46,6 @@ export function AssessmentSummary({
   onRefresh,
   onAllApproved,
 }: AssessmentSummaryProps) {
-  items,
-  categories,
-  qualitativeScore,
-  impactScore,
-  onRefresh,
-}: AssessmentSummaryProps) {
   const { profile } = useAuth();
   const { toast } = useToast();
   const [processing, setProcessing] = useState(false);
