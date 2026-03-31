@@ -34,6 +34,7 @@ interface AssessmentSummaryProps {
   qualitativeScore: QualitativeScore | null;
   impactScore: ImpactScore | null;
   onRefresh?: () => void;
+  onAllApproved?: () => void;
 }
 
 export function AssessmentSummary({
