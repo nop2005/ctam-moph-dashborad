@@ -53,6 +53,12 @@ export default function Assessment() {
   const [healthOffice, setHealthOffice] = useState<HealthOffice | null>(null);
   const [province, setProvince] = useState<Province | null>(null);
   const [activeTab, setActiveTab] = useState('quantitative');
+
+  // Navigate back to dashboard after all sections approved, clearing cache
+  const handleAllSectionsApproved = useCallback(() => {
+    invalidateDashboardCache();
+    navigate('/dashboard');
+  }, [navigate]);
   const [submitting, setSubmitting] = useState(false);
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [allFilesAttached, setAllFilesAttached] = useState(false);
