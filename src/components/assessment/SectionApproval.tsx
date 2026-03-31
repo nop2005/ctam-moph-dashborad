@@ -31,6 +31,7 @@ interface SectionApprovalProps {
   sectionType: SectionType;
   onRefresh: () => void;
   onApproveSuccess?: () => void;
+  onAllSectionsApproved?: () => void;
 }
 
 const sectionLabels: Record<SectionType, string> = {
