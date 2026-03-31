@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -12,6 +12,7 @@ import { AssessmentSummary } from '@/components/assessment/AssessmentSummary';
 
 import { ApprovalWorkflow } from '@/components/assessment/ApprovalWorkflow';
 import { SectionApproval } from '@/components/assessment/SectionApproval';
+import { invalidateDashboardCache } from '@/pages/Dashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { 
