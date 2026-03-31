@@ -40,7 +40,7 @@ const sectionLabels: Record<SectionType, string> = {
   impact: 'ผลกระทบ',
 };
 
-export function SectionApproval({ assessment, sectionType, onRefresh, onApproveSuccess }: SectionApprovalProps) {
+export function SectionApproval({ assessment, sectionType, onRefresh, onApproveSuccess, onAllSectionsApproved }: SectionApprovalProps) {
   const { profile } = useAuth();
   const { toast } = useToast();
   const [processing, setProcessing] = useState(false);
