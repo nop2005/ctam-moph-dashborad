@@ -358,6 +358,7 @@ export default function Assessment() {
               sectionType="impact" 
               onRefresh={loadAssessmentData}
               onApproveSuccess={() => setActiveTab('summary')}
+              onAllSectionsApproved={handleAllSectionsApproved}
             />
           </TabsContent>
 
