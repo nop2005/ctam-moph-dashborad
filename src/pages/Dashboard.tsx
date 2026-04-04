@@ -68,6 +68,7 @@ interface AssessmentStats {
   waitingRegional: number;
   approved: number;
   returned: number;
+  neverSubmitted: number;
 }
 
 const statusLabels: Record<string, { label: string; className: string }> = {
