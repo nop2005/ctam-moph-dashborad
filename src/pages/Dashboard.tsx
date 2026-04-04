@@ -68,6 +68,7 @@ interface AssessmentStats {
   waitingRegional: number;
   approved: number;
   returned: number;
+  neverSubmitted: number;
 }
 
 const statusLabels: Record<string, { label: string; className: string }> = {
@@ -142,6 +143,7 @@ export default function Dashboard() {
       waitingRegional: 0,
       approved: 0,
       returned: 0,
+      neverSubmitted: 0,
     }
   );
   // ถ้ามี cache -> loading = false ตั้งแต่แรก
@@ -329,7 +331,63 @@ export default function Dashboard() {
           const waitingRegional = filteredStats.filter(a => a.status === 'approved_provincial').length;
           const approved = filteredStats.filter(a => a.status === 'approved_regional' || a.status === 'completed').length;
           const returned = filteredStats.filter(a => a.status === 'returned').length;
-          const computedStats = { total, draft, waitingProvincial, waitingRegional, approved, returned };
+
+          // Count units that never submitted: fetch total units in scope, subtract units with assessments
+          let totalUnitsInScope = 0;
+          const unitIdsWithAssessment = new Set<string>();
+          filteredStats.forEach(a => {
+            if (a.hospital_id) unitIdsWithAssessment.add(a.hospital_id);
+            if (a.health_office_id) unitIdsWithAssessment.add(a.health_office_id);
+          });
+
+          if (profile?.role === 'hospital_it') {
+            totalUnitsInScope = 1;
+          } else if (profile?.role === 'health_office') {
+            // Count hospitals in their province + their own office
+            const { count: hospCount } = await supabase
+              .from('hospitals')
+              .select('id', { count: 'exact', head: true })
+              .eq('province_id', profile.province_id!);
+            totalUnitsInScope = (hospCount || 0) + 1; // +1 for the health office itself
+          } else if (profile?.role === 'provincial' && profile.province_id) {
+            const { count: hospCount } = await supabase
+              .from('hospitals')
+              .select('id', { count: 'exact', head: true })
+              .eq('province_id', profile.province_id);
+            const { count: hoCount } = await supabase
+              .from('health_offices')
+              .select('id', { count: 'exact', head: true })
+              .eq('province_id', profile.province_id);
+            totalUnitsInScope = (hospCount || 0) + (hoCount || 0);
+          } else if ((profile?.role === 'regional' || profile?.role === 'supervisor') && profile.health_region_id) {
+            const { data: regionProvinces } = await supabase
+              .from('provinces')
+              .select('id')
+              .eq('health_region_id', profile.health_region_id);
+            const provinceIds = (regionProvinces || []).map(p => p.id);
+            if (provinceIds.length > 0) {
+              const { count: hospCount } = await supabase
+                .from('hospitals')
+                .select('id', { count: 'exact', head: true })
+                .in('province_id', provinceIds);
+              const { count: hoCount } = await supabase
+                .from('health_offices')
+                .select('id', { count: 'exact', head: true })
+                .eq('health_region_id', profile.health_region_id);
+              totalUnitsInScope = (hospCount || 0) + (hoCount || 0);
+            }
+          } else if (profile?.role === 'central_admin') {
+            const { count: hospCount } = await supabase
+              .from('hospitals')
+              .select('id', { count: 'exact', head: true });
+            const { count: hoCount } = await supabase
+              .from('health_offices')
+              .select('id', { count: 'exact', head: true });
+            totalUnitsInScope = (hospCount || 0) + (hoCount || 0);
+          }
+
+          const neverSubmitted = Math.max(0, totalUnitsInScope - unitIdsWithAssessment.size);
+          const computedStats = { total, draft, waitingProvincial, waitingRegional, approved, returned, neverSubmitted };
           nextCacheStats = computedStats;
           setStats(computedStats);
         }
@@ -650,7 +708,7 @@ export default function Dashboard() {
       const waitingRegional = filtered.filter(a => a.status === 'approved_provincial').length;
       const approved = filtered.filter(a => a.status === 'approved_regional' || a.status === 'completed').length;
       const returned = filtered.filter(a => a.status === 'returned').length;
-      setStats({ total, draft, waitingProvincial, waitingRegional, approved, returned });
+      setStats(prev => ({ ...prev, total, draft, waitingProvincial, waitingRegional, approved, returned }));
       
       setAssessments(filtered);
       setReturnDialogOpen(false);
@@ -810,6 +868,14 @@ export default function Dashboard() {
       bgColor: 'bg-destructive/10',
       filterValue: 'returned',
     },
+    { 
+      label: 'ยังไม่เคยส่ง', 
+      value: loading ? '-' : stats.neverSubmitted.toString(), 
+      icon: FileText, 
+      color: 'text-muted-foreground',
+      bgColor: 'bg-muted/50',
+      filterValue: 'never_submitted',
+    },
   ];
 
   // Filter assessments based on statusFilter, dataUpdatedFilter, and emailSentFilter
@@ -892,7 +958,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
         {statsDisplay.map((stat, index) => (
           <Card 
             key={index} 
