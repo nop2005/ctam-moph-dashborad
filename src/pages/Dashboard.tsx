@@ -868,6 +868,14 @@ export default function Dashboard() {
       bgColor: 'bg-destructive/10',
       filterValue: 'returned',
     },
+    { 
+      label: 'ยังไม่เคยส่ง', 
+      value: loading ? '-' : stats.neverSubmitted.toString(), 
+      icon: FileText, 
+      color: 'text-muted-foreground',
+      bgColor: 'bg-muted/50',
+      filterValue: 'never_submitted',
+    },
   ];
 
   // Filter assessments based on statusFilter, dataUpdatedFilter, and emailSentFilter
