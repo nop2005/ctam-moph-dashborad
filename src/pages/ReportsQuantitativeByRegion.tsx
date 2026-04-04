@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useReportAccessPolicy } from '@/hooks/useReportAccessPolicy';
-import { getLatestAssessmentsByUnit, isApprovedAssessmentStatus } from '@/lib/assessment-latest';
+import { getLatestAssessmentsByUnit, isSubmittedAssessmentStatus } from '@/lib/assessment-latest';
 import ThailandMap, { ProvinceData } from '@/components/reports/ThailandMap';
 
 interface HealthRegion {
@@ -221,7 +221,7 @@ export default function ReportsQuantitativeByRegion() {
   }, [assessments, selectedFiscalYear]);
 
   const approvedAssessments = useMemo(
-    () => filteredAssessments.filter(a => isApprovedAssessmentStatus(a.status)),
+    () => filteredAssessments.filter(a => isSubmittedAssessmentStatus(a.status)),
     [filteredAssessments]
   );
 

@@ -11,7 +11,7 @@ import { BarChart3, FileText, Building2, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useReportAccessPolicy } from '@/hooks/useReportAccessPolicy';
-import { getLatestAssessmentsByUnit, isApprovedAssessmentStatus } from '@/lib/assessment-latest';
+import { getLatestAssessmentsByUnit, isSubmittedAssessmentStatus } from '@/lib/assessment-latest';
 
 interface HealthRegion {
   id: string;
@@ -252,7 +252,7 @@ export default function Reports() {
 
   // Latest assessments per unit, but only counting the most recent *approved* one
   const approvedAssessments = useMemo(
-    () => filteredAssessments.filter(a => isApprovedAssessmentStatus(a.status)),
+    () => filteredAssessments.filter(a => isSubmittedAssessmentStatus(a.status)),
     [filteredAssessments]
   );
   const latestApprovedByUnit = useMemo(
