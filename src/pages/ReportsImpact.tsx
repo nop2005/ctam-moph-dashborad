@@ -23,7 +23,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { useReportAccessPolicy } from '@/hooks/useReportAccessPolicy';
-import { getLatestAssessmentsByUnit, isApprovedAssessmentStatus } from '@/lib/assessment-latest';
+import { getLatestAssessmentsByUnit, isSubmittedAssessmentStatus } from '@/lib/assessment-latest';
 
 interface HealthRegion {
   id: string;

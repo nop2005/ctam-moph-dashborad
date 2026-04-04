@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { BarChart3, ChevronLeft } from 'lucide-react';
-import { getLatestAssessmentsByUnit, isApprovedAssessmentStatus } from '@/lib/assessment-latest';
+import { getLatestAssessmentsByUnit, isSubmittedAssessmentStatus } from '@/lib/assessment-latest';
 
 interface HealthRegion {
   id: string;

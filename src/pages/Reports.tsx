@@ -11,7 +11,7 @@ import { BarChart3, FileText, Building2, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useReportAccessPolicy } from '@/hooks/useReportAccessPolicy';
-import { getLatestAssessmentsByUnit, isApprovedAssessmentStatus } from '@/lib/assessment-latest';
+import { getLatestAssessmentsByUnit, isSubmittedAssessmentStatus } from '@/lib/assessment-latest';
 
 interface HealthRegion {
   id: string;

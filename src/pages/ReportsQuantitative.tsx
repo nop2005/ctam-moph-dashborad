@@ -9,7 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useReportAccessPolicy } from '@/hooks/useReportAccessPolicy';
-import { getLatestAssessmentsByUnit, isApprovedAssessmentStatus } from '@/lib/assessment-latest';
+import { getLatestAssessmentsByUnit, isSubmittedAssessmentStatus } from '@/lib/assessment-latest';
 interface HealthRegion {
   id: string;
   name: string;
