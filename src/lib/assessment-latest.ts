@@ -3,6 +3,14 @@
 export const isApprovedAssessmentStatus = (status?: string | null) =>
   status === 'approved_regional' || status === 'completed';
 
+// Broader check: any assessment that has been submitted at least once (has scores)
+export const isSubmittedAssessmentStatus = (status?: string | null) =>
+  status === 'submitted' ||
+  status === 'approved_provincial' ||
+  status === 'approved_regional' ||
+  status === 'completed' ||
+  status === 'returned';
+
 type AssessmentLike = {
   id: string;
   hospital_id: string | null;
