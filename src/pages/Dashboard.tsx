@@ -143,6 +143,7 @@ export default function Dashboard() {
       waitingRegional: 0,
       approved: 0,
       returned: 0,
+      neverSubmitted: 0,
     }
   );
   // ถ้ามี cache -> loading = false ตั้งแต่แรก
