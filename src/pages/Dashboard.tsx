@@ -708,7 +708,7 @@ export default function Dashboard() {
       const waitingRegional = filtered.filter(a => a.status === 'approved_provincial').length;
       const approved = filtered.filter(a => a.status === 'approved_regional' || a.status === 'completed').length;
       const returned = filtered.filter(a => a.status === 'returned').length;
-      setStats({ total, draft, waitingProvincial, waitingRegional, approved, returned });
+      setStats(prev => ({ ...prev, total, draft, waitingProvincial, waitingRegional, approved, returned }));
       
       setAssessments(filtered);
       setReturnDialogOpen(false);
