@@ -252,7 +252,7 @@ export default function Reports() {
 
   // Latest assessments per unit, but only counting the most recent *approved* one
   const approvedAssessments = useMemo(
-    () => filteredAssessments.filter(a => isApprovedAssessmentStatus(a.status)),
+    () => filteredAssessments.filter(a => isSubmittedAssessmentStatus(a.status)),
     [filteredAssessments]
   );
   const latestApprovedByUnit = useMemo(

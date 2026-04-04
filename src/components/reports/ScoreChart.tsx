@@ -79,7 +79,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
 
   const latestApprovedByUnit = useMemo(() => {
-    const approved = assessments.filter(a => isApprovedAssessmentStatus(a.status));
+    const approved = assessments.filter(a => isSubmittedAssessmentStatus(a.status));
     return getLatestAssessmentsByUnit(approved);
   }, [assessments]);
 

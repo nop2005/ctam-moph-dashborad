@@ -241,7 +241,7 @@ export default function ReportsImpact() {
   }, [assessments, selectedFiscalYear]);
 
   const approvedAssessments = useMemo(
-    () => filteredAssessments.filter(a => isApprovedAssessmentStatus(a.status)),
+    () => filteredAssessments.filter(a => isSubmittedAssessmentStatus(a.status)),
     [filteredAssessments]
   );
 
