@@ -562,9 +562,11 @@ export default function Reports() {
                         ...regionHealthOffices.map(ho => ho.id),
                       ];
                       const regionResolvedScores = regionUnitIds.map(getResolvedScores);
-                      const quantitativeScores = regionResolvedScores
-                        .map(score => score.quantitative)
-                        .filter((score): score is number => score !== null);
+                      // คะแนนเชิงปริมาณ: ใช้เฉพาะ latest approved assessment (ตรงกับหน้าคะแนนเชิงปริมาณ /7)
+                      const quantitativeScores = regionUnitIds
+                        .map(uid => latestApprovedByUnit.get(uid))
+                        .filter(a => a && a.quantitative_score !== null && a.quantitative_score !== undefined)
+                        .map(a => Number(a!.quantitative_score));
                       const avgQuantitative = quantitativeScores.length > 0
                         ? quantitativeScores.reduce((sum, score) => sum + score, 0) / quantitativeScores.length
                         : null;
@@ -646,9 +648,11 @@ export default function Reports() {
                         ...provinceHealthOffices.map(ho => ho.id),
                       ];
                       const provinceResolvedScores = provinceUnitIds.map(getResolvedScores);
-                      const quantitativeScores = provinceResolvedScores
-                        .map(score => score.quantitative)
-                        .filter((score): score is number => score !== null);
+                      // คะแนนเชิงปริมาณ: ใช้เฉพาะ latest approved assessment (ตรงกับหน้าคะแนนเชิงปริมาณ /7)
+                      const quantitativeScores = provinceUnitIds
+                        .map(uid => latestApprovedByUnit.get(uid))
+                        .filter(a => a && a.quantitative_score !== null && a.quantitative_score !== undefined)
+                        .map(a => Number(a!.quantitative_score));
                       const avgQuantitative = quantitativeScores.length > 0
                         ? quantitativeScores.reduce((sum, score) => sum + score, 0) / quantitativeScores.length
                         : null;
