@@ -1094,9 +1094,9 @@ export default function ReportsQuantitative() {
                             </div>}
                         </TableHead>
 
-                        <TableHead className="text-center min-w-[100px] bg-primary/20 border-r border-border/60 text-xs align-middle">
+                        {!isHospitalLevel && <TableHead className="text-center min-w-[100px] bg-primary/20 border-r border-border/60 text-xs align-middle">
                           <ScoreRangePopover label="คะแนน (0-10)" />
-                        </TableHead>
+                        </TableHead>}
 
                         {showSummaryCols && <TableHead className="text-center min-w-[120px] bg-orange-100 dark:bg-orange-900/30 border-r border-border/60 text-xs align-middle">
                             <div className="flex flex-col items-center">
