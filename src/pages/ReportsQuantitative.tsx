@@ -995,19 +995,6 @@ export default function ReportsQuantitative() {
                                 {'hospitalsAssessed' in row ? row.hospitalsAssessed : 0}
                               </TableCell>}
 
-                            {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-orange-50 dark:bg-orange-900/20`} style={{
-                          left: left.avgQuantitative,
-                          minWidth: sticky.avgQuantitative
-                        }}>
-                                {(() => {
-                                  let percentage: number | null = null;
-                                  if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
-                                    percentage = row.hospitalCount > 0 ? (row.hospitalsPassedAll17 as number) / row.hospitalCount * 100 : null;
-                                  }
-                                  const score10 = percentageToScore10(percentage);
-                                  return score10 !== null ? (score10 * 0.7).toFixed(2) : '-';
-                                })()}
-                              </TableCell>}
 
                             {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-green-50 dark:bg-green-900/20`} style={{
                           left: left.passedAll17,
