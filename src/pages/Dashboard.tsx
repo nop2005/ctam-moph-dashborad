@@ -1281,7 +1281,7 @@ export default function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAssessments.map((assessment) => {
+                {pagedAssessments.map((assessment) => {
                   const status = statusLabels[assessment.status] || statusLabels.draft;
                   const emailSentAt = (assessment as any).email_sent_at;
                   return (
