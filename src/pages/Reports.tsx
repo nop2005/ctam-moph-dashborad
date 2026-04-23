@@ -786,6 +786,7 @@ export default function Reports() {
                       const totalScores = provinceResolvedScores
                         .map(score => score.total)
                         .filter((score): score is number => score !== null);
+                      const rowTotal = (avgQuantitative ?? 0) + (avgImpact ?? 0);
                       const canDrill = canDrillToHospital(province.id);
                       
                       return (
@@ -807,7 +808,7 @@ export default function Reports() {
                             {avgImpact !== null ? avgImpact.toFixed(2) : '-'}
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {totalScores.length > 0 ? (totalScores.reduce((sum, score) => sum + score, 0) / totalScores.length).toFixed(2) : '-'}
+                            {(avgQuantitative !== null || avgImpact !== null) ? rowTotal.toFixed(2) : '-'}
                           </TableCell>
                         </TableRow>
                       );
