@@ -1001,7 +1001,7 @@ export default function ReportsQuantitative() {
                         {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-amber-100 dark:bg-amber-900/30 text-xs`} style={{
                         left: left.countMSAOfficesScore
                       }}>
-                            คะแนน (เต็ม 10)
+                            <ScoreRangePopover label="คะแนน (เต็ม 10)" />
                           </TableHead>}
 
                         {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-amber-100 dark:bg-amber-900/30 text-xs`} style={{
