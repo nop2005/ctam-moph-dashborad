@@ -955,7 +955,7 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[130px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[130px] bg-amber-100 dark:bg-amber-900/30`} style={{
                         left: left.countMSAOffices
                       }}>
                             <div className="flex flex-col items-center">
@@ -964,25 +964,25 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-amber-100 dark:bg-amber-900/30`} style={{
                         left: left.countMSAOfficesScore
                       }}>
                             <div className="flex flex-col items-center">
-                              <span>คะแนน</span>
-                              <span className="text-xs">(เต็ม 10)</span>
+                              <span>รพ. M1 A S + สสจ./สนง.เขต</span>
+                              <span className="text-xs">คะแนน (เต็ม 10)</span>
                             </div>
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-amber-100 dark:bg-amber-900/30`} style={{
                         left: left.countMSAOfficesScore7
                       }}>
                             <div className="flex flex-col items-center">
-                              <span>คะแนนเชิงปริมาณ</span>
-                              <span className="text-xs">(เต็ม 7)</span>
+                              <span>รพ. M1 A S + สสจ./สนง.เขต</span>
+                              <span className="text-xs">คะแนนเชิงปริมาณ (เต็ม 7)</span>
                             </div>
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[120px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[120px] bg-rose-100 dark:bg-rose-900/30`} style={{
                         left: left.countM2F
                       }}>
                             <div className="flex flex-col items-center">
@@ -991,21 +991,21 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-rose-100 dark:bg-rose-900/30`} style={{
                         left: left.countM2FScore
                       }}>
                             <div className="flex flex-col items-center">
-                              <span>คะแนน</span>
-                              <span className="text-xs">(เต็ม 10)</span>
+                              <span>รพ. M2 F1-F3</span>
+                              <span className="text-xs">คะแนน (เต็ม 10)</span>
                             </div>
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-rose-100 dark:bg-rose-900/30`} style={{
                         left: left.countM2FScore7
                       }}>
                             <div className="flex flex-col items-center">
-                              <span>คะแนนเชิงปริมาณ</span>
-                              <span className="text-xs">(เต็ม 7)</span>
+                              <span>รพ. M2 F1-F3</span>
+                              <span className="text-xs">คะแนนเชิงปริมาณ (เต็ม 7)</span>
                             </div>
                           </TableHead>}
 
@@ -1114,19 +1114,19 @@ export default function ReportsQuantitative() {
                               const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
                               const score10 = total > 0 ? percentageToScore10((passed / total) * 100) : null;
                               return <>
-                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-amber-50 dark:bg-amber-900/20`} style={{
                                   left: left.countMSAOffices,
                                   minWidth: sticky.countMSAOffices
                                 }}>
                                   {total > 0 ? `${passed}/${total} (${pct}%)` : `0/0`}
                                 </TableCell>
-                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-amber-50 dark:bg-amber-900/20`} style={{
                                   left: left.countMSAOfficesScore,
                                   minWidth: sticky.countMSAOfficesScore
                                 }}>
                                   {score10 !== null ? `${score10}` : '-'}
                                 </TableCell>
-                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-amber-50 dark:bg-amber-900/20`} style={{
                                   left: left.countMSAOfficesScore7,
                                   minWidth: sticky.countMSAOfficesScore7
                                 }}>
@@ -1141,19 +1141,19 @@ export default function ReportsQuantitative() {
                               const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
                               const score10 = total > 0 ? percentageToScore10((passed / total) * 100) : null;
                               return <>
-                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-rose-50 dark:bg-rose-900/20`} style={{
                                   left: left.countM2F,
                                   minWidth: sticky.countM2F
                                 }}>
                                   {total > 0 ? `${passed}/${total} (${pct}%)` : `0/0`}
                                 </TableCell>
-                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-rose-50 dark:bg-rose-900/20`} style={{
                                   left: left.countM2FScore,
                                   minWidth: sticky.countM2FScore
                                 }}>
                                   {score10 !== null ? `${score10}` : '-'}
                                 </TableCell>
-                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-rose-50 dark:bg-rose-900/20`} style={{
                                   left: left.countM2FScore7,
                                   minWidth: sticky.countM2FScore7
                                 }}>
