@@ -1034,7 +1034,7 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        <TableHead colSpan={showSummaryCols ? 4 : 2} className="text-center bg-yellow-100 dark:bg-yellow-900/30 border-r border-border/60">
+                        <TableHead colSpan={showSummaryCols ? 4 : (isHospitalLevel ? 1 : 2)} className="text-center bg-yellow-100 dark:bg-yellow-900/30 border-r border-border/60">
                           รวมทุกหน่วยงาน
                         </TableHead>
                       </TableRow>
