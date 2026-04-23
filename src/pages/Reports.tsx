@@ -729,14 +729,8 @@ export default function Reports() {
                         ...provinceHealthOffices.map(ho => ho.id),
                       ];
                       const provinceResolvedScores = provinceUnitIds.map(getResolvedScores);
-                      // คะแนนเชิงปริมาณ: ใช้เฉพาะ latest approved assessment (ตรงกับหน้าคะแนนเชิงปริมาณ /7)
-                      const quantitativeScores = provinceUnitIds
-                        .map(uid => latestApprovedByUnit.get(uid))
-                        .filter(a => a && a.quantitative_score !== null && a.quantitative_score !== undefined)
-                        .map(a => Number(a!.quantitative_score));
-                      const avgQuantitative = quantitativeScores.length > 0
-                        ? quantitativeScores.reduce((sum, score) => sum + score, 0) / quantitativeScores.length
-                        : null;
+                      // คะแนนเชิงปริมาณ (เต็ม 7): คำนวณด้วยสูตรเดียวกับหน้า /reports/quantitative
+                      const avgQuantitative = computeQuantScore7(provinceUnitIds);
                       const impactScores = provinceResolvedScores
                         .map(score => score.impact)
                         .filter((score): score is number => score !== null);
