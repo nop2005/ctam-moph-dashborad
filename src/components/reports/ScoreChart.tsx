@@ -160,7 +160,9 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
         const hospitalIds = provinceHospitals.map(h => h.id);
         const healthOfficeIds = provinceHealthOffices.map(ho => ho.id);
         
-        const score = calculateAverageScore(hospitalIds, healthOfficeIds);
+        const score = provinceScoreOverrides?.has(province.id)
+          ? (provinceScoreOverrides.get(province.id) as number)
+          : calculateAverageScore(hospitalIds, healthOfficeIds);
         return {
           id: province.id,
           name: province.name,
