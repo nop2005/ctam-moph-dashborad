@@ -934,19 +934,19 @@ export default function ReportsQuantitative() {
                   <Table className="min-w-max">
                     <TableHeader>
                       <TableRow className="bg-muted/50">
-                        <TableHead className={`${stickyHeaderBase} bg-muted/50 min-w-[180px]`} style={{
+                        <TableHead rowSpan={2} className={`${stickyHeaderBase} bg-muted/50 min-w-[180px] align-middle`} style={{
                         left: left.name
                       }}>
                           {selectedProvince !== 'all' ? 'โรงพยาบาล' : selectedRegion !== 'all' ? 'จังหวัด' : 'เขตสุขภาพ'}
                         </TableHead>
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} bg-muted/50 text-center min-w-[80px]`} style={{
+                        {showSummaryCols && <TableHead rowSpan={2} className={`${stickyHeaderBase} bg-muted/50 text-center min-w-[80px] align-middle`} style={{
                         left: left.hospitalCount
                       }}>
                             จำนวน รพ.
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-blue-100 dark:bg-blue-900/30`} style={{
+                        {showSummaryCols && <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[100px] bg-blue-100 dark:bg-blue-900/30 align-middle`} style={{
                         left: left.hospitalsAssessed
                       }}>
                             <div className="flex flex-col items-center">
@@ -955,61 +955,19 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[130px] bg-amber-100 dark:bg-amber-900/30`} style={{
+                        {showSummaryCols && <TableHead colSpan={3} className={`${stickyHeaderBase} text-center bg-amber-100 dark:bg-amber-900/30`} style={{
                         left: left.countMSAOffices
                       }}>
-                            <div className="flex flex-col items-center">
-                              <span>รพ. M1 A S + สสจ./สนง.เขต</span>
-                              <span className="text-xs">(ผ่าน/ทั้งหมด)</span>
-                            </div>
+                            รพ. M1 A S + สสจ./สนง.เขต
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-amber-100 dark:bg-amber-900/30`} style={{
-                        left: left.countMSAOfficesScore
-                      }}>
-                            <div className="flex flex-col items-center">
-                              <span>รพ. M1 A S + สสจ./สนง.เขต</span>
-                              <span className="text-xs">คะแนน (เต็ม 10)</span>
-                            </div>
-                          </TableHead>}
-
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-amber-100 dark:bg-amber-900/30`} style={{
-                        left: left.countMSAOfficesScore7
-                      }}>
-                            <div className="flex flex-col items-center">
-                              <span>รพ. M1 A S + สสจ./สนง.เขต</span>
-                              <span className="text-xs">คะแนนเชิงปริมาณ (เต็ม 7)</span>
-                            </div>
-                          </TableHead>}
-
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[120px] bg-rose-100 dark:bg-rose-900/30`} style={{
+                        {showSummaryCols && <TableHead colSpan={3} className={`${stickyHeaderBase} text-center bg-rose-100 dark:bg-rose-900/30`} style={{
                         left: left.countM2F
                       }}>
-                            <div className="flex flex-col items-center">
-                              <span>รพ. M2 F1-F3</span>
-                              <span className="text-xs">(ผ่าน/ทั้งหมด)</span>
-                            </div>
+                            รพ. M2 F1-F3
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-rose-100 dark:bg-rose-900/30`} style={{
-                        left: left.countM2FScore
-                      }}>
-                            <div className="flex flex-col items-center">
-                              <span>รพ. M2 F1-F3</span>
-                              <span className="text-xs">คะแนน (เต็ม 10)</span>
-                            </div>
-                          </TableHead>}
-
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-rose-100 dark:bg-rose-900/30`} style={{
-                        left: left.countM2FScore7
-                      }}>
-                            <div className="flex flex-col items-center">
-                              <span>รพ. M2 F1-F3</span>
-                              <span className="text-xs">คะแนนเชิงปริมาณ (เต็ม 7)</span>
-                            </div>
-                          </TableHead>}
-
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-green-100 dark:bg-green-900/30`} style={{
+                        {showSummaryCols && <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[100px] bg-green-100 dark:bg-green-900/30 align-middle`} style={{
                         left: left.passedAll17
                       }}>
                             <div className="flex flex-col items-center">
@@ -1018,7 +976,7 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        {isHospitalLevel && <TableHead className={`${stickyHeaderBase} text-center min-w-[110px] bg-orange-100 dark:bg-orange-900/30`} style={{
+                        {isHospitalLevel && <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[110px] bg-orange-100 dark:bg-orange-900/30 align-middle`} style={{
                         left: left.unitQuantScore
                       }}>
                             <div className="flex flex-col items-center">
@@ -1027,7 +985,7 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        {isHospitalLevel && <TableHead className={`${stickyHeaderBase} text-center min-w-[110px] bg-green-100 dark:bg-green-900/30`} style={{
+                        {isHospitalLevel && <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[110px] bg-green-100 dark:bg-green-900/30 align-middle`} style={{
                         left: left.unitPassedItems
                       }}>
                             <div className="flex flex-col items-center">
@@ -1036,7 +994,7 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        <TableHead className={`${stickyHeaderBase} text-center min-w-[200px] bg-primary/10`} style={{
+                        <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[200px] bg-primary/10 align-middle`} style={{
                         left: left.percentGreen
                       }}>
                           {isHospitalLevel ? <div className="flex flex-col items-center">
@@ -1047,20 +1005,57 @@ export default function ReportsQuantitative() {
                             </div>}
                         </TableHead>
 
-                        <TableHead className="text-center min-w-[100px] bg-primary/20 border-r border-border/60">
+                        <TableHead rowSpan={2} className="text-center min-w-[100px] bg-primary/20 border-r border-border/60 align-middle">
                           <div className="flex flex-col items-center">
                             <span>คะแนน</span>
                             <span>(0-10)</span>
                           </div>
                         </TableHead>
 
-                        {showSummaryCols && <TableHead className="text-center min-w-[120px] bg-orange-100 dark:bg-orange-900/30 border-r border-border/60">
+                        {showSummaryCols && <TableHead rowSpan={2} className="text-center min-w-[120px] bg-orange-100 dark:bg-orange-900/30 border-r border-border/60 align-middle">
                             <div className="flex flex-col items-center">
                               <span>คะแนนเชิงปริมาณ</span>
                               <span>(เฉลี่ย /7)</span>
                             </div>
                           </TableHead>}
+                      </TableRow>
 
+                      <TableRow className="bg-muted/50">
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[130px] bg-amber-100 dark:bg-amber-900/30 text-xs`} style={{
+                        left: left.countMSAOffices
+                      }}>
+                            (ผ่าน/ทั้งหมด)
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-amber-100 dark:bg-amber-900/30 text-xs`} style={{
+                        left: left.countMSAOfficesScore
+                      }}>
+                            คะแนน (เต็ม 10)
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-amber-100 dark:bg-amber-900/30 text-xs`} style={{
+                        left: left.countMSAOfficesScore7
+                      }}>
+                            คะแนนเชิงปริมาณ (เต็ม 7)
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[120px] bg-rose-100 dark:bg-rose-900/30 text-xs`} style={{
+                        left: left.countM2F
+                      }}>
+                            (ผ่าน/ทั้งหมด)
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-rose-100 dark:bg-rose-900/30 text-xs`} style={{
+                        left: left.countM2FScore
+                      }}>
+                            คะแนน (เต็ม 10)
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-rose-100 dark:bg-rose-900/30 text-xs`} style={{
+                        left: left.countM2FScore7
+                      }}>
+                            คะแนนเชิงปริมาณ (เต็ม 7)
+                          </TableHead>}
                       </TableRow>
                     </TableHeader>
 
