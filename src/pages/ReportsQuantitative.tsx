@@ -856,10 +856,10 @@ export default function ReportsQuantitative() {
               hospitalCount: sticky.name,
               hospitalsAssessed: sticky.name + sticky.hospitalCount,
               avgQuantitative: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
-              passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.avgQuantitative,
+              passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
               unitQuantScore: sticky.name,
               unitPassedItems: sticky.name + sticky.unitQuantScore,
-              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.avgQuantitative + sticky.passedAll17 : isHospitalLevel ? sticky.unitQuantScore + sticky.unitPassedItems : 0)
+              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.passedAll17 : isHospitalLevel ? sticky.unitQuantScore + sticky.unitPassedItems : 0)
             } as const;
             const stickyHeaderBase = "sticky z-30 border-r border-border/60";
             const stickyCellBase = "sticky z-20 border-r border-border/60 bg-background";
