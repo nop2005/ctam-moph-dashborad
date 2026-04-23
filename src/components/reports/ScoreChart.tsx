@@ -103,19 +103,24 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
   // Get latest *approved* assessments only
   const latestAssessments = useMemo(() => Array.from(latestApprovedByUnit.values()), [latestApprovedByUnit]);
 
-  // Calculate average score for a set of hospital IDs and health office IDs
+  // Calculate average score for a set of hospital IDs and health office IDs.
+  // For each unit, prefer the latest assessment's total_score; if null, fall back to
+  // the most recent assessment that does have a total_score.
   const calculateAverageScore = (hospitalIds: string[], healthOfficeIds: string[] = []): number => {
-    const relevantAssessments = latestAssessments.filter(a => 
-      ((a.hospital_id && hospitalIds.includes(a.hospital_id)) || 
-       (a.health_office_id && healthOfficeIds.includes(a.health_office_id))) && 
-      a.total_score !== null
-    );
-    
-    if (relevantAssessments.length === 0) return 0;
-    
-    // Return average of latest scores
-    const sum = relevantAssessments.reduce((acc, a) => acc + (a.total_score || 0), 0);
-    return sum / relevantAssessments.length;
+    const unitIds = [...hospitalIds, ...healthOfficeIds];
+    const scores: number[] = [];
+    for (const unitId of unitIds) {
+      const latest = latestApprovedByUnit.get(unitId);
+      let score: number | null = null;
+      if (latest && latest.total_score !== null && latest.total_score !== undefined) {
+        score = Number(latest.total_score);
+      } else if (fallbackScoreByUnit.has(unitId)) {
+        score = fallbackScoreByUnit.get(unitId) as number;
+      }
+      if (score !== null) scores.push(score);
+    }
+    if (scores.length === 0) return 0;
+    return scores.reduce((a, b) => a + b, 0) / scores.length;
   };
 
   // Get data based on drill level
