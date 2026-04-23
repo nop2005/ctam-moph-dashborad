@@ -471,6 +471,10 @@ export default function ReportsQuantitative() {
           ? quantScores.reduce((s, v) => s + v, 0) / quantScores.length
           : null;
 
+        const countMSA = provinceHospitals.filter(h => ['M1', 'A', 'S'].includes((h.hospital_type || '').toUpperCase())).length;
+        const countM2F = provinceHospitals.filter(h => ['M2', 'F1', 'F2', 'F3'].includes((h.hospital_type || '').toUpperCase())).length;
+        const countOffices = provinceHealthOffices.length;
+
         return {
           id: province.id,
           name: province.name,
@@ -478,6 +482,9 @@ export default function ReportsQuantitative() {
           hospitalCount: provinceHospitals.length + provinceHealthOffices.length,
           hospitalsAssessed: unitsAssessed,
           hospitalsPassedAll17: unitsPassedAll17,
+          countMSA,
+          countM2F,
+          countOffices,
           avgQuantitativeScore,
           categoryAverages
         };
