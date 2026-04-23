@@ -1061,6 +1061,26 @@ export default function ReportsQuantitative() {
                           })()}
                             </TableCell>
 
+                            <TableCell className="text-center">
+                              {(() => {
+                                let percentage: number | null;
+                                if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
+                                  percentage = row.hospitalCount > 0 ? (row.hospitalsPassedAll17 as number) / row.hospitalCount * 100 : null;
+                                } else {
+                                  percentage = passedPercentage;
+                                }
+                                const score10 = percentageToScore10(percentage);
+                                if (score10 === null) {
+                                  return <span className="text-muted-foreground">-</span>;
+                                }
+                                return (
+                                  <span className={`inline-flex items-center justify-center w-9 h-9 rounded-full font-bold text-sm ${getScore10ColorClass(score10)}`}>
+                                    {score10}
+                                  </span>
+                                );
+                              })()}
+                            </TableCell>
+
                           </TableRow>;
                     })}
                     </TableBody>
