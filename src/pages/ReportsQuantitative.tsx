@@ -395,6 +395,10 @@ export default function ReportsQuantitative() {
           ? quantScores.reduce((s, v) => s + v, 0) / quantScores.length
           : null;
 
+        const countMSA = regionHospitals.filter(h => ['M1', 'A', 'S'].includes((h.hospital_type || '').toUpperCase())).length;
+        const countM2F = regionHospitals.filter(h => ['M2', 'F1', 'F2', 'F3'].includes((h.hospital_type || '').toUpperCase())).length;
+        const countOffices = regionHealthOffices.length;
+
         return {
           id: region.id,
           name: `เขตสุขภาพที่ ${region.region_number}`,
@@ -402,6 +406,9 @@ export default function ReportsQuantitative() {
           hospitalCount: regionHospitals.length + regionHealthOffices.length,
           hospitalsAssessed: unitsAssessed,
           hospitalsPassedAll17: unitsPassedAll17,
+          countMSA,
+          countM2F,
+          countOffices,
           avgQuantitativeScore,
           categoryAverages
         };
