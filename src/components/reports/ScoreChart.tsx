@@ -138,7 +138,9 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
         const hospitalIds = regionHospitals.map(h => h.id);
         const healthOfficeIds = regionHealthOffices.map(ho => ho.id);
         
-        const score = calculateAverageScore(hospitalIds, healthOfficeIds);
+        const score = regionScoreOverrides?.has(region.id)
+          ? (regionScoreOverrides.get(region.id) as number)
+          : calculateAverageScore(hospitalIds, healthOfficeIds);
         return {
           id: region.id,
           name: `เขต ${region.region_number}`,
