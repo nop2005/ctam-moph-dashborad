@@ -1400,6 +1400,53 @@ export default function Dashboard() {
             </Table>
             </TooltipProvider>
           )}
+
+          {/* Pagination controls */}
+          {filteredAssessments.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>แสดง</span>
+                <Select value={pageSize.toString()} onValueChange={(v) => setPageSize(parseInt(v))}>
+                  <SelectTrigger className="w-[80px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span>
+                  รายการ ({(safePage - 1) * pageSize + 1}-
+                  {Math.min(safePage * pageSize, filteredAssessments.length)} จาก{' '}
+                  {filteredAssessments.length})
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={safePage <= 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  ก่อนหน้า
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  หน้า {safePage} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={safePage >= totalPages}
+                >
+                  ถัดไป
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
