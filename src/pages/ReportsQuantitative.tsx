@@ -913,12 +913,12 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[110px] bg-purple-100 dark:bg-purple-900/30`} style={{
-                        left: left.countMSA
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[140px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        left: left.countMSAOffices
                       }}>
                             <div className="flex flex-col items-center">
-                              <span>จำนวน รพ.</span>
-                              <span>M1 A S</span>
+                              <span>จำนวน รพ. M1 A S</span>
+                              <span>+ สสจ./สนง.เขต</span>
                             </div>
                           </TableHead>}
 
@@ -928,15 +928,6 @@ export default function ReportsQuantitative() {
                             <div className="flex flex-col items-center">
                               <span>จำนวน รพ.</span>
                               <span>M2 F1-F3</span>
-                            </div>
-                          </TableHead>}
-
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[130px] bg-purple-100 dark:bg-purple-900/30`} style={{
-                        left: left.countOffices
-                      }}>
-                            <div className="flex flex-col items-center">
-                              <span>สสจ.และ</span>
-                              <span>สำนักงานเขต</span>
                             </div>
                           </TableHead>}
 
