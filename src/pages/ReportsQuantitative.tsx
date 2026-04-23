@@ -896,8 +896,10 @@ export default function ReportsQuantitative() {
               hospitalsAssessed: 100,
               countMSAOffices: 130,
               countMSAOfficesScore: 90,
+              countMSAOfficesScore7: 90,
               countM2F: 120,
               countM2FScore: 90,
+              countM2FScore7: 90,
               avgQuantitative: 120,
               passedAll17: 100,
               unitQuantScore: 110,
@@ -910,12 +912,14 @@ export default function ReportsQuantitative() {
               hospitalsAssessed: sticky.name + sticky.hospitalCount,
               countMSAOffices: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
               countMSAOfficesScore: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices,
-              countM2F: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore,
-              countM2FScore: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countM2F,
-              passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countM2F + sticky.countM2FScore,
+              countMSAOfficesScore7: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore,
+              countM2F: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countMSAOfficesScore7,
+              countM2FScore: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countMSAOfficesScore7 + sticky.countM2F,
+              countM2FScore7: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countMSAOfficesScore7 + sticky.countM2F + sticky.countM2FScore,
+              passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countMSAOfficesScore7 + sticky.countM2F + sticky.countM2FScore + sticky.countM2FScore7,
               unitQuantScore: sticky.name,
               unitPassedItems: sticky.name + sticky.unitQuantScore,
-              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countM2F + sticky.countM2FScore + sticky.passedAll17 : isHospitalLevel ? sticky.unitQuantScore + sticky.unitPassedItems : 0)
+              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countMSAOfficesScore7 + sticky.countM2F + sticky.countM2FScore + sticky.countM2FScore7 + sticky.passedAll17 : isHospitalLevel ? sticky.unitQuantScore + sticky.unitPassedItems : 0)
             } as const;
             const stickyHeaderBase = "sticky z-30 border-r border-border/60";
             const stickyCellBase = "sticky z-20 border-r border-border/60 bg-background";
@@ -965,6 +969,15 @@ export default function ReportsQuantitative() {
                       }}>
                             <div className="flex flex-col items-center">
                               <span>คะแนน</span>
+                              <span className="text-xs">(เต็ม 10)</span>
+                            </div>
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        left: left.countMSAOfficesScore7
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>คะแนนเชิงปริมาณ</span>
                               <span className="text-xs">(เต็ม 7)</span>
                             </div>
                           </TableHead>}
@@ -983,6 +996,15 @@ export default function ReportsQuantitative() {
                       }}>
                             <div className="flex flex-col items-center">
                               <span>คะแนน</span>
+                              <span className="text-xs">(เต็ม 10)</span>
+                            </div>
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        left: left.countM2FScore7
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>คะแนนเชิงปริมาณ</span>
                               <span className="text-xs">(เต็ม 7)</span>
                             </div>
                           </TableHead>}
@@ -1102,7 +1124,13 @@ export default function ReportsQuantitative() {
                                   left: left.countMSAOfficesScore,
                                   minWidth: sticky.countMSAOfficesScore
                                 }}>
-                                  {score10 !== null ? `${score10}/${(score10 * 0.7).toFixed(1)}` : '-'}
+                                  {score10 !== null ? `${score10}` : '-'}
+                                </TableCell>
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                  left: left.countMSAOfficesScore7,
+                                  minWidth: sticky.countMSAOfficesScore7
+                                }}>
+                                  {score10 !== null ? (score10 * 0.7).toFixed(1) : '-'}
                                 </TableCell>
                               </>;
                             })()}
@@ -1123,7 +1151,13 @@ export default function ReportsQuantitative() {
                                   left: left.countM2FScore,
                                   minWidth: sticky.countM2FScore
                                 }}>
-                                  {score10 !== null ? `${score10}/${(score10 * 0.7).toFixed(1)}` : '-'}
+                                  {score10 !== null ? `${score10}` : '-'}
+                                </TableCell>
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                  left: left.countM2FScore7,
+                                  minWidth: sticky.countM2FScore7
+                                }}>
+                                  {score10 !== null ? (score10 * 0.7).toFixed(1) : '-'}
                                 </TableCell>
                               </>;
                             })()}
