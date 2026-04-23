@@ -76,7 +76,7 @@ const getScoreColor = (score: number): string => {
   return '#EF4444'; // red
 };
 
-export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices = [], assessments, onDrillChange, selectedFiscalYear, canDrillToProvince, canDrillToHospital }: ScoreChartProps) {
+export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices = [], assessments, onDrillChange, selectedFiscalYear, canDrillToProvince, canDrillToHospital, regionScoreOverrides, provinceScoreOverrides }: ScoreChartProps) {
   const [drillLevel, setDrillLevel] = useState<DrillLevel>('region');
   const [selectedRegion, setSelectedRegion] = useState<HealthRegion | null>(null);
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
