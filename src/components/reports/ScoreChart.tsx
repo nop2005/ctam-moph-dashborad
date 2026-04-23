@@ -83,6 +83,23 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
     return getLatestAssessmentsByUnit(approved);
   }, [assessments]);
 
+  // Fallback: latest assessment per unit that actually has a non-null total_score.
+  // Used when the latest approved assessment hasn't had its score computed yet
+  // (e.g., a newly approved round) — show the previous valid score instead of 0.
+  const fallbackScoreByUnit = useMemo(() => {
+    const withScore = assessments.filter(
+      a => isSubmittedAssessmentStatus(a.status) && a.total_score !== null && a.total_score !== undefined
+    );
+    const map = getLatestAssessmentsByUnit(withScore);
+    const result = new Map<string, number>();
+    map.forEach((a, unitId) => {
+      if (a.total_score !== null && a.total_score !== undefined) {
+        result.set(unitId, Number(a.total_score));
+      }
+    });
+    return result;
+  }, [assessments]);
+
   // Get latest *approved* assessments only
   const latestAssessments = useMemo(() => Array.from(latestApprovedByUnit.values()), [latestApprovedByUnit]);
 
