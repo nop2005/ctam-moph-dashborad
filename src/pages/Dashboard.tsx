@@ -222,6 +222,24 @@ export default function Dashboard() {
     fetchFiscalYears();
   }, []);
 
+  // Fetch provinces and regions for filters
+  useEffect(() => {
+    const fetchPlaces = async () => {
+      const [{ data: provs }, { data: regs }] = await Promise.all([
+        supabase.from('provinces').select('id, name, health_region_id').order('name'),
+        supabase.from('health_regions').select('id, region_number, name').order('region_number'),
+      ]);
+      if (provs) setProvincesList(provs);
+      if (regs) setRegionsList(regs);
+    };
+    fetchPlaces();
+  }, []);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, provinceFilter, regionFilter, statusFilter, dataUpdatedFilter, emailSentFilter, selectedFiscalYear, pageSize]);
+
   useEffect(() => {
     let cancelled = false;
 
