@@ -1025,17 +1025,8 @@ export default function ReportsQuantitative() {
                             รพ. M2 F1-F3
                           </TableHead>}
 
-                        {isHospitalLevel && <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[110px] bg-orange-100 dark:bg-orange-900/30 align-middle`} style={{
-                        left: left.unitQuantScore
-                      }}>
-                            <div className="flex flex-col items-center">
-                              <span>คะแนนที่ได้</span>
-                              <span>(เต็ม 7)</span>
-                            </div>
-                          </TableHead>}
-
                         {isHospitalLevel && <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[110px] bg-green-100 dark:bg-green-900/30 align-middle`} style={{
-                        left: left.unitPassedItems
+                        left: left.unitQuantScore
                       }}>
                             <div className="flex flex-col items-center">
                               <span>ข้อที่ผ่าน</span>
@@ -1103,9 +1094,9 @@ export default function ReportsQuantitative() {
                             </div>}
                         </TableHead>
 
-                        <TableHead className="text-center min-w-[100px] bg-primary/20 border-r border-border/60 text-xs align-middle">
+                        {!isHospitalLevel && <TableHead className="text-center min-w-[100px] bg-primary/20 border-r border-border/60 text-xs align-middle">
                           <ScoreRangePopover label="คะแนน (0-10)" />
-                        </TableHead>
+                        </TableHead>}
 
                         {showSummaryCols && <TableHead className="text-center min-w-[120px] bg-orange-100 dark:bg-orange-900/30 border-r border-border/60 text-xs align-middle">
                             <div className="flex flex-col items-center">
@@ -1220,7 +1211,7 @@ export default function ReportsQuantitative() {
                                 {'hospitalsPassedAll17' in row ? row.hospitalsPassedAll17 : 0}
                               </TableCell>}
 
-                            {isHospitalLevel && (() => {
+                            {false && isHospitalLevel && (() => {
                               const latestAssessment = latestApprovedByUnit.get(row.id);
                               const quantitativeScore = latestAssessment && latestAssessment.quantitative_score !== null
                                 ? Number(latestAssessment.quantitative_score) : null;
@@ -1269,7 +1260,7 @@ export default function ReportsQuantitative() {
                           })()}
                             </TableCell>
 
-                            <TableCell className="text-center">
+                            {!isHospitalLevel && <TableCell className="text-center">
                               {(() => {
                                 let percentage: number | null;
                                 if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
@@ -1287,7 +1278,7 @@ export default function ReportsQuantitative() {
                                   </span>
                                 );
                               })()}
-                            </TableCell>
+                            </TableCell>}
 
                             {showSummaryCols && <TableCell className="text-center font-medium bg-orange-50 dark:bg-orange-900/20 min-w-[120px]">
                               {(() => {
@@ -1381,13 +1372,13 @@ export default function ReportsQuantitative() {
                               </div>
                             ) : '-'}
                           </TableCell>
-                          <TableCell className="text-center font-bold bg-muted">
+                          {!isHospitalLevel && <TableCell className="text-center font-bold bg-muted">
                             {overallScore10 !== null ? (
                               <span className={`inline-flex items-center justify-center w-9 h-9 rounded-full font-bold text-sm ${getScore10ColorClass(overallScore10)}`}>
                                 {overallScore10}
                               </span>
                             ) : <span className="text-muted-foreground">-</span>}
-                          </TableCell>
+                          </TableCell>}
                           {showSummaryCols && <TableCell className="text-center font-bold bg-orange-100 dark:bg-orange-900/30 min-w-[120px]">
                             {overallScore10 !== null ? (overallScore10 * 0.7).toFixed(2) : '-'}
                           </TableCell>}
