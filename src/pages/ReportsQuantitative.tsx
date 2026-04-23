@@ -912,12 +912,14 @@ export default function ReportsQuantitative() {
               hospitalsAssessed: sticky.name + sticky.hospitalCount,
               countMSAOffices: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
               countMSAOfficesScore: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices,
-              countM2F: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore,
-              countM2FScore: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countM2F,
-              passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countM2F + sticky.countM2FScore,
+              countMSAOfficesScore7: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore,
+              countM2F: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countMSAOfficesScore7,
+              countM2FScore: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countMSAOfficesScore7 + sticky.countM2F,
+              countM2FScore7: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countMSAOfficesScore7 + sticky.countM2F + sticky.countM2FScore,
+              passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countMSAOfficesScore7 + sticky.countM2F + sticky.countM2FScore + sticky.countM2FScore7,
               unitQuantScore: sticky.name,
               unitPassedItems: sticky.name + sticky.unitQuantScore,
-              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countM2F + sticky.countM2FScore + sticky.passedAll17 : isHospitalLevel ? sticky.unitQuantScore + sticky.unitPassedItems : 0)
+              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countMSAOfficesScore7 + sticky.countM2F + sticky.countM2FScore + sticky.countM2FScore7 + sticky.passedAll17 : isHospitalLevel ? sticky.unitQuantScore + sticky.unitPassedItems : 0)
             } as const;
             const stickyHeaderBase = "sticky z-30 border-r border-border/60";
             const stickyCellBase = "sticky z-20 border-r border-border/60 bg-background";
