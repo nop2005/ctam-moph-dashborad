@@ -1125,7 +1125,7 @@ export default function ReportsQuantitative() {
                                   left: left.countMSAOfficesScore7,
                                   minWidth: sticky.countMSAOfficesScore7
                                 }}>
-                                  {score10 !== null ? (score10 * 0.7).toFixed(1) : '-'}
+                                  {score10 !== null ? (Number.isInteger(score10 * 0.7) ? String(score10 * 0.7) : (score10 * 0.7).toFixed(1)) : '-'}
                                 </TableCell>
                               </>;
                             })()}
@@ -1152,7 +1152,7 @@ export default function ReportsQuantitative() {
                                   left: left.countM2FScore7,
                                   minWidth: sticky.countM2FScore7
                                 }}>
-                                  {score10 !== null ? (score10 * 0.7).toFixed(1) : '-'}
+                                  {score10 !== null ? (Number.isInteger(score10 * 0.7) ? String(score10 * 0.7) : (score10 * 0.7).toFixed(1)) : '-'}
                                 </TableCell>
                               </>;
                             })()}
