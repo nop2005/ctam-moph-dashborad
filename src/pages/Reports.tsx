@@ -705,6 +705,7 @@ export default function Reports() {
                       const totalScores = regionResolvedScores
                         .map(score => score.total)
                         .filter((score): score is number => score !== null);
+                      const rowTotal = (avgQuantitative ?? 0) + (avgImpact ?? 0);
                       const canDrill = canDrillToProvince(region.id);
                       
                       return (
