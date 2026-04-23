@@ -71,26 +71,26 @@ export function SectionApproval({ assessment, sectionType, onRefresh, onApproveS
   const isApproved = !!approvedBy && !!approvedAt;
 
   // Check if all sections are approved (including the one we just approved)
+  // Note: qualitative section is no longer used in this system (only quantitative + impact)
   const checkAllSectionsApproved = async (currentSection: SectionType) => {
     const { data, error } = await supabase
       .from('assessments')
-      .select('quantitative_approved_by, qualitative_approved_by, impact_approved_by')
+      .select('quantitative_approved_by, impact_approved_by')
       .eq('id', assessment.id)
       .single();
 
     if (error || !data) return false;
 
-    // Create a merged check - current section will be approved by us
-    const sections = {
+    const sections: Record<SectionType, string | null | undefined> = {
       quantitative: data.quantitative_approved_by,
-      qualitative: data.qualitative_approved_by,
+      qualitative: 'n/a', // not used anymore
       impact: data.impact_approved_by,
     };
-    
+
     // Mark current section as approved (we're about to save it)
     sections[currentSection] = profile?.id || 'pending';
 
-    return !!(sections.quantitative && sections.qualitative && sections.impact);
+    return !!(sections.quantitative && sections.impact);
   };
 
   const handleApprove = async () => {
