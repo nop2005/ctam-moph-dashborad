@@ -1302,6 +1302,8 @@ export default function ReportsQuantitative() {
                       let m2fTotal = 0, m2fPassed = 0;
                       let allHospitalCount = 0, allPassedAll17 = 0, allHospitalsAssessed = 0;
                       const pctList: number[] = [];
+                      // Hospital-level totals (when isHospitalLevel, each row is a hospital/office)
+                      let hlTotalUnits = 0, hlPassed17Units = 0;
 
                       rows.forEach(row => {
                         const cMSA = ('countMSA' in row ? (row as any).countMSA : 0) + ('countOffices' in row ? (row as any).countOffices : 0);
@@ -1319,6 +1321,13 @@ export default function ReportsQuantitative() {
                         const passedC = row.categoryAverages.filter(c => c.average === 1).length;
                         const totalC = row.categoryAverages.filter(c => c.average !== null).length;
                         if (totalC > 0) pctList.push(passedC / totalC * 100);
+
+                        if (isHospitalLevel && (row.type === 'hospital' || row.type === 'health_office')) {
+                          hlTotalUnits += 1;
+                          if (categories.length > 0 && passedC === categories.length) {
+                            hlPassed17Units += 1;
+                          }
+                        }
                       });
 
                       const msaPct = msaTotal > 0 ? Math.round((msaPassed / msaTotal) * 100) : 0;
