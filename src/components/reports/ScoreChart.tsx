@@ -55,6 +55,9 @@ interface ScoreChartProps {
   selectedFiscalYear?: string;
   canDrillToProvince?: (regionId: string) => boolean;
   canDrillToHospital?: (provinceId: string) => boolean;
+  /** Override aggregated total scores per region/province (e.g. quant7 + avgImpact). */
+  regionScoreOverrides?: Map<string, number>;
+  provinceScoreOverrides?: Map<string, number>;
 }
 
 
@@ -73,7 +76,7 @@ const getScoreColor = (score: number): string => {
   return '#EF4444'; // red
 };
 
-export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices = [], assessments, onDrillChange, selectedFiscalYear, canDrillToProvince, canDrillToHospital }: ScoreChartProps) {
+export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices = [], assessments, onDrillChange, selectedFiscalYear, canDrillToProvince, canDrillToHospital, regionScoreOverrides, provinceScoreOverrides }: ScoreChartProps) {
   const [drillLevel, setDrillLevel] = useState<DrillLevel>('region');
   const [selectedRegion, setSelectedRegion] = useState<HealthRegion | null>(null);
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
@@ -135,7 +138,9 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
         const hospitalIds = regionHospitals.map(h => h.id);
         const healthOfficeIds = regionHealthOffices.map(ho => ho.id);
         
-        const score = calculateAverageScore(hospitalIds, healthOfficeIds);
+        const score = regionScoreOverrides?.has(region.id)
+          ? (regionScoreOverrides.get(region.id) as number)
+          : calculateAverageScore(hospitalIds, healthOfficeIds);
         return {
           id: region.id,
           name: `เขต ${region.region_number}`,
@@ -155,7 +160,9 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
         const hospitalIds = provinceHospitals.map(h => h.id);
         const healthOfficeIds = provinceHealthOffices.map(ho => ho.id);
         
-        const score = calculateAverageScore(hospitalIds, healthOfficeIds);
+        const score = provinceScoreOverrides?.has(province.id)
+          ? (provinceScoreOverrides.get(province.id) as number)
+          : calculateAverageScore(hospitalIds, healthOfficeIds);
         return {
           id: province.id,
           name: province.name,

@@ -424,7 +424,50 @@ export default function Reports() {
     return score10 !== null ? score10 * 0.7 : null;
   };
 
-  // Use latestApprovedAssessments for "completed" count to be consistent with Dashboard
+  // Build region/province total score maps: total = quant7 + avgImpact
+  // (matches the table's "คะแนนรวม" formula and the user's expected display)
+  const regionTotalScoreMap = useMemo(() => {
+    const map = new Map<string, number>();
+    healthRegions.forEach(region => {
+      const regionProvinces = provinces.filter(p => p.health_region_id === region.id);
+      const regionHospitalIds = hospitals
+        .filter(h => regionProvinces.some(p => p.id === h.province_id))
+        .map(h => h.id);
+      const regionHealthOfficeIds = healthOffices
+        .filter(ho => ho.health_region_id === region.id)
+        .map(ho => ho.id);
+      const unitIds = [...regionHospitalIds, ...regionHealthOfficeIds];
+      const quant7 = computeQuantScore7(unitIds) ?? 0;
+      const impactScores = unitIds
+        .map(uid => getResolvedScores(uid).impact)
+        .filter((s): s is number => s !== null);
+      const avgImpact = impactScores.length > 0
+        ? impactScores.reduce((a, b) => a + b, 0) / impactScores.length
+        : 0;
+      map.set(region.id, quant7 + avgImpact);
+    });
+    return map;
+  }, [healthRegions, provinces, hospitals, healthOffices, latestApprovedByUnit, fallbackScoresByUnit, filteredAssessmentItems, categories]);
+
+  const provinceTotalScoreMap = useMemo(() => {
+    const map = new Map<string, number>();
+    provinces.forEach(province => {
+      const provinceHospitalIds = hospitals.filter(h => h.province_id === province.id).map(h => h.id);
+      const provinceHealthOfficeIds = healthOffices.filter(ho => ho.province_id === province.id).map(ho => ho.id);
+      const unitIds = [...provinceHospitalIds, ...provinceHealthOfficeIds];
+      const quant7 = computeQuantScore7(unitIds) ?? 0;
+      const impactScores = unitIds
+        .map(uid => getResolvedScores(uid).impact)
+        .filter((s): s is number => s !== null);
+      const avgImpact = impactScores.length > 0
+        ? impactScores.reduce((a, b) => a + b, 0) / impactScores.length
+        : 0;
+      map.set(province.id, quant7 + avgImpact);
+    });
+    return map;
+  }, [provinces, hospitals, healthOffices, latestApprovedByUnit, fallbackScoresByUnit, filteredAssessmentItems, categories]);
+
+
   const drillStats = useMemo(() => {
     let filteredHospitals: Hospital[] = [];
     let filteredHealthOffices: HealthOffice[] = [];
@@ -598,6 +641,8 @@ export default function Reports() {
           selectedFiscalYear={selectedFiscalYear} 
           canDrillToProvince={canDrillToProvince} 
           canDrillToHospital={canDrillToHospital} 
+          regionScoreOverrides={regionTotalScoreMap}
+          provinceScoreOverrides={provinceTotalScoreMap}
         />
 
         {/* Dynamic Reports Table based on drill level */}
@@ -660,6 +705,7 @@ export default function Reports() {
                       const totalScores = regionResolvedScores
                         .map(score => score.total)
                         .filter((score): score is number => score !== null);
+                      const rowTotal = (avgQuantitative ?? 0) + (avgImpact ?? 0);
                       const canDrill = canDrillToProvince(region.id);
                       
                       return (
@@ -680,7 +726,7 @@ export default function Reports() {
                             {avgImpact !== null ? avgImpact.toFixed(2) : '-'}
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {totalScores.length > 0 ? (totalScores.reduce((sum, score) => sum + score, 0) / totalScores.length).toFixed(2) : '-'}
+                            {(avgQuantitative !== null || avgImpact !== null) ? rowTotal.toFixed(2) : '-'}
                           </TableCell>
                         </TableRow>
                       );
@@ -705,7 +751,7 @@ export default function Reports() {
                       <TableHead className="text-right">อนุมัติแล้ว</TableHead>
                       <TableHead className="text-right">คะแนนเชิงปริมาณ</TableHead>
                       <TableHead className="text-right">คะแนนเชิงผลกระทบ</TableHead>
-                      <TableHead className="text-right">คะแนนเฉลี่ย</TableHead>
+                      <TableHead className="text-right">คะแนนรวม</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -740,6 +786,7 @@ export default function Reports() {
                       const totalScores = provinceResolvedScores
                         .map(score => score.total)
                         .filter((score): score is number => score !== null);
+                      const rowTotal = (avgQuantitative ?? 0) + (avgImpact ?? 0);
                       const canDrill = canDrillToHospital(province.id);
                       
                       return (
@@ -761,7 +808,7 @@ export default function Reports() {
                             {avgImpact !== null ? avgImpact.toFixed(2) : '-'}
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {totalScores.length > 0 ? (totalScores.reduce((sum, score) => sum + score, 0) / totalScores.length).toFixed(2) : '-'}
+                            {(avgQuantitative !== null || avgImpact !== null) ? rowTotal.toFixed(2) : '-'}
                           </TableCell>
                         </TableRow>
                       );
