@@ -1034,7 +1034,7 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        <TableHead colSpan={showSummaryCols ? 4 : 2} className="text-center bg-yellow-100 dark:bg-yellow-900/30 border-r border-border/60">
+                        <TableHead colSpan={showSummaryCols ? 4 : (isHospitalLevel ? 1 : 2)} className="text-center bg-yellow-100 dark:bg-yellow-900/30 border-r border-border/60">
                           รวมทุกหน่วยงาน
                         </TableHead>
                       </TableRow>
@@ -1302,6 +1302,8 @@ export default function ReportsQuantitative() {
                       let m2fTotal = 0, m2fPassed = 0;
                       let allHospitalCount = 0, allPassedAll17 = 0, allHospitalsAssessed = 0;
                       const pctList: number[] = [];
+                      // Hospital-level totals (when isHospitalLevel, each row is a hospital/office)
+                      let hlTotalUnits = 0, hlPassed17Units = 0;
 
                       rows.forEach(row => {
                         const cMSA = ('countMSA' in row ? (row as any).countMSA : 0) + ('countOffices' in row ? (row as any).countOffices : 0);
@@ -1319,6 +1321,13 @@ export default function ReportsQuantitative() {
                         const passedC = row.categoryAverages.filter(c => c.average === 1).length;
                         const totalC = row.categoryAverages.filter(c => c.average !== null).length;
                         if (totalC > 0) pctList.push(passedC / totalC * 100);
+
+                        if (isHospitalLevel && (row.type === 'hospital' || row.type === 'health_office')) {
+                          hlTotalUnits += 1;
+                          if (categories.length > 0 && passedC === categories.length) {
+                            hlPassed17Units += 1;
+                          }
+                        }
                       });
 
                       const msaPct = msaTotal > 0 ? Math.round((msaPassed / msaTotal) * 100) : 0;
@@ -1326,7 +1335,9 @@ export default function ReportsQuantitative() {
                       const m2fPct = m2fTotal > 0 ? Math.round((m2fPassed / m2fTotal) * 100) : 0;
                       const m2fScore10 = m2fTotal > 0 ? percentageToScore10((m2fPassed / m2fTotal) * 100) : null;
 
-                      const overallPct = allHospitalCount > 0 ? (allPassedAll17 / allHospitalCount) * 100 : (pctList.length > 0 ? pctList.reduce((a,b) => a+b, 0) / pctList.length : null);
+                      const overallPct = isHospitalLevel
+                        ? (hlTotalUnits > 0 ? (hlPassed17Units / hlTotalUnits) * 100 : null)
+                        : (allHospitalCount > 0 ? (allPassedAll17 / allHospitalCount) * 100 : (pctList.length > 0 ? pctList.reduce((a,b) => a+b, 0) / pctList.length : null));
                       const overallScore10 = percentageToScore10(overallPct);
                       const colorClass = overallPct === null ? '' : overallPct === 100 ? '[&>div]:bg-green-500' : overallPct >= 50 ? '[&>div]:bg-yellow-500' : '[&>div]:bg-red-500';
 
@@ -1368,7 +1379,11 @@ export default function ReportsQuantitative() {
                             {overallPct !== null ? (
                               <div className="flex items-center gap-2">
                                 <Progress value={overallPct} className={`h-4 flex-1 ${colorClass}`} />
-                                <span className="text-sm font-bold min-w-[50px] text-right">{overallPct.toFixed(1)}%</span>
+                                <span className="text-sm font-bold min-w-[110px] text-right">
+                                  {isHospitalLevel
+                                    ? `${hlPassed17Units}/${hlTotalUnits} (${overallPct.toFixed(1)}%)`
+                                    : `${overallPct.toFixed(1)}%`}
+                                </span>
                               </div>
                             ) : '-'}
                           </TableCell>
