@@ -83,22 +83,44 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
     return getLatestAssessmentsByUnit(approved);
   }, [assessments]);
 
+  // Fallback: latest assessment per unit that actually has a non-null total_score.
+  // Used when the latest approved assessment hasn't had its score computed yet
+  // (e.g., a newly approved round) — show the previous valid score instead of 0.
+  const fallbackScoreByUnit = useMemo(() => {
+    const withScore = assessments.filter(
+      a => isSubmittedAssessmentStatus(a.status) && a.total_score !== null && a.total_score !== undefined
+    );
+    const map = getLatestAssessmentsByUnit(withScore);
+    const result = new Map<string, number>();
+    map.forEach((a, unitId) => {
+      if (a.total_score !== null && a.total_score !== undefined) {
+        result.set(unitId, Number(a.total_score));
+      }
+    });
+    return result;
+  }, [assessments]);
+
   // Get latest *approved* assessments only
   const latestAssessments = useMemo(() => Array.from(latestApprovedByUnit.values()), [latestApprovedByUnit]);
 
-  // Calculate average score for a set of hospital IDs and health office IDs
+  // Calculate average score for a set of hospital IDs and health office IDs.
+  // For each unit, prefer the latest assessment's total_score; if null, fall back to
+  // the most recent assessment that does have a total_score.
   const calculateAverageScore = (hospitalIds: string[], healthOfficeIds: string[] = []): number => {
-    const relevantAssessments = latestAssessments.filter(a => 
-      ((a.hospital_id && hospitalIds.includes(a.hospital_id)) || 
-       (a.health_office_id && healthOfficeIds.includes(a.health_office_id))) && 
-      a.total_score !== null
-    );
-    
-    if (relevantAssessments.length === 0) return 0;
-    
-    // Return average of latest scores
-    const sum = relevantAssessments.reduce((acc, a) => acc + (a.total_score || 0), 0);
-    return sum / relevantAssessments.length;
+    const unitIds = [...hospitalIds, ...healthOfficeIds];
+    const scores: number[] = [];
+    for (const unitId of unitIds) {
+      const latest = latestApprovedByUnit.get(unitId);
+      let score: number | null = null;
+      if (latest && latest.total_score !== null && latest.total_score !== undefined) {
+        score = Number(latest.total_score);
+      } else if (fallbackScoreByUnit.has(unitId)) {
+        score = fallbackScoreByUnit.get(unitId) as number;
+      }
+      if (score !== null) scores.push(score);
+    }
+    if (scores.length === 0) return 0;
+    return scores.reduce((a, b) => a + b, 0) / scores.length;
   };
 
   // Get data based on drill level
@@ -148,10 +170,17 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
       const provinceHospitals = hospitals.filter(h => h.province_id === selectedProvince.id);
       const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === selectedProvince.id);
       
+      const resolveScore = (unitId: string): number => {
+        const assessment = latestApprovedByUnit.get(unitId);
+        if (assessment && assessment.total_score !== null && assessment.total_score !== undefined) {
+          return Number(assessment.total_score);
+        }
+        const fb = fallbackScoreByUnit.get(unitId);
+        return fb !== undefined ? fb : 0;
+      };
+
       const hospitalData = provinceHospitals.map((hospital) => {
-        const assessment = latestApprovedByUnit.get(hospital.id);
-        const score = assessment?.total_score || 0;
-        
+        const score = resolveScore(hospital.id);
         return {
           id: hospital.id,
           name: hospital.name,
@@ -162,9 +191,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
       });
 
       const healthOfficeData = provinceHealthOffices.map((office) => {
-        const assessment = latestApprovedByUnit.get(office.id);
-        const score = assessment?.total_score || 0;
-        
+        const score = resolveScore(office.id);
         return {
           id: office.id,
           name: office.name,
