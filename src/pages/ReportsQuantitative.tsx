@@ -25,6 +25,7 @@ interface Hospital {
   name: string;
   code: string;
   province_id: string;
+  hospital_type: string | null;
 }
 interface HealthOffice {
   id: string;
