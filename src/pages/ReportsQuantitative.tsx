@@ -879,7 +879,12 @@ export default function ReportsQuantitative() {
                     <ArrowLeft className="w-4 h-4" />
                     ย้อนกลับ
                   </button>}
-                <CardTitle className="text-lg">{getTitle()}</CardTitle>
+                <CardTitle className="text-lg">
+                  {getTitle()}
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    ( ผ่านเกณฑ์ไม่น้อยกว่าร้อยละ 80 รอบ 6 เดือน รพ. M1 A S สสจ. เขต และ รอบ 10 เดือน รพช. รอบ 1 ปี ผ่าน ร้อยละ 100 )
+                  </span>
+                </CardTitle>
               </div>
               
               {/* Color Filter Buttons - only show at province level (hospital list) */}
@@ -1160,7 +1165,7 @@ export default function ReportsQuantitative() {
                               const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
                               const score10 = total > 0 ? percentageToScore10((passed / total) * 100) : null;
                               return <>
-                                <TableCell className={`${stickyCellBase} text-center font-medium bg-amber-50 dark:bg-amber-900/20`} style={{
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-amber-50 dark:bg-amber-900/20 ${pct >= 80 ? 'text-success' : ''}`} style={{
                                   left: left.countMSAOffices,
                                   minWidth: sticky.countMSAOffices
                                 }}>
@@ -1187,7 +1192,7 @@ export default function ReportsQuantitative() {
                               const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
                               const score10 = total > 0 ? percentageToScore10((passed / total) * 100) : null;
                               return <>
-                                <TableCell className={`${stickyCellBase} text-center font-medium bg-rose-50 dark:bg-rose-900/20`} style={{
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-rose-50 dark:bg-rose-900/20 ${pct >= 80 ? 'text-success' : ''}`} style={{
                                   left: left.countM2F,
                                   minWidth: sticky.countM2F
                                 }}>
@@ -1344,7 +1349,7 @@ export default function ReportsQuantitative() {
                           {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-bold bg-muted`} style={{ left: left.hospitalCount, minWidth: sticky.hospitalCount }}>{allHospitalCount}</TableCell>}
                           {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-bold bg-blue-100 dark:bg-blue-900/30`} style={{ left: left.hospitalsAssessed, minWidth: sticky.hospitalsAssessed }}>{allHospitalsAssessed}</TableCell>}
                           {showSummaryCols && <>
-                            <TableCell className={`${stickyCellBase} text-center font-bold bg-amber-100 dark:bg-amber-900/30`} style={{ left: left.countMSAOffices, minWidth: sticky.countMSAOffices }}>
+                            <TableCell className={`${stickyCellBase} text-center font-bold bg-amber-100 dark:bg-amber-900/30 ${msaTotal > 0 && msaPct >= 80 ? 'text-success' : ''}`} style={{ left: left.countMSAOffices, minWidth: sticky.countMSAOffices }}>
                               {msaTotal > 0 ? `${msaPassed}/${msaTotal} (${msaPct}%)` : '0/0'}
                             </TableCell>
                             <TableCell className={`${stickyCellBase} text-center font-bold bg-amber-100 dark:bg-amber-900/30`} style={{ left: left.countMSAOfficesScore, minWidth: sticky.countMSAOfficesScore }}>
@@ -1353,7 +1358,7 @@ export default function ReportsQuantitative() {
                             <TableCell className={`${stickyCellBase} text-center font-bold bg-amber-100 dark:bg-amber-900/30`} style={{ left: left.countMSAOfficesScore7, minWidth: sticky.countMSAOfficesScore7 }}>
                               {fmt7(msaScore10)}
                             </TableCell>
-                            <TableCell className={`${stickyCellBase} text-center font-bold bg-rose-100 dark:bg-rose-900/30`} style={{ left: left.countM2F, minWidth: sticky.countM2F }}>
+                            <TableCell className={`${stickyCellBase} text-center font-bold bg-rose-100 dark:bg-rose-900/30 ${m2fTotal > 0 && m2fPct >= 80 ? 'text-success' : ''}`} style={{ left: left.countM2F, minWidth: sticky.countM2F }}>
                               {m2fTotal > 0 ? `${m2fPassed}/${m2fTotal} (${m2fPct}%)` : '0/0'}
                             </TableCell>
                             <TableCell className={`${stickyCellBase} text-center font-bold bg-rose-100 dark:bg-rose-900/30`} style={{ left: left.countM2FScore, minWidth: sticky.countM2FScore }}>
