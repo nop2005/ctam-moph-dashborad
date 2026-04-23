@@ -1358,7 +1358,7 @@ export default function ReportsQuantitative() {
                             <TableCell className={`${stickyCellBase} text-center font-bold bg-amber-100 dark:bg-amber-900/30`} style={{ left: left.countMSAOfficesScore7, minWidth: sticky.countMSAOfficesScore7 }}>
                               {fmt7(msaScore10)}
                             </TableCell>
-                            <TableCell className={`${stickyCellBase} text-center font-bold bg-rose-100 dark:bg-rose-900/30`} style={{ left: left.countM2F, minWidth: sticky.countM2F }}>
+                            <TableCell className={`${stickyCellBase} text-center font-bold bg-rose-100 dark:bg-rose-900/30 ${m2fTotal > 0 && m2fPct >= 80 ? 'text-success' : ''}`} style={{ left: left.countM2F, minWidth: sticky.countM2F }}>
                               {m2fTotal > 0 ? `${m2fPassed}/${m2fTotal} (${m2fPct}%)` : '0/0'}
                             </TableCell>
                             <TableCell className={`${stickyCellBase} text-center font-bold bg-rose-100 dark:bg-rose-900/30`} style={{ left: left.countM2FScore, minWidth: sticky.countM2FScore }}>
