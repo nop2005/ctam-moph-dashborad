@@ -41,6 +41,7 @@ import {
   CheckSquare,
   Square,
   Download,
+  Trash2,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { BannerCarousel } from '@/components/BannerCarousel';
@@ -848,6 +849,75 @@ export default function Dashboard() {
     return assessment.status === 'approved_regional' || assessment.status === 'completed';
   };
 
+  // Check if user can delete assessment based on role and ownership
+  const canDeleteAssessment = (assessment: Assessment & { hospitals?: Hospital; health_offices?: HealthOffice }) => {
+    if (!profile) return false;
+    if (profile.role === 'central_admin') return true;
+    if (profile.role === 'hospital_it') {
+      return !!profile.hospital_id && assessment.hospital_id === profile.hospital_id;
+    }
+    if (profile.role === 'health_office') {
+      return !!profile.health_office_id && assessment.health_office_id === profile.health_office_id;
+    }
+    if (profile.role === 'provincial') {
+      const provinceId = profile.province_id;
+      if (!provinceId) return false;
+      const hospital = (assessment as any).hospitals as Hospital | undefined;
+      const office = (assessment as any).health_offices as HealthOffice | undefined;
+      if (hospital && hospital.province_id === provinceId) return true;
+      if (office && office.province_id === provinceId) return true;
+      return false;
+    }
+    if (profile.role === 'regional') {
+      const regionId = profile.health_region_id;
+      if (!regionId) return false;
+      const hospital = (assessment as any).hospitals as Hospital | undefined;
+      const office = (assessment as any).health_offices as HealthOffice | undefined;
+      if (office && office.health_region_id === regionId) return true;
+      if (hospital) {
+        const province = provincesList.find(p => p.id === hospital.province_id);
+        if (province && province.health_region_id === regionId) return true;
+      }
+      return false;
+    }
+    return false;
+  };
+
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedAssessmentForDelete, setSelectedAssessmentForDelete] = useState<(Assessment & { hospitals?: Hospital; health_offices?: HealthOffice }) | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAssessment = async () => {
+    if (!selectedAssessmentForDelete) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('assessments')
+        .delete()
+        .eq('id', selectedAssessmentForDelete.id);
+      if (error) throw error;
+
+      setAssessments(prev => prev.filter(a => a.id !== selectedAssessmentForDelete.id));
+      invalidateDashboardCache();
+
+      toast({
+        title: 'ลบแบบประเมินเรียบร้อย',
+        description: 'แบบประเมินและข้อมูลที่เกี่ยวข้องถูกลบแล้ว',
+      });
+      setDeleteDialogOpen(false);
+      setSelectedAssessmentForDelete(null);
+    } catch (err: any) {
+      toast({
+        title: 'ลบไม่สำเร็จ',
+        description: err?.message || 'ไม่สามารถลบแบบประเมินได้',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const canCreate = profile?.role === 'hospital_it' || profile?.role === 'central_admin' || profile?.role === 'health_office';
 
   const statsDisplay = [
@@ -1438,6 +1508,20 @@ export default function Dashboard() {
                               ส่งกลับไปแก้ไข
                             </Button>
                           )}
+                          {canDeleteAssessment(assessment) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => {
+                                setSelectedAssessmentForDelete(assessment);
+                                setDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              ลบ
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                       {(profile?.role === 'central_admin' || profile?.role === 'regional') && (
@@ -1674,6 +1758,54 @@ export default function Dashboard() {
                   ส่งอีเมล
                 </>
               )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Assessment Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="w-5 h-5" />
+              ยืนยันลบแบบประเมิน
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div>
+                {selectedAssessmentForDelete && (
+                  <>
+                    คุณกำลังจะลบแบบประเมินของ{' '}
+                    <strong className="text-foreground">
+                      {(selectedAssessmentForDelete as any).hospitals?.name ||
+                        (selectedAssessmentForDelete as any).health_offices?.name}
+                    </strong>{' '}
+                    ครั้งที่ {selectedAssessmentForDelete.assessment_period}/
+                    {selectedAssessmentForDelete.fiscal_year + 543}
+                    <br />
+                    <br />
+                    การลบจะรวมถึงข้อมูลคะแนน หลักฐาน และประวัติการอนุมัติทั้งหมด
+                    <strong className="text-destructive"> ไม่สามารถกู้คืนได้</strong>
+                  </>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setSelectedAssessmentForDelete(null);
+              }}
+            >
+              ยกเลิก
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAssessment}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              ลบแบบประเมิน
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
