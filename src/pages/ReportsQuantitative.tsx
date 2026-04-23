@@ -1192,7 +1192,7 @@ export default function ReportsQuantitative() {
                               const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
                               const score10 = total > 0 ? percentageToScore10((passed / total) * 100) : null;
                               return <>
-                                <TableCell className={`${stickyCellBase} text-center font-medium bg-rose-50 dark:bg-rose-900/20`} style={{
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-rose-50 dark:bg-rose-900/20 ${pct >= 80 ? 'text-success' : ''}`} style={{
                                   left: left.countM2F,
                                   minWidth: sticky.countM2F
                                 }}>
