@@ -1211,7 +1211,7 @@ export default function ReportsQuantitative() {
                                 {'hospitalsPassedAll17' in row ? row.hospitalsPassedAll17 : 0}
                               </TableCell>}
 
-                            {isHospitalLevel && (() => {
+                            {false && isHospitalLevel && (() => {
                               const latestAssessment = latestApprovedByUnit.get(row.id);
                               const quantitativeScore = latestAssessment && latestAssessment.quantitative_score !== null
                                 ? Number(latestAssessment.quantitative_score) : null;
