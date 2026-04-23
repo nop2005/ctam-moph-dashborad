@@ -909,29 +909,62 @@ export default function Dashboard() {
     },
   ];
 
-  // Filter assessments based on statusFilter, dataUpdatedFilter, and emailSentFilter
+  // Build province -> region map for region filter
+  const provinceToRegion = new Map(provincesList.map(p => [p.id, p.health_region_id]));
+
+  // Filter assessments based on all filters (search, province, region, status, etc.)
   const filteredAssessments = assessments.filter(assessment => {
-    // Apply fiscal year filter first
     if (selectedFiscalYear !== 'all' && assessment.fiscal_year !== parseInt(selectedFiscalYear)) {
       return false;
     }
-    // Apply data updated filter for central_admin
     if (profile?.role === 'central_admin' && dataUpdatedFilter !== 'all') {
       if (dataUpdatedFilter === 'updated' && !assessment.data_updated) return false;
       if (dataUpdatedFilter === 'not_updated' && assessment.data_updated) return false;
     }
-    // Apply email sent filter for central_admin and regional
     if ((profile?.role === 'central_admin' || profile?.role === 'regional') && emailSentFilter !== 'all') {
       if (emailSentFilter === 'sent' && !(assessment as any).email_sent_at) return false;
       if (emailSentFilter === 'not_sent' && (assessment as any).email_sent_at) return false;
     }
-    // Then apply status filter
+    // Search by hospital/health office name
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const name = ((assessment as any).hospitals?.name || (assessment as any).health_offices?.name || '').toLowerCase();
+      if (!name.includes(q)) return false;
+    }
+    // Province filter
+    if (provinceFilter !== 'all') {
+      const provinceId =
+        (assessment as any).hospitals?.province_id ||
+        (assessment as any).health_offices?.province_id ||
+        null;
+      if (provinceId !== provinceFilter) return false;
+    }
+    // Region filter (derive from province)
+    if (regionFilter !== 'all') {
+      const ho = (assessment as any).health_offices;
+      const provinceId =
+        (assessment as any).hospitals?.province_id ||
+        ho?.province_id ||
+        null;
+      const regionId = ho?.health_region_id || (provinceId ? provinceToRegion.get(provinceId) : null);
+      if (regionId !== regionFilter) return false;
+    }
     if (!statusFilter) return true;
     if (statusFilter === 'approved') {
       return assessment.status === 'approved_regional' || assessment.status === 'completed';
     }
     return assessment.status === statusFilter;
   });
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredAssessments.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const pagedAssessments = filteredAssessments.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  // Provinces visible in current region filter
+  const visibleProvinces = provincesList.filter(p =>
+    regionFilter === 'all' ? true : p.health_region_id === regionFilter
+  );
 
   const hasCachedView = !!profile && dashboardCache.has(getDashboardCacheKey(profile, selectedFiscalYear));
 
