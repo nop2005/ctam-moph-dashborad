@@ -969,6 +969,15 @@ export default function ReportsQuantitative() {
                       }}>
                             <div className="flex flex-col items-center">
                               <span>คะแนน</span>
+                              <span className="text-xs">(เต็ม 10)</span>
+                            </div>
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        left: left.countMSAOfficesScore7
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>คะแนนเชิงปริมาณ</span>
                               <span className="text-xs">(เต็ม 7)</span>
                             </div>
                           </TableHead>}
@@ -987,6 +996,15 @@ export default function ReportsQuantitative() {
                       }}>
                             <div className="flex flex-col items-center">
                               <span>คะแนน</span>
+                              <span className="text-xs">(เต็ม 10)</span>
+                            </div>
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        left: left.countM2FScore7
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>คะแนนเชิงปริมาณ</span>
                               <span className="text-xs">(เต็ม 7)</span>
                             </div>
                           </TableHead>}
