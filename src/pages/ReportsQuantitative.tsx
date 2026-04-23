@@ -1052,7 +1052,7 @@ export default function ReportsQuantitative() {
                               <button type="button" className="flex flex-col items-center gap-1 mx-auto hover:underline cursor-pointer">
                                 <span className="inline-flex items-center gap-1">
                                   คะแนน (0-10)
-                                  <Info className="h-3 w-3 text-muted-foreground" />
+                                  <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
                                 </span>
                               </button>
                             </PopoverTrigger>
