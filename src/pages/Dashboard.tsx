@@ -1230,6 +1230,80 @@ export default function Dashboard() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Search & filter row */}
+          <div className="flex flex-col md:flex-row gap-3 mb-4">
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="ค้นหาชื่อโรงพยาบาล / หน่วยงาน..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-9"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted text-muted-foreground"
+                  aria-label="ล้างคำค้นหา"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <Select
+              value={regionFilter}
+              onValueChange={(v) => {
+                setRegionFilter(v);
+                // Reset province if it no longer belongs to selected region
+                if (v !== 'all' && provinceFilter !== 'all') {
+                  const p = provincesList.find(x => x.id === provinceFilter);
+                  if (!p || p.health_region_id !== v) setProvinceFilter('all');
+                }
+              }}
+            >
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="เขตสุขภาพ" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">ทุกเขตสุขภาพ</SelectItem>
+                {regionsList.map(r => (
+                  <SelectItem key={r.id} value={r.id}>
+                    เขตสุขภาพที่ {r.region_number}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={provinceFilter} onValueChange={setProvinceFilter}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="จังหวัด" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">ทุกจังหวัด</SelectItem>
+                {visibleProvinces.map(p => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(searchQuery || regionFilter !== 'all' || provinceFilter !== 'all') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery('');
+                  setRegionFilter('all');
+                  setProvinceFilter('all');
+                }}
+              >
+                <X className="w-4 h-4 mr-1" />
+                ล้างตัวกรอง
+              </Button>
+            )}
+          </div>
+
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
