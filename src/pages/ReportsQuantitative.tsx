@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { TrendingUp, Filter, Building2, MapPin, ArrowLeft, UserCircle, Briefcase, Info } from 'lucide-react';
+import { TrendingUp, Filter, Building2, MapPin, ArrowLeft, UserCircle, Briefcase, HelpCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
