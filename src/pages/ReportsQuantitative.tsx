@@ -1047,52 +1047,7 @@ export default function ReportsQuantitative() {
                         </TableHead>
 
                         <TableHead className="text-center min-w-[100px] bg-primary/20 border-r border-border/60 text-xs align-middle">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <button type="button" className="flex flex-col items-center gap-1 mx-auto hover:underline cursor-pointer">
-                                <span className="inline-flex items-center gap-1">
-                                  คะแนน (0-10)
-                                  <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
-                                </span>
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-72 p-0" align="center">
-                              <div className="p-3 border-b bg-muted/40">
-                                <div className="font-semibold text-sm">เกณฑ์คะแนน 0-10</div>
-                                <div className="text-xs text-muted-foreground mt-1">แปลงจาก % ของ รพ. ที่ผ่าน 17 ข้อ</div>
-                              </div>
-                              <div className="max-h-72 overflow-y-auto">
-                                <table className="w-full text-xs">
-                                  <thead className="bg-muted/30 sticky top-0">
-                                    <tr>
-                                      <th className="text-left px-3 py-2 font-medium">คะแนน</th>
-                                      <th className="text-left px-3 py-2 font-medium">ช่วงร้อยละ</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {[
-                                      { s: 10, r: '≥ 80%' },
-                                      { s: 9, r: '75% - 79.99%' },
-                                      { s: 8, r: '70% - 74.99%' },
-                                      { s: 7, r: '65% - 69.99%' },
-                                      { s: 6, r: '60% - 64.99%' },
-                                      { s: 5, r: '55% - 59.99%' },
-                                      { s: 4, r: '50% - 54.99%' },
-                                      { s: 3, r: '45% - 49.99%' },
-                                      { s: 2, r: '40% - 44.99%' },
-                                      { s: 1, r: '35% - 39.99%' },
-                                      { s: 0, r: '< 35%' },
-                                    ].map((row) => (
-                                      <tr key={row.s} className="border-t">
-                                        <td className="px-3 py-1.5 font-semibold">{row.s}</td>
-                                        <td className="px-3 py-1.5 text-muted-foreground">{row.r}</td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
+                          <ScoreRangePopover label="คะแนน (0-10)" />
                         </TableHead>
 
                         {showSummaryCols && <TableHead className="text-center min-w-[120px] bg-orange-100 dark:bg-orange-900/30 border-r border-border/60 text-xs align-middle">
