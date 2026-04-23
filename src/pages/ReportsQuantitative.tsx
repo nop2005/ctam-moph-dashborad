@@ -951,12 +951,21 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[140px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[130px] bg-purple-100 dark:bg-purple-900/30`} style={{
                         left: left.countMSAOffices
                       }}>
                             <div className="flex flex-col items-center">
-                              <span>จำนวน รพ. M1 A S</span>
-                              <span>+ สสจ./สนง.เขต</span>
+                              <span>รพ. M1 A S + สสจ./สนง.เขต</span>
+                              <span className="text-xs">(ผ่าน/ทั้งหมด)</span>
+                            </div>
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        left: left.countMSAOfficesScore
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>คะแนน</span>
+                              <span className="text-xs">(เต็ม 7)</span>
                             </div>
                           </TableHead>}
 
@@ -964,8 +973,17 @@ export default function ReportsQuantitative() {
                         left: left.countM2F
                       }}>
                             <div className="flex flex-col items-center">
-                              <span>จำนวน รพ.</span>
-                              <span>M2 F1-F3</span>
+                              <span>รพ. M2 F1-F3</span>
+                              <span className="text-xs">(ผ่าน/ทั้งหมด)</span>
+                            </div>
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        left: left.countM2FScore
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>คะแนน</span>
+                              <span className="text-xs">(เต็ม 7)</span>
                             </div>
                           </TableHead>}
 
