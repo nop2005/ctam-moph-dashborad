@@ -633,6 +633,31 @@ export default function ReportsQuantitative() {
     return catAvg.average.toFixed(2);
   };
 
+  // Convert pass percentage (0-100) to 0-10 score using lower-bound thresholds (no rounding up).
+  // e.g., 39.5% -> 1 (not 2), 79.99% -> 9 (not 10).
+  const percentageToScore10 = (percentage: number | null): number | null => {
+    if (percentage === null || percentage === undefined || isNaN(percentage)) return null;
+    if (percentage >= 80) return 10;
+    if (percentage >= 75) return 9;
+    if (percentage >= 70) return 8;
+    if (percentage >= 65) return 7;
+    if (percentage >= 60) return 6;
+    if (percentage >= 55) return 5;
+    if (percentage >= 50) return 4;
+    if (percentage >= 45) return 3;
+    if (percentage >= 40) return 2;
+    if (percentage >= 35) return 1;
+    return 0;
+  };
+
+  const getScore10ColorClass = (score: number | null): string => {
+    if (score === null) return 'bg-muted text-muted-foreground';
+    if (score >= 8) return 'bg-green-600 text-white';
+    if (score >= 5) return 'bg-yellow-500 text-white';
+    if (score >= 1) return 'bg-orange-500 text-white';
+    return 'bg-red-500 text-white';
+  };
+
   // Get score color class - adjusted for province/region level (percentage 0-100)
   const getScoreColorClass = (score: number | null, type: 'hospital' | 'province' | 'region' = 'region') => {
     if (score === null) return 'text-muted-foreground';
