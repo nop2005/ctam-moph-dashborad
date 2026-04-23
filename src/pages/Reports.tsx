@@ -274,6 +274,7 @@ export default function Reports() {
     const sortedWithScores = [...filteredAssessments]
       .filter(
         (assessment) =>
+          isSubmittedAssessmentStatus(assessment.status) &&
           assessment.quantitative_score !== null ||
           assessment.impact_score !== null ||
           assessment.total_score !== null
