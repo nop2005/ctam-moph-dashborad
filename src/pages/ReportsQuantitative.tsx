@@ -971,7 +971,7 @@ export default function ReportsQuantitative() {
                         left: left.passedAll17
                       }}>
                             <div className="flex flex-col items-center">
-                              <span>รพ.ผ่านครบ</span>
+                              <span>รวม รพ.ผ่าน</span>
                               <span>17 ข้อ</span>
                             </div>
                           </TableHead>}
