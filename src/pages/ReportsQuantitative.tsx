@@ -915,6 +915,32 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[110px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        left: left.countMSA
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>จำนวน รพ.</span>
+                              <span>M1 A S</span>
+                            </div>
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[120px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        left: left.countM2F
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>จำนวน รพ.</span>
+                              <span>M2 F1-F3</span>
+                            </div>
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[130px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        left: left.countOffices
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>สสจ.และ</span>
+                              <span>สำนักงานเขต</span>
+                            </div>
+                          </TableHead>}
 
                         {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-green-100 dark:bg-green-900/30`} style={{
                         left: left.passedAll17
