@@ -275,9 +275,11 @@ export default function Reports() {
       .filter(
         (assessment) =>
           isSubmittedAssessmentStatus(assessment.status) &&
-          assessment.quantitative_score !== null ||
-          assessment.impact_score !== null ||
-          assessment.total_score !== null
+          (
+            assessment.quantitative_score !== null ||
+            assessment.impact_score !== null ||
+            assessment.total_score !== null
+          )
       )
       .sort((a, b) => {
         if (a.fiscal_year !== b.fiscal_year) return b.fiscal_year - a.fiscal_year;
