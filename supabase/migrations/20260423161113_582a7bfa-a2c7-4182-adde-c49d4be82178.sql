@@ -1,0 +1,1 @@
+UPDATE public.hospitals SET hospital_type = 'F3' WHERE id IN ('5d8edfac-528b-4b38-b6bb-8fbd23132eed', '94ab42cb-9052-4d77-8eea-4d27896b5371');
