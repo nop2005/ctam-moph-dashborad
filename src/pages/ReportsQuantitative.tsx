@@ -860,9 +860,8 @@ export default function ReportsQuantitative() {
               name: 180,
               hospitalCount: 80,
               hospitalsAssessed: 100,
-              countMSA: 110,
+              countMSAOffices: 140,
               countM2F: 120,
-              countOffices: 130,
               avgQuantitative: 120,
               passedAll17: 100,
               unitQuantScore: 110,
@@ -873,13 +872,12 @@ export default function ReportsQuantitative() {
               name: 0,
               hospitalCount: sticky.name,
               hospitalsAssessed: sticky.name + sticky.hospitalCount,
-              countMSA: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
-              countM2F: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSA,
-              countOffices: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSA + sticky.countM2F,
-              passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSA + sticky.countM2F + sticky.countOffices,
+              countMSAOffices: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
+              countM2F: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices,
+              passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countM2F,
               unitQuantScore: sticky.name,
               unitPassedItems: sticky.name + sticky.unitQuantScore,
-              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSA + sticky.countM2F + sticky.countOffices + sticky.passedAll17 : isHospitalLevel ? sticky.unitQuantScore + sticky.unitPassedItems : 0)
+              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countM2F + sticky.passedAll17 : isHospitalLevel ? sticky.unitQuantScore + sticky.unitPassedItems : 0)
             } as const;
             const stickyHeaderBase = "sticky z-30 border-r border-border/60";
             const stickyCellBase = "sticky z-20 border-r border-border/60 bg-background";
