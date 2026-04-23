@@ -967,15 +967,6 @@ export default function ReportsQuantitative() {
                             รพ. M2 F1-F3
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[100px] bg-green-100 dark:bg-green-900/30 align-middle`} style={{
-                        left: left.passedAll17
-                      }}>
-                            <div className="flex flex-col items-center">
-                              <span>รวม รพ.ผ่าน</span>
-                              <span>17 ข้อ</span>
-                            </div>
-                          </TableHead>}
-
                         {isHospitalLevel && <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[110px] bg-orange-100 dark:bg-orange-900/30 align-middle`} style={{
                         left: left.unitQuantScore
                       }}>
@@ -994,30 +985,9 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[200px] bg-primary/10 align-middle`} style={{
-                        left: left.percentGreen
-                      }}>
-                          {isHospitalLevel ? <div className="flex flex-col items-center">
-                              <span>ข้อที่ผ่าน</span>
-                              <span>(ร้อยละ)</span>
-                            </div> : <div className="flex flex-col items-center">
-                              <span>ผ่านร้อยละ</span>
-                            </div>}
+                        <TableHead colSpan={showSummaryCols ? 4 : 2} className="text-center bg-yellow-100 dark:bg-yellow-900/30 border-r border-border/60">
+                          รวมทุกหน่วยงาน
                         </TableHead>
-
-                        <TableHead rowSpan={2} className="text-center min-w-[100px] bg-primary/20 border-r border-border/60 align-middle">
-                          <div className="flex flex-col items-center">
-                            <span>คะแนน</span>
-                            <span>(0-10)</span>
-                          </div>
-                        </TableHead>
-
-                        {showSummaryCols && <TableHead rowSpan={2} className="text-center min-w-[120px] bg-orange-100 dark:bg-orange-900/30 border-r border-border/60 align-middle">
-                            <div className="flex flex-col items-center">
-                              <span>คะแนนเชิงปริมาณ</span>
-                              <span>(0-7)</span>
-                            </div>
-                          </TableHead>}
                       </TableRow>
 
                       <TableRow className="bg-muted/50">
@@ -1055,6 +1025,36 @@ export default function ReportsQuantitative() {
                         left: left.countM2FScore7
                       }}>
                             คะแนนเชิงปริมาณ (เต็ม 7)
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-green-100 dark:bg-green-900/30 text-xs align-middle`} style={{
+                        left: left.passedAll17
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>ผ่าน 17 ข้อ</span>
+                            </div>
+                          </TableHead>}
+
+                        <TableHead className={`${stickyHeaderBase} text-center min-w-[200px] bg-primary/10 text-xs align-middle`} style={{
+                        left: left.percentGreen
+                      }}>
+                          {isHospitalLevel ? <div className="flex flex-col items-center">
+                              <span>ข้อที่ผ่าน (ร้อยละ)</span>
+                            </div> : <div className="flex flex-col items-center">
+                              <span>ผ่านร้อยละ</span>
+                            </div>}
+                        </TableHead>
+
+                        <TableHead className="text-center min-w-[100px] bg-primary/20 border-r border-border/60 text-xs align-middle">
+                          <div className="flex flex-col items-center">
+                            <span>คะแนน (0-10)</span>
+                          </div>
+                        </TableHead>
+
+                        {showSummaryCols && <TableHead className="text-center min-w-[120px] bg-orange-100 dark:bg-orange-900/30 border-r border-border/60 text-xs align-middle">
+                            <div className="flex flex-col items-center">
+                              <span>คะแนนเชิงปริมาณ (0-7)</span>
+                            </div>
                           </TableHead>}
                       </TableRow>
                     </TableHeader>
