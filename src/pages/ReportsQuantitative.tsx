@@ -1379,7 +1379,11 @@ export default function ReportsQuantitative() {
                             {overallPct !== null ? (
                               <div className="flex items-center gap-2">
                                 <Progress value={overallPct} className={`h-4 flex-1 ${colorClass}`} />
-                                <span className="text-sm font-bold min-w-[50px] text-right">{overallPct.toFixed(1)}%</span>
+                                <span className="text-sm font-bold min-w-[110px] text-right">
+                                  {isHospitalLevel
+                                    ? `${hlPassed17Units}/${hlTotalUnits} (${overallPct.toFixed(1)}%)`
+                                    : `${overallPct.toFixed(1)}%`}
+                                </span>
                               </div>
                             ) : '-'}
                           </TableCell>
