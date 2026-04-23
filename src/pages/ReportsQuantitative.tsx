@@ -25,6 +25,7 @@ interface Hospital {
   name: string;
   code: string;
   province_id: string;
+  hospital_type: string | null;
 }
 interface HealthOffice {
   id: string;
@@ -394,6 +395,10 @@ export default function ReportsQuantitative() {
           ? quantScores.reduce((s, v) => s + v, 0) / quantScores.length
           : null;
 
+        const countMSA = regionHospitals.filter(h => ['M1', 'A', 'S'].includes((h.hospital_type || '').toUpperCase())).length;
+        const countM2F = regionHospitals.filter(h => ['M2', 'F1', 'F2', 'F3'].includes((h.hospital_type || '').toUpperCase())).length;
+        const countOffices = regionHealthOffices.length;
+
         return {
           id: region.id,
           name: `เขตสุขภาพที่ ${region.region_number}`,
@@ -401,6 +406,9 @@ export default function ReportsQuantitative() {
           hospitalCount: regionHospitals.length + regionHealthOffices.length,
           hospitalsAssessed: unitsAssessed,
           hospitalsPassedAll17: unitsPassedAll17,
+          countMSA,
+          countM2F,
+          countOffices,
           avgQuantitativeScore,
           categoryAverages
         };
@@ -463,6 +471,10 @@ export default function ReportsQuantitative() {
           ? quantScores.reduce((s, v) => s + v, 0) / quantScores.length
           : null;
 
+        const countMSA = provinceHospitals.filter(h => ['M1', 'A', 'S'].includes((h.hospital_type || '').toUpperCase())).length;
+        const countM2F = provinceHospitals.filter(h => ['M2', 'F1', 'F2', 'F3'].includes((h.hospital_type || '').toUpperCase())).length;
+        const countOffices = provinceHealthOffices.length;
+
         return {
           id: province.id,
           name: province.name,
@@ -470,6 +482,9 @@ export default function ReportsQuantitative() {
           hospitalCount: provinceHospitals.length + provinceHealthOffices.length,
           hospitalsAssessed: unitsAssessed,
           hospitalsPassedAll17: unitsPassedAll17,
+          countMSA,
+          countM2F,
+          countOffices,
           avgQuantitativeScore,
           categoryAverages
         };
@@ -845,6 +860,9 @@ export default function ReportsQuantitative() {
               name: 180,
               hospitalCount: 80,
               hospitalsAssessed: 100,
+              countMSA: 110,
+              countM2F: 120,
+              countOffices: 130,
               avgQuantitative: 120,
               passedAll17: 100,
               unitQuantScore: 110,
@@ -855,11 +873,13 @@ export default function ReportsQuantitative() {
               name: 0,
               hospitalCount: sticky.name,
               hospitalsAssessed: sticky.name + sticky.hospitalCount,
-              avgQuantitative: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
-              passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
+              countMSA: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
+              countM2F: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSA,
+              countOffices: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSA + sticky.countM2F,
+              passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSA + sticky.countM2F + sticky.countOffices,
               unitQuantScore: sticky.name,
               unitPassedItems: sticky.name + sticky.unitQuantScore,
-              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.passedAll17 : isHospitalLevel ? sticky.unitQuantScore + sticky.unitPassedItems : 0)
+              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSA + sticky.countM2F + sticky.countOffices + sticky.passedAll17 : isHospitalLevel ? sticky.unitQuantScore + sticky.unitPassedItems : 0)
             } as const;
             const stickyHeaderBase = "sticky z-30 border-r border-border/60";
             const stickyCellBase = "sticky z-20 border-r border-border/60 bg-background";
@@ -895,6 +915,32 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[110px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        left: left.countMSA
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>จำนวน รพ.</span>
+                              <span>M1 A S</span>
+                            </div>
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[120px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        left: left.countM2F
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>จำนวน รพ.</span>
+                              <span>M2 F1-F3</span>
+                            </div>
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[130px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        left: left.countOffices
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>สสจ.และ</span>
+                              <span>สำนักงานเขต</span>
+                            </div>
+                          </TableHead>}
 
                         {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-green-100 dark:bg-green-900/30`} style={{
                         left: left.passedAll17
@@ -995,6 +1041,26 @@ export default function ReportsQuantitative() {
                                 {'hospitalsAssessed' in row ? row.hospitalsAssessed : 0}
                               </TableCell>}
 
+                            {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                          left: left.countMSA,
+                          minWidth: sticky.countMSA
+                        }}>
+                                {'countMSA' in row ? (row as any).countMSA : 0}
+                              </TableCell>}
+
+                            {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                          left: left.countM2F,
+                          minWidth: sticky.countM2F
+                        }}>
+                                {'countM2F' in row ? (row as any).countM2F : 0}
+                              </TableCell>}
+
+                            {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                          left: left.countOffices,
+                          minWidth: sticky.countOffices
+                        }}>
+                                {'countOffices' in row ? (row as any).countOffices : 0}
+                              </TableCell>}
 
                             {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-green-50 dark:bg-green-900/20`} style={{
                           left: left.passedAll17,
