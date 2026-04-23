@@ -1372,13 +1372,13 @@ export default function ReportsQuantitative() {
                               </div>
                             ) : '-'}
                           </TableCell>
-                          <TableCell className="text-center font-bold bg-muted">
+                          {!isHospitalLevel && <TableCell className="text-center font-bold bg-muted">
                             {overallScore10 !== null ? (
                               <span className={`inline-flex items-center justify-center w-9 h-9 rounded-full font-bold text-sm ${getScore10ColorClass(overallScore10)}`}>
                                 {overallScore10}
                               </span>
                             ) : <span className="text-muted-foreground">-</span>}
-                          </TableCell>
+                          </TableCell>}
                           {showSummaryCols && <TableCell className="text-center font-bold bg-orange-100 dark:bg-orange-900/30 min-w-[120px]">
                             {overallScore10 !== null ? (overallScore10 * 0.7).toFixed(2) : '-'}
                           </TableCell>}
