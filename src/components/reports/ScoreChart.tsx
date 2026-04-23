@@ -170,10 +170,17 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
       const provinceHospitals = hospitals.filter(h => h.province_id === selectedProvince.id);
       const provinceHealthOffices = healthOffices.filter(ho => ho.province_id === selectedProvince.id);
       
+      const resolveScore = (unitId: string): number => {
+        const assessment = latestApprovedByUnit.get(unitId);
+        if (assessment && assessment.total_score !== null && assessment.total_score !== undefined) {
+          return Number(assessment.total_score);
+        }
+        const fb = fallbackScoreByUnit.get(unitId);
+        return fb !== undefined ? fb : 0;
+      };
+
       const hospitalData = provinceHospitals.map((hospital) => {
-        const assessment = latestApprovedByUnit.get(hospital.id);
-        const score = assessment?.total_score || 0;
-        
+        const score = resolveScore(hospital.id);
         return {
           id: hospital.id,
           name: hospital.name,
@@ -184,9 +191,7 @@ export function ScoreChart({ healthRegions, provinces, hospitals, healthOffices 
       });
 
       const healthOfficeData = provinceHealthOffices.map((office) => {
-        const assessment = latestApprovedByUnit.get(office.id);
-        const score = assessment?.total_score || 0;
-        
+        const score = resolveScore(office.id);
         return {
           id: office.id,
           name: office.name,
