@@ -1151,7 +1151,13 @@ export default function ReportsQuantitative() {
                                   left: left.countM2FScore,
                                   minWidth: sticky.countM2FScore
                                 }}>
-                                  {score10 !== null ? `${score10}/${(score10 * 0.7).toFixed(1)}` : '-'}
+                                  {score10 !== null ? `${score10}` : '-'}
+                                </TableCell>
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                  left: left.countM2FScore7,
+                                  minWidth: sticky.countM2FScore7
+                                }}>
+                                  {score10 !== null ? (score10 * 0.7).toFixed(1) : '-'}
                                 </TableCell>
                               </>;
                             })()}
