@@ -264,6 +264,78 @@ export default function Reports() {
     [latestApprovedByUnit]
   );
 
+  const fallbackScoresByUnit = useMemo(() => {
+    const parsePeriod = (period?: string | null) => {
+      if (!period) return 0;
+      const match = String(period).match(/\d+/);
+      return match ? Number(match[0]) : 0;
+    };
+
+    const sortedWithScores = [...filteredAssessments]
+      .filter(
+        (assessment) =>
+          isSubmittedAssessmentStatus(assessment.status) &&
+          (
+            assessment.quantitative_score !== null ||
+            assessment.impact_score !== null ||
+            assessment.total_score !== null
+          )
+      )
+      .sort((a, b) => {
+        if (a.fiscal_year !== b.fiscal_year) return b.fiscal_year - a.fiscal_year;
+        const periodDiff = parsePeriod(b.assessment_period) - parsePeriod(a.assessment_period);
+        if (periodDiff !== 0) return periodDiff;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+    const result = new Map<string, { quantitative: number | null; impact: number | null; total: number | null }>();
+
+    for (const assessment of sortedWithScores) {
+      const unitId = assessment.hospital_id || assessment.health_office_id;
+      if (!unitId) continue;
+
+      const existing = result.get(unitId) ?? {
+        quantitative: null,
+        impact: null,
+        total: null,
+      };
+
+      if (existing.quantitative === null && assessment.quantitative_score !== null) {
+        existing.quantitative = Number(assessment.quantitative_score);
+      }
+      if (existing.impact === null && assessment.impact_score !== null) {
+        existing.impact = Number(assessment.impact_score);
+      }
+      if (existing.total === null && assessment.total_score !== null) {
+        existing.total = Number(assessment.total_score);
+      }
+
+      result.set(unitId, existing);
+    }
+
+    return result;
+  }, [filteredAssessments]);
+
+  const getResolvedScores = (unitId: string) => {
+    const latestAssessment = latestApprovedByUnit.get(unitId);
+    const fallback = fallbackScoresByUnit.get(unitId);
+
+    return {
+      quantitative:
+        latestAssessment?.quantitative_score !== null && latestAssessment?.quantitative_score !== undefined
+          ? Number(latestAssessment.quantitative_score)
+          : fallback?.quantitative ?? null,
+      impact:
+        latestAssessment?.impact_score !== null && latestAssessment?.impact_score !== undefined
+          ? Number(latestAssessment.impact_score)
+          : fallback?.impact ?? null,
+      total:
+        latestAssessment?.total_score !== null && latestAssessment?.total_score !== undefined
+          ? Number(latestAssessment.total_score)
+          : fallback?.total ?? null,
+    };
+  };
+
   // Calculate statistics based on drill level (including health offices)
   // Use latestApprovedAssessments for "completed" count to be consistent with Dashboard
   const drillStats = useMemo(() => {
@@ -485,18 +557,26 @@ export default function Reports() {
                       );
 
                       const completedCount = regionLatestApprovedAssessments.length;
-                      const quantitativeScores = regionLatestApprovedAssessments.filter(a => a.quantitative_score !== null);
-                      const avgQuantitative = quantitativeScores.length > 0 
-                        ? quantitativeScores.reduce((sum, a) => sum + (a.quantitative_score || 0), 0) / quantitativeScores.length 
+                      const regionUnitIds = [
+                        ...regionHospitals.map(h => h.id),
+                        ...regionHealthOffices.map(ho => ho.id),
+                      ];
+                      const regionResolvedScores = regionUnitIds.map(getResolvedScores);
+                      const quantitativeScores = regionResolvedScores
+                        .map(score => score.quantitative)
+                        .filter((score): score is number => score !== null);
+                      const avgQuantitative = quantitativeScores.length > 0
+                        ? quantitativeScores.reduce((sum, score) => sum + score, 0) / quantitativeScores.length
                         : null;
-                      const impactScores = regionLatestApprovedAssessments.filter(a => a.impact_score !== null);
-                      const avgImpact = impactScores.length > 0 
-                        ? impactScores.reduce((sum, a) => sum + (a.impact_score || 0), 0) / impactScores.length 
+                      const impactScores = regionResolvedScores
+                        .map(score => score.impact)
+                        .filter((score): score is number => score !== null);
+                      const avgImpact = impactScores.length > 0
+                        ? impactScores.reduce((sum, score) => sum + score, 0) / impactScores.length
                         : null;
-
-                      const totalScoreSum = regionLatestApprovedAssessments.filter(a => a.total_score !== null)
-                        .reduce((sum, a) => sum + (a.total_score || 0), 0);
-                      const scoreCount = regionLatestApprovedAssessments.filter(a => a.total_score !== null).length;
+                      const totalScores = regionResolvedScores
+                        .map(score => score.total)
+                        .filter((score): score is number => score !== null);
                       const canDrill = canDrillToProvince(region.id);
                       
                       return (
@@ -517,7 +597,7 @@ export default function Reports() {
                             {avgImpact !== null ? avgImpact.toFixed(2) : '-'}
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {scoreCount > 0 ? (totalScoreSum / scoreCount).toFixed(2) : '-'}
+                            {totalScores.length > 0 ? (totalScores.reduce((sum, score) => sum + score, 0) / totalScores.length).toFixed(2) : '-'}
                           </TableCell>
                         </TableRow>
                       );
@@ -561,22 +641,26 @@ export default function Reports() {
                       );
 
                       const completedCount = provinceLatestApprovedAssessments.length;
-                      
-                      // Calculate average quantitative score (exclude 0 and null)
-                      const quantitativeScores = provinceLatestApprovedAssessments.filter(a => a.quantitative_score != null && a.quantitative_score > 0);
-                      const avgQuantitative = quantitativeScores.length > 0 
-                        ? quantitativeScores.reduce((sum, a) => sum + (a.quantitative_score || 0), 0) / quantitativeScores.length 
+                      const provinceUnitIds = [
+                        ...provinceHospitals.map(h => h.id),
+                        ...provinceHealthOffices.map(ho => ho.id),
+                      ];
+                      const provinceResolvedScores = provinceUnitIds.map(getResolvedScores);
+                      const quantitativeScores = provinceResolvedScores
+                        .map(score => score.quantitative)
+                        .filter((score): score is number => score !== null);
+                      const avgQuantitative = quantitativeScores.length > 0
+                        ? quantitativeScores.reduce((sum, score) => sum + score, 0) / quantitativeScores.length
                         : null;
-                      
-                      // Calculate average impact score (exclude 0 and null)
-                      const impactScores = provinceLatestApprovedAssessments.filter(a => a.impact_score != null && a.impact_score > 0);
-                      const avgImpact = impactScores.length > 0 
-                        ? impactScores.reduce((sum, a) => sum + (a.impact_score || 0), 0) / impactScores.length 
+                      const impactScores = provinceResolvedScores
+                        .map(score => score.impact)
+                        .filter((score): score is number => score !== null);
+                      const avgImpact = impactScores.length > 0
+                        ? impactScores.reduce((sum, score) => sum + score, 0) / impactScores.length
                         : null;
-                      
-                      const totalScoreSum = provinceLatestApprovedAssessments.filter(a => a.total_score !== null)
-                        .reduce((sum, a) => sum + (a.total_score || 0), 0);
-                      const scoreCount = provinceLatestApprovedAssessments.filter(a => a.total_score !== null).length;
+                      const totalScores = provinceResolvedScores
+                        .map(score => score.total)
+                        .filter((score): score is number => score !== null);
                       const canDrill = canDrillToHospital(province.id);
                       
                       return (
@@ -598,7 +682,7 @@ export default function Reports() {
                             {avgImpact !== null ? avgImpact.toFixed(2) : '-'}
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {scoreCount > 0 ? (totalScoreSum / scoreCount).toFixed(2) : '-'}
+                            {totalScores.length > 0 ? (totalScores.reduce((sum, score) => sum + score, 0) / totalScores.length).toFixed(2) : '-'}
                           </TableCell>
                         </TableRow>
                       );
@@ -642,8 +726,7 @@ export default function Reports() {
                       // Prioritize showing approved assessment if exists, otherwise show latest for status info
                       const approvedAssessment = latestApprovedByUnit.get(hospital.id);
                       const latestAssessment = latestByUnit.get(hospital.id);
-                      // For scores, always use approved assessment
-                      const scoreAssessment = approvedAssessment;
+                      const resolvedScores = getResolvedScores(hospital.id);
                       // For status display, show approved if exists, otherwise show latest
                       const displayAssessment = approvedAssessment || latestAssessment;
                       
@@ -671,13 +754,13 @@ export default function Reports() {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            {scoreAssessment?.quantitative_score?.toFixed(2) || '-'}
+                            {resolvedScores.quantitative !== null ? resolvedScores.quantitative.toFixed(2) : '-'}
                           </TableCell>
                           <TableCell className="text-right">
-                            {scoreAssessment?.impact_score?.toFixed(2) || '-'}
+                            {resolvedScores.impact !== null ? resolvedScores.impact.toFixed(2) : '-'}
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {scoreAssessment?.total_score?.toFixed(2) || '-'}
+                            {resolvedScores.total !== null ? resolvedScores.total.toFixed(2) : '-'}
                           </TableCell>
                         </TableRow>
                       );
@@ -693,8 +776,7 @@ export default function Reports() {
                       // Prioritize showing approved assessment if exists, otherwise show latest for status info
                       const approvedAssessment = latestApprovedByUnit.get(office.id);
                       const latestAssessment = latestByUnit.get(office.id);
-                      // For scores, always use approved assessment
-                      const scoreAssessment = approvedAssessment;
+                      const resolvedScores = getResolvedScores(office.id);
                       // For status display, show approved if exists, otherwise show latest
                       const displayAssessment = approvedAssessment || latestAssessment;
                       
@@ -722,13 +804,13 @@ export default function Reports() {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            {scoreAssessment?.quantitative_score?.toFixed(2) || '-'}
+                            {resolvedScores.quantitative !== null ? resolvedScores.quantitative.toFixed(2) : '-'}
                           </TableCell>
                           <TableCell className="text-right">
-                            {scoreAssessment?.impact_score?.toFixed(2) || '-'}
+                            {resolvedScores.impact !== null ? resolvedScores.impact.toFixed(2) : '-'}
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {scoreAssessment?.total_score?.toFixed(2) || '-'}
+                            {resolvedScores.total !== null ? resolvedScores.total.toFixed(2) : '-'}
                           </TableCell>
                         </TableRow>
                       );
