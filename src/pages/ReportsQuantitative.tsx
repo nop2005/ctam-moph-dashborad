@@ -395,9 +395,24 @@ export default function ReportsQuantitative() {
           ? quantScores.reduce((s, v) => s + v, 0) / quantScores.length
           : null;
 
-        const countMSA = regionHospitals.filter(h => ['M1', 'A', 'S'].includes((h.hospital_type || '').toUpperCase())).length;
-        const countM2F = regionHospitals.filter(h => ['M2', 'F1', 'F2', 'F3'].includes((h.hospital_type || '').toUpperCase())).length;
+        const unitPassedAll17 = (unitId: string) => {
+          const latestAssessmentId = latestApprovedByUnit.get(unitId)?.id;
+          if (!latestAssessmentId) return false;
+          return categories.every(cat => {
+            const catItems = filteredAssessmentItems.filter(
+              item => item.assessment_id === latestAssessmentId && item.category_id === cat.id
+            );
+            return catItems.some(item => Number(item.score) === 1);
+          });
+        };
+
+        const msaHospitals = regionHospitals.filter(h => ['M1', 'A', 'S'].includes((h.hospital_type || '').toUpperCase()));
+        const m2fHospitals = regionHospitals.filter(h => ['M2', 'F1', 'F2', 'F3'].includes((h.hospital_type || '').toUpperCase()));
+        const countMSA = msaHospitals.length;
+        const countM2F = m2fHospitals.length;
         const countOffices = regionHealthOffices.length;
+        const passedMSAOffices = [...msaHospitals.map(h => h.id), ...regionHealthOffices.map(o => o.id)].filter(unitPassedAll17).length;
+        const passedM2F = m2fHospitals.map(h => h.id).filter(unitPassedAll17).length;
 
         return {
           id: region.id,
@@ -409,6 +424,8 @@ export default function ReportsQuantitative() {
           countMSA,
           countM2F,
           countOffices,
+          passedMSAOffices,
+          passedM2F,
           avgQuantitativeScore,
           categoryAverages
         };
@@ -471,9 +488,24 @@ export default function ReportsQuantitative() {
           ? quantScores.reduce((s, v) => s + v, 0) / quantScores.length
           : null;
 
-        const countMSA = provinceHospitals.filter(h => ['M1', 'A', 'S'].includes((h.hospital_type || '').toUpperCase())).length;
-        const countM2F = provinceHospitals.filter(h => ['M2', 'F1', 'F2', 'F3'].includes((h.hospital_type || '').toUpperCase())).length;
+        const unitPassedAll17 = (unitId: string) => {
+          const latestAssessmentId = latestApprovedByUnit.get(unitId)?.id;
+          if (!latestAssessmentId) return false;
+          return categories.every(cat => {
+            const catItems = filteredAssessmentItems.filter(
+              item => item.assessment_id === latestAssessmentId && item.category_id === cat.id
+            );
+            return catItems.some(item => Number(item.score) === 1);
+          });
+        };
+
+        const msaHospitals = provinceHospitals.filter(h => ['M1', 'A', 'S'].includes((h.hospital_type || '').toUpperCase()));
+        const m2fHospitals = provinceHospitals.filter(h => ['M2', 'F1', 'F2', 'F3'].includes((h.hospital_type || '').toUpperCase()));
+        const countMSA = msaHospitals.length;
+        const countM2F = m2fHospitals.length;
         const countOffices = provinceHealthOffices.length;
+        const passedMSAOffices = [...msaHospitals.map(h => h.id), ...provinceHealthOffices.map(o => o.id)].filter(unitPassedAll17).length;
+        const passedM2F = m2fHospitals.map(h => h.id).filter(unitPassedAll17).length;
 
         return {
           id: province.id,
@@ -485,6 +517,8 @@ export default function ReportsQuantitative() {
           countMSA,
           countM2F,
           countOffices,
+          passedMSAOffices,
+          passedM2F,
           avgQuantitativeScore,
           categoryAverages
         };
@@ -860,8 +894,8 @@ export default function ReportsQuantitative() {
               name: 180,
               hospitalCount: 80,
               hospitalsAssessed: 100,
-              countMSAOffices: 140,
-              countM2F: 120,
+              countMSAOffices: 170,
+              countM2F: 150,
               avgQuantitative: 120,
               passedAll17: 100,
               unitQuantScore: 110,
@@ -1030,19 +1064,29 @@ export default function ReportsQuantitative() {
                                 {'hospitalsAssessed' in row ? row.hospitalsAssessed : 0}
                               </TableCell>}
 
-                            {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
-                          left: left.countMSAOffices,
-                          minWidth: sticky.countMSAOffices
-                        }}>
-                                {('countMSA' in row ? (row as any).countMSA : 0) + ('countOffices' in row ? (row as any).countOffices : 0)}
-                              </TableCell>}
+                            {showSummaryCols && (() => {
+                              const total = ('countMSA' in row ? (row as any).countMSA : 0) + ('countOffices' in row ? (row as any).countOffices : 0);
+                              const passed = 'passedMSAOffices' in row ? (row as any).passedMSAOffices : 0;
+                              const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
+                              return <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                left: left.countMSAOffices,
+                                minWidth: sticky.countMSAOffices
+                              }}>
+                                {total > 0 ? `${passed}/${total} (${pct}%)` : `0/0`}
+                              </TableCell>;
+                            })()}
 
-                            {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
-                          left: left.countM2F,
-                          minWidth: sticky.countM2F
-                        }}>
-                                {'countM2F' in row ? (row as any).countM2F : 0}
-                              </TableCell>}
+                            {showSummaryCols && (() => {
+                              const total = 'countM2F' in row ? (row as any).countM2F : 0;
+                              const passed = 'passedM2F' in row ? (row as any).passedM2F : 0;
+                              const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
+                              return <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                left: left.countM2F,
+                                minWidth: sticky.countM2F
+                              }}>
+                                {total > 0 ? `${passed}/${total} (${pct}%)` : `0/0`}
+                              </TableCell>;
+                            })()}
 
                             {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-green-50 dark:bg-green-900/20`} style={{
                           left: left.passedAll17,
