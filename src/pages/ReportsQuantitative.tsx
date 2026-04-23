@@ -1260,7 +1260,7 @@ export default function ReportsQuantitative() {
                           })()}
                             </TableCell>
 
-                            <TableCell className="text-center">
+                            {!isHospitalLevel && <TableCell className="text-center">
                               {(() => {
                                 let percentage: number | null;
                                 if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
@@ -1278,7 +1278,7 @@ export default function ReportsQuantitative() {
                                   </span>
                                 );
                               })()}
-                            </TableCell>
+                            </TableCell>}
 
                             {showSummaryCols && <TableCell className="text-center font-medium bg-orange-50 dark:bg-orange-900/20 min-w-[120px]">
                               {(() => {
