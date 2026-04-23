@@ -231,8 +231,8 @@ export default function Reports() {
         const [categoriesRes, itemsAll] = await Promise.all([
           supabase.from('ctam_categories').select('id'),
           fetchAllPaged<{ id: string; assessment_id: string; category_id: string; score: number | string | null }>(
-            (from, to) =>
-              supabase
+            async (from, to) =>
+              await supabase
                 .from('assessment_items')
                 .select('id, assessment_id, category_id, score')
                 .range(from, to)
