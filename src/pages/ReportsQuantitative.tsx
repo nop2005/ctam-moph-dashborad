@@ -1090,24 +1090,42 @@ export default function ReportsQuantitative() {
                               const total = ('countMSA' in row ? (row as any).countMSA : 0) + ('countOffices' in row ? (row as any).countOffices : 0);
                               const passed = 'passedMSAOffices' in row ? (row as any).passedMSAOffices : 0;
                               const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
-                              return <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
-                                left: left.countMSAOffices,
-                                minWidth: sticky.countMSAOffices
-                              }}>
-                                {total > 0 ? `${passed}/${total} (${pct}%)` : `0/0`}
-                              </TableCell>;
+                              const score10 = total > 0 ? percentageToScore10((passed / total) * 100) : null;
+                              return <>
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                  left: left.countMSAOffices,
+                                  minWidth: sticky.countMSAOffices
+                                }}>
+                                  {total > 0 ? `${passed}/${total} (${pct}%)` : `0/0`}
+                                </TableCell>
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                  left: left.countMSAOfficesScore,
+                                  minWidth: sticky.countMSAOfficesScore
+                                }}>
+                                  {score10 !== null ? `${score10}/7` : '-'}
+                                </TableCell>
+                              </>;
                             })()}
 
                             {showSummaryCols && (() => {
                               const total = 'countM2F' in row ? (row as any).countM2F : 0;
                               const passed = 'passedM2F' in row ? (row as any).passedM2F : 0;
                               const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
-                              return <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
-                                left: left.countM2F,
-                                minWidth: sticky.countM2F
-                              }}>
-                                {total > 0 ? `${passed}/${total} (${pct}%)` : `0/0`}
-                              </TableCell>;
+                              const score10 = total > 0 ? percentageToScore10((passed / total) * 100) : null;
+                              return <>
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                  left: left.countM2F,
+                                  minWidth: sticky.countM2F
+                                }}>
+                                  {total > 0 ? `${passed}/${total} (${pct}%)` : `0/0`}
+                                </TableCell>
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                  left: left.countM2FScore,
+                                  minWidth: sticky.countM2FScore
+                                }}>
+                                  {score10 !== null ? `${score10}/7` : '-'}
+                                </TableCell>
+                              </>;
                             })()}
 
                             {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-green-50 dark:bg-green-900/20`} style={{
