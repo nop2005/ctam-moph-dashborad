@@ -1041,6 +1041,26 @@ export default function ReportsQuantitative() {
                                 {'hospitalsAssessed' in row ? row.hospitalsAssessed : 0}
                               </TableCell>}
 
+                            {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                          left: left.countMSA,
+                          minWidth: sticky.countMSA
+                        }}>
+                                {'countMSA' in row ? (row as any).countMSA : 0}
+                              </TableCell>}
+
+                            {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                          left: left.countM2F,
+                          minWidth: sticky.countM2F
+                        }}>
+                                {'countM2F' in row ? (row as any).countM2F : 0}
+                              </TableCell>}
+
+                            {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                          left: left.countOffices,
+                          minWidth: sticky.countOffices
+                        }}>
+                                {'countOffices' in row ? (row as any).countOffices : 0}
+                              </TableCell>}
 
                             {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-green-50 dark:bg-green-900/20`} style={{
                           left: left.passedAll17,
