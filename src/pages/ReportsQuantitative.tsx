@@ -942,6 +942,13 @@ export default function ReportsQuantitative() {
                             </div>}
                         </TableHead>
 
+                        <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-primary/20`}>
+                          <div className="flex flex-col items-center">
+                            <span>คะแนน</span>
+                            <span>(0-10)</span>
+                          </div>
+                        </TableHead>
+
                       </TableRow>
                     </TableHeader>
 
