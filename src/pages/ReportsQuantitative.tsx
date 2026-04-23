@@ -1015,7 +1015,7 @@ export default function ReportsQuantitative() {
                         {showSummaryCols && <TableHead rowSpan={2} className="text-center min-w-[120px] bg-orange-100 dark:bg-orange-900/30 border-r border-border/60 align-middle">
                             <div className="flex flex-col items-center">
                               <span>คะแนนเชิงปริมาณ</span>
-                              <span>(เฉลี่ย /7)</span>
+                              <span>(0-7)</span>
                             </div>
                           </TableHead>}
                       </TableRow>
