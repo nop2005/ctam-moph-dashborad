@@ -895,14 +895,6 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[120px] bg-orange-100 dark:bg-orange-900/30`} style={{
-                        left: left.avgQuantitative
-                      }}>
-                            <div className="flex flex-col items-center">
-                              <span>คะแนนเชิงปริมาณ</span>
-                              <span>(เฉลี่ย /7)</span>
-                            </div>
-                          </TableHead>}
 
                         {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-green-100 dark:bg-green-900/30`} style={{
                         left: left.passedAll17
