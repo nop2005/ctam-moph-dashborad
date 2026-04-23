@@ -1072,6 +1072,17 @@ export default function ReportsQuantitative() {
                               })()}
                             </TableCell>
 
+                            {showSummaryCols && <TableCell className="text-center font-medium bg-orange-50 dark:bg-orange-900/20 min-w-[120px]">
+                              {(() => {
+                                let percentage: number | null = null;
+                                if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
+                                  percentage = row.hospitalCount > 0 ? (row.hospitalsPassedAll17 as number) / row.hospitalCount * 100 : null;
+                                }
+                                const score10 = percentageToScore10(percentage);
+                                return score10 !== null ? (score10 * 0.7).toFixed(2) : '-';
+                              })()}
+                            </TableCell>}
+
                           </TableRow>;
                     })}
                     </TableBody>
