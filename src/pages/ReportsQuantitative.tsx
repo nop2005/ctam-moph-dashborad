@@ -1025,17 +1025,8 @@ export default function ReportsQuantitative() {
                             รพ. M2 F1-F3
                           </TableHead>}
 
-                        {isHospitalLevel && <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[110px] bg-orange-100 dark:bg-orange-900/30 align-middle`} style={{
-                        left: left.unitQuantScore
-                      }}>
-                            <div className="flex flex-col items-center">
-                              <span>คะแนนที่ได้</span>
-                              <span>(เต็ม 7)</span>
-                            </div>
-                          </TableHead>}
-
                         {isHospitalLevel && <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[110px] bg-green-100 dark:bg-green-900/30 align-middle`} style={{
-                        left: left.unitPassedItems
+                        left: left.unitQuantScore
                       }}>
                             <div className="flex flex-col items-center">
                               <span>ข้อที่ผ่าน</span>
