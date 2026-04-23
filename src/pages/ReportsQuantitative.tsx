@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { TrendingUp, Filter, Building2, MapPin, ArrowLeft, UserCircle, Briefcase, Info } from 'lucide-react';
+import { TrendingUp, Filter, Building2, MapPin, ArrowLeft, UserCircle, Briefcase, HelpCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
@@ -1052,7 +1052,7 @@ export default function ReportsQuantitative() {
                               <button type="button" className="flex flex-col items-center gap-1 mx-auto hover:underline cursor-pointer">
                                 <span className="inline-flex items-center gap-1">
                                   คะแนน (0-10)
-                                  <Info className="h-3 w-3 text-muted-foreground" />
+                                  <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
                                 </span>
                               </button>
                             </PopoverTrigger>
