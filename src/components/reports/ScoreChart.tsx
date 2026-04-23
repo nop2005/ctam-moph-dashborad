@@ -55,6 +55,9 @@ interface ScoreChartProps {
   selectedFiscalYear?: string;
   canDrillToProvince?: (regionId: string) => boolean;
   canDrillToHospital?: (provinceId: string) => boolean;
+  /** Override aggregated total scores per region/province (e.g. quant7 + avgImpact). */
+  regionScoreOverrides?: Map<string, number>;
+  provinceScoreOverrides?: Map<string, number>;
 }
 
 
