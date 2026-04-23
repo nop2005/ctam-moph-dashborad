@@ -1335,7 +1335,9 @@ export default function ReportsQuantitative() {
                       const m2fPct = m2fTotal > 0 ? Math.round((m2fPassed / m2fTotal) * 100) : 0;
                       const m2fScore10 = m2fTotal > 0 ? percentageToScore10((m2fPassed / m2fTotal) * 100) : null;
 
-                      const overallPct = allHospitalCount > 0 ? (allPassedAll17 / allHospitalCount) * 100 : (pctList.length > 0 ? pctList.reduce((a,b) => a+b, 0) / pctList.length : null);
+                      const overallPct = isHospitalLevel
+                        ? (hlTotalUnits > 0 ? (hlPassed17Units / hlTotalUnits) * 100 : null)
+                        : (allHospitalCount > 0 ? (allPassedAll17 / allHospitalCount) * 100 : (pctList.length > 0 ? pctList.reduce((a,b) => a+b, 0) / pctList.length : null));
                       const overallScore10 = percentageToScore10(overallPct);
                       const colorClass = overallPct === null ? '' : overallPct === 100 ? '[&>div]:bg-green-500' : overallPct >= 50 ? '[&>div]:bg-yellow-500' : '[&>div]:bg-red-500';
 
