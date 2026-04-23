@@ -598,6 +598,8 @@ export default function Reports() {
           selectedFiscalYear={selectedFiscalYear} 
           canDrillToProvince={canDrillToProvince} 
           canDrillToHospital={canDrillToHospital} 
+          regionScoreOverrides={regionTotalScoreMap}
+          provinceScoreOverrides={provinceTotalScoreMap}
         />
 
         {/* Dynamic Reports Table based on drill level */}
