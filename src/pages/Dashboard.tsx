@@ -1395,9 +1395,21 @@ export default function Dashboard() {
                         <Badge className={status.className}>{status.label}</Badge>
                       </TableCell>
                       <TableCell>
-                        {assessment.total_score !== null 
-                          ? Number(assessment.total_score).toFixed(2)
-                          : '-'}
+                        {(() => {
+                          if (assessment.total_score !== null && assessment.total_score !== undefined) {
+                            return Number(assessment.total_score).toFixed(2);
+                          }
+                          const unitId = (assessment.hospital_id || assessment.health_office_id) as string | null;
+                          const fallback = unitId ? fallbackScoreByUnit.get(unitId) : undefined;
+                          if (fallback !== undefined) {
+                            return (
+                              <span title="คะแนนล่าสุดที่บันทึกไว้ (ครั้งก่อน)">
+                                {fallback.toFixed(2)}
+                              </span>
+                            );
+                          }
+                          return '-';
+                        })()}
                       </TableCell>
                       <TableCell>
                         {format(new Date(assessment.created_at), 'd MMM yyyy', { locale: th })}
