@@ -395,9 +395,24 @@ export default function ReportsQuantitative() {
           ? quantScores.reduce((s, v) => s + v, 0) / quantScores.length
           : null;
 
-        const countMSA = regionHospitals.filter(h => ['M1', 'A', 'S'].includes((h.hospital_type || '').toUpperCase())).length;
-        const countM2F = regionHospitals.filter(h => ['M2', 'F1', 'F2', 'F3'].includes((h.hospital_type || '').toUpperCase())).length;
+        const unitPassedAll17 = (unitId: string) => {
+          const latestAssessmentId = latestApprovedByUnit.get(unitId)?.id;
+          if (!latestAssessmentId) return false;
+          return categories.every(cat => {
+            const catItems = filteredAssessmentItems.filter(
+              item => item.assessment_id === latestAssessmentId && item.category_id === cat.id
+            );
+            return catItems.some(item => Number(item.score) === 1);
+          });
+        };
+
+        const msaHospitals = regionHospitals.filter(h => ['M1', 'A', 'S'].includes((h.hospital_type || '').toUpperCase()));
+        const m2fHospitals = regionHospitals.filter(h => ['M2', 'F1', 'F2', 'F3'].includes((h.hospital_type || '').toUpperCase()));
+        const countMSA = msaHospitals.length;
+        const countM2F = m2fHospitals.length;
         const countOffices = regionHealthOffices.length;
+        const passedMSAOffices = [...msaHospitals.map(h => h.id), ...regionHealthOffices.map(o => o.id)].filter(unitPassedAll17).length;
+        const passedM2F = m2fHospitals.map(h => h.id).filter(unitPassedAll17).length;
 
         return {
           id: region.id,
@@ -409,6 +424,8 @@ export default function ReportsQuantitative() {
           countMSA,
           countM2F,
           countOffices,
+          passedMSAOffices,
+          passedM2F,
           avgQuantitativeScore,
           categoryAverages
         };
