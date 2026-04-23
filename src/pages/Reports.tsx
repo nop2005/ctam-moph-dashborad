@@ -114,6 +114,8 @@ export default function Reports() {
   const [healthOffices, setHealthOffices] = useState<HealthOffice[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [fiscalYears, setFiscalYears] = useState<number[]>([]);
+  const [categories, setCategories] = useState<{ id: string }[]>([]);
+  const [assessmentItems, setAssessmentItems] = useState<{ id: string; assessment_id: string; category_id: string; score: number | string | null }[]>([]);
 
   // Fiscal year filter
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
@@ -200,6 +202,45 @@ export default function Reports() {
         } else {
           setAssessments((assessmentsData as unknown as Assessment[]) || []);
         }
+
+        // Fetch CTAM categories + assessment items so we can compute "คะแนนเชิงปริมาณ"
+        // using the SAME formula as /reports/quantitative:
+        //   score10 = percentageToScore10( unitsPassedAll17 / totalUnits * 100 )
+        //   score7  = score10 * 0.7
+        const fetchAllPaged = async <T,>(
+          builder: (from: number, to: number) => Promise<{ data: T[] | null; error: any }>
+        ): Promise<T[]> => {
+          const pageSize = 1000;
+          let from = 0;
+          const all: T[] = [];
+          // eslint-disable-next-line no-constant-condition
+          while (true) {
+            const { data: chunk, error } = await builder(from, from + pageSize - 1);
+            if (error) {
+              console.error('Pagination error:', error);
+              break;
+            }
+            const list = (chunk || []) as T[];
+            all.push(...list);
+            if (list.length < pageSize) break;
+            from += pageSize;
+          }
+          return all;
+        };
+
+        const [categoriesRes, itemsAll] = await Promise.all([
+          supabase.from('ctam_categories').select('id'),
+          fetchAllPaged<{ id: string; assessment_id: string; category_id: string; score: number | string | null }>(
+            async (from, to) =>
+              await supabase
+                .from('assessment_items')
+                .select('id, assessment_id, category_id, score')
+                .range(from, to)
+          ),
+        ]);
+
+        setCategories((categoriesRes.data as { id: string }[] | null) || []);
+        setAssessmentItems(itemsAll);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
@@ -336,7 +377,53 @@ export default function Reports() {
     };
   };
 
-  // Calculate statistics based on drill level (including health offices)
+  // ====================================================================
+  // คะแนนเชิงปริมาณ (เต็ม 7) — ใช้สูตรเดียวกับหน้า /reports/quantitative
+  //   percentage = (units passed all 17 categories) / (total units) * 100
+  //   score10 = percentageToScore10(percentage)
+  //   score7  = score10 * 0.7
+  // ====================================================================
+  const filteredAssessmentItems = useMemo(() => {
+    const ids = new Set(filteredAssessments.map(a => a.id));
+    return assessmentItems.filter(it => ids.has(it.assessment_id));
+  }, [assessmentItems, filteredAssessments]);
+
+  const percentageToScore10 = (percentage: number | null): number | null => {
+    if (percentage === null || percentage === undefined || isNaN(percentage)) return null;
+    if (percentage >= 80) return 10;
+    if (percentage >= 75) return 9;
+    if (percentage >= 70) return 8;
+    if (percentage >= 65) return 7;
+    if (percentage >= 60) return 6;
+    if (percentage >= 55) return 5;
+    if (percentage >= 50) return 4;
+    if (percentage >= 45) return 3;
+    if (percentage >= 40) return 2;
+    if (percentage >= 35) return 1;
+    return 0;
+  };
+
+  const unitPassedAll17 = (unitId: string): boolean => {
+    const latestAssessmentId = latestApprovedByUnit.get(unitId)?.id;
+    if (!latestAssessmentId) return false;
+    if (categories.length === 0) return false;
+    return categories.every(cat => {
+      const catItems = filteredAssessmentItems.filter(
+        item => item.assessment_id === latestAssessmentId && item.category_id === cat.id
+      );
+      return catItems.some(item => Number(item.score) === 1);
+    });
+  };
+
+  // เต็ม 7 score for an arbitrary set of unit IDs (hospitals + health offices)
+  const computeQuantScore7 = (unitIds: string[]): number | null => {
+    if (unitIds.length === 0) return null;
+    const passed = unitIds.filter(unitPassedAll17).length;
+    const percentage = (passed / unitIds.length) * 100;
+    const score10 = percentageToScore10(percentage);
+    return score10 !== null ? score10 * 0.7 : null;
+  };
+
   // Use latestApprovedAssessments for "completed" count to be consistent with Dashboard
   const drillStats = useMemo(() => {
     let filteredHospitals: Hospital[] = [];
@@ -562,14 +649,8 @@ export default function Reports() {
                         ...regionHealthOffices.map(ho => ho.id),
                       ];
                       const regionResolvedScores = regionUnitIds.map(getResolvedScores);
-                      // คะแนนเชิงปริมาณ: ใช้เฉพาะ latest approved assessment (ตรงกับหน้าคะแนนเชิงปริมาณ /7)
-                      const quantitativeScores = regionUnitIds
-                        .map(uid => latestApprovedByUnit.get(uid))
-                        .filter(a => a && a.quantitative_score !== null && a.quantitative_score !== undefined)
-                        .map(a => Number(a!.quantitative_score));
-                      const avgQuantitative = quantitativeScores.length > 0
-                        ? quantitativeScores.reduce((sum, score) => sum + score, 0) / quantitativeScores.length
-                        : null;
+                      // คะแนนเชิงปริมาณ (เต็ม 7): คำนวณด้วยสูตรเดียวกับหน้า /reports/quantitative
+                      const avgQuantitative = computeQuantScore7(regionUnitIds);
                       const impactScores = regionResolvedScores
                         .map(score => score.impact)
                         .filter((score): score is number => score !== null);
@@ -648,14 +729,8 @@ export default function Reports() {
                         ...provinceHealthOffices.map(ho => ho.id),
                       ];
                       const provinceResolvedScores = provinceUnitIds.map(getResolvedScores);
-                      // คะแนนเชิงปริมาณ: ใช้เฉพาะ latest approved assessment (ตรงกับหน้าคะแนนเชิงปริมาณ /7)
-                      const quantitativeScores = provinceUnitIds
-                        .map(uid => latestApprovedByUnit.get(uid))
-                        .filter(a => a && a.quantitative_score !== null && a.quantitative_score !== undefined)
-                        .map(a => Number(a!.quantitative_score));
-                      const avgQuantitative = quantitativeScores.length > 0
-                        ? quantitativeScores.reduce((sum, score) => sum + score, 0) / quantitativeScores.length
-                        : null;
+                      // คะแนนเชิงปริมาณ (เต็ม 7): คำนวณด้วยสูตรเดียวกับหน้า /reports/quantitative
+                      const avgQuantitative = computeQuantScore7(provinceUnitIds);
                       const impactScores = provinceResolvedScores
                         .map(score => score.impact)
                         .filter((score): score is number => score !== null);
