@@ -1102,7 +1102,7 @@ export default function ReportsQuantitative() {
                                   left: left.countMSAOfficesScore,
                                   minWidth: sticky.countMSAOfficesScore
                                 }}>
-                                  {score10 !== null ? `${score10}/7` : '-'}
+                                  {score10 !== null ? `${score10}/${(score10 * 0.7).toFixed(1)}` : '-'}
                                 </TableCell>
                               </>;
                             })()}
