@@ -1124,7 +1124,13 @@ export default function ReportsQuantitative() {
                                   left: left.countMSAOfficesScore,
                                   minWidth: sticky.countMSAOfficesScore
                                 }}>
-                                  {score10 !== null ? `${score10}/${(score10 * 0.7).toFixed(1)}` : '-'}
+                                  {score10 !== null ? `${score10}` : '-'}
+                                </TableCell>
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                  left: left.countMSAOfficesScore7,
+                                  minWidth: sticky.countMSAOfficesScore7
+                                }}>
+                                  {score10 !== null ? (score10 * 0.7).toFixed(1) : '-'}
                                 </TableCell>
                               </>;
                             })()}
