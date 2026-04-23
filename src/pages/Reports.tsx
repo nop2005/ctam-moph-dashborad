@@ -114,6 +114,8 @@ export default function Reports() {
   const [healthOffices, setHealthOffices] = useState<HealthOffice[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [fiscalYears, setFiscalYears] = useState<number[]>([]);
+  const [categories, setCategories] = useState<{ id: string }[]>([]);
+  const [assessmentItems, setAssessmentItems] = useState<{ id: string; assessment_id: string; category_id: string; score: number | string | null }[]>([]);
 
   // Fiscal year filter
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(getCurrentFiscalYear().toString());
@@ -200,6 +202,45 @@ export default function Reports() {
         } else {
           setAssessments((assessmentsData as unknown as Assessment[]) || []);
         }
+
+        // Fetch CTAM categories + assessment items so we can compute "คะแนนเชิงปริมาณ"
+        // using the SAME formula as /reports/quantitative:
+        //   score10 = percentageToScore10( unitsPassedAll17 / totalUnits * 100 )
+        //   score7  = score10 * 0.7
+        const fetchAllPaged = async <T,>(
+          builder: (from: number, to: number) => Promise<{ data: T[] | null; error: any }>
+        ): Promise<T[]> => {
+          const pageSize = 1000;
+          let from = 0;
+          const all: T[] = [];
+          // eslint-disable-next-line no-constant-condition
+          while (true) {
+            const { data: chunk, error } = await builder(from, from + pageSize - 1);
+            if (error) {
+              console.error('Pagination error:', error);
+              break;
+            }
+            const list = (chunk || []) as T[];
+            all.push(...list);
+            if (list.length < pageSize) break;
+            from += pageSize;
+          }
+          return all;
+        };
+
+        const [categoriesRes, itemsAll] = await Promise.all([
+          supabase.from('ctam_categories').select('id'),
+          fetchAllPaged<{ id: string; assessment_id: string; category_id: string; score: number | string | null }>(
+            (from, to) =>
+              supabase
+                .from('assessment_items')
+                .select('id, assessment_id, category_id, score')
+                .range(from, to)
+          ),
+        ]);
+
+        setCategories((categoriesRes.data as { id: string }[] | null) || []);
+        setAssessmentItems(itemsAll);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
