@@ -879,7 +879,12 @@ export default function ReportsQuantitative() {
                     <ArrowLeft className="w-4 h-4" />
                     ย้อนกลับ
                   </button>}
-                <CardTitle className="text-lg">{getTitle()}</CardTitle>
+                <CardTitle className="text-lg">
+                  {getTitle()}
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    ( ผ่านเกณฑ์ไม่น้อยกว่าร้อยละ 80 รอบ 6 เดือน รพ. M1 A S สสจ. เขต และ รอบ 10 เดือน รพช. รอบ 1 ปี ผ่าน ร้อยละ 100 )
+                  </span>
+                </CardTitle>
               </div>
               
               {/* Color Filter Buttons - only show at province level (hospital list) */}
