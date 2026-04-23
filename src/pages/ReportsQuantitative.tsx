@@ -894,8 +894,10 @@ export default function ReportsQuantitative() {
               name: 180,
               hospitalCount: 80,
               hospitalsAssessed: 100,
-              countMSAOffices: 170,
-              countM2F: 150,
+              countMSAOffices: 130,
+              countMSAOfficesScore: 90,
+              countM2F: 120,
+              countM2FScore: 90,
               avgQuantitative: 120,
               passedAll17: 100,
               unitQuantScore: 110,
@@ -907,11 +909,13 @@ export default function ReportsQuantitative() {
               hospitalCount: sticky.name,
               hospitalsAssessed: sticky.name + sticky.hospitalCount,
               countMSAOffices: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed,
-              countM2F: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices,
-              passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countM2F,
+              countMSAOfficesScore: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices,
+              countM2F: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore,
+              countM2FScore: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countM2F,
+              passedAll17: sticky.name + sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countM2F + sticky.countM2FScore,
               unitQuantScore: sticky.name,
               unitPassedItems: sticky.name + sticky.unitQuantScore,
-              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countM2F + sticky.passedAll17 : isHospitalLevel ? sticky.unitQuantScore + sticky.unitPassedItems : 0)
+              percentGreen: sticky.name + (showSummaryCols ? sticky.hospitalCount + sticky.hospitalsAssessed + sticky.countMSAOffices + sticky.countMSAOfficesScore + sticky.countM2F + sticky.countM2FScore + sticky.passedAll17 : isHospitalLevel ? sticky.unitQuantScore + sticky.unitPassedItems : 0)
             } as const;
             const stickyHeaderBase = "sticky z-30 border-r border-border/60";
             const stickyCellBase = "sticky z-20 border-r border-border/60 bg-background";
@@ -947,12 +951,21 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[140px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[130px] bg-purple-100 dark:bg-purple-900/30`} style={{
                         left: left.countMSAOffices
                       }}>
                             <div className="flex flex-col items-center">
-                              <span>จำนวน รพ. M1 A S</span>
-                              <span>+ สสจ./สนง.เขต</span>
+                              <span>รพ. M1 A S + สสจ./สนง.เขต</span>
+                              <span className="text-xs">(ผ่าน/ทั้งหมด)</span>
+                            </div>
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        left: left.countMSAOfficesScore
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>คะแนน</span>
+                              <span className="text-xs">(เต็ม 7)</span>
                             </div>
                           </TableHead>}
 
@@ -960,8 +973,17 @@ export default function ReportsQuantitative() {
                         left: left.countM2F
                       }}>
                             <div className="flex flex-col items-center">
-                              <span>จำนวน รพ.</span>
-                              <span>M2 F1-F3</span>
+                              <span>รพ. M2 F1-F3</span>
+                              <span className="text-xs">(ผ่าน/ทั้งหมด)</span>
+                            </div>
+                          </TableHead>}
+
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-purple-100 dark:bg-purple-900/30`} style={{
+                        left: left.countM2FScore
+                      }}>
+                            <div className="flex flex-col items-center">
+                              <span>คะแนน</span>
+                              <span className="text-xs">(เต็ม 7)</span>
                             </div>
                           </TableHead>}
 
@@ -1068,24 +1090,42 @@ export default function ReportsQuantitative() {
                               const total = ('countMSA' in row ? (row as any).countMSA : 0) + ('countOffices' in row ? (row as any).countOffices : 0);
                               const passed = 'passedMSAOffices' in row ? (row as any).passedMSAOffices : 0;
                               const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
-                              return <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
-                                left: left.countMSAOffices,
-                                minWidth: sticky.countMSAOffices
-                              }}>
-                                {total > 0 ? `${passed}/${total} (${pct}%)` : `0/0`}
-                              </TableCell>;
+                              const score10 = total > 0 ? percentageToScore10((passed / total) * 100) : null;
+                              return <>
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                  left: left.countMSAOffices,
+                                  minWidth: sticky.countMSAOffices
+                                }}>
+                                  {total > 0 ? `${passed}/${total} (${pct}%)` : `0/0`}
+                                </TableCell>
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                  left: left.countMSAOfficesScore,
+                                  minWidth: sticky.countMSAOfficesScore
+                                }}>
+                                  {score10 !== null ? `${score10}/7` : '-'}
+                                </TableCell>
+                              </>;
                             })()}
 
                             {showSummaryCols && (() => {
                               const total = 'countM2F' in row ? (row as any).countM2F : 0;
                               const passed = 'passedM2F' in row ? (row as any).passedM2F : 0;
                               const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
-                              return <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
-                                left: left.countM2F,
-                                minWidth: sticky.countM2F
-                              }}>
-                                {total > 0 ? `${passed}/${total} (${pct}%)` : `0/0`}
-                              </TableCell>;
+                              const score10 = total > 0 ? percentageToScore10((passed / total) * 100) : null;
+                              return <>
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                  left: left.countM2F,
+                                  minWidth: sticky.countM2F
+                                }}>
+                                  {total > 0 ? `${passed}/${total} (${pct}%)` : `0/0`}
+                                </TableCell>
+                                <TableCell className={`${stickyCellBase} text-center font-medium bg-purple-50 dark:bg-purple-900/20`} style={{
+                                  left: left.countM2FScore,
+                                  minWidth: sticky.countM2FScore
+                                }}>
+                                  {score10 !== null ? `${score10}/7` : '-'}
+                                </TableCell>
+                              </>;
                             })()}
 
                             {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-green-50 dark:bg-green-900/20`} style={{
