@@ -1246,6 +1246,98 @@ export default function ReportsQuantitative() {
 
                           </TableRow>;
                     })}
+                    {filteredTableData.length > 0 && (() => {
+                      // Average row across all displayed rows (provinces/regions/units)
+                      const rows = filteredTableData;
+
+                      // MSA + Offices group average
+                      let msaTotal = 0, msaPassed = 0;
+                      let m2fTotal = 0, m2fPassed = 0;
+                      let allHospitalCount = 0, allPassedAll17 = 0, allHospitalsAssessed = 0;
+                      const pctList: number[] = [];
+
+                      rows.forEach(row => {
+                        const cMSA = ('countMSA' in row ? (row as any).countMSA : 0) + ('countOffices' in row ? (row as any).countOffices : 0);
+                        const pMSA = 'passedMSAOffices' in row ? (row as any).passedMSAOffices : 0;
+                        msaTotal += cMSA; msaPassed += pMSA;
+
+                        const cM2F = 'countM2F' in row ? (row as any).countM2F : 0;
+                        const pM2F = 'passedM2F' in row ? (row as any).passedM2F : 0;
+                        m2fTotal += cM2F; m2fPassed += pM2F;
+
+                        allHospitalCount += row.hospitalCount || 0;
+                        allPassedAll17 += 'hospitalsPassedAll17' in row ? (row as any).hospitalsPassedAll17 : 0;
+                        allHospitalsAssessed += 'hospitalsAssessed' in row ? (row as any).hospitalsAssessed : 0;
+
+                        const passedC = row.categoryAverages.filter(c => c.average === 1).length;
+                        const totalC = row.categoryAverages.filter(c => c.average !== null).length;
+                        if (totalC > 0) pctList.push(passedC / totalC * 100);
+                      });
+
+                      const msaPct = msaTotal > 0 ? Math.round((msaPassed / msaTotal) * 100) : 0;
+                      const msaScore10 = msaTotal > 0 ? percentageToScore10((msaPassed / msaTotal) * 100) : null;
+                      const m2fPct = m2fTotal > 0 ? Math.round((m2fPassed / m2fTotal) * 100) : 0;
+                      const m2fScore10 = m2fTotal > 0 ? percentageToScore10((m2fPassed / m2fTotal) * 100) : null;
+
+                      const overallPct = allHospitalCount > 0 ? (allPassedAll17 / allHospitalCount) * 100 : (pctList.length > 0 ? pctList.reduce((a,b) => a+b, 0) / pctList.length : null);
+                      const overallScore10 = percentageToScore10(overallPct);
+                      const colorClass = overallPct === null ? '' : overallPct === 100 ? '[&>div]:bg-green-500' : overallPct >= 50 ? '[&>div]:bg-yellow-500' : '[&>div]:bg-red-500';
+
+                      const fmt7 = (s: number | null) => s !== null ? (Number.isInteger(s * 0.7) ? String(s * 0.7) : (s * 0.7).toFixed(1)) : '-';
+
+                      return (
+                        <TableRow className="bg-muted font-bold border-t-2 border-primary/40">
+                          <TableCell className={`${stickyCellBase} font-bold bg-muted`} style={{ left: left.name, minWidth: sticky.name }}>
+                            ค่าเฉลี่ย
+                          </TableCell>
+                          {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-bold bg-muted`} style={{ left: left.hospitalCount, minWidth: sticky.hospitalCount }}>{allHospitalCount}</TableCell>}
+                          {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-bold bg-blue-100 dark:bg-blue-900/30`} style={{ left: left.hospitalsAssessed, minWidth: sticky.hospitalsAssessed }}>{allHospitalsAssessed}</TableCell>}
+                          {showSummaryCols && <>
+                            <TableCell className={`${stickyCellBase} text-center font-bold bg-amber-100 dark:bg-amber-900/30`} style={{ left: left.countMSAOffices, minWidth: sticky.countMSAOffices }}>
+                              {msaTotal > 0 ? `${msaPassed}/${msaTotal} (${msaPct}%)` : '0/0'}
+                            </TableCell>
+                            <TableCell className={`${stickyCellBase} text-center font-bold bg-amber-100 dark:bg-amber-900/30`} style={{ left: left.countMSAOfficesScore, minWidth: sticky.countMSAOfficesScore }}>
+                              {msaScore10 !== null ? `${msaScore10}` : '-'}
+                            </TableCell>
+                            <TableCell className={`${stickyCellBase} text-center font-bold bg-amber-100 dark:bg-amber-900/30`} style={{ left: left.countMSAOfficesScore7, minWidth: sticky.countMSAOfficesScore7 }}>
+                              {fmt7(msaScore10)}
+                            </TableCell>
+                            <TableCell className={`${stickyCellBase} text-center font-bold bg-rose-100 dark:bg-rose-900/30`} style={{ left: left.countM2F, minWidth: sticky.countM2F }}>
+                              {m2fTotal > 0 ? `${m2fPassed}/${m2fTotal} (${m2fPct}%)` : '0/0'}
+                            </TableCell>
+                            <TableCell className={`${stickyCellBase} text-center font-bold bg-rose-100 dark:bg-rose-900/30`} style={{ left: left.countM2FScore, minWidth: sticky.countM2FScore }}>
+                              {m2fScore10 !== null ? `${m2fScore10}` : '-'}
+                            </TableCell>
+                            <TableCell className={`${stickyCellBase} text-center font-bold bg-rose-100 dark:bg-rose-900/30`} style={{ left: left.countM2FScore7, minWidth: sticky.countM2FScore7 }}>
+                              {fmt7(m2fScore10)}
+                            </TableCell>
+                            <TableCell className={`${stickyCellBase} text-center font-bold bg-green-100 dark:bg-green-900/30`} style={{ left: left.passedAll17, minWidth: sticky.passedAll17 }}>
+                              {allPassedAll17}
+                            </TableCell>
+                          </>}
+                          {isHospitalLevel && <TableCell className={`${stickyCellBase} text-center font-bold bg-orange-100 dark:bg-orange-900/30`} style={{ left: left.unitQuantScore, minWidth: sticky.unitQuantScore }}>-</TableCell>}
+                          {isHospitalLevel && <TableCell className={`${stickyCellBase} text-center font-bold bg-green-100 dark:bg-green-900/30`} style={{ left: left.unitPassedItems, minWidth: sticky.unitPassedItems }}>-</TableCell>}
+                          <TableCell className={`${stickyCellBase} text-center bg-primary/10 font-bold`} style={{ left: left.percentGreen, minWidth: 200 }}>
+                            {overallPct !== null ? (
+                              <div className="flex items-center gap-2">
+                                <Progress value={overallPct} className={`h-4 flex-1 ${colorClass}`} />
+                                <span className="text-sm font-bold min-w-[50px] text-right">{overallPct.toFixed(1)}%</span>
+                              </div>
+                            ) : '-'}
+                          </TableCell>
+                          <TableCell className="text-center font-bold bg-muted">
+                            {overallScore10 !== null ? (
+                              <span className={`inline-flex items-center justify-center w-9 h-9 rounded-full font-bold text-sm ${getScore10ColorClass(overallScore10)}`}>
+                                {overallScore10}
+                              </span>
+                            ) : <span className="text-muted-foreground">-</span>}
+                          </TableCell>
+                          {showSummaryCols && <TableCell className="text-center font-bold bg-orange-100 dark:bg-orange-900/30 min-w-[120px]">
+                            {overallScore10 !== null ? (overallScore10 * 0.7).toFixed(2) : '-'}
+                          </TableCell>}
+                        </TableRow>
+                      );
+                    })()}
                     </TableBody>
                   </Table>
                 </div>
