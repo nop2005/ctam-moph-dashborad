@@ -961,6 +961,31 @@ export default function Dashboard() {
   const safePage = Math.min(currentPage, totalPages);
   const pagedAssessments = filteredAssessments.slice((safePage - 1) * pageSize, safePage * pageSize);
 
+  // Fallback score map: for each unit, the most recent assessment that has a real total_score.
+  // Used when the current/latest assessment's total_score is null (e.g., a newly approved round
+  // whose scores haven't been computed yet) — show the prior valid score instead of "-".
+  const parsePeriod = (p?: string | null) => {
+    if (!p) return 0;
+    const m = String(p).match(/\d+/);
+    return m ? Number(m[0]) : 0;
+  };
+  const fallbackScoreByUnit = new Map<string, number>();
+  const sortedForFallback = [...assessments]
+    .filter(a => a.total_score !== null && a.total_score !== undefined)
+    .sort((a, b) => {
+      if (a.fiscal_year !== b.fiscal_year) return b.fiscal_year - a.fiscal_year;
+      const pd = parsePeriod(b.assessment_period) - parsePeriod(a.assessment_period);
+      if (pd !== 0) return pd;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  for (const a of sortedForFallback) {
+    const unitId = (a.hospital_id || a.health_office_id) as string | null;
+    if (!unitId) continue;
+    if (!fallbackScoreByUnit.has(unitId)) {
+      fallbackScoreByUnit.set(unitId, Number(a.total_score));
+    }
+  }
+
   // Provinces visible in current region filter
   const visibleProvinces = provincesList.filter(p =>
     regionFilter === 'all' ? true : p.health_region_id === regionFilter
@@ -1370,9 +1395,21 @@ export default function Dashboard() {
                         <Badge className={status.className}>{status.label}</Badge>
                       </TableCell>
                       <TableCell>
-                        {assessment.total_score !== null 
-                          ? Number(assessment.total_score).toFixed(2)
-                          : '-'}
+                        {(() => {
+                          if (assessment.total_score !== null && assessment.total_score !== undefined) {
+                            return Number(assessment.total_score).toFixed(2);
+                          }
+                          const unitId = (assessment.hospital_id || assessment.health_office_id) as string | null;
+                          const fallback = unitId ? fallbackScoreByUnit.get(unitId) : undefined;
+                          if (fallback !== undefined) {
+                            return (
+                              <span title="คะแนนล่าสุดที่บันทึกไว้ (ครั้งก่อน)">
+                                {fallback.toFixed(2)}
+                              </span>
+                            );
+                          }
+                          return '-';
+                        })()}
                       </TableCell>
                       <TableCell>
                         {format(new Date(assessment.created_at), 'd MMM yyyy', { locale: th })}
