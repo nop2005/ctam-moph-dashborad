@@ -377,7 +377,53 @@ export default function Reports() {
     };
   };
 
-  // Calculate statistics based on drill level (including health offices)
+  // ====================================================================
+  // คะแนนเชิงปริมาณ (เต็ม 7) — ใช้สูตรเดียวกับหน้า /reports/quantitative
+  //   percentage = (units passed all 17 categories) / (total units) * 100
+  //   score10 = percentageToScore10(percentage)
+  //   score7  = score10 * 0.7
+  // ====================================================================
+  const filteredAssessmentItems = useMemo(() => {
+    const ids = new Set(filteredAssessments.map(a => a.id));
+    return assessmentItems.filter(it => ids.has(it.assessment_id));
+  }, [assessmentItems, filteredAssessments]);
+
+  const percentageToScore10 = (percentage: number | null): number | null => {
+    if (percentage === null || percentage === undefined || isNaN(percentage)) return null;
+    if (percentage >= 80) return 10;
+    if (percentage >= 75) return 9;
+    if (percentage >= 70) return 8;
+    if (percentage >= 65) return 7;
+    if (percentage >= 60) return 6;
+    if (percentage >= 55) return 5;
+    if (percentage >= 50) return 4;
+    if (percentage >= 45) return 3;
+    if (percentage >= 40) return 2;
+    if (percentage >= 35) return 1;
+    return 0;
+  };
+
+  const unitPassedAll17 = (unitId: string): boolean => {
+    const latestAssessmentId = latestApprovedByUnit.get(unitId)?.id;
+    if (!latestAssessmentId) return false;
+    if (categories.length === 0) return false;
+    return categories.every(cat => {
+      const catItems = filteredAssessmentItems.filter(
+        item => item.assessment_id === latestAssessmentId && item.category_id === cat.id
+      );
+      return catItems.some(item => Number(item.score) === 1);
+    });
+  };
+
+  // เต็ม 7 score for an arbitrary set of unit IDs (hospitals + health offices)
+  const computeQuantScore7 = (unitIds: string[]): number | null => {
+    if (unitIds.length === 0) return null;
+    const passed = unitIds.filter(unitPassedAll17).length;
+    const percentage = (passed / unitIds.length) * 100;
+    const score10 = percentageToScore10(percentage);
+    return score10 !== null ? score10 * 0.7 : null;
+  };
+
   // Use latestApprovedAssessments for "completed" count to be consistent with Dashboard
   const drillStats = useMemo(() => {
     let filteredHospitals: Hospital[] = [];
