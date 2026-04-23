@@ -45,6 +45,8 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { BannerCarousel } from '@/components/BannerCarousel';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
 import {
@@ -180,6 +182,17 @@ export default function Dashboard() {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSentFilter, setEmailSentFilter] = useState<string>('all'); // 'all' | 'sent' | 'not_sent'
 
+  // Search and additional filters
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [provinceFilter, setProvinceFilter] = useState<string>('all');
+  const [regionFilter, setRegionFilter] = useState<string>('all');
+  const [provincesList, setProvincesList] = useState<{ id: string; name: string; health_region_id: string }[]>([]);
+  const [regionsList, setRegionsList] = useState<{ id: string; region_number: number; name: string }[]>([]);
+
+  // Pagination
+  const [pageSize, setPageSize] = useState<number>(20);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
   // Certificate PDF generation
   const { isGenerating: isGeneratingCertificate, fetchAndGenerateCertificate } = useCertificatePdf();
 
@@ -208,6 +221,24 @@ export default function Dashboard() {
 
     fetchFiscalYears();
   }, []);
+
+  // Fetch provinces and regions for filters
+  useEffect(() => {
+    const fetchPlaces = async () => {
+      const [{ data: provs }, { data: regs }] = await Promise.all([
+        supabase.from('provinces').select('id, name, health_region_id').order('name'),
+        supabase.from('health_regions').select('id, region_number, name').order('region_number'),
+      ]);
+      if (provs) setProvincesList(provs);
+      if (regs) setRegionsList(regs);
+    };
+    fetchPlaces();
+  }, []);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, provinceFilter, regionFilter, statusFilter, dataUpdatedFilter, emailSentFilter, selectedFiscalYear, pageSize]);
 
   useEffect(() => {
     let cancelled = false;
@@ -878,29 +909,62 @@ export default function Dashboard() {
     },
   ];
 
-  // Filter assessments based on statusFilter, dataUpdatedFilter, and emailSentFilter
+  // Build province -> region map for region filter
+  const provinceToRegion = new Map(provincesList.map(p => [p.id, p.health_region_id]));
+
+  // Filter assessments based on all filters (search, province, region, status, etc.)
   const filteredAssessments = assessments.filter(assessment => {
-    // Apply fiscal year filter first
     if (selectedFiscalYear !== 'all' && assessment.fiscal_year !== parseInt(selectedFiscalYear)) {
       return false;
     }
-    // Apply data updated filter for central_admin
     if (profile?.role === 'central_admin' && dataUpdatedFilter !== 'all') {
       if (dataUpdatedFilter === 'updated' && !assessment.data_updated) return false;
       if (dataUpdatedFilter === 'not_updated' && assessment.data_updated) return false;
     }
-    // Apply email sent filter for central_admin and regional
     if ((profile?.role === 'central_admin' || profile?.role === 'regional') && emailSentFilter !== 'all') {
       if (emailSentFilter === 'sent' && !(assessment as any).email_sent_at) return false;
       if (emailSentFilter === 'not_sent' && (assessment as any).email_sent_at) return false;
     }
-    // Then apply status filter
+    // Search by hospital/health office name
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const name = ((assessment as any).hospitals?.name || (assessment as any).health_offices?.name || '').toLowerCase();
+      if (!name.includes(q)) return false;
+    }
+    // Province filter
+    if (provinceFilter !== 'all') {
+      const provinceId =
+        (assessment as any).hospitals?.province_id ||
+        (assessment as any).health_offices?.province_id ||
+        null;
+      if (provinceId !== provinceFilter) return false;
+    }
+    // Region filter (derive from province)
+    if (regionFilter !== 'all') {
+      const ho = (assessment as any).health_offices;
+      const provinceId =
+        (assessment as any).hospitals?.province_id ||
+        ho?.province_id ||
+        null;
+      const regionId = ho?.health_region_id || (provinceId ? provinceToRegion.get(provinceId) : null);
+      if (regionId !== regionFilter) return false;
+    }
     if (!statusFilter) return true;
     if (statusFilter === 'approved') {
       return assessment.status === 'approved_regional' || assessment.status === 'completed';
     }
     return assessment.status === statusFilter;
   });
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredAssessments.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const pagedAssessments = filteredAssessments.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  // Provinces visible in current region filter
+  const visibleProvinces = provincesList.filter(p =>
+    regionFilter === 'all' ? true : p.health_region_id === regionFilter
+  );
 
   const hasCachedView = !!profile && dashboardCache.has(getDashboardCacheKey(profile, selectedFiscalYear));
 
@@ -1166,6 +1230,80 @@ export default function Dashboard() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Search & filter row */}
+          <div className="flex flex-col md:flex-row gap-3 mb-4">
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="ค้นหาชื่อโรงพยาบาล / หน่วยงาน..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-9"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted text-muted-foreground"
+                  aria-label="ล้างคำค้นหา"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <Select
+              value={regionFilter}
+              onValueChange={(v) => {
+                setRegionFilter(v);
+                // Reset province if it no longer belongs to selected region
+                if (v !== 'all' && provinceFilter !== 'all') {
+                  const p = provincesList.find(x => x.id === provinceFilter);
+                  if (!p || p.health_region_id !== v) setProvinceFilter('all');
+                }
+              }}
+            >
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="เขตสุขภาพ" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">ทุกเขตสุขภาพ</SelectItem>
+                {regionsList.map(r => (
+                  <SelectItem key={r.id} value={r.id}>
+                    เขตสุขภาพที่ {r.region_number}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={provinceFilter} onValueChange={setProvinceFilter}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="จังหวัด" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">ทุกจังหวัด</SelectItem>
+                {visibleProvinces.map(p => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(searchQuery || regionFilter !== 'all' || provinceFilter !== 'all') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery('');
+                  setRegionFilter('all');
+                  setProvinceFilter('all');
+                }}
+              >
+                <X className="w-4 h-4 mr-1" />
+                ล้างตัวกรอง
+              </Button>
+            )}
+          </div>
+
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -1217,7 +1355,7 @@ export default function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAssessments.map((assessment) => {
+                {pagedAssessments.map((assessment) => {
                   const status = statusLabels[assessment.status] || statusLabels.draft;
                   const emailSentAt = (assessment as any).email_sent_at;
                   return (
@@ -1335,6 +1473,53 @@ export default function Dashboard() {
               </TableBody>
             </Table>
             </TooltipProvider>
+          )}
+
+          {/* Pagination controls */}
+          {filteredAssessments.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>แสดง</span>
+                <Select value={pageSize.toString()} onValueChange={(v) => setPageSize(parseInt(v))}>
+                  <SelectTrigger className="w-[80px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span>
+                  รายการ ({(safePage - 1) * pageSize + 1}-
+                  {Math.min(safePage * pageSize, filteredAssessments.length)} จาก{' '}
+                  {filteredAssessments.length})
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={safePage <= 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  ก่อนหน้า
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  หน้า {safePage} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={safePage >= totalPages}
+                >
+                  ถัดไป
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
