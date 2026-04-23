@@ -182,6 +182,17 @@ export default function Dashboard() {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSentFilter, setEmailSentFilter] = useState<string>('all'); // 'all' | 'sent' | 'not_sent'
 
+  // Search and additional filters
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [provinceFilter, setProvinceFilter] = useState<string>('all');
+  const [regionFilter, setRegionFilter] = useState<string>('all');
+  const [provincesList, setProvincesList] = useState<{ id: string; name: string; health_region_id: string }[]>([]);
+  const [regionsList, setRegionsList] = useState<{ id: string; region_number: number; name: string }[]>([]);
+
+  // Pagination
+  const [pageSize, setPageSize] = useState<number>(20);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
   // Certificate PDF generation
   const { isGenerating: isGeneratingCertificate, fetchAndGenerateCertificate } = useCertificatePdf();
 
