@@ -895,14 +895,6 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[120px] bg-orange-100 dark:bg-orange-900/30`} style={{
-                        left: left.avgQuantitative
-                      }}>
-                            <div className="flex flex-col items-center">
-                              <span>คะแนนเชิงปริมาณ</span>
-                              <span>(เฉลี่ย /7)</span>
-                            </div>
-                          </TableHead>}
 
                         {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-green-100 dark:bg-green-900/30`} style={{
                         left: left.passedAll17
@@ -942,12 +934,19 @@ export default function ReportsQuantitative() {
                             </div>}
                         </TableHead>
 
-                        <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-primary/20`}>
+                        <TableHead className="text-center min-w-[100px] bg-primary/20 border-r border-border/60">
                           <div className="flex flex-col items-center">
                             <span>คะแนน</span>
                             <span>(0-10)</span>
                           </div>
                         </TableHead>
+
+                        {showSummaryCols && <TableHead className="text-center min-w-[120px] bg-orange-100 dark:bg-orange-900/30 border-r border-border/60">
+                            <div className="flex flex-col items-center">
+                              <span>คะแนนเชิงปริมาณ</span>
+                              <span>(เฉลี่ย /7)</span>
+                            </div>
+                          </TableHead>}
 
                       </TableRow>
                     </TableHeader>
@@ -996,19 +995,6 @@ export default function ReportsQuantitative() {
                                 {'hospitalsAssessed' in row ? row.hospitalsAssessed : 0}
                               </TableCell>}
 
-                            {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-orange-50 dark:bg-orange-900/20`} style={{
-                          left: left.avgQuantitative,
-                          minWidth: sticky.avgQuantitative
-                        }}>
-                                {(() => {
-                                  let percentage: number | null = null;
-                                  if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
-                                    percentage = row.hospitalCount > 0 ? (row.hospitalsPassedAll17 as number) / row.hospitalCount * 100 : null;
-                                  }
-                                  const score10 = percentageToScore10(percentage);
-                                  return score10 !== null ? (score10 * 0.7).toFixed(2) : '-';
-                                })()}
-                              </TableCell>}
 
                             {showSummaryCols && <TableCell className={`${stickyCellBase} text-center font-medium bg-green-50 dark:bg-green-900/20`} style={{
                           left: left.passedAll17,
@@ -1085,6 +1071,17 @@ export default function ReportsQuantitative() {
                                 );
                               })()}
                             </TableCell>
+
+                            {showSummaryCols && <TableCell className="text-center font-medium bg-orange-50 dark:bg-orange-900/20 min-w-[120px]">
+                              {(() => {
+                                let percentage: number | null = null;
+                                if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
+                                  percentage = row.hospitalCount > 0 ? (row.hospitalsPassedAll17 as number) / row.hospitalCount * 100 : null;
+                                }
+                                const score10 = percentageToScore10(percentage);
+                                return score10 !== null ? (score10 * 0.7).toFixed(2) : '-';
+                              })()}
+                            </TableCell>}
 
                           </TableRow>;
                     })}
