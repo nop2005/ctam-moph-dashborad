@@ -1421,7 +1421,7 @@ export default function Dashboard() {
                   ดูทั้งหมด
                 </Button>
               )}
-              {!statusFilter && canCreate && (
+              {false && !statusFilter && canCreate && (
                 <Button 
                   variant="outline" 
                   className="mt-4"
