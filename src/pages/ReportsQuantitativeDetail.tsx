@@ -161,10 +161,10 @@ export default function ReportsQuantitativeDetail() {
         setCategories(categoriesRes.data || []);
 
         const assessmentsAll = await fetchAll<Assessment>(
-          supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, quantitative_score, created_at').order('created_at', { ascending: true })
+          supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, quantitative_score, created_at').order('id', { ascending: true })
         );
         const itemsAll = await fetchAll<AssessmentItem>(
-          supabase.from('assessment_items').select('id, assessment_id, category_id, score, created_at').order('created_at', { ascending: true })
+          supabase.from('assessment_items').select('id, assessment_id, category_id, score, created_at').order('id', { ascending: true })
         );
 
         setAssessments(assessmentsAll);

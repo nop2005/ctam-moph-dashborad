@@ -136,10 +136,10 @@ export default function PublicReportsImpact() {
         setHealthOffices(healthOfficesRes.data || []);
 
         const assessmentsAll = await fetchAll<Assessment>(
-          supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, impact_score, created_at').order('created_at', { ascending: true })
+          supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, impact_score, created_at').order('id', { ascending: true })
         );
         const impactScoresAll = await fetchAll<ImpactScore>(
-          supabase.from('impact_scores').select('*').order('created_at', { ascending: true })
+          supabase.from('impact_scores').select('*').order('id', { ascending: true })
         );
 
         setAssessments(assessmentsAll);
