@@ -62,6 +62,7 @@ export default function Assessment() {
   const [submitting, setSubmitting] = useState(false);
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [allFilesAttached, setAllFilesAttached] = useState(false);
+  const [regionalDoneDialogOpen, setRegionalDoneDialogOpen] = useState(false);
 
   const isReadOnly = assessment?.status !== 'draft' && assessment?.status !== 'returned';
   // Regional admin can edit any assessment in their region regardless of status
@@ -331,6 +332,15 @@ export default function Assessment() {
           canEdit={canEdit}
         />
 
+        {/* Regional admin: confirm done editing */}
+        {isRegionalEditor && assessment.status !== 'draft' && assessment.status !== 'returned' && (
+          <div className="flex justify-end">
+            <Button onClick={() => setRegionalDoneDialogOpen(true)}>
+              เสร็จสิ้นการแก้ไข
+            </Button>
+          </div>
+        )}
+
         {/* Approval Workflow Stepper */}
         <ApprovalWorkflow status={assessment.status} />
 
@@ -443,6 +453,49 @@ export default function Assessment() {
               <AlertDialogAction onClick={handleSubmit} disabled={submitting}>
                 {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 ยืนยันส่ง
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Regional Done-Editing Confirmation Dialog */}
+        <AlertDialog open={regionalDoneDialogOpen} onOpenChange={setRegionalDoneDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>ยืนยันการแก้ไขเสร็จสิ้น</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-2">
+                  <p>คะแนนใหม่ของแบบประเมินนี้:</p>
+                  <div className="rounded-md border p-3 bg-muted/50 space-y-1 text-foreground">
+                    <div className="flex justify-between">
+                      <span>เชิงปริมาณ (70%)</span>
+                      <span className="font-semibold">{quantScore.score} / {quantScore.total}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>ผลกระทบ (30%)</span>
+                      <span className="font-semibold">{impactScoreCalc.score} / {impactScoreCalc.total}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1 mt-1">
+                      <span>คะแนนรวม</span>
+                      <span className="font-bold text-primary">{totalScore.score} / {totalScore.total}</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    คะแนนจะถูกบันทึกและอัปเดตในหน้า Dashboard และรายงานทันที
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>แก้ไขต่อ</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setRegionalDoneDialogOpen(false);
+                  invalidateDashboardCache();
+                  navigate('/dashboard');
+                }}
+              >
+                ยืนยันและกลับ Dashboard
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
