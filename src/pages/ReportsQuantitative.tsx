@@ -1253,7 +1253,7 @@ export default function ReportsQuantitative() {
 
                             <TableCell className={`${stickyCellBase} text-center bg-primary/5`} style={{
                           left: left.percentGreen,
-                          minWidth: 200
+                          minWidth: 170
                         }}>
                               {(() => {
                             let percentage: number;
@@ -1388,7 +1388,7 @@ export default function ReportsQuantitative() {
                           </>}
                           {isHospitalLevel && <TableCell className={`${stickyCellBase} text-center font-bold bg-orange-100 dark:bg-orange-900/30`} style={{ left: left.unitQuantScore, minWidth: sticky.unitQuantScore }}>-</TableCell>}
                           {isHospitalLevel && <TableCell className={`${stickyCellBase} text-center font-bold bg-green-100 dark:bg-green-900/30`} style={{ left: left.unitPassedItems, minWidth: sticky.unitPassedItems }}>-</TableCell>}
-                          <TableCell className={`${stickyCellBase} text-center bg-primary/10 font-bold`} style={{ left: left.percentGreen, minWidth: 200 }}>
+                          <TableCell className={`${stickyCellBase} text-center bg-primary/10 font-bold`} style={{ left: left.percentGreen, minWidth: 170 }}>
                             {overallPct !== null ? (
                               <div className="flex items-center gap-2">
                                 <Progress value={overallPct} className={`h-4 flex-1 ${colorClass}`} />
