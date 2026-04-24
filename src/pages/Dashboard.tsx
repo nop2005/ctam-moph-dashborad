@@ -1237,7 +1237,7 @@ export default function Dashboard() {
                 </Select>
               </>
             )}
-            {canCreate && (
+            {false && canCreate && (
               <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -1421,7 +1421,7 @@ export default function Dashboard() {
                   ดูทั้งหมด
                 </Button>
               )}
-              {!statusFilter && canCreate && (
+              {false && !statusFilter && canCreate && (
                 <Button 
                   variant="outline" 
                   className="mt-4"
@@ -1492,7 +1492,14 @@ export default function Dashboard() {
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           {(() => {
-                            const showEdit = assessment.status === 'draft' || profile?.role === 'regional';
+                            const isUnitOwner = profile?.role === 'hospital_it' || profile?.role === 'health_office';
+                            const showEdit =
+                              assessment.status === 'draft' ||
+                              profile?.role === 'regional' ||
+                              isUnitOwner;
+                            const needsConfirm =
+                              (profile?.role === 'regional' && assessment.status !== 'draft') ||
+                              (isUnitOwner && assessment.status !== 'draft' && assessment.status !== 'returned');
                             return (
                               <>
                                 <Button
@@ -1508,16 +1515,14 @@ export default function Dashboard() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => {
-                                      const isRegionalEditOnApproved =
-                                        profile?.role === 'regional' && assessment.status !== 'draft';
-                                      if (isRegionalEditOnApproved) {
+                                      if (needsConfirm) {
                                         setSelectedAssessmentForEdit(assessment);
                                         setRegionalEditDialogOpen(true);
                                       } else {
                                         navigate(`/assessment/${assessment.id}`);
                                       }
                                     }}
-                                    className={profile?.role === 'regional' && assessment.status !== 'draft' ? 'text-primary hover:text-primary' : ''}
+                                    className={needsConfirm ? 'text-primary hover:text-primary' : ''}
                                   >
                                     <Pencil className="w-4 h-4 mr-2" />
                                     แก้ไข
@@ -1766,6 +1771,8 @@ export default function Dashboard() {
                 )}
                 <p className="text-warning">
                   ⚠️ การแก้ไขจะส่งผลให้คะแนนรวมของหน่วยงานนี้ถูกคำนวณใหม่อัตโนมัติ
+                  {(profile?.role === 'hospital_it' || profile?.role === 'health_office') &&
+                    ' และต้องส่งให้ สสจ. และเขต อนุมัติใหม่อีกครั้ง'}
                 </p>
                 <p>คุณต้องการดำเนินการต่อหรือไม่?</p>
               </div>
