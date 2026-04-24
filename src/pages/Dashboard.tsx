@@ -42,7 +42,7 @@ import {
   Square,
   Download,
   Trash2,
-} from 'lucide-react';
+  Pencil,
 import { Switch } from '@/components/ui/switch';
 import { BannerCarousel } from '@/components/BannerCarousel';
 import { Checkbox } from '@/components/ui/checkbox';
