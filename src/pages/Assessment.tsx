@@ -64,8 +64,10 @@ export default function Assessment() {
   const [allFilesAttached, setAllFilesAttached] = useState(false);
 
   const isReadOnly = assessment?.status !== 'draft' && assessment?.status !== 'returned';
+  // Regional admin can edit any assessment in their region regardless of status
+  const isRegionalEditor = profile?.role === 'regional';
   // Health office users can edit their own assessments just like hospital_it
-  const canEdit = (profile?.role === 'hospital_it' || profile?.role === 'health_office') && !isReadOnly;
+  const canEdit = ((profile?.role === 'hospital_it' || profile?.role === 'health_office') && !isReadOnly) || isRegionalEditor;
   const canReview = (profile?.role === 'provincial' && assessment?.status === 'submitted') ||
                    (profile?.role === 'regional' && assessment?.status === 'approved_provincial');
   const canApprove = profile?.role === 'central_admin';
