@@ -1494,24 +1494,36 @@ export default function Dashboard() {
                           {(() => {
                             const showEdit = assessment.status === 'draft' || profile?.role === 'regional';
                             return (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  const isRegionalEditOnApproved =
-                                    profile?.role === 'regional' && assessment.status !== 'draft';
-                                  if (isRegionalEditOnApproved) {
-                                    setSelectedAssessmentForEdit(assessment);
-                                    setRegionalEditDialogOpen(true);
-                                  } else {
-                                    navigate(`/assessment/${assessment.id}`);
-                                  }
-                                }}
-                                className={profile?.role === 'regional' && assessment.status !== 'draft' ? 'text-primary hover:text-primary' : ''}
-                              >
-                                {showEdit ? <Pencil className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                                {showEdit ? 'แก้ไข' : 'ดู'}
-                              </Button>
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => navigate(`/assessment/${assessment.id}`)}
+                                >
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  ดู
+                                </Button>
+                                {showEdit && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const isRegionalEditOnApproved =
+                                        profile?.role === 'regional' && assessment.status !== 'draft';
+                                      if (isRegionalEditOnApproved) {
+                                        setSelectedAssessmentForEdit(assessment);
+                                        setRegionalEditDialogOpen(true);
+                                      } else {
+                                        navigate(`/assessment/${assessment.id}`);
+                                      }
+                                    }}
+                                    className={profile?.role === 'regional' && assessment.status !== 'draft' ? 'text-primary hover:text-primary' : ''}
+                                  >
+                                    <Pencil className="w-4 h-4 mr-2" />
+                                    แก้ไข
+                                  </Button>
+                                )}
+                              </>
                             );
                           })()}
                           {canReturnForRevision(assessment) && (
