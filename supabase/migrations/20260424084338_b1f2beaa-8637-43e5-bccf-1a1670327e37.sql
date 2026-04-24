@@ -1,0 +1,1 @@
+UPDATE public.hospitals SET hospital_type = 'F3', updated_at = now() WHERE code = '11137' AND hospital_type IS NULL;
