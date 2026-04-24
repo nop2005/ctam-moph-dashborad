@@ -202,10 +202,14 @@ export default function ReportsQuantitative() {
         setHospitals(hospitalsRes.data || []);
         setHealthOffices(healthOfficesRes.data || []);
         setCategories(categoriesRes.data || []);
-        const assessmentsAll = await fetchAll<Assessment>(supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, quantitative_score, created_at').order('created_at', {
+        // IMPORTANT: must order by a UNIQUE column (id) to ensure stable pagination.
+        // Ordering by created_at alone causes rows to be skipped/duplicated when many rows
+        // share the same timestamp (e.g., bulk inserts), which made some passed items disappear
+        // from the report after Regional Admin edits.
+        const assessmentsAll = await fetchAll<Assessment>(supabase.from('assessments').select('id, hospital_id, health_office_id, status, fiscal_year, quantitative_score, created_at').order('id', {
           ascending: true
         }));
-        const itemsAll = await fetchAll<AssessmentItem>(supabase.from('assessment_items').select('id, assessment_id, category_id, score, created_at').order('created_at', {
+        const itemsAll = await fetchAll<AssessmentItem>(supabase.from('assessment_items').select('id, assessment_id, category_id, score, created_at').order('id', {
           ascending: true
         }));
         setAssessments(assessmentsAll);
