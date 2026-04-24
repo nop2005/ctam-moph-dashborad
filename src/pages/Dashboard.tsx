@@ -1497,7 +1497,16 @@ export default function Dashboard() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => navigate(`/assessment/${assessment.id}`)}
+                                onClick={() => {
+                                  const isRegionalEditOnApproved =
+                                    profile?.role === 'regional' && assessment.status !== 'draft';
+                                  if (isRegionalEditOnApproved) {
+                                    setSelectedAssessmentForEdit(assessment);
+                                    setRegionalEditDialogOpen(true);
+                                  } else {
+                                    navigate(`/assessment/${assessment.id}`);
+                                  }
+                                }}
                                 className={profile?.role === 'regional' && assessment.status !== 'draft' ? 'text-primary hover:text-primary' : ''}
                               >
                                 {showEdit ? <Pencil className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
