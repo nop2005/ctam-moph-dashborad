@@ -781,6 +781,101 @@ export default function ReportsQuantitative() {
     if (score >= 0.5) return 'text-yellow-600 dark:text-yellow-400';
     return 'text-red-600 dark:text-red-400';
   };
+
+  const handleExportExcel = () => {
+    try {
+      const isHospitalLevel = selectedProvince !== 'all';
+      const showSummaryCols = selectedProvince === 'all';
+      const headers: string[] = [
+        selectedProvince !== 'all' ? 'โรงพยาบาล' : selectedRegion !== 'all' ? 'จังหวัด' : 'เขตสุขภาพ',
+      ];
+      if (showSummaryCols) {
+        headers.push('จำนวน รพ.', 'รพ.ที่ประเมินแล้ว',
+          'M1AS+สสจ./เขต (ผ่าน/ทั้งหมด)', 'M1AS+สสจ./เขต คะแนน(0-10)', 'M1AS+สสจ./เขต คะแนน(0-7)',
+          'M2 F1-F3 (ผ่าน/ทั้งหมด)', 'M2 F1-F3 คะแนน(0-10)', 'M2 F1-F3 คะแนน(0-7)',
+          'ผ่าน 17 ข้อ');
+      }
+      if (isHospitalLevel) {
+        headers.push('ข้อที่ผ่าน (17 ข้อ)');
+      }
+      headers.push(isHospitalLevel ? 'ข้อที่ผ่าน (ร้อยละ)' : 'ผ่านร้อยละ');
+      if (!isHospitalLevel) headers.push('คะแนน (0-10)');
+      if (showSummaryCols) headers.push('คะแนนเชิงปริมาณ (0-7)');
+
+      const rows = filteredTableData.map(row => {
+        const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
+        const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
+        const passedPercentage = totalCount > 0 ? (passedCount / totalCount) * 100 : null;
+        const r: (string | number)[] = [row.name];
+
+        if (showSummaryCols) {
+          r.push(row.hospitalCount ?? 0);
+          r.push('hospitalsAssessed' in row ? (row as any).hospitalsAssessed : 0);
+
+          const totalMSA = ('countMSA' in row ? (row as any).countMSA : 0) + ('countOffices' in row ? (row as any).countOffices : 0);
+          const passedMSA = 'passedMSAOffices' in row ? (row as any).passedMSAOffices : 0;
+          const pctMSA = totalMSA > 0 ? Math.round((passedMSA / totalMSA) * 100) : 0;
+          const score10MSA = totalMSA > 0 ? percentageToScore10((passedMSA / totalMSA) * 100) : null;
+          r.push(totalMSA > 0 ? `${passedMSA}/${totalMSA} (${pctMSA}%)` : '0/0');
+          r.push(score10MSA !== null ? score10MSA : '-');
+          r.push(score10MSA !== null ? Number((score10MSA * 0.7).toFixed(2)) : '-');
+
+          const totalM2F = 'countM2F' in row ? (row as any).countM2F : 0;
+          const passedM2F = 'passedM2F' in row ? (row as any).passedM2F : 0;
+          const pctM2F = totalM2F > 0 ? Math.round((passedM2F / totalM2F) * 100) : 0;
+          const score10M2F = totalM2F > 0 ? percentageToScore10((passedM2F / totalM2F) * 100) : null;
+          r.push(totalM2F > 0 ? `${passedM2F}/${totalM2F} (${pctM2F}%)` : '0/0');
+          r.push(score10M2F !== null ? score10M2F : '-');
+          r.push(score10M2F !== null ? Number((score10M2F * 0.7).toFixed(2)) : '-');
+
+          r.push('hospitalsPassedAll17' in row ? (row as any).hospitalsPassedAll17 : 0);
+        }
+
+        if (isHospitalLevel) {
+          const latestAssessment = latestApprovedByUnit.get(row.id);
+          let unitPassedCount: number | string = '-';
+          if (latestAssessment) {
+            const latestItems = filteredAssessmentItems.filter(item => item.assessment_id === latestAssessment.id);
+            unitPassedCount = latestItems.filter(item => Number(item.score) === 1).length;
+          }
+          r.push(unitPassedCount);
+        }
+
+        let percentage: number | null;
+        if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
+          percentage = row.hospitalCount > 0 ? (row.hospitalsPassedAll17 as number) / row.hospitalCount * 100 : null;
+        } else {
+          percentage = passedPercentage;
+        }
+        r.push(percentage !== null ? `${percentage.toFixed(1)}%` : '-');
+
+        if (!isHospitalLevel) {
+          const score10 = percentageToScore10(percentage);
+          r.push(score10 !== null ? score10 : '-');
+        }
+        if (showSummaryCols) {
+          let pct: number | null = null;
+          if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
+            pct = row.hospitalCount > 0 ? (row.hospitalsPassedAll17 as number) / row.hospitalCount * 100 : null;
+          }
+          const s10 = percentageToScore10(pct);
+          r.push(s10 !== null ? Number((s10 * 0.7).toFixed(2)) : '-');
+        }
+        return r;
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'รายงานเชิงปริมาณ');
+      const yearLabel = selectedFiscalYear === 'all' ? 'ทุกปี' : String(parseInt(selectedFiscalYear) + 543);
+      XLSX.writeFile(wb, `รายงานเชิงปริมาณ_${yearLabel}.xlsx`);
+      toast.success('ส่งออก Excel สำเร็จ');
+    } catch (err) {
+      console.error(err);
+      toast.error('ส่งออก Excel ไม่สำเร็จ');
+    }
+  };
+
   return <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
