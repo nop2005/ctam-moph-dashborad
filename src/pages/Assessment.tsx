@@ -121,6 +121,49 @@ export default function Assessment() {
     }
   }, [id]);
 
+  // Auto-recalculate and persist scores when regional admin edits an already-approved assessment.
+  // This keeps Dashboard/Reports in sync after regional edits without requiring re-approval.
+  useEffect(() => {
+    if (!isRegionalEditor || !assessment || loading) return;
+    if (categories.length === 0 || items.length === 0) return;
+
+    const quant = calculateQuantitativeScore().score;
+    const imp = calculateImpactScore().score;
+    const total = Math.round((quant + imp) * 100) / 100;
+
+    const sameQuant = Number(assessment.quantitative_score ?? -1) === Number(quant.toFixed(2));
+    const sameImp = Number(assessment.impact_score ?? -1) === Number(imp.toFixed(2));
+    const sameTotal = Number(assessment.total_score ?? -1) === total;
+    if (sameQuant && sameImp && sameTotal) return;
+
+    const handle = setTimeout(async () => {
+      try {
+        const { error } = await supabase
+          .from('assessments')
+          .update({
+            quantitative_score: Number(quant.toFixed(2)),
+            qualitative_score: 0,
+            impact_score: Number(imp.toFixed(2)),
+            total_score: total,
+          })
+          .eq('id', assessment.id);
+        if (error) throw error;
+        invalidateDashboardCache();
+        setAssessment((prev) => prev ? {
+          ...prev,
+          quantitative_score: Number(quant.toFixed(2)),
+          impact_score: Number(imp.toFixed(2)),
+          total_score: total,
+        } : prev);
+      } catch (e) {
+        console.error('Failed to recalc scores after regional edit:', e);
+      }
+    }, 800);
+
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRegionalEditor, items, impactScore, categories.length, assessment?.id, loading]);
+
   const loadAssessmentData = async () => {
     try {
       setLoading(true);
