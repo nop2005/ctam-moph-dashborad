@@ -987,6 +987,11 @@ export default function ReportsQuantitative() {
                   </span>
                 </CardTitle>
               </div>
+
+              <Button onClick={handleExportExcel} variant="outline" size="sm" className="gap-2">
+                <FileSpreadsheet className="w-4 h-4" />
+                Export Excel
+              </Button>
               
               {/* Color Filter Buttons - only show at province level (hospital list) */}
               {selectedProvince !== 'all' && (
