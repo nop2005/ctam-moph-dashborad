@@ -171,7 +171,7 @@ export default function Assessment() {
 
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRegionalEditor, items, impactScore, categories.length, assessment?.id, loading]);
+  }, [isRegionalEditor, isUnitOwnerPostApprovalEdit, items, impactScore, categories.length, assessment?.id, loading]);
 
   const loadAssessmentData = async () => {
     try {
