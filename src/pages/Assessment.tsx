@@ -132,7 +132,8 @@ export default function Assessment() {
   // Auto-recalculate and persist scores when regional admin edits an already-approved assessment.
   // This keeps Dashboard/Reports in sync after regional edits without requiring re-approval.
   useEffect(() => {
-    if (!isRegionalEditor || !assessment || loading) return;
+    if (!isRegionalEditor && !isUnitOwnerPostApprovalEdit) return;
+    if (!assessment || loading) return;
     if (categories.length === 0 || items.length === 0) return;
 
     const quant = calculateQuantitativeScore().score;
