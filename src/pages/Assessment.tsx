@@ -457,6 +457,49 @@ export default function Assessment() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Regional Done-Editing Confirmation Dialog */}
+        <AlertDialog open={regionalDoneDialogOpen} onOpenChange={setRegionalDoneDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>ยืนยันการแก้ไขเสร็จสิ้น</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-2">
+                  <p>คะแนนใหม่ของแบบประเมินนี้:</p>
+                  <div className="rounded-md border p-3 bg-muted/50 space-y-1 text-foreground">
+                    <div className="flex justify-between">
+                      <span>เชิงปริมาณ (70%)</span>
+                      <span className="font-semibold">{quantScore.score} / {quantScore.total}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>ผลกระทบ (30%)</span>
+                      <span className="font-semibold">{impactScoreCalc.score} / {impactScoreCalc.total}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1 mt-1">
+                      <span>คะแนนรวม</span>
+                      <span className="font-bold text-primary">{totalScore.score} / {totalScore.total}</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    คะแนนจะถูกบันทึกและอัปเดตในหน้า Dashboard และรายงานทันที
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>แก้ไขต่อ</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setRegionalDoneDialogOpen(false);
+                  invalidateDashboardCache();
+                  navigate('/dashboard');
+                }}
+              >
+                ยืนยันและกลับ Dashboard
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
