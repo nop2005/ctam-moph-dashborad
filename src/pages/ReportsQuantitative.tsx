@@ -864,7 +864,58 @@ export default function ReportsQuantitative() {
         return r;
       });
 
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      // Average row (matches the in-table average summary)
+      let msaTotal = 0, msaPassed = 0;
+      let m2fTotal = 0, m2fPassed = 0;
+      let allHospitalCount = 0, allPassedAll17 = 0, allHospitalsAssessed = 0;
+      const pctList: number[] = [];
+      let hlTotalUnits = 0, hlPassed17Units = 0;
+      filteredTableData.forEach(row => {
+        const cMSA = ('countMSA' in row ? (row as any).countMSA : 0) + ('countOffices' in row ? (row as any).countOffices : 0);
+        const pMSA = 'passedMSAOffices' in row ? (row as any).passedMSAOffices : 0;
+        msaTotal += cMSA; msaPassed += pMSA;
+        const cM2F = 'countM2F' in row ? (row as any).countM2F : 0;
+        const pM2F = 'passedM2F' in row ? (row as any).passedM2F : 0;
+        m2fTotal += cM2F; m2fPassed += pM2F;
+        allHospitalCount += row.hospitalCount || 0;
+        allPassedAll17 += 'hospitalsPassedAll17' in row ? (row as any).hospitalsPassedAll17 : 0;
+        allHospitalsAssessed += 'hospitalsAssessed' in row ? (row as any).hospitalsAssessed : 0;
+        const passedC = row.categoryAverages.filter(c => c.average === 1).length;
+        const totalC = row.categoryAverages.filter(c => c.average !== null).length;
+        if (totalC > 0) pctList.push(passedC / totalC * 100);
+        if (isHospitalLevel && (row.type === 'hospital' || row.type === 'health_office')) {
+          hlTotalUnits += 1;
+          if (categories.length > 0 && passedC === categories.length) hlPassed17Units += 1;
+        }
+      });
+      const msaPct = msaTotal > 0 ? Math.round((msaPassed / msaTotal) * 100) : 0;
+      const msaScore10 = msaTotal > 0 ? percentageToScore10((msaPassed / msaTotal) * 100) : null;
+      const m2fPct = m2fTotal > 0 ? Math.round((m2fPassed / m2fTotal) * 100) : 0;
+      const m2fScore10 = m2fTotal > 0 ? percentageToScore10((m2fPassed / m2fTotal) * 100) : null;
+      const overallPct = isHospitalLevel
+        ? (hlTotalUnits > 0 ? (hlPassed17Units / hlTotalUnits) * 100 : null)
+        : (allHospitalCount > 0 ? (allPassedAll17 / allHospitalCount) * 100 : (pctList.length > 0 ? pctList.reduce((a,b) => a+b, 0) / pctList.length : null));
+      const overallScore10 = percentageToScore10(overallPct);
+
+      const avgRow: (string | number)[] = ['ค่าเฉลี่ย'];
+      if (showSummaryCols) {
+        avgRow.push(allHospitalCount, allHospitalsAssessed,
+          msaTotal > 0 ? `${msaPassed}/${msaTotal} (${msaPct}%)` : '0/0',
+          msaScore10 !== null ? msaScore10 : '-',
+          msaScore10 !== null ? Number((msaScore10 * 0.7).toFixed(2)) : '-',
+          m2fTotal > 0 ? `${m2fPassed}/${m2fTotal} (${m2fPct}%)` : '0/0',
+          m2fScore10 !== null ? m2fScore10 : '-',
+          m2fScore10 !== null ? Number((m2fScore10 * 0.7).toFixed(2)) : '-',
+          allPassedAll17);
+      }
+      if (isHospitalLevel) avgRow.push('-');
+      avgRow.push(overallPct !== null
+        ? (isHospitalLevel ? `${hlPassed17Units}/${hlTotalUnits} (${overallPct.toFixed(1)}%)` : `${overallPct.toFixed(1)}%`)
+        : '-');
+      if (!isHospitalLevel) avgRow.push(overallScore10 !== null ? overallScore10 : '-');
+      if (showSummaryCols) avgRow.push(overallScore10 !== null ? Number((overallScore10 * 0.7).toFixed(2)) : '-');
+
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows, avgRow]);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'รายงานเชิงปริมาณ');
       const yearLabel = selectedFiscalYear === 'all' ? 'ทุกปี' : String(parseInt(selectedFiscalYear) + 543);
