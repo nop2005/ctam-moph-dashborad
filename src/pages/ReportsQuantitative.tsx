@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { TrendingUp, Filter, Building2, MapPin, ArrowLeft, UserCircle, Briefcase, HelpCircle } from 'lucide-react';
+import { TrendingUp, Filter, Building2, MapPin, ArrowLeft, UserCircle, Briefcase, HelpCircle, FileSpreadsheet } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import * as XLSX from 'xlsx';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -779,6 +781,101 @@ export default function ReportsQuantitative() {
     if (score >= 0.5) return 'text-yellow-600 dark:text-yellow-400';
     return 'text-red-600 dark:text-red-400';
   };
+
+  const handleExportExcel = () => {
+    try {
+      const isHospitalLevel = selectedProvince !== 'all';
+      const showSummaryCols = selectedProvince === 'all';
+      const headers: string[] = [
+        selectedProvince !== 'all' ? 'โรงพยาบาล' : selectedRegion !== 'all' ? 'จังหวัด' : 'เขตสุขภาพ',
+      ];
+      if (showSummaryCols) {
+        headers.push('จำนวน รพ.', 'รพ.ที่ประเมินแล้ว',
+          'M1AS+สสจ./เขต (ผ่าน/ทั้งหมด)', 'M1AS+สสจ./เขต คะแนน(0-10)', 'M1AS+สสจ./เขต คะแนน(0-7)',
+          'M2 F1-F3 (ผ่าน/ทั้งหมด)', 'M2 F1-F3 คะแนน(0-10)', 'M2 F1-F3 คะแนน(0-7)',
+          'ผ่าน 17 ข้อ');
+      }
+      if (isHospitalLevel) {
+        headers.push('ข้อที่ผ่าน (17 ข้อ)');
+      }
+      headers.push(isHospitalLevel ? 'ข้อที่ผ่าน (ร้อยละ)' : 'ผ่านร้อยละ');
+      if (!isHospitalLevel) headers.push('คะแนน (0-10)');
+      if (showSummaryCols) headers.push('คะแนนเชิงปริมาณ (0-7)');
+
+      const rows = filteredTableData.map(row => {
+        const passedCount = row.categoryAverages.filter(c => c.average === 1).length;
+        const totalCount = row.categoryAverages.filter(c => c.average !== null).length;
+        const passedPercentage = totalCount > 0 ? (passedCount / totalCount) * 100 : null;
+        const r: (string | number)[] = [row.name];
+
+        if (showSummaryCols) {
+          r.push(row.hospitalCount ?? 0);
+          r.push('hospitalsAssessed' in row ? (row as any).hospitalsAssessed : 0);
+
+          const totalMSA = ('countMSA' in row ? (row as any).countMSA : 0) + ('countOffices' in row ? (row as any).countOffices : 0);
+          const passedMSA = 'passedMSAOffices' in row ? (row as any).passedMSAOffices : 0;
+          const pctMSA = totalMSA > 0 ? Math.round((passedMSA / totalMSA) * 100) : 0;
+          const score10MSA = totalMSA > 0 ? percentageToScore10((passedMSA / totalMSA) * 100) : null;
+          r.push(totalMSA > 0 ? `${passedMSA}/${totalMSA} (${pctMSA}%)` : '0/0');
+          r.push(score10MSA !== null ? score10MSA : '-');
+          r.push(score10MSA !== null ? Number((score10MSA * 0.7).toFixed(2)) : '-');
+
+          const totalM2F = 'countM2F' in row ? (row as any).countM2F : 0;
+          const passedM2F = 'passedM2F' in row ? (row as any).passedM2F : 0;
+          const pctM2F = totalM2F > 0 ? Math.round((passedM2F / totalM2F) * 100) : 0;
+          const score10M2F = totalM2F > 0 ? percentageToScore10((passedM2F / totalM2F) * 100) : null;
+          r.push(totalM2F > 0 ? `${passedM2F}/${totalM2F} (${pctM2F}%)` : '0/0');
+          r.push(score10M2F !== null ? score10M2F : '-');
+          r.push(score10M2F !== null ? Number((score10M2F * 0.7).toFixed(2)) : '-');
+
+          r.push('hospitalsPassedAll17' in row ? (row as any).hospitalsPassedAll17 : 0);
+        }
+
+        if (isHospitalLevel) {
+          const latestAssessment = latestApprovedByUnit.get(row.id);
+          let unitPassedCount: number | string = '-';
+          if (latestAssessment) {
+            const latestItems = filteredAssessmentItems.filter(item => item.assessment_id === latestAssessment.id);
+            unitPassedCount = latestItems.filter(item => Number(item.score) === 1).length;
+          }
+          r.push(unitPassedCount);
+        }
+
+        let percentage: number | null;
+        if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
+          percentage = row.hospitalCount > 0 ? (row.hospitalsPassedAll17 as number) / row.hospitalCount * 100 : null;
+        } else {
+          percentage = passedPercentage;
+        }
+        r.push(percentage !== null ? `${percentage.toFixed(1)}%` : '-');
+
+        if (!isHospitalLevel) {
+          const score10 = percentageToScore10(percentage);
+          r.push(score10 !== null ? score10 : '-');
+        }
+        if (showSummaryCols) {
+          let pct: number | null = null;
+          if ((row.type === 'province' || row.type === 'region') && 'hospitalsPassedAll17' in row) {
+            pct = row.hospitalCount > 0 ? (row.hospitalsPassedAll17 as number) / row.hospitalCount * 100 : null;
+          }
+          const s10 = percentageToScore10(pct);
+          r.push(s10 !== null ? Number((s10 * 0.7).toFixed(2)) : '-');
+        }
+        return r;
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'รายงานเชิงปริมาณ');
+      const yearLabel = selectedFiscalYear === 'all' ? 'ทุกปี' : String(parseInt(selectedFiscalYear) + 543);
+      XLSX.writeFile(wb, `รายงานเชิงปริมาณ_${yearLabel}.xlsx`);
+      toast.success('ส่งออก Excel สำเร็จ');
+    } catch (err) {
+      console.error(err);
+      toast.error('ส่งออก Excel ไม่สำเร็จ');
+    }
+  };
+
   return <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
@@ -890,6 +987,11 @@ export default function ReportsQuantitative() {
                   </span>
                 </CardTitle>
               </div>
+
+              <Button onClick={handleExportExcel} variant="outline" size="sm" className="gap-2">
+                <FileSpreadsheet className="w-4 h-4" />
+                Export Excel
+              </Button>
               
               {/* Color Filter Buttons - only show at province level (hospital list) */}
               {selectedProvince !== 'all' && (
@@ -953,20 +1055,20 @@ export default function ReportsQuantitative() {
             const showSummaryCols = selectedProvince === 'all';
             const isHospitalLevel = selectedProvince !== 'all';
             const sticky = {
-              name: 180,
-              hospitalCount: 80,
-              hospitalsAssessed: 100,
-              countMSAOffices: 130,
-              countMSAOfficesScore: 90,
-              countMSAOfficesScore7: 90,
-              countM2F: 120,
-              countM2FScore: 90,
-              countM2FScore7: 90,
-              avgQuantitative: 120,
-              passedAll17: 100,
-              unitQuantScore: 110,
-              unitPassedItems: 110,
-              percentGreen: 200
+              name: 150,
+              hospitalCount: 70,
+              hospitalsAssessed: 80,
+              countMSAOffices: 110,
+              countMSAOfficesScore: 80,
+              countMSAOfficesScore7: 80,
+              countM2F: 100,
+              countM2FScore: 80,
+              countM2FScore7: 80,
+              avgQuantitative: 100,
+              passedAll17: 80,
+              unitQuantScore: 95,
+              unitPassedItems: 95,
+              percentGreen: 170
             } as const;
             const left = {
               name: 0,
@@ -996,24 +1098,24 @@ export default function ReportsQuantitative() {
                   <Table className="min-w-max">
                     <TableHeader>
                       <TableRow className="bg-muted/50">
-                        <TableHead rowSpan={2} className={`${stickyHeaderBase} bg-muted/50 min-w-[180px] align-middle`} style={{
+                        <TableHead rowSpan={2} className={`${stickyHeaderBase} bg-muted/50 min-w-[150px] align-middle`} style={{
                         left: left.name
                       }}>
                           {selectedProvince !== 'all' ? 'โรงพยาบาล' : selectedRegion !== 'all' ? 'จังหวัด' : 'เขตสุขภาพ'}
                         </TableHead>
 
-                        {showSummaryCols && <TableHead rowSpan={2} className={`${stickyHeaderBase} bg-muted/50 text-center min-w-[80px] align-middle`} style={{
+                        {showSummaryCols && <TableHead rowSpan={2} className={`${stickyHeaderBase} bg-muted/50 text-center min-w-[70px] align-middle`} style={{
                         left: left.hospitalCount
                       }}>
                             จำนวน รพ.
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[100px] bg-blue-100 dark:bg-blue-900/30 align-middle`} style={{
+                        {showSummaryCols && <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[80px] bg-blue-100 dark:bg-blue-900/30 align-middle`} style={{
                         left: left.hospitalsAssessed
                       }}>
                             <div className="flex flex-col items-center">
-                              <span>รพ.ที่ประเมิน</span>
-                              <span>แล้ว</span>
+                              <span>รพ.ที่</span>
+                              <span>ประเมินแล้ว</span>
                             </div>
                           </TableHead>}
 
@@ -1029,7 +1131,7 @@ export default function ReportsQuantitative() {
                             รพ. M2 F1-F3
                           </TableHead>}
 
-                        {isHospitalLevel && <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[110px] bg-green-100 dark:bg-green-900/30 align-middle`} style={{
+                        {isHospitalLevel && <TableHead rowSpan={2} className={`${stickyHeaderBase} text-center min-w-[95px] bg-green-100 dark:bg-green-900/30 align-middle`} style={{
                         left: left.unitQuantScore
                       }}>
                             <div className="flex flex-col items-center">
@@ -1044,43 +1146,49 @@ export default function ReportsQuantitative() {
                       </TableRow>
 
                       <TableRow className="bg-muted/50">
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[130px] bg-amber-100 dark:bg-amber-900/30 text-xs`} style={{
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[110px] bg-amber-100 dark:bg-amber-900/30 text-xs`} style={{
                         left: left.countMSAOffices
                       }}>
                             (ผ่าน/ทั้งหมด)
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-amber-100 dark:bg-amber-900/30 text-xs`} style={{
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[80px] bg-amber-100 dark:bg-amber-900/30 text-xs`} style={{
                         left: left.countMSAOfficesScore
                       }}>
                             <ScoreRangePopover label="คะแนน (เต็ม 10)" />
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-amber-100 dark:bg-amber-900/30 text-xs`} style={{
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[80px] bg-amber-100 dark:bg-amber-900/30 text-xs`} style={{
                         left: left.countMSAOfficesScore7
                       }}>
-                            คะแนนเชิงปริมาณ (เต็ม 7)
+                            <div className="flex flex-col items-center leading-tight">
+                              <span>คะแนนเชิงปริมาณ</span>
+                              <span>(เต็ม 7)</span>
+                            </div>
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[120px] bg-rose-100 dark:bg-rose-900/30 text-xs`} style={{
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-rose-100 dark:bg-rose-900/30 text-xs`} style={{
                         left: left.countM2F
                       }}>
                             (ผ่าน/ทั้งหมด)
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-rose-100 dark:bg-rose-900/30 text-xs`} style={{
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[80px] bg-rose-100 dark:bg-rose-900/30 text-xs`} style={{
                         left: left.countM2FScore
                       }}>
                             <ScoreRangePopover label="คะแนน (เต็ม 10)" />
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[90px] bg-rose-100 dark:bg-rose-900/30 text-xs`} style={{
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[80px] bg-rose-100 dark:bg-rose-900/30 text-xs`} style={{
                         left: left.countM2FScore7
                       }}>
-                            คะแนนเชิงปริมาณ (เต็ม 7)
+                            <div className="flex flex-col items-center leading-tight">
+                              <span>คะแนนเชิงปริมาณ</span>
+                              <span>(เต็ม 7)</span>
+                            </div>
                           </TableHead>}
 
-                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[100px] bg-green-100 dark:bg-green-900/30 text-xs align-middle`} style={{
+                        {showSummaryCols && <TableHead className={`${stickyHeaderBase} text-center min-w-[80px] bg-green-100 dark:bg-green-900/30 text-xs align-middle`} style={{
                         left: left.passedAll17
                       }}>
                             <div className="flex flex-col items-center">
@@ -1088,7 +1196,7 @@ export default function ReportsQuantitative() {
                             </div>
                           </TableHead>}
 
-                        <TableHead className={`${stickyHeaderBase} text-center min-w-[200px] bg-primary/10 text-xs align-middle`} style={{
+                        <TableHead className={`${stickyHeaderBase} text-center min-w-[170px] bg-primary/10 text-xs align-middle`} style={{
                         left: left.percentGreen
                       }}>
                           {isHospitalLevel ? <div className="flex flex-col items-center">
@@ -1098,13 +1206,14 @@ export default function ReportsQuantitative() {
                             </div>}
                         </TableHead>
 
-                        {!isHospitalLevel && <TableHead className="text-center min-w-[100px] bg-primary/20 border-r border-border/60 text-xs align-middle">
+                        {!isHospitalLevel && <TableHead className="text-center min-w-[90px] bg-primary/20 border-r border-border/60 text-xs align-middle">
                           <ScoreRangePopover label="คะแนน (0-10)" />
                         </TableHead>}
 
-                        {showSummaryCols && <TableHead className="text-center min-w-[120px] bg-orange-100 dark:bg-orange-900/30 border-r border-border/60 text-xs align-middle">
-                            <div className="flex flex-col items-center">
-                              <span>คะแนนเชิงปริมาณ (0-7)</span>
+                        {showSummaryCols && <TableHead className="text-center min-w-[100px] bg-orange-100 dark:bg-orange-900/30 border-r border-border/60 text-xs align-middle">
+                            <div className="flex flex-col items-center leading-tight">
+                              <span>คะแนนเชิงปริมาณ</span>
+                              <span>(0-7)</span>
                             </div>
                           </TableHead>}
                       </TableRow>
@@ -1244,7 +1353,7 @@ export default function ReportsQuantitative() {
 
                             <TableCell className={`${stickyCellBase} text-center bg-primary/5`} style={{
                           left: left.percentGreen,
-                          minWidth: 200
+                          minWidth: 170
                         }}>
                               {(() => {
                             let percentage: number;
@@ -1379,7 +1488,7 @@ export default function ReportsQuantitative() {
                           </>}
                           {isHospitalLevel && <TableCell className={`${stickyCellBase} text-center font-bold bg-orange-100 dark:bg-orange-900/30`} style={{ left: left.unitQuantScore, minWidth: sticky.unitQuantScore }}>-</TableCell>}
                           {isHospitalLevel && <TableCell className={`${stickyCellBase} text-center font-bold bg-green-100 dark:bg-green-900/30`} style={{ left: left.unitPassedItems, minWidth: sticky.unitPassedItems }}>-</TableCell>}
-                          <TableCell className={`${stickyCellBase} text-center bg-primary/10 font-bold`} style={{ left: left.percentGreen, minWidth: 200 }}>
+                          <TableCell className={`${stickyCellBase} text-center bg-primary/10 font-bold`} style={{ left: left.percentGreen, minWidth: 170 }}>
                             {overallPct !== null ? (
                               <div className="flex items-center gap-2">
                                 <Progress value={overallPct} className={`h-4 flex-1 ${colorClass}`} />
