@@ -332,6 +332,15 @@ export default function Assessment() {
           canEdit={canEdit}
         />
 
+        {/* Regional admin: confirm done editing */}
+        {isRegionalEditor && assessment.status !== 'draft' && assessment.status !== 'returned' && (
+          <div className="flex justify-end">
+            <Button onClick={() => setRegionalDoneDialogOpen(true)}>
+              เสร็จสิ้นการแก้ไข
+            </Button>
+          </div>
+        )}
+
         {/* Approval Workflow Stepper */}
         <ApprovalWorkflow status={assessment.status} />
 
