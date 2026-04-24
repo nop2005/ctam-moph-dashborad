@@ -176,6 +176,10 @@ export default function Dashboard() {
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [selectedAssessmentForReturn, setSelectedAssessmentForReturn] = useState<(Assessment & { hospitals?: Hospital; health_offices?: HealthOffice }) | null>(null);
   const [returnComment, setReturnComment] = useState('');
+
+  // Regional admin edit confirmation dialog state
+  const [regionalEditDialogOpen, setRegionalEditDialogOpen] = useState(false);
+  const [selectedAssessmentForEdit, setSelectedAssessmentForEdit] = useState<(Assessment & { hospitals?: Hospital; health_offices?: HealthOffice }) | null>(null);
   const [returning, setReturning] = useState(false);
 
   // Email sending state (for regional admin)
@@ -1493,7 +1497,16 @@ export default function Dashboard() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => navigate(`/assessment/${assessment.id}`)}
+                                onClick={() => {
+                                  const isRegionalEditOnApproved =
+                                    profile?.role === 'regional' && assessment.status !== 'draft';
+                                  if (isRegionalEditOnApproved) {
+                                    setSelectedAssessmentForEdit(assessment);
+                                    setRegionalEditDialogOpen(true);
+                                  } else {
+                                    navigate(`/assessment/${assessment.id}`);
+                                  }
+                                }}
                                 className={profile?.role === 'regional' && assessment.status !== 'draft' ? 'text-primary hover:text-primary' : ''}
                               >
                                 {showEdit ? <Pencil className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
@@ -1720,7 +1733,52 @@ export default function Dashboard() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Send Email Dialog */}
+      {/* Regional Admin Edit Confirmation Dialog */}
+      <AlertDialog open={regionalEditDialogOpen} onOpenChange={setRegionalEditDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-primary" />
+              ยืนยันการแก้ไขแบบประเมิน
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                {selectedAssessmentForEdit && (
+                  <p>
+                    คุณกำลังจะแก้ไขแบบประเมินของ{' '}
+                    <span className="font-semibold text-foreground">
+                      {selectedAssessmentForEdit.hospitals?.name || selectedAssessmentForEdit.health_offices?.name || ''}
+                    </span>{' '}
+                    ปี {selectedAssessmentForEdit.fiscal_year + 543} ครั้งที่ {selectedAssessmentForEdit.assessment_period}
+                  </p>
+                )}
+                <p className="text-warning">
+                  ⚠️ การแก้ไขจะส่งผลให้คะแนนรวมของหน่วยงานนี้ถูกคำนวณใหม่อัตโนมัติ
+                </p>
+                <p>คุณต้องการดำเนินการต่อหรือไม่?</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedAssessmentForEdit(null)}>
+              ยกเลิก
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedAssessmentForEdit) {
+                  navigate(`/assessment/${selectedAssessmentForEdit.id}`);
+                }
+                setRegionalEditDialogOpen(false);
+                setSelectedAssessmentForEdit(null);
+              }}
+            >
+              <Pencil className="w-4 h-4 mr-2" />
+              ยืนยันแก้ไข
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
         <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
