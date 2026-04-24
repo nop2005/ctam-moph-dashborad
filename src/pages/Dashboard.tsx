@@ -176,6 +176,10 @@ export default function Dashboard() {
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [selectedAssessmentForReturn, setSelectedAssessmentForReturn] = useState<(Assessment & { hospitals?: Hospital; health_offices?: HealthOffice }) | null>(null);
   const [returnComment, setReturnComment] = useState('');
+
+  // Regional admin edit confirmation dialog state
+  const [regionalEditDialogOpen, setRegionalEditDialogOpen] = useState(false);
+  const [selectedAssessmentForEdit, setSelectedAssessmentForEdit] = useState<(Assessment & { hospitals?: Hospital; health_offices?: HealthOffice }) | null>(null);
   const [returning, setReturning] = useState(false);
 
   // Email sending state (for regional admin)
