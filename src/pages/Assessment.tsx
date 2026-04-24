@@ -318,7 +318,7 @@ export default function Assessment() {
             />
             
             {/* Submit button at the bottom of quantitative section */}
-            {canEdit && (assessment.status === 'draft' || assessment.status === 'returned') && (
+            {canEdit && !isRegionalEditor && (assessment.status === 'draft' || assessment.status === 'returned') && (
               <div className="flex justify-center pt-4">
                 <Button 
                   size="lg"
