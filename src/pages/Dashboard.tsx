@@ -1771,6 +1771,8 @@ export default function Dashboard() {
                 )}
                 <p className="text-warning">
                   ⚠️ การแก้ไขจะส่งผลให้คะแนนรวมของหน่วยงานนี้ถูกคำนวณใหม่อัตโนมัติ
+                  {(profile?.role === 'hospital_it' || profile?.role === 'health_office') &&
+                    ' และต้องส่งให้ สสจ. และเขต อนุมัติใหม่อีกครั้ง'}
                 </p>
                 <p>คุณต้องการดำเนินการต่อหรือไม่?</p>
               </div>
