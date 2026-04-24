@@ -340,8 +340,8 @@ export default function Assessment() {
           canEdit={canEdit}
         />
 
-        {/* Regional admin: confirm done editing */}
-        {isRegionalEditor && assessment.status !== 'draft' && assessment.status !== 'returned' && (
+        {/* Regional admin / Unit owner post-approval: confirm done editing */}
+        {(isRegionalEditor || isUnitOwnerPostApprovalEdit) && assessment.status !== 'draft' && assessment.status !== 'returned' && (
           <div className="flex justify-end">
             <Button onClick={() => setRegionalDoneDialogOpen(true)}>
               เสร็จสิ้นการแก้ไข
