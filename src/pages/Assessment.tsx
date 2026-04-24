@@ -62,6 +62,7 @@ export default function Assessment() {
   const [submitting, setSubmitting] = useState(false);
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [allFilesAttached, setAllFilesAttached] = useState(false);
+  const [regionalDoneDialogOpen, setRegionalDoneDialogOpen] = useState(false);
 
   const isReadOnly = assessment?.status !== 'draft' && assessment?.status !== 'returned';
   // Regional admin can edit any assessment in their region regardless of status
