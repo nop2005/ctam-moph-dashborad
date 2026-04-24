@@ -858,21 +858,8 @@ export default function Dashboard() {
   const canDeleteAssessment = (assessment: Assessment & { hospitals?: Hospital; health_offices?: HealthOffice }) => {
     if (!profile) return false;
     if (profile.role === 'central_admin') return true;
-    if (profile.role === 'hospital_it') {
-      return !!profile.hospital_id && assessment.hospital_id === profile.hospital_id;
-    }
-    if (profile.role === 'health_office') {
-      return !!profile.health_office_id && assessment.health_office_id === profile.health_office_id;
-    }
-    if (profile.role === 'provincial') {
-      const provinceId = profile.province_id;
-      if (!provinceId) return false;
-      const hospital = (assessment as any).hospitals as Hospital | undefined;
-      const office = (assessment as any).health_offices as HealthOffice | undefined;
-      if (hospital && hospital.province_id === provinceId) return true;
-      if (office && office.province_id === provinceId) return true;
-      return false;
-    }
+    // ปุ่มลบแสดงเฉพาะแอดมินเขต (และ central_admin) เท่านั้น
+    // ไอที รพ., ไอที สสจ. และแอดมิน สสจ. จะไม่เห็นปุ่มลบ
     if (profile.role === 'regional') {
       const regionId = profile.health_region_id;
       if (!regionId) return false;
@@ -1524,8 +1511,8 @@ export default function Dashboard() {
                                     }}
                                     className={needsConfirm ? 'text-primary hover:text-primary' : ''}
                                   >
-                                    <Pencil className="w-4 h-4 mr-2" />
-                                    แก้ไข
+                                     <Pencil className="w-4 h-4 mr-2" />
+                                    {needsConfirm ? 'แก้ไขแล้วส่งใหม่' : 'แก้ไข'}
                                   </Button>
                                 )}
                               </>
