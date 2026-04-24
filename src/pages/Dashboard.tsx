@@ -43,6 +43,7 @@ import {
   Download,
   Trash2,
   Pencil,
+} from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { BannerCarousel } from '@/components/BannerCarousel';
 import { Checkbox } from '@/components/ui/checkbox';
