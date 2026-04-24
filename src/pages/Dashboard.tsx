@@ -42,6 +42,7 @@ import {
   Square,
   Download,
   Trash2,
+  Pencil,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { BannerCarousel } from '@/components/BannerCarousel';
@@ -1486,14 +1487,20 @@ export default function Dashboard() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/assessment/${assessment.id}`)}
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            {assessment.status === 'draft' ? 'แก้ไข' : 'ดู'}
-                          </Button>
+                          {(() => {
+                            const showEdit = assessment.status === 'draft' || profile?.role === 'regional';
+                            return (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/assessment/${assessment.id}`)}
+                                className={profile?.role === 'regional' && assessment.status !== 'draft' ? 'text-primary hover:text-primary' : ''}
+                              >
+                                {showEdit ? <Pencil className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                                {showEdit ? 'แก้ไข' : 'ดู'}
+                              </Button>
+                            );
+                          })()}
                           {canReturnForRevision(assessment) && (
                             <Button
                               variant="ghost"

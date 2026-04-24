@@ -1278,6 +1278,18 @@ export type Database = {
         Returns: boolean
       }
       is_regional_admin: { Args: never; Returns: boolean }
+      is_regional_admin_for_assessment: {
+        Args: { _assessment_id: string }
+        Returns: boolean
+      }
+      is_regional_admin_for_assessment_item: {
+        Args: { _item_id: string }
+        Returns: boolean
+      }
+      is_regional_admin_for_impact_score: {
+        Args: { _impact_score_id: string }
+        Returns: boolean
+      }
       is_supervisor: { Args: never; Returns: boolean }
     }
     Enums: {
