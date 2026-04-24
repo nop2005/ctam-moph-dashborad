@@ -67,8 +67,15 @@ export default function Assessment() {
   const isReadOnly = assessment?.status !== 'draft' && assessment?.status !== 'returned';
   // Regional admin can edit any assessment in their region regardless of status
   const isRegionalEditor = profile?.role === 'regional';
+  // Unit owners (hospital_it / health_office) can also edit any of their assessments
+  // even after submission/approval — changes will be resubmitted for re-approval.
+  const isUnitOwnerEditor =
+    (profile?.role === 'hospital_it' && assessment?.hospital_id === profile?.hospital_id) ||
+    (profile?.role === 'health_office' && (assessment?.health_office_id === profile?.health_office_id || assessment?.hospital_id != null));
   // Health office users can edit their own assessments just like hospital_it
-  const canEdit = ((profile?.role === 'hospital_it' || profile?.role === 'health_office') && !isReadOnly) || isRegionalEditor;
+  const canEdit = ((profile?.role === 'hospital_it' || profile?.role === 'health_office') && !isReadOnly) || isRegionalEditor || isUnitOwnerEditor;
+  // Editing an already-submitted/approved assessment as unit owner = post-approval edit flow
+  const isUnitOwnerPostApprovalEdit = isUnitOwnerEditor && isReadOnly;
   const canReview = (profile?.role === 'provincial' && assessment?.status === 'submitted') ||
                    (profile?.role === 'regional' && assessment?.status === 'approved_provincial');
   const canApprove = profile?.role === 'central_admin';
