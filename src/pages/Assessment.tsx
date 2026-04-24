@@ -489,21 +489,68 @@ export default function Assessment() {
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    คะแนนจะถูกบันทึกและอัปเดตในหน้า Dashboard และรายงานทันที
+                    {isUnitOwnerPostApprovalEdit
+                      ? 'แบบประเมินจะถูกส่งกลับไปยัง สสจ. และแอดมินเขต เพื่อตรวจสอบและอนุมัติใหม่อีกครั้ง'
+                      : 'คะแนนจะถูกบันทึกและอัปเดตในหน้า Dashboard และรายงานทันที'}
                   </p>
                 </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>แก้ไขต่อ</AlertDialogCancel>
+              <AlertDialogCancel disabled={submitting}>แก้ไขต่อ</AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => {
+                disabled={submitting}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  if (isUnitOwnerPostApprovalEdit && assessment) {
+                    try {
+                      setSubmitting(true);
+                      const fromStatus = assessment.status;
+                      const { error: updErr } = await supabase
+                        .from('assessments')
+                        .update({
+                          status: 'submitted',
+                          submitted_by: profile?.id,
+                          submitted_at: new Date().toISOString(),
+                          quantitative_score: Number(quantScore.score.toFixed(2)),
+                          qualitative_score: 0,
+                          impact_score: Number(impactScoreCalc.score.toFixed(2)),
+                          total_score: totalScore.score,
+                          provincial_approved_at: null,
+                          provincial_approved_by: null,
+                          regional_approved_at: null,
+                          regional_approved_by: null,
+                          quantitative_approved_at: null,
+                          quantitative_approved_by: null,
+                          impact_approved_at: null,
+                          impact_approved_by: null,
+                        })
+                        .eq('id', assessment.id);
+                      if (updErr) throw updErr;
+                      await supabase.from('approval_history').insert({
+                        assessment_id: assessment.id,
+                        from_status: fromStatus,
+                        to_status: 'submitted',
+                        action: 'resubmit_after_edit',
+                        performed_by: profile?.id!,
+                        comment: 'แก้ไขแบบประเมินหลังการอนุมัติ และส่งให้ สสจ./เขต ตรวจสอบใหม่',
+                      });
+                      toast({ title: 'ส่งแบบประเมินเพื่อตรวจสอบใหม่สำเร็จ', description: 'รอการตรวจสอบจาก สสจ. และแอดมินเขต' });
+                    } catch (err: any) {
+                      console.error(err);
+                      toast({ title: 'เกิดข้อผิดพลาด', description: err.message, variant: 'destructive' });
+                      setSubmitting(false);
+                      return;
+                    }
+                  }
                   setRegionalDoneDialogOpen(false);
+                  setSubmitting(false);
                   invalidateDashboardCache();
                   navigate('/dashboard');
                 }}
               >
-                ยืนยันและกลับ Dashboard
+                {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {isUnitOwnerPostApprovalEdit ? 'ยืนยันและส่งให้ สสจ./เขต' : 'ยืนยันและกลับ Dashboard'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
