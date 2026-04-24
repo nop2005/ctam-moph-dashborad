@@ -955,20 +955,20 @@ export default function ReportsQuantitative() {
             const showSummaryCols = selectedProvince === 'all';
             const isHospitalLevel = selectedProvince !== 'all';
             const sticky = {
-              name: 180,
-              hospitalCount: 80,
-              hospitalsAssessed: 100,
-              countMSAOffices: 130,
-              countMSAOfficesScore: 90,
-              countMSAOfficesScore7: 90,
-              countM2F: 120,
-              countM2FScore: 90,
-              countM2FScore7: 90,
-              avgQuantitative: 120,
-              passedAll17: 100,
-              unitQuantScore: 110,
-              unitPassedItems: 110,
-              percentGreen: 200
+              name: 150,
+              hospitalCount: 70,
+              hospitalsAssessed: 80,
+              countMSAOffices: 110,
+              countMSAOfficesScore: 80,
+              countMSAOfficesScore7: 80,
+              countM2F: 100,
+              countM2FScore: 80,
+              countM2FScore7: 80,
+              avgQuantitative: 100,
+              passedAll17: 80,
+              unitQuantScore: 95,
+              unitPassedItems: 95,
+              percentGreen: 170
             } as const;
             const left = {
               name: 0,
