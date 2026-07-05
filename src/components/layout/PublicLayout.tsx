@@ -219,6 +219,22 @@ function PublicSidebar({ navigate }: PublicSidebarProps) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+              {/* R1 Digital Health Forum */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="R1 Digital Health Forum"
+                  isActive={currentPath.startsWith("/public/event/r1next2026")}
+                  onClick={() => navigate("/public/event/r1next2026")}
+                  className={`
+                    text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground
+                    data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium
+                  `}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span>R1 Digital Health Forum</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* คู่มือเอกสาร - Main Menu Item */}
               <SidebarMenuItem>
                 <SidebarMenuButton
