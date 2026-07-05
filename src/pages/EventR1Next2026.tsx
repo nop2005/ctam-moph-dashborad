@@ -418,7 +418,7 @@ export default function EventR1Next2026() {
 
         {/* SPEAKERS */}
         <section id="speakers" className="space-y-6">
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-2 pb-10">
             <Badge variant="outline" className="border-primary/40 text-primary">Speakers</Badge>
             <h2 className="text-2xl md:text-3xl font-bold">วิทยากร</h2>
             <p className="text-muted-foreground">ผู้เชี่ยวชาญด้าน AI, Cybersecurity, PDPA และสาธารณสุขดิจิทัล</p>
