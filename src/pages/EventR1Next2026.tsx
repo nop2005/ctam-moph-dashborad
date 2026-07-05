@@ -430,7 +430,7 @@ export default function EventR1Next2026() {
                 className="group relative border-primary/15 hover:border-primary/50 hover:-translate-y-1 hover:shadow-xl transition-all"
               >
                 <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-cyan-400 via-primary to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <CardContent className="pt-16 pb-6 px-5 relative">
+                <CardContent className="pt-24 pb-6 px-5 relative">
                   <div className="absolute -top-10 left-5">
                     <SpeakerAvatar name={s.name} photo={s.photo} />
                   </div>
