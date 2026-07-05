@@ -152,7 +152,10 @@ export interface Speaker {
   title: string;
   organization: string;
   topic: string;
+  photo?: string;
 }
+
+import suratPhoto from "@/assets/event/speakers/surat-tanprawate.png.asset.json";
 
 export const SPEAKERS: Speaker[] = [
   {
@@ -160,6 +163,7 @@ export const SPEAKERS: Speaker[] = [
     title: "ผู้ช่วยคณบดีด้านวิจัย นวัตกรรม และวิเทศสัมพันธ์",
     organization: "รองหัวหน้าศูนย์นวัตกรรมสุขภาพ (MEDCHIC) คณะแพทยศาสตร์ มช.",
     topic: "Medical AI: Basic to Advance",
+    photo: suratPhoto.url,
   },
   {
     name: "เรือโท ธีรพล หนองหว้า",
