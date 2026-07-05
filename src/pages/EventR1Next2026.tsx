@@ -130,17 +130,17 @@ function SpeakerAvatar({ name, photo }: { name: string; photo?: string }) {
   for (const p of prefixes) if (clean.startsWith(p)) { clean = clean.slice(p.length); break; }
   const initial = clean.trim().charAt(0) || name.charAt(0);
   return (
-    <div className="relative w-28 h-28 flex-shrink-0">
-      <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-[hsl(190_95%_55%)] via-[hsl(217_91%_55%)] to-[hsl(265_85%_60%)] blur-md opacity-60" />
+    <div className="relative w-24 h-24 flex-shrink-0">
+      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[hsl(190_95%_55%)] via-[hsl(217_91%_55%)] to-[hsl(265_85%_60%)] blur-sm opacity-50" />
       {photo ? (
         <img
           src={photo}
           alt={name}
           loading="lazy"
-          className="relative w-28 h-28 rounded-full object-cover ring-[3px] ring-white/90 shadow-xl"
+          className="relative w-24 h-24 rounded-full object-cover ring-2 ring-white/90 shadow-lg"
         />
       ) : (
-        <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-[hsl(190_95%_55%)] via-[hsl(217_91%_50%)] to-[hsl(265_85%_55%)] flex items-center justify-center text-white font-bold text-3xl shadow-xl">
+        <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-[hsl(190_95%_55%)] via-[hsl(217_91%_50%)] to-[hsl(265_85%_55%)] flex items-center justify-center text-white font-bold text-2xl shadow-lg">
           {initial}
         </div>
       )}
