@@ -423,7 +423,7 @@ export default function EventR1Next2026() {
             <h2 className="text-2xl md:text-3xl font-bold">วิทยากร</h2>
             <p className="text-muted-foreground">ผู้เชี่ยวชาญด้าน AI, Cybersecurity, PDPA และสาธารณสุขดิจิทัล</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-24">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-32">
             {SPEAKERS.map((s) => (
               <Card
                 key={s.name}
@@ -431,7 +431,7 @@ export default function EventR1Next2026() {
               >
                 <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-cyan-400 via-primary to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <CardContent className="pt-24 pb-6 px-5 relative">
-                  <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2">
                     <SpeakerAvatar name={s.name} photo={s.photo} />
                   </div>
                   <div className="flex-1 min-w-0">
