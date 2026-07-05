@@ -432,7 +432,7 @@ export default function EventR1Next2026() {
                 <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-cyan-400 via-primary to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-3">
-                    <SpeakerAvatar name={s.name} />
+                    <SpeakerAvatar name={s.name} photo={s.photo} />
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-foreground leading-tight">{s.name}</h3>
                       <p className="text-xs text-muted-foreground mt-1">{s.title}</p>
