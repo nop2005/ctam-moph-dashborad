@@ -130,17 +130,17 @@ function SpeakerAvatar({ name, photo }: { name: string; photo?: string }) {
   for (const p of prefixes) if (clean.startsWith(p)) { clean = clean.slice(p.length); break; }
   const initial = clean.trim().charAt(0) || name.charAt(0);
   return (
-    <div className="relative w-20 h-20 flex-shrink-0">
-      <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-[hsl(190_95%_55%)] via-[hsl(217_91%_55%)] to-[hsl(265_85%_60%)] blur-md opacity-60" />
+    <div className="relative w-28 h-28 flex-shrink-0">
+      <div className="absolute -inset-2 rounded-full bg-gradient-to-br from-[hsl(190_95%_55%)] via-[hsl(217_91%_55%)] to-[hsl(265_85%_60%)] blur-lg opacity-60" />
       {photo ? (
         <img
           src={photo}
           alt={name}
           loading="lazy"
-          className="relative w-20 h-20 rounded-full object-cover ring-2 ring-white/80 shadow-lg"
+          className="relative w-28 h-28 rounded-full object-cover ring-[3px] ring-white/90 shadow-xl"
         />
       ) : (
-        <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-[hsl(190_95%_55%)] via-[hsl(217_91%_50%)] to-[hsl(265_85%_55%)] flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+        <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-[hsl(190_95%_55%)] via-[hsl(217_91%_50%)] to-[hsl(265_85%_55%)] flex items-center justify-center text-white font-bold text-3xl shadow-xl">
           {initial}
         </div>
       )}
@@ -427,20 +427,20 @@ export default function EventR1Next2026() {
             {SPEAKERS.map((s) => (
               <Card
                 key={s.name}
-                className="group relative overflow-hidden border-primary/15 hover:border-primary/50 hover:-translate-y-1 hover:shadow-xl transition-all"
+                className="group relative border-primary/15 hover:border-primary/50 hover:-translate-y-1 hover:shadow-xl transition-all"
               >
                 <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-cyan-400 via-primary to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <CardContent className="pt-6">
-                  <div className="flex items-start gap-3">
+                <CardContent className="pt-16 pb-6 px-5 relative">
+                  <div className="absolute -top-10 left-5">
                     <SpeakerAvatar name={s.name} photo={s.photo} />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-foreground leading-tight">{s.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">{s.title}</p>
-                      <p className="text-xs text-muted-foreground">{s.organization}</p>
-                      <Badge variant="secondary" className="mt-2 text-xs">
-                        {s.topic}
-                      </Badge>
-                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground leading-tight">{s.name}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">{s.title}</p>
+                    <p className="text-xs text-muted-foreground">{s.organization}</p>
+                    <Badge variant="secondary" className="mt-2 text-xs">
+                      {s.topic}
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>
