@@ -39,6 +39,7 @@ import aiShield from "@/assets/event/ai-shield.png";
 import day1Banner from "@/assets/event/day1-banner.jpg";
 import day2Banner from "@/assets/event/day2-banner.jpg";
 import venueBanner from "@/assets/event/venue-banner.jpg";
+import { AmbientSoundToggle } from "@/components/event/AmbientSoundToggle";
 
 function useCountdown(target: string) {
   const [now, setNow] = useState(() => Date.now());
@@ -149,6 +150,7 @@ export default function EventR1Next2026() {
 
   return (
     <PublicLayout>
+      <AmbientSoundToggle />
       <div className="space-y-16 pb-24">
         {/* HERO */}
         <section
