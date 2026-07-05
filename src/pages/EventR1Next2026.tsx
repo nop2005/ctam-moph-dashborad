@@ -123,9 +123,8 @@ function AgendaList({ items }: { items: AgendaItem[] }) {
   );
 }
 
-/** Speaker avatar: gradient circle w/ initials fallback */
-function SpeakerAvatar({ name }: { name: string }) {
-  // pick first meaningful Thai character after common title prefixes
+/** Speaker avatar: real photo when provided, otherwise gradient + initial */
+function SpeakerAvatar({ name, photo }: { name: string; photo?: string }) {
   const prefixes = ["ผศ.นพ.", "ผศ.", "รศ.นพ.", "รศ.", "นพ.", "พญ.", "ร.ต.อ.", "เรือโท ", "เรือโท", "ทีมวิทยากร "];
   let clean = name;
   for (const p of prefixes) if (clean.startsWith(p)) { clean = clean.slice(p.length); break; }
@@ -133,9 +132,18 @@ function SpeakerAvatar({ name }: { name: string }) {
   return (
     <div className="relative w-14 h-14 flex-shrink-0">
       <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[hsl(190_95%_55%)] via-[hsl(217_91%_55%)] to-[hsl(265_85%_60%)] blur-md opacity-60" />
-      <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-[hsl(190_95%_55%)] via-[hsl(217_91%_50%)] to-[hsl(265_85%_55%)] flex items-center justify-center text-white font-bold text-xl shadow-lg">
-        {initial}
-      </div>
+      {photo ? (
+        <img
+          src={photo}
+          alt={name}
+          loading="lazy"
+          className="relative w-14 h-14 rounded-full object-cover ring-2 ring-white/80 shadow-lg"
+        />
+      ) : (
+        <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-[hsl(190_95%_55%)] via-[hsl(217_91%_50%)] to-[hsl(265_85%_55%)] flex items-center justify-center text-white font-bold text-xl shadow-lg">
+          {initial}
+        </div>
+      )}
     </div>
   );
 }
@@ -424,7 +432,7 @@ export default function EventR1Next2026() {
                 <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-cyan-400 via-primary to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-3">
-                    <SpeakerAvatar name={s.name} />
+                    <SpeakerAvatar name={s.name} photo={s.photo} />
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-foreground leading-tight">{s.name}</h3>
                       <p className="text-xs text-muted-foreground mt-1">{s.title}</p>
