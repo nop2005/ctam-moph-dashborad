@@ -131,7 +131,7 @@ function SpeakerAvatar({ name, photo }: { name: string; photo?: string }) {
   const initial = clean.trim().charAt(0) || name.charAt(0);
   return (
     <div className="relative w-28 h-28 flex-shrink-0">
-      <div className="absolute -inset-2 rounded-full bg-gradient-to-br from-[hsl(190_95%_55%)] via-[hsl(217_91%_55%)] to-[hsl(265_85%_60%)] blur-lg opacity-60" />
+      <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-[hsl(190_95%_55%)] via-[hsl(217_91%_55%)] to-[hsl(265_85%_60%)] blur-md opacity-60" />
       {photo ? (
         <img
           src={photo}
