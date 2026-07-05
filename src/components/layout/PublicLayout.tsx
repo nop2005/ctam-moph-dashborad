@@ -35,6 +35,7 @@ import {
   Info,
   MonitorDot,
   Target,
+  Sparkles,
 } from "lucide-react";
 import { SidebarFooter, SidebarSeparator } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
