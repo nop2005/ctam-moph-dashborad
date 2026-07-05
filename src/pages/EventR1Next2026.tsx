@@ -423,7 +423,7 @@ export default function EventR1Next2026() {
             <h2 className="text-2xl md:text-3xl font-bold">วิทยากร</h2>
             <p className="text-muted-foreground">ผู้เชี่ยวชาญด้าน AI, Cybersecurity, PDPA และสาธารณสุขดิจิทัล</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-32">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 !mt-32">
             {SPEAKERS.map((s) => (
               <Card
                 key={s.name}
