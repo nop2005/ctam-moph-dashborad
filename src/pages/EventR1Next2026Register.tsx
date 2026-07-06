@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,8 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { InlineAutocomplete } from "@/components/event/InlineAutocomplete";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EVENT_INFO } from "@/data/eventContent";
@@ -22,23 +21,19 @@ import {
   type EventRegistrationInput,
   DIETARY_OPTIONS,
 } from "@/lib/eventRegistrationSchema";
-import {
-  ArrowLeft,
-  CheckCircle2,
-  Calendar,
-  MapPin,
-  Mail,
-  Loader2,
-  Sparkles,
-  Copy,
-  ChevronsUpDown,
-  Search,
-} from "lucide-react";
+import { ArrowLeft, CheckCircle2, Calendar, MapPin, Mail, Loader2, Sparkles, Copy } from "lucide-react";
 
 interface PersonnelSuggestion {
   personnel_id: string;
   full_name: string;
   position_name: string;
+  organization: string;
+  province: string;
+}
+
+interface OrgSuggestion {
+  org_id: string;
+  org_type: string;
   organization: string;
   province: string;
 }
@@ -52,100 +47,6 @@ export default function EventR1Next2026Register() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<SuccessInfo | null>(null);
-
-  // Personnel search state
-  const [inputMode, setInputMode] = useState<"search" | "manual">("search");
-  const [personnelOpen, setPersonnelOpen] = useState(false);
-  const [personnelQuery, setPersonnelQuery] = useState("");
-  const [personnelLoading, setPersonnelLoading] = useState(false);
-  const [personnelResults, setPersonnelResults] = useState<PersonnelSuggestion[]>([]);
-
-  // Position search state
-  const [positionOpen, setPositionOpen] = useState(false);
-  const [positionQuery, setPositionQuery] = useState("");
-  const [positionLoading, setPositionLoading] = useState(false);
-  const [positionResults, setPositionResults] = useState<{ position_name: string }[]>([]);
-
-  // Organization search state
-  const [orgOpen, setOrgOpen] = useState(false);
-  const [orgQuery, setOrgQuery] = useState("");
-  const [orgLoading, setOrgLoading] = useState(false);
-  const [orgResults, setOrgResults] = useState<
-    { org_id: string; org_type: string; organization: string; province: string }[]
-  >([]);
-
-  useEffect(() => {
-    let active = true;
-    const t = setTimeout(async () => {
-      setPersonnelLoading(true);
-      const { data, error } = await supabase.rpc("search_event_personnel_r1", {
-        p_query: personnelQuery || null,
-        p_limit: 30,
-      });
-      if (!active) return;
-      if (error) {
-        console.warn("personnel search failed", error);
-        setPersonnelResults([]);
-      } else {
-        setPersonnelResults((data as PersonnelSuggestion[]) || []);
-      }
-      setPersonnelLoading(false);
-    }, 200);
-    return () => {
-      active = false;
-      clearTimeout(t);
-    };
-  }, [personnelQuery]);
-
-  useEffect(() => {
-    if (!positionOpen) return;
-    let active = true;
-    const t = setTimeout(async () => {
-      setPositionLoading(true);
-      const { data, error } = await supabase.rpc("search_r1_positions", {
-        p_query: positionQuery || null,
-        p_limit: 50,
-      });
-      if (!active) return;
-      if (error) {
-        console.warn("position search failed", error);
-        setPositionResults([]);
-      } else {
-        setPositionResults((data as { position_name: string }[]) || []);
-      }
-      setPositionLoading(false);
-    }, 200);
-    return () => {
-      active = false;
-      clearTimeout(t);
-    };
-  }, [positionQuery, positionOpen]);
-
-  useEffect(() => {
-    if (!orgOpen) return;
-    let active = true;
-    const t = setTimeout(async () => {
-      setOrgLoading(true);
-      const { data, error } = await supabase.rpc("search_r1_organizations", {
-        p_query: orgQuery || null,
-        p_limit: 100,
-      });
-      if (!active) return;
-      if (error) {
-        console.warn("org search failed", error);
-        setOrgResults([]);
-      } else {
-        setOrgResults(
-          (data as { org_id: string; org_type: string; organization: string; province: string }[]) || []
-        );
-      }
-      setOrgLoading(false);
-    }, 200);
-    return () => {
-      active = false;
-      clearTimeout(t);
-    };
-  }, [orgQuery, orgOpen]);
 
   const form = useForm<EventRegistrationInput>({
     resolver: zodResolver(eventRegistrationSchema),
@@ -165,15 +66,36 @@ export default function EventR1Next2026Register() {
   });
 
   const dietary = form.watch("dietary");
-  
+  const fullName = form.watch("full_name");
+  const position = form.watch("position");
+  const organization = form.watch("organization");
 
-  function selectPersonnel(p: PersonnelSuggestion) {
-    form.setValue("full_name", p.full_name, { shouldValidate: true });
-    if (p.position_name) form.setValue("position", p.position_name, { shouldValidate: true });
-    if (p.organization) form.setValue("organization", p.organization, { shouldValidate: true });
-    if (p.province) form.setValue("province", p.province, { shouldValidate: true });
-    setPersonnelOpen(false);
-  }
+  const fetchPersonnel = useCallback(async (q: string): Promise<PersonnelSuggestion[]> => {
+    const { data, error } = await supabase.rpc("search_event_personnel_r1", {
+      p_query: q || null,
+      p_limit: 20,
+    });
+    if (error) throw error;
+    return (data as PersonnelSuggestion[]) || [];
+  }, []);
+
+  const fetchPositions = useCallback(async (q: string) => {
+    const { data, error } = await supabase.rpc("search_r1_positions", {
+      p_query: q || null,
+      p_limit: 30,
+    });
+    if (error) throw error;
+    return (data as { position_name: string }[]) || [];
+  }, []);
+
+  const fetchOrgs = useCallback(async (q: string): Promise<OrgSuggestion[]> => {
+    const { data, error } = await supabase.rpc("search_r1_organizations", {
+      p_query: q || null,
+      p_limit: 50,
+    });
+    if (error) throw error;
+    return (data as OrgSuggestion[]) || [];
+  }, []);
 
   async function onSubmit(values: EventRegistrationInput) {
     setSubmitting(true);
@@ -199,7 +121,6 @@ export default function EventR1Next2026Register() {
 
       if (error) throw error;
 
-      // Fire-and-log confirmation email — don't block success on email failure
       supabase.functions
         .invoke("send-event-registration-email", { body: { registration_id: data.id } })
         .catch((e) => console.warn("Email send failed:", e));
@@ -326,44 +247,12 @@ export default function EventR1Next2026Register() {
           </CardHeader>
           <CardContent>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-              {/* Mode toggle */}
-              <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-                <div className="text-sm font-medium">วิธีกรอกข้อมูลผู้ลงทะเบียน</div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setInputMode("search")}
-                    className={`text-left rounded-md border p-3 text-sm transition ${
-                      inputMode === "search"
-                        ? "border-primary bg-primary/10 ring-1 ring-primary/40"
-                        : "hover:bg-accent"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 font-medium">
-                      <Search className="h-4 w-4" /> ค้นหาจากรายชื่อ
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      เจ้าหน้าที่ที่มีใบ Certificate ในเขตสุขภาพที่ 1
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setInputMode("manual")}
-                    className={`text-left rounded-md border p-3 text-sm transition ${
-                      inputMode === "manual"
-                        ? "border-primary bg-primary/10 ring-1 ring-primary/40"
-                        : "hover:bg-accent"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 font-medium">
-                      <Sparkles className="h-4 w-4" /> กรอกเอง
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      กรณีไม่พบชื่อในระบบ / บุคคลภายนอก
-                    </div>
-                  </button>
-                </div>
-              </div>
+              <Alert className="bg-primary/5 border-primary/20">
+                <AlertDescription className="text-xs">
+                  💡 พิมพ์ชื่อ / ตำแหน่ง / หน่วยงาน แล้วระบบจะแสดงรายชื่อในเขตสุขภาพที่ 1 ให้เลือกอัตโนมัติ
+                  หากไม่พบชื่อในระบบ (บุคคลภายนอก) พิมพ์ข้อมูลได้ตามปกติแล้วกด "บันทึกการลงทะเบียน" ด้านล่าง
+                </AlertDescription>
+              </Alert>
 
               {/* Personal */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -371,92 +260,31 @@ export default function EventR1Next2026Register() {
                   <Label htmlFor="full_name">
                     ชื่อ-นามสกุล (พร้อมคำนำหน้า) <span className="text-destructive">*</span>
                   </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="full_name"
-                      placeholder={
-                        inputMode === "search"
-                          ? "กดปุ่ม 'ค้นหา' หรือพิมพ์ชื่อ"
-                          : "เช่น นพ.สมชาย ใจดี"
-                      }
-                      {...form.register("full_name")}
-                      className="flex-1"
-                    />
-                    {inputMode === "search" && (
-                      <Popover open={personnelOpen} onOpenChange={setPersonnelOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="shrink-0"
-                            title="ค้นหาจากรายชื่อเจ้าหน้าที่ในระบบ"
-                          >
-                            <Search className="h-4 w-4 mr-1" />
-                            ค้นหา
-                            <ChevronsUpDown className="h-3 w-3 ml-1 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[min(92vw,520px)] p-0" align="end">
-                          <Command shouldFilter={false}>
-                            <CommandInput
-                              placeholder="พิมพ์ชื่อ / ตำแหน่ง / หน่วยงาน..."
-                              value={personnelQuery}
-                              onValueChange={setPersonnelQuery}
-                            />
-                            <CommandList>
-                              {personnelLoading && (
-                                <div className="py-6 text-center text-sm text-muted-foreground">
-                                  <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
-                                  กำลังค้นหา...
-                                </div>
-                              )}
-                              {!personnelLoading && personnelResults.length === 0 && (
-                                <CommandEmpty>
-                                  <div className="space-y-2 py-2">
-                                    <div>ไม่พบรายชื่อในระบบ</div>
-                                    <Button
-                                      type="button"
-                                      variant="secondary"
-                                      size="sm"
-                                      onClick={() => {
-                                        setInputMode("manual");
-                                        setPersonnelOpen(false);
-                                      }}
-                                    >
-                                      สลับไปโหมด "กรอกเอง"
-                                    </Button>
-                                  </div>
-                                </CommandEmpty>
-                              )}
-                              {!personnelLoading && personnelResults.length > 0 && (
-                                <CommandGroup heading="รายชื่อเจ้าหน้าที่ (เขตสุขภาพที่ 1)">
-                                  {personnelResults.map((p) => (
-                                    <CommandItem
-                                      key={p.personnel_id}
-                                      value={p.personnel_id}
-                                      onSelect={() => selectPersonnel(p)}
-                                      className="flex flex-col items-start gap-0.5"
-                                    >
-                                      <div className="font-medium text-sm">{p.full_name}</div>
-                                      <div className="text-xs text-muted-foreground">
-                                        {[p.position_name, p.organization, p.province]
-                                          .filter(Boolean)
-                                          .join(" · ")}
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              )}
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
+                  <InlineAutocomplete<PersonnelSuggestion>
+                    id="full_name"
+                    value={fullName}
+                    onChange={(v) => form.setValue("full_name", v, { shouldValidate: true })}
+                    fetcher={fetchPersonnel}
+                    onSelect={(p) => {
+                      form.setValue("full_name", p.full_name, { shouldValidate: true });
+                      if (p.position_name) form.setValue("position", p.position_name, { shouldValidate: true });
+                      if (p.organization) form.setValue("organization", p.organization, { shouldValidate: true });
+                      if (p.province) form.setValue("province", p.province, { shouldValidate: true });
+                    }}
+                    placeholder="พิมพ์ชื่อ เช่น นพ.สมชาย ใจดี"
+                    itemKey={(p) => p.personnel_id}
+                    emptyText='ไม่พบชื่อในระบบ — พิมพ์ต่อได้ แล้วกด "บันทึกการลงทะเบียน" ด้านล่าง'
+                    renderItem={(p) => (
+                      <>
+                        <div className="font-medium text-sm">{p.full_name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {[p.position_name, p.organization, p.province].filter(Boolean).join(" · ")}
+                        </div>
+                      </>
                     )}
-                  </div>
+                  />
                   <p className="text-[11px] text-muted-foreground mt-1">
-                    {inputMode === "search"
-                      ? "เลือกจากรายชื่อเพื่อกรอกตำแหน่ง / หน่วยงาน / จังหวัด อัตโนมัติ"
-                      : "กรุณากรอกชื่อ-นามสกุล ตำแหน่ง และหน่วยงานด้วยตนเอง"}
+                    เลือกจากรายชื่อจะกรอกตำแหน่ง / หน่วยงาน / จังหวัดให้อัตโนมัติ
                   </p>
                   {form.formState.errors.full_name && (
                     <p className="text-xs text-destructive mt-1">
@@ -464,145 +292,58 @@ export default function EventR1Next2026Register() {
                     </p>
                   )}
                 </div>
+
                 <div>
                   <Label htmlFor="position">
                     ตำแหน่ง <span className="text-destructive">*</span>
                   </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="position"
-                      placeholder="เช่น ผู้อำนวยการโรงพยาบาล"
-                      {...form.register("position")}
-                      className="flex-1"
-                    />
-                    <Popover open={positionOpen} onOpenChange={setPositionOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className="shrink-0"
-                          title="ค้นหาตำแหน่งจากระบบ"
-                        >
-                          <Search className="h-4 w-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[min(92vw,420px)] p-0" align="end">
-                        <Command shouldFilter={false}>
-                          <CommandInput
-                            placeholder="พิมพ์ค้นหาตำแหน่ง..."
-                            value={positionQuery}
-                            onValueChange={setPositionQuery}
-                          />
-                          <CommandList>
-                            {positionLoading && (
-                              <div className="py-6 text-center text-sm text-muted-foreground">
-                                <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
-                                กำลังค้นหา...
-                              </div>
-                            )}
-                            {!positionLoading && positionResults.length === 0 && (
-                              <CommandEmpty>ไม่พบตำแหน่ง — พิมพ์เองในช่องได้เลย</CommandEmpty>
-                            )}
-                            {!positionLoading && positionResults.length > 0 && (
-                              <CommandGroup heading="ตำแหน่งในเขตสุขภาพที่ 1">
-                                {positionResults.map((p, i) => (
-                                  <CommandItem
-                                    key={`${p.position_name}-${i}`}
-                                    value={p.position_name}
-                                    onSelect={() => {
-                                      form.setValue("position", p.position_name, { shouldValidate: true });
-                                      setPositionOpen(false);
-                                    }}
-                                  >
-                                    {p.position_name}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            )}
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+                  <InlineAutocomplete<{ position_name: string }>
+                    id="position"
+                    value={position}
+                    onChange={(v) => form.setValue("position", v, { shouldValidate: true })}
+                    fetcher={fetchPositions}
+                    onSelect={(p) =>
+                      form.setValue("position", p.position_name, { shouldValidate: true })
+                    }
+                    placeholder="พิมพ์ตำแหน่ง เช่น ผู้อำนวยการโรงพยาบาล"
+                    itemKey={(p) => p.position_name}
+                    renderItem={(p) => p.position_name}
+                  />
                   {form.formState.errors.position && (
                     <p className="text-xs text-destructive mt-1">
                       {form.formState.errors.position.message}
                     </p>
                   )}
                 </div>
+
                 <div>
                   <Label htmlFor="organization">
                     หน่วยงาน / โรงพยาบาล <span className="text-destructive">*</span>
                   </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="organization"
-                      placeholder="เช่น โรงพยาบาลลำปาง"
-                      {...form.register("organization")}
-                      className="flex-1"
-                    />
-                    <Popover open={orgOpen} onOpenChange={setOrgOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className="shrink-0"
-                          title="ค้นหาหน่วยงานจากระบบ (เขต 1)"
-                        >
-                          <Search className="h-4 w-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[min(92vw,520px)] p-0" align="end">
-                        <Command shouldFilter={false}>
-                          <CommandInput
-                            placeholder="พิมพ์ค้นหาหน่วยงาน / จังหวัด..."
-                            value={orgQuery}
-                            onValueChange={setOrgQuery}
-                          />
-                          <CommandList>
-                            {orgLoading && (
-                              <div className="py-6 text-center text-sm text-muted-foreground">
-                                <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
-                                กำลังค้นหา...
-                              </div>
-                            )}
-                            {!orgLoading && orgResults.length === 0 && (
-                              <CommandEmpty>ไม่พบหน่วยงาน — พิมพ์เองในช่องได้เลย</CommandEmpty>
-                            )}
-                            {!orgLoading && orgResults.length > 0 && (
-                              <CommandGroup heading="หน่วยงานในเขตสุขภาพที่ 1">
-                                {orgResults.map((o) => (
-                                  <CommandItem
-                                    key={`${o.org_type}-${o.org_id}`}
-                                    value={`${o.org_id}`}
-                                    onSelect={() => {
-                                      form.setValue("organization", o.organization, {
-                                        shouldValidate: true,
-                                      });
-                                      if (o.province)
-                                        form.setValue("province", o.province, { shouldValidate: true });
-                                      setOrgOpen(false);
-                                    }}
-                                    className="flex flex-col items-start gap-0.5"
-                                  >
-                                    <div className="text-sm font-medium">{o.organization}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {o.org_type === "hospital" ? "โรงพยาบาล" : "สนง.สาธารณสุข"}
-                                      {o.province ? ` · จ.${o.province}` : ""}
-                                    </div>
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            )}
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+                  <InlineAutocomplete<OrgSuggestion>
+                    id="organization"
+                    value={organization}
+                    onChange={(v) => form.setValue("organization", v, { shouldValidate: true })}
+                    fetcher={fetchOrgs}
+                    onSelect={(o) => {
+                      form.setValue("organization", o.organization, { shouldValidate: true });
+                      if (o.province)
+                        form.setValue("province", o.province, { shouldValidate: true });
+                    }}
+                    placeholder="พิมพ์หน่วยงาน เช่น โรงพยาบาลลำปาง"
+                    itemKey={(o) => `${o.org_type}-${o.org_id}`}
+                    renderItem={(o) => (
+                      <>
+                        <div className="text-sm font-medium">{o.organization}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {o.org_type === "hospital" ? "โรงพยาบาล" : "สนง.สาธารณสุข"}
+                          {o.province ? ` · จ.${o.province}` : ""}
+                        </div>
+                      </>
+                    )}
+                  />
                   <p className="text-[11px] text-muted-foreground mt-1">
-                    เลือกหน่วยงานเพื่อกรอกจังหวัดอัตโนมัติ
+                    เลือกจากรายการเพื่อกรอกจังหวัดอัตโนมัติ
                   </p>
                   {form.formState.errors.organization && (
                     <p className="text-xs text-destructive mt-1">
@@ -610,6 +351,7 @@ export default function EventR1Next2026Register() {
                     </p>
                   )}
                 </div>
+
                 <div>
                   <Label htmlFor="province">
                     จังหวัด <span className="text-destructive">*</span>
@@ -743,7 +485,7 @@ export default function EventR1Next2026Register() {
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" /> กำลังส่งข้อมูล...
                   </>
                 ) : (
-                  <>ยืนยันการลงทะเบียน</>
+                  <>บันทึกการลงทะเบียน</>
                 )}
               </Button>
             </form>
