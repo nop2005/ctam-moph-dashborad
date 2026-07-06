@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -272,10 +272,12 @@ export default function EventR1Next2026() {
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-cyan-400 to-violet-500 hover:from-cyan-300 hover:to-violet-400 text-slate-900 font-semibold shadow-[0_0_30px_hsl(190_95%_55%/0.5)] border-0"
-                onClick={() => scrollTo("register")}
+                asChild
               >
-                ลงทะเบียนเข้าร่วม
-                <ArrowRight className="h-4 w-4 ml-1" />
+                <Link to="/public/event/r1next2026/register">
+                  ลงทะเบียนเข้าร่วม
+                  <ArrowRight className="h-4 w-4 ml-1" />
+                </Link>
               </Button>
               <Button
                 size="lg"
@@ -551,9 +553,9 @@ export default function EventR1Next2026() {
             style={{ animationDelay: "2s" }}
           />
           <div className="relative z-10 max-w-2xl mx-auto space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full event-glass border border-cyan-300/30 text-cyan-100 text-xs uppercase tracking-widest">
-              <Zap className="h-3.5 w-3.5" />
-              เร็ว ๆ นี้
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full event-glass border border-emerald-300/40 text-emerald-100 text-xs uppercase tracking-widest">
+              <Sparkles className="h-3.5 w-3.5" />
+              เปิดรับสมัครแล้ว
             </div>
             <h2 className="text-3xl md:text-5xl font-bold">
               <span className="event-text-gradient">พร้อมแล้ว</span>
@@ -566,14 +568,14 @@ export default function EventR1Next2026() {
             <div className="pt-2">
               <Button
                 size="lg"
-                className="bg-gradient-to-r from-cyan-400 to-violet-500 text-slate-900 font-semibold text-lg h-14 px-10 border-0 shadow-[0_0_30px_hsl(190_95%_55%/0.5)]"
-                disabled
+                className="bg-gradient-to-r from-cyan-400 to-violet-500 text-slate-900 font-semibold text-lg h-14 px-10 border-0 shadow-[0_0_30px_hsl(190_95%_55%/0.5)] hover:from-cyan-300 hover:to-violet-400"
+                asChild
               >
-                เปิดลงทะเบียนเร็ว ๆ นี้
+                <Link to="/public/event/r1next2026/register">
+                  ลงทะเบียนเข้าร่วมงาน
+                  <ArrowRight className="h-5 w-5 ml-1" />
+                </Link>
               </Button>
-              <p className="text-xs text-white/70 mt-3">
-                (ระบบลงทะเบียนออนไลน์อยู่ระหว่างการพัฒนา — ติดต่อผู้จัดโดยตรงในระหว่างนี้)
-              </p>
             </div>
             <div className="pt-4 flex items-center justify-center gap-2 text-sm text-cyan-100">
               <Mail className="h-4 w-4" />

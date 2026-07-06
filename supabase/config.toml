@@ -29,3 +29,7 @@ verify_jwt = false
 
 [functions.create-ceo-users]
 verify_jwt = false
+
+[functions.send-event-registration-email]
+verify_jwt = false
+

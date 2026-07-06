@@ -46,6 +46,8 @@ import PublicStrategicPlan from "./pages/PublicStrategicPlan";
 import PublicR1dcPricing from "./pages/PublicR1dcPricing";
 import PublicR1dcArchitecture from "./pages/PublicR1dcArchitecture";
 import EventR1Next2026 from "./pages/EventR1Next2026";
+import EventR1Next2026Register from "./pages/EventR1Next2026Register";
+import EventR1Next2026Admin from "./pages/EventR1Next2026Admin";
 
 
 const queryClient = new QueryClient({
@@ -87,6 +89,7 @@ const App = () => (
             <Route path="/public/strategic-plan/architecture" element={<PublicR1dcArchitecture />} />
 
             <Route path="/public/event/r1next2026" element={<EventR1Next2026 />} />
+            <Route path="/public/event/r1next2026/register" element={<EventR1Next2026Register />} />
             
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route 
@@ -290,6 +293,14 @@ const App = () => (
                   <PersonnelReport />
                 </ProtectedRoute>
               } 
+            />
+            <Route
+              path="/event/r1next2026/registrations"
+              element={
+                <ProtectedRoute allowedRoles={['central_admin', 'regional']}>
+                  <EventR1Next2026Admin />
+                </ProtectedRoute>
+              }
             />
             <Route 
               path="/admin/system-dashboard"
