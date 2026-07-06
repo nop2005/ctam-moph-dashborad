@@ -64,7 +64,7 @@ export const AGENDA_DAY1: AgendaItem[] = [
     room: "main",
     type: "session",
   },
-  { time: "10.45 – 11.00", title: "พักรับประทานอาหารว่าง / เยี่ยมชมบูธ", type: "break" },
+  
   {
     time: "11.00 – 12.00",
     title: "Cybersecurity and Data Governance",
