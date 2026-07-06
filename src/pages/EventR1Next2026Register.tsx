@@ -100,6 +100,15 @@ export default function EventR1Next2026Register() {
   });
 
   const dietary = form.watch("dietary");
+  const fullNameValue = form.watch("full_name");
+
+  function selectPersonnel(p: PersonnelSuggestion) {
+    form.setValue("full_name", p.full_name, { shouldValidate: true });
+    if (p.position_name) form.setValue("position", p.position_name, { shouldValidate: true });
+    if (p.organization) form.setValue("organization", p.organization, { shouldValidate: true });
+    if (p.province) form.setValue("province", p.province, { shouldValidate: true });
+    setPersonnelOpen(false);
+  }
 
   async function onSubmit(values: EventRegistrationInput) {
     setSubmitting(true);
