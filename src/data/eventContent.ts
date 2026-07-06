@@ -64,7 +64,7 @@ export const AGENDA_DAY1: AgendaItem[] = [
     room: "main",
     type: "session",
   },
-  { time: "10.45 – 11.00", title: "พักรับประทานอาหารว่าง / เยี่ยมชมบูธ", type: "break" },
+  
   {
     time: "11.00 – 12.00",
     title: "Cybersecurity and Data Governance",
@@ -112,7 +112,7 @@ export const AGENDA_DAY2: AgendaItem[] = [
     room: "main",
     type: "session",
   },
-  { time: "10.30 – 10.45", title: "พักรับประทานอาหารว่าง / เยี่ยมชมบูธ", type: "break" },
+  
   {
     time: "10.45 – 12.00",
     title: "Panel Discussion: Digital Platform - หมอพร้อมเพื่อยกระดับปฐมภูมิ",
@@ -137,7 +137,7 @@ export const AGENDA_DAY2: AgendaItem[] = [
     room: "sub",
     type: "panel",
   },
-  { time: "15.00 – 15.15", title: "พักรับประทานอาหารว่าง / เยี่ยมชมบูธ", type: "break" },
+  
   {
     time: "15.00 – 15.45",
     title: "สรุปบทเรียนและแนวทางการทำงาน",
