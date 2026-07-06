@@ -98,7 +98,11 @@ export default function EventR1Next2026Register() {
       p_limit: 50,
     });
     if (error) throw error;
-    return (data as OrgSuggestion[]) || [];
+    const list = (data as OrgSuggestion[]) || [];
+    return [
+      ...list,
+      { org_id: "other", org_type: "other", organization: "อื่นๆ (ระบุเอง)", province: "" },
+    ];
   }, []);
 
   const fetchProvinces = useCallback(async (q: string): Promise<{ province: string }[]> => {
