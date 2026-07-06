@@ -49,7 +49,7 @@ export interface AgendaItem {
 }
 
 export const AGENDA_DAY1: AgendaItem[] = [
-  { time: "08.30 – 09.00", title: "ลงทะเบียน", type: "break" },
+  { time: "08.30 – 09.00", title: "ลงทะเบียน", type: "session" },
   {
     time: "09.00 – 09.30",
     title: "พิธีเปิด",
