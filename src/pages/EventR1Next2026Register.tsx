@@ -54,6 +54,7 @@ export default function EventR1Next2026Register() {
   const [success, setSuccess] = useState<SuccessInfo | null>(null);
 
   // Personnel search state
+  const [inputMode, setInputMode] = useState<"search" | "manual">("search");
   const [personnelOpen, setPersonnelOpen] = useState(false);
   const [personnelQuery, setPersonnelQuery] = useState("");
   const [personnelLoading, setPersonnelLoading] = useState(false);
