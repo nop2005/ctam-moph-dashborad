@@ -117,7 +117,7 @@ function AgendaItemCard({ it, compact = false, hideRoomBadge = false }: { it: Ag
           <h3 className={`font-semibold ${isBreak ? "text-muted-foreground" : "text-foreground"}`}>
             {it.title}
           </h3>
-          {roomLabel(it.room)}
+          {!hideRoomBadge && roomLabel(it.room)}
         </div>
         {it.detail && <p className="text-sm text-muted-foreground mt-1">{it.detail}</p>}
         {it.speaker && (
