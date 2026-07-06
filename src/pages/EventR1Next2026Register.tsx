@@ -49,6 +49,7 @@ export default function EventR1Next2026Register() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<SuccessInfo | null>(null);
   const [positionOther, setPositionOther] = useState(false);
+  const [orgOther, setOrgOther] = useState(false);
 
   const form = useForm<EventRegistrationInput>({
     resolver: zodResolver(eventRegistrationSchema),
