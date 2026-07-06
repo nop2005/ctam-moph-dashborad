@@ -132,46 +132,64 @@ function AgendaItemCard({ it, compact = false }: { it: AgendaItem; compact?: boo
 }
 
 function AgendaList({ items }: { items: AgendaItem[] }) {
-  // Group adjacent items that split into main/sub rooms with overlapping times.
-  const groups: Array<AgendaItem[]> = [];
+  // Group any consecutive run of items with room main/sub into a 2-column block.
+  type Group = { kind: "single"; item: AgendaItem } | { kind: "split"; main: AgendaItem[]; sub: AgendaItem[] };
+  const groups: Group[] = [];
   let i = 0;
   while (i < items.length) {
     const cur = items[i];
-    const next = items[i + 1];
-    if (
-      cur.room && next?.room &&
-      cur.room !== next.room &&
-      (cur.room === "main" || cur.room === "sub") &&
-      (next.room === "main" || next.room === "sub")
-    ) {
-      const [aS, aE] = parseTime(cur.time);
-      const [bS, bE] = parseTime(next.time);
-      if (aS < bE && bS < aE) {
-        const pair = cur.room === "main" ? [cur, next] : [next, cur];
-        groups.push(pair);
-        i += 2;
+    if (cur.room === "main" || cur.room === "sub") {
+      let j = i;
+      const run: AgendaItem[] = [];
+      while (j < items.length && (items[j].room === "main" || items[j].room === "sub")) {
+        run.push(items[j]);
+        j++;
+      }
+      const hasMain = run.some((r) => r.room === "main");
+      const hasSub = run.some((r) => r.room === "sub");
+      if (run.length > 1 && hasMain && hasSub) {
+        groups.push({
+          kind: "split",
+          main: run.filter((r) => r.room === "main"),
+          sub: run.filter((r) => r.room === "sub"),
+        });
+        i = j;
         continue;
       }
     }
-    groups.push([cur]);
+    groups.push({ kind: "single", item: cur });
     i += 1;
   }
 
   return (
     <div className="space-y-3">
-      {groups.map((g, i) => {
-        if (g.length === 1) return <AgendaItemCard key={i} it={g[0]} />;
+      {groups.map((g, idx) => {
+        if (g.kind === "single") return <AgendaItemCard key={idx} it={g.item} />;
         return (
-          <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {g.map((it, j) => (
-              <AgendaItemCard key={j} it={it} compact />
-            ))}
+          <div key={idx} className="rounded-xl border border-primary/20 bg-primary/[0.02] p-3">
+            <div className="grid grid-cols-2 gap-3 mb-2">
+              <div className="text-center">
+                <Badge variant="secondary" className="text-sm">ห้องประชุมใหญ่</Badge>
+              </div>
+              <div className="text-center">
+                <Badge variant="outline" className="text-sm">ห้องประชุมย่อย</Badge>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
+              <div className="space-y-3">
+                {g.main.map((it, j) => <AgendaItemCard key={j} it={it} compact hideRoomBadge />)}
+              </div>
+              <div className="space-y-3">
+                {g.sub.map((it, j) => <AgendaItemCard key={j} it={it} compact hideRoomBadge />)}
+              </div>
+            </div>
           </div>
         );
       })}
     </div>
   );
 }
+
 
 
 /** Speaker avatar: real photo when provided, otherwise gradient + initial */
