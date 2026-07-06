@@ -311,18 +311,22 @@ export default function EventR1Next2026Register() {
                   <Label htmlFor="position">
                     ตำแหน่ง <span className="text-destructive">*</span>
                   </Label>
-                  <InlineAutocomplete<{ position_name: string }>
+                  <StrictCombobox<{ position_name: string }>
                     id="position"
                     value={position}
-                    onChange={(v) => form.setValue("position", v, { shouldValidate: true })}
-                    fetcher={fetchPositions}
                     onSelect={(p) =>
                       form.setValue("position", p.position_name, { shouldValidate: true })
                     }
-                    placeholder="พิมพ์ตำแหน่ง เช่น ผู้อำนวยการโรงพยาบาล"
+                    fetcher={fetchPositions}
+                    placeholder="เลือกตำแหน่ง"
+                    searchPlaceholder="พิมพ์เพื่อค้นหาตำแหน่ง..."
+                    emptyText="ไม่พบตำแหน่งที่ตรงกับคำค้น"
                     itemKey={(p) => p.position_name}
-                    renderItem={(p) => p.position_name}
+                    itemLabel={(p) => p.position_name}
                   />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    เลือกจากรายการเท่านั้น (พิมพ์เพื่อค้นหา)
+                  </p>
                   {form.formState.errors.position && (
                     <p className="text-xs text-destructive mt-1">
                       {form.formState.errors.position.message}
@@ -334,18 +338,20 @@ export default function EventR1Next2026Register() {
                   <Label htmlFor="organization">
                     หน่วยงาน / โรงพยาบาล <span className="text-destructive">*</span>
                   </Label>
-                  <InlineAutocomplete<OrgSuggestion>
+                  <StrictCombobox<OrgSuggestion>
                     id="organization"
                     value={organization}
-                    onChange={(v) => form.setValue("organization", v, { shouldValidate: true })}
-                    fetcher={fetchOrgs}
                     onSelect={(o) => {
                       form.setValue("organization", o.organization, { shouldValidate: true });
                       if (o.province)
                         form.setValue("province", o.province, { shouldValidate: true });
                     }}
-                    placeholder="พิมพ์หน่วยงาน เช่น โรงพยาบาลลำปาง"
+                    fetcher={fetchOrgs}
+                    placeholder="เลือกหน่วยงาน / โรงพยาบาล"
+                    searchPlaceholder="พิมพ์เพื่อค้นหาหน่วยงาน..."
+                    emptyText="ไม่พบหน่วยงานที่ตรงกับคำค้น"
                     itemKey={(o) => `${o.org_type}-${o.org_id}`}
+                    itemLabel={(o) => o.organization}
                     renderItem={(o) => (
                       <>
                         <div className="text-sm font-medium">{o.organization}</div>
@@ -357,7 +363,7 @@ export default function EventR1Next2026Register() {
                     )}
                   />
                   <p className="text-[11px] text-muted-foreground mt-1">
-                    เลือกจากรายการเพื่อกรอกจังหวัดอัตโนมัติ
+                    เลือกจากรายการเท่านั้น — จังหวัดจะถูกกรอกให้อัตโนมัติ
                   </p>
                   {form.formState.errors.organization && (
                     <p className="text-xs text-destructive mt-1">
@@ -370,7 +376,19 @@ export default function EventR1Next2026Register() {
                   <Label htmlFor="province">
                     จังหวัด <span className="text-destructive">*</span>
                   </Label>
-                  <Input id="province" placeholder="เช่น ลำปาง" {...form.register("province")} />
+                  <StrictCombobox<{ province: string }>
+                    id="province"
+                    value={form.watch("province")}
+                    onSelect={(p) =>
+                      form.setValue("province", p.province, { shouldValidate: true })
+                    }
+                    fetcher={fetchProvinces}
+                    placeholder="เลือกจังหวัด"
+                    searchPlaceholder="พิมพ์เพื่อค้นหาจังหวัด..."
+                    emptyText="ไม่พบจังหวัด"
+                    itemKey={(p) => p.province}
+                    itemLabel={(p) => p.province}
+                  />
                   {form.formState.errors.province && (
                     <p className="text-xs text-destructive mt-1">
                       {form.formState.errors.province.message}
