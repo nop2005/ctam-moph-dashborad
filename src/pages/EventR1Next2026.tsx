@@ -132,8 +132,11 @@ function AgendaItemCard({ it, compact = false, hideRoomBadge = false }: { it: Ag
 }
 
 function AgendaList({ items }: { items: AgendaItem[] }) {
-  // Group any consecutive run of items with room main/sub into a 2-column block.
-  type Group = { kind: "single"; item: AgendaItem } | { kind: "split"; main: AgendaItem[]; sub: AgendaItem[] };
+  type Group =
+    | { kind: "single"; item: AgendaItem }
+    | { kind: "split"; main: AgendaItem[]; sub: AgendaItem[] }
+    | { kind: "mainOnly"; items: AgendaItem[] }
+    | { kind: "subOnly"; items: AgendaItem[] };
   const groups: Group[] = [];
   let i = 0;
   while (i < items.length) {
@@ -156,6 +159,16 @@ function AgendaList({ items }: { items: AgendaItem[] }) {
         i = j;
         continue;
       }
+      if (run.length > 1 && hasMain && !hasSub) {
+        groups.push({ kind: "mainOnly", items: run });
+        i = j;
+        continue;
+      }
+      if (run.length > 1 && !hasMain && hasSub) {
+        groups.push({ kind: "subOnly", items: run });
+        i = j;
+        continue;
+      }
     }
     groups.push({ kind: "single", item: cur });
     i += 1;
@@ -165,6 +178,34 @@ function AgendaList({ items }: { items: AgendaItem[] }) {
     <div className="space-y-3">
       {groups.map((g, idx) => {
         if (g.kind === "single") return <AgendaItemCard key={idx} it={g.item} />;
+        if (g.kind === "mainOnly") {
+          return (
+            <div key={idx} className="rounded-xl border border-primary/20 bg-primary/[0.02] p-3">
+              <div className="mb-2">
+                <Badge variant="secondary" className="text-sm">ห้องประชุมใหญ่</Badge>
+              </div>
+              <div className="flex flex-col gap-3">
+                {g.items.map((it, j) => (
+                  <AgendaItemCard key={j} it={it} compact hideRoomBadge />
+                ))}
+              </div>
+            </div>
+          );
+        }
+        if (g.kind === "subOnly") {
+          return (
+            <div key={idx} className="rounded-xl border border-primary/20 bg-primary/[0.02] p-3">
+              <div className="mb-2">
+                <Badge variant="outline" className="text-sm">ห้องประชุมย่อย</Badge>
+              </div>
+              <div className="flex flex-col gap-3">
+                {g.items.map((it, j) => (
+                  <AgendaItemCard key={j} it={it} compact hideRoomBadge />
+                ))}
+              </div>
+            </div>
+          );
+        }
         return (
           <div key={idx} className="rounded-xl border border-primary/20 bg-primary/[0.02] p-3">
             <div className="grid grid-cols-2 gap-3 mb-2">
