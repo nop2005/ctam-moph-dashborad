@@ -98,6 +98,19 @@ export default function EventR1Next2026Register() {
     return (data as OrgSuggestion[]) || [];
   }, []);
 
+  const fetchProvinces = useCallback(async (q: string): Promise<{ province: string }[]> => {
+    const { data, error } = await supabase.rpc("search_r1_organizations", {
+      p_query: null,
+      p_limit: 200,
+    });
+    if (error) throw error;
+    const uniq = Array.from(
+      new Set(((data as OrgSuggestion[]) || []).map((o) => o.province).filter(Boolean)),
+    ).sort((a, b) => a.localeCompare(b, "th"));
+    const filtered = q ? uniq.filter((p) => p.includes(q)) : uniq;
+    return filtered.map((province) => ({ province }));
+  }, []);
+
   async function onSubmit(values: EventRegistrationInput) {
     setSubmitting(true);
     try {
