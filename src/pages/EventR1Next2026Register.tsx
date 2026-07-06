@@ -468,7 +468,63 @@ export default function EventR1Next2026Register() {
                   <Label htmlFor="position">
                     ตำแหน่ง <span className="text-destructive">*</span>
                   </Label>
-                  <Input id="position" placeholder="เช่น ผู้อำนวยการโรงพยาบาล" {...form.register("position")} />
+                  <div className="flex gap-2">
+                    <Input
+                      id="position"
+                      placeholder="เช่น ผู้อำนวยการโรงพยาบาล"
+                      {...form.register("position")}
+                      className="flex-1"
+                    />
+                    <Popover open={positionOpen} onOpenChange={setPositionOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="shrink-0"
+                          title="ค้นหาตำแหน่งจากระบบ"
+                        >
+                          <Search className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[min(92vw,420px)] p-0" align="end">
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="พิมพ์ค้นหาตำแหน่ง..."
+                            value={positionQuery}
+                            onValueChange={setPositionQuery}
+                          />
+                          <CommandList>
+                            {positionLoading && (
+                              <div className="py-6 text-center text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                                กำลังค้นหา...
+                              </div>
+                            )}
+                            {!positionLoading && positionResults.length === 0 && (
+                              <CommandEmpty>ไม่พบตำแหน่ง — พิมพ์เองในช่องได้เลย</CommandEmpty>
+                            )}
+                            {!positionLoading && positionResults.length > 0 && (
+                              <CommandGroup heading="ตำแหน่งในเขตสุขภาพที่ 1">
+                                {positionResults.map((p, i) => (
+                                  <CommandItem
+                                    key={`${p.position_name}-${i}`}
+                                    value={p.position_name}
+                                    onSelect={() => {
+                                      form.setValue("position", p.position_name, { shouldValidate: true });
+                                      setPositionOpen(false);
+                                    }}
+                                  >
+                                    {p.position_name}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            )}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                   {form.formState.errors.position && (
                     <p className="text-xs text-destructive mt-1">
                       {form.formState.errors.position.message}
@@ -479,7 +535,75 @@ export default function EventR1Next2026Register() {
                   <Label htmlFor="organization">
                     หน่วยงาน / โรงพยาบาล <span className="text-destructive">*</span>
                   </Label>
-                  <Input id="organization" placeholder="เช่น โรงพยาบาลลำปาง" {...form.register("organization")} />
+                  <div className="flex gap-2">
+                    <Input
+                      id="organization"
+                      placeholder="เช่น โรงพยาบาลลำปาง"
+                      {...form.register("organization")}
+                      className="flex-1"
+                    />
+                    <Popover open={orgOpen} onOpenChange={setOrgOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="shrink-0"
+                          title="ค้นหาหน่วยงานจากระบบ (เขต 1)"
+                        >
+                          <Search className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[min(92vw,520px)] p-0" align="end">
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="พิมพ์ค้นหาหน่วยงาน / จังหวัด..."
+                            value={orgQuery}
+                            onValueChange={setOrgQuery}
+                          />
+                          <CommandList>
+                            {orgLoading && (
+                              <div className="py-6 text-center text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                                กำลังค้นหา...
+                              </div>
+                            )}
+                            {!orgLoading && orgResults.length === 0 && (
+                              <CommandEmpty>ไม่พบหน่วยงาน — พิมพ์เองในช่องได้เลย</CommandEmpty>
+                            )}
+                            {!orgLoading && orgResults.length > 0 && (
+                              <CommandGroup heading="หน่วยงานในเขตสุขภาพที่ 1">
+                                {orgResults.map((o) => (
+                                  <CommandItem
+                                    key={`${o.org_type}-${o.org_id}`}
+                                    value={`${o.org_id}`}
+                                    onSelect={() => {
+                                      form.setValue("organization", o.organization, {
+                                        shouldValidate: true,
+                                      });
+                                      if (o.province)
+                                        form.setValue("province", o.province, { shouldValidate: true });
+                                      setOrgOpen(false);
+                                    }}
+                                    className="flex flex-col items-start gap-0.5"
+                                  >
+                                    <div className="text-sm font-medium">{o.organization}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {o.org_type === "hospital" ? "โรงพยาบาล" : "สนง.สาธารณสุข"}
+                                      {o.province ? ` · จ.${o.province}` : ""}
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            )}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    เลือกหน่วยงานเพื่อกรอกจังหวัดอัตโนมัติ
+                  </p>
                   {form.formState.errors.organization && (
                     <p className="text-xs text-destructive mt-1">
                       {form.formState.errors.organization.message}
