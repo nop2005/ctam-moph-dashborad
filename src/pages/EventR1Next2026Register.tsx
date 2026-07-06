@@ -267,7 +267,70 @@ export default function EventR1Next2026Register() {
                   <Label htmlFor="full_name">
                     ชื่อ-นามสกุล (พร้อมคำนำหน้า) <span className="text-destructive">*</span>
                   </Label>
-                  <Input id="full_name" placeholder="เช่น นพ.สมชาย ใจดี" {...form.register("full_name")} />
+                  <div className="flex gap-2">
+                    <Input
+                      id="full_name"
+                      placeholder="เช่น นพ.สมชาย ใจดี"
+                      {...form.register("full_name")}
+                      className="flex-1"
+                    />
+                    <Popover open={personnelOpen} onOpenChange={setPersonnelOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="shrink-0"
+                          title="ค้นหาจากรายชื่อเจ้าหน้าที่ในระบบ"
+                        >
+                          <Search className="h-4 w-4 mr-1" />
+                          ค้นหา
+                          <ChevronsUpDown className="h-3 w-3 ml-1 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[min(92vw,520px)] p-0" align="end">
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="พิมพ์ชื่อ / ตำแหน่ง / หน่วยงาน..."
+                            value={personnelQuery}
+                            onValueChange={setPersonnelQuery}
+                          />
+                          <CommandList>
+                            {personnelLoading && (
+                              <div className="py-6 text-center text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                                กำลังค้นหา...
+                              </div>
+                            )}
+                            {!personnelLoading && personnelResults.length === 0 && (
+                              <CommandEmpty>ไม่พบรายชื่อ — กรอกด้วยตนเองด้านซ้ายได้เลย</CommandEmpty>
+                            )}
+                            {!personnelLoading && personnelResults.length > 0 && (
+                              <CommandGroup heading="รายชื่อเจ้าหน้าที่ (เขตสุขภาพที่ 1)">
+                                {personnelResults.map((p) => (
+                                  <CommandItem
+                                    key={p.personnel_id}
+                                    value={p.personnel_id}
+                                    onSelect={() => selectPersonnel(p)}
+                                    className="flex flex-col items-start gap-0.5"
+                                  >
+                                    <div className="font-medium text-sm">{p.full_name}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {[p.position_name, p.organization, p.province]
+                                        .filter(Boolean)
+                                        .join(" · ")}
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            )}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    เลือกจากรายชื่อเพื่อกรอกตำแหน่ง / หน่วยงาน / จังหวัด อัตโนมัติ หรือพิมพ์เองก็ได้
+                  </p>
                   {form.formState.errors.full_name && (
                     <p className="text-xs text-destructive mt-1">
                       {form.formState.errors.full_name.message}
