@@ -315,19 +315,35 @@ export default function EventR1Next2026Register() {
                   </Label>
                   <StrictCombobox<{ position_name: string }>
                     id="position"
-                    value={position}
-                    onSelect={(p) =>
-                      form.setValue("position", p.position_name, { shouldValidate: true })
-                    }
+                    value={positionOther ? "อื่นๆ (ระบุเอง)" : position}
+                    onSelect={(p) => {
+                      if (p.position_name === "อื่นๆ (ระบุเอง)") {
+                        setPositionOther(true);
+                        form.setValue("position", "", { shouldValidate: true });
+                      } else {
+                        setPositionOther(false);
+                        form.setValue("position", p.position_name, { shouldValidate: true });
+                      }
+                    }}
                     fetcher={fetchPositions}
                     placeholder="เลือกตำแหน่ง"
                     searchPlaceholder="พิมพ์เพื่อค้นหาตำแหน่ง..."
-                    emptyText="ไม่พบตำแหน่งที่ตรงกับคำค้น"
+                    emptyText='ไม่พบตำแหน่ง — เลือก "อื่นๆ (ระบุเอง)" เพื่อกรอกเอง'
                     itemKey={(p) => p.position_name}
                     itemLabel={(p) => p.position_name}
                   />
+                  {positionOther && (
+                    <Input
+                      className="mt-2"
+                      placeholder="ระบุตำแหน่งของท่าน"
+                      value={position}
+                      onChange={(e) =>
+                        form.setValue("position", e.target.value, { shouldValidate: true })
+                      }
+                    />
+                  )}
                   <p className="text-[11px] text-muted-foreground mt-1">
-                    เลือกจากรายการเท่านั้น (พิมพ์เพื่อค้นหา)
+                    เลือกจากรายการ หรือเลือก "อื่นๆ (ระบุเอง)" เพื่อพิมพ์เอง
                   </p>
                   {form.formState.errors.position && (
                     <p className="text-xs text-destructive mt-1">
