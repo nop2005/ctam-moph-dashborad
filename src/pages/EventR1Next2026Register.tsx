@@ -53,6 +53,35 @@ export default function EventR1Next2026Register() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<SuccessInfo | null>(null);
 
+  // Personnel search state
+  const [personnelOpen, setPersonnelOpen] = useState(false);
+  const [personnelQuery, setPersonnelQuery] = useState("");
+  const [personnelLoading, setPersonnelLoading] = useState(false);
+  const [personnelResults, setPersonnelResults] = useState<PersonnelSuggestion[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    const t = setTimeout(async () => {
+      setPersonnelLoading(true);
+      const { data, error } = await supabase.rpc("search_event_personnel_r1", {
+        p_query: personnelQuery || null,
+        p_limit: 30,
+      });
+      if (!active) return;
+      if (error) {
+        console.warn("personnel search failed", error);
+        setPersonnelResults([]);
+      } else {
+        setPersonnelResults((data as PersonnelSuggestion[]) || []);
+      }
+      setPersonnelLoading(false);
+    }, 200);
+    return () => {
+      active = false;
+      clearTimeout(t);
+    };
+  }, [personnelQuery]);
+
   const form = useForm<EventRegistrationInput>({
     resolver: zodResolver(eventRegistrationSchema),
     defaultValues: {
