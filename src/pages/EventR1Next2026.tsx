@@ -135,7 +135,7 @@ function AgendaList({ items }: { items: AgendaItem[] }) {
   type Group =
     | { kind: "single"; item: AgendaItem }
     | { kind: "split"; main: AgendaItem[]; sub: AgendaItem[] }
-    | { kind: "mainOnly"; items: AgendaItem[] }
+    | { kind: "mainOnly"; items: AgendaItem[]; preItems?: AgendaItem[] }
     | { kind: "subOnly"; items: AgendaItem[] };
   const groups: Group[] = [];
   let i = 0;
@@ -160,7 +160,18 @@ function AgendaList({ items }: { items: AgendaItem[] }) {
         continue;
       }
       if (run.length > 1 && hasMain && !hasSub) {
-        groups.push({ kind: "mainOnly", items: run });
+        // Pull preceding single items without a room into this morning block
+        const preItems: AgendaItem[] = [];
+        while (groups.length > 0 && groups[groups.length - 1].kind === "single") {
+          const last = groups[groups.length - 1] as { kind: "single"; item: AgendaItem };
+          if (!last.item.room) {
+            preItems.unshift(last.item);
+            groups.pop();
+          } else {
+            break;
+          }
+        }
+        groups.push({ kind: "mainOnly", items: run, preItems: preItems.length > 0 ? preItems : undefined });
         i = j;
         continue;
       }
@@ -179,13 +190,14 @@ function AgendaList({ items }: { items: AgendaItem[] }) {
       {groups.map((g, idx) => {
         if (g.kind === "single") return <AgendaItemCard key={idx} it={g.item} />;
         if (g.kind === "mainOnly") {
+          const allItems = g.preItems ? [...g.preItems, ...g.items] : g.items;
           return (
             <div key={idx} className="rounded-xl border border-primary/20 bg-primary/[0.02] p-3">
-              <div className="mb-2">
+              <div className="mb-2 text-center">
                 <Badge variant="secondary" className="text-sm">ห้องประชุมใหญ่</Badge>
               </div>
               <div className="flex flex-col gap-3">
-                {g.items.map((it, j) => (
+                {allItems.map((it, j) => (
                   <AgendaItemCard key={j} it={it} compact hideRoomBadge />
                 ))}
               </div>
@@ -195,7 +207,7 @@ function AgendaList({ items }: { items: AgendaItem[] }) {
         if (g.kind === "subOnly") {
           return (
             <div key={idx} className="rounded-xl border border-primary/20 bg-primary/[0.02] p-3">
-              <div className="mb-2">
+              <div className="mb-2 text-center">
                 <Badge variant="outline" className="text-sm">ห้องประชุมย่อย</Badge>
               </div>
               <div className="flex flex-col gap-3">
