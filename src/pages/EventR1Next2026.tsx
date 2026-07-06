@@ -80,49 +80,99 @@ function roomLabel(room?: AgendaItem["room"]) {
   return <Badge className="bg-accent text-accent-foreground">ทั้ง 2 ห้อง</Badge>;
 }
 
+function parseTime(range: string): [number, number] {
+  const m = range.match(/(\d{1,2})[.:](\d{2})\s*[–\-]\s*(\d{1,2})[.:](\d{2})/);
+  if (!m) return [0, 0];
+  return [parseInt(m[1]) * 60 + parseInt(m[2]), parseInt(m[3]) * 60 + parseInt(m[4])];
+}
+
+function AgendaItemCard({ it, compact = false }: { it: AgendaItem; compact?: boolean }) {
+  const isBreak = it.type === "break";
+  return (
+    <div
+      className={`flex gap-4 rounded-xl border p-4 h-full transition-all ${
+        isBreak
+          ? "bg-muted/40 border-dashed"
+          : "bg-card hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5"
+      }`}
+    >
+      {!compact && (
+        <div className="flex-shrink-0 flex flex-col items-center gap-1 w-28 text-center">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-semibold text-foreground">{it.time}</span>
+          <span className="text-xs text-muted-foreground">น.</span>
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        {compact && (
+          <div className="flex items-center gap-1.5 mb-1.5 text-xs text-muted-foreground">
+            <Clock className="h-3.5 w-3.5" />
+            <span className="font-semibold text-foreground">{it.time} น.</span>
+          </div>
+        )}
+        <div className="flex items-start gap-2 flex-wrap">
+          <span className={`mt-0.5 ${isBreak ? "text-muted-foreground" : "text-primary"}`}>
+            {typeIcon(it.type)}
+          </span>
+          <h3 className={`font-semibold ${isBreak ? "text-muted-foreground" : "text-foreground"}`}>
+            {it.title}
+          </h3>
+          {roomLabel(it.room)}
+        </div>
+        {it.detail && <p className="text-sm text-muted-foreground mt-1">{it.detail}</p>}
+        {it.speaker && (
+          <p className="text-sm mt-1.5 text-foreground/80">
+            <span className="text-xs uppercase tracking-wide text-primary font-medium">วิทยากร: </span>
+            {it.speaker}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AgendaList({ items }: { items: AgendaItem[] }) {
+  // Group adjacent items that split into main/sub rooms with overlapping times.
+  const groups: Array<AgendaItem[]> = [];
+  let i = 0;
+  while (i < items.length) {
+    const cur = items[i];
+    const next = items[i + 1];
+    if (
+      cur.room && next?.room &&
+      cur.room !== next.room &&
+      (cur.room === "main" || cur.room === "sub") &&
+      (next.room === "main" || next.room === "sub")
+    ) {
+      const [aS, aE] = parseTime(cur.time);
+      const [bS, bE] = parseTime(next.time);
+      if (aS < bE && bS < aE) {
+        const pair = cur.room === "main" ? [cur, next] : [next, cur];
+        groups.push(pair);
+        i += 2;
+        continue;
+      }
+    }
+    groups.push([cur]);
+    i += 1;
+  }
+
   return (
     <div className="space-y-3">
-      {items.map((it, i) => {
-        const isBreak = it.type === "break";
+      {groups.map((g, i) => {
+        if (g.length === 1) return <AgendaItemCard key={i} it={g[0]} />;
         return (
-          <div
-            key={i}
-            className={`flex gap-4 rounded-xl border p-4 transition-all ${
-              isBreak
-                ? "bg-muted/40 border-dashed"
-                : "bg-card hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5"
-            }`}
-          >
-            <div className="flex-shrink-0 flex flex-col items-center gap-1 w-28 text-center">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-semibold text-foreground">{it.time}</span>
-              <span className="text-xs text-muted-foreground">น.</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start gap-2 flex-wrap">
-                <span className={`mt-0.5 ${isBreak ? "text-muted-foreground" : "text-primary"}`}>
-                  {typeIcon(it.type)}
-                </span>
-                <h3 className={`font-semibold ${isBreak ? "text-muted-foreground" : "text-foreground"}`}>
-                  {it.title}
-                </h3>
-                {roomLabel(it.room)}
-              </div>
-              {it.detail && <p className="text-sm text-muted-foreground mt-1">{it.detail}</p>}
-              {it.speaker && (
-                <p className="text-sm mt-1.5 text-foreground/80">
-                  <span className="text-xs uppercase tracking-wide text-primary font-medium">วิทยากร: </span>
-                  {it.speaker}
-                </p>
-              )}
-            </div>
+          <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {g.map((it, j) => (
+              <AgendaItemCard key={j} it={it} compact />
+            ))}
           </div>
         );
       })}
     </div>
   );
 }
+
 
 /** Speaker avatar: real photo when provided, otherwise gradient + initial */
 function SpeakerAvatar({ name, photo }: { name: string; photo?: string }) {
