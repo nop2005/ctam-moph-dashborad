@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +12,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EVENT_INFO } from "@/data/eventContent";
@@ -29,7 +31,17 @@ import {
   Loader2,
   Sparkles,
   Copy,
+  ChevronsUpDown,
+  Search,
 } from "lucide-react";
+
+interface PersonnelSuggestion {
+  personnel_id: string;
+  full_name: string;
+  position_name: string;
+  organization: string;
+  province: string;
+}
 
 interface SuccessInfo {
   registration_no: string;
