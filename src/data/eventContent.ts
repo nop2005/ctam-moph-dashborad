@@ -157,6 +157,7 @@ export interface Speaker {
 
 import suratPhoto from "@/assets/event/speakers/surat-tanprawate.png.asset.json";
 import teerapolPhoto from "@/assets/event/speakers/teerapol-nongwa.png.asset.json";
+import amornpunPhoto from "@/assets/event/speakers/amornpun-nitithiranon.png.asset.json";
 
 export const SPEAKERS: Speaker[] = [
   {
@@ -178,6 +179,7 @@ export const SPEAKERS: Speaker[] = [
     title: "ผู้ทรงคุณวุฒิและผู้ช่วยเลขาธิการ",
     organization: "คณะกรรมการคุ้มครองข้อมูลส่วนบุคคล (PDPC)",
     topic: "AI and Data Governance in PDPA: กรณีศึกษาสาธารณสุข",
+    photo: amornpunPhoto.url,
   },
   {
     name: "พญ.วชิราภรณ์ อรุโณทอง",
