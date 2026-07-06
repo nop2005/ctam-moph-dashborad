@@ -54,6 +54,7 @@ export default function EventR1Next2026Register() {
   const [success, setSuccess] = useState<SuccessInfo | null>(null);
 
   // Personnel search state
+  const [inputMode, setInputMode] = useState<"search" | "manual">("search");
   const [personnelOpen, setPersonnelOpen] = useState(false);
   const [personnelQuery, setPersonnelQuery] = useState("");
   const [personnelLoading, setPersonnelLoading] = useState(false);
@@ -261,6 +262,45 @@ export default function EventR1Next2026Register() {
           </CardHeader>
           <CardContent>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              {/* Mode toggle */}
+              <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                <div className="text-sm font-medium">วิธีกรอกข้อมูลผู้ลงทะเบียน</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setInputMode("search")}
+                    className={`text-left rounded-md border p-3 text-sm transition ${
+                      inputMode === "search"
+                        ? "border-primary bg-primary/10 ring-1 ring-primary/40"
+                        : "hover:bg-accent"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-medium">
+                      <Search className="h-4 w-4" /> ค้นหาจากรายชื่อ
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      เจ้าหน้าที่ที่มีใบ Certificate ในเขตสุขภาพที่ 1
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInputMode("manual")}
+                    className={`text-left rounded-md border p-3 text-sm transition ${
+                      inputMode === "manual"
+                        ? "border-primary bg-primary/10 ring-1 ring-primary/40"
+                        : "hover:bg-accent"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-medium">
+                      <Sparkles className="h-4 w-4" /> กรอกเอง
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      กรณีไม่พบชื่อในระบบ / บุคคลภายนอก
+                    </div>
+                  </button>
+                </div>
+              </div>
+
               {/* Personal */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
@@ -270,66 +310,89 @@ export default function EventR1Next2026Register() {
                   <div className="flex gap-2">
                     <Input
                       id="full_name"
-                      placeholder="เช่น นพ.สมชาย ใจดี"
+                      placeholder={
+                        inputMode === "search"
+                          ? "กดปุ่ม 'ค้นหา' หรือพิมพ์ชื่อ"
+                          : "เช่น นพ.สมชาย ใจดี"
+                      }
                       {...form.register("full_name")}
                       className="flex-1"
                     />
-                    <Popover open={personnelOpen} onOpenChange={setPersonnelOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="shrink-0"
-                          title="ค้นหาจากรายชื่อเจ้าหน้าที่ในระบบ"
-                        >
-                          <Search className="h-4 w-4 mr-1" />
-                          ค้นหา
-                          <ChevronsUpDown className="h-3 w-3 ml-1 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[min(92vw,520px)] p-0" align="end">
-                        <Command shouldFilter={false}>
-                          <CommandInput
-                            placeholder="พิมพ์ชื่อ / ตำแหน่ง / หน่วยงาน..."
-                            value={personnelQuery}
-                            onValueChange={setPersonnelQuery}
-                          />
-                          <CommandList>
-                            {personnelLoading && (
-                              <div className="py-6 text-center text-sm text-muted-foreground">
-                                <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
-                                กำลังค้นหา...
-                              </div>
-                            )}
-                            {!personnelLoading && personnelResults.length === 0 && (
-                              <CommandEmpty>ไม่พบรายชื่อ — กรอกด้วยตนเองด้านซ้ายได้เลย</CommandEmpty>
-                            )}
-                            {!personnelLoading && personnelResults.length > 0 && (
-                              <CommandGroup heading="รายชื่อเจ้าหน้าที่ (เขตสุขภาพที่ 1)">
-                                {personnelResults.map((p) => (
-                                  <CommandItem
-                                    key={p.personnel_id}
-                                    value={p.personnel_id}
-                                    onSelect={() => selectPersonnel(p)}
-                                    className="flex flex-col items-start gap-0.5"
-                                  >
-                                    <div className="font-medium text-sm">{p.full_name}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {[p.position_name, p.organization, p.province]
-                                        .filter(Boolean)
-                                        .join(" · ")}
-                                    </div>
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            )}
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+                    {inputMode === "search" && (
+                      <Popover open={personnelOpen} onOpenChange={setPersonnelOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="shrink-0"
+                            title="ค้นหาจากรายชื่อเจ้าหน้าที่ในระบบ"
+                          >
+                            <Search className="h-4 w-4 mr-1" />
+                            ค้นหา
+                            <ChevronsUpDown className="h-3 w-3 ml-1 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[min(92vw,520px)] p-0" align="end">
+                          <Command shouldFilter={false}>
+                            <CommandInput
+                              placeholder="พิมพ์ชื่อ / ตำแหน่ง / หน่วยงาน..."
+                              value={personnelQuery}
+                              onValueChange={setPersonnelQuery}
+                            />
+                            <CommandList>
+                              {personnelLoading && (
+                                <div className="py-6 text-center text-sm text-muted-foreground">
+                                  <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                                  กำลังค้นหา...
+                                </div>
+                              )}
+                              {!personnelLoading && personnelResults.length === 0 && (
+                                <CommandEmpty>
+                                  <div className="space-y-2 py-2">
+                                    <div>ไม่พบรายชื่อในระบบ</div>
+                                    <Button
+                                      type="button"
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={() => {
+                                        setInputMode("manual");
+                                        setPersonnelOpen(false);
+                                      }}
+                                    >
+                                      สลับไปโหมด "กรอกเอง"
+                                    </Button>
+                                  </div>
+                                </CommandEmpty>
+                              )}
+                              {!personnelLoading && personnelResults.length > 0 && (
+                                <CommandGroup heading="รายชื่อเจ้าหน้าที่ (เขตสุขภาพที่ 1)">
+                                  {personnelResults.map((p) => (
+                                    <CommandItem
+                                      key={p.personnel_id}
+                                      value={p.personnel_id}
+                                      onSelect={() => selectPersonnel(p)}
+                                      className="flex flex-col items-start gap-0.5"
+                                    >
+                                      <div className="font-medium text-sm">{p.full_name}</div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {[p.position_name, p.organization, p.province]
+                                          .filter(Boolean)
+                                          .join(" · ")}
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              )}
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    )}
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-1">
-                    เลือกจากรายชื่อเพื่อกรอกตำแหน่ง / หน่วยงาน / จังหวัด อัตโนมัติ หรือพิมพ์เองก็ได้
+                    {inputMode === "search"
+                      ? "เลือกจากรายชื่อเพื่อกรอกตำแหน่ง / หน่วยงาน / จังหวัด อัตโนมัติ"
+                      : "กรุณากรอกชื่อ-นามสกุล ตำแหน่ง และหน่วยงานด้วยตนเอง"}
                   </p>
                   {form.formState.errors.full_name && (
                     <p className="text-xs text-destructive mt-1">
