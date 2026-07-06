@@ -21,9 +21,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Download, Search, Mail, MailCheck, Loader2 } from "lucide-react";
+import { Users, Download, Search, Mail, MailCheck, Loader2, IdCard } from "lucide-react";
 import * as XLSX from "xlsx";
 import { toast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
+import { EventBadgePrint } from "@/components/event/EventBadgePrint";
 
 const DIETARY_LABEL: Record<string, string> = {
   normal: "อาหารทั่วไป",
@@ -36,6 +38,8 @@ const DIETARY_LABEL: Record<string, string> = {
 export default function EventR1Next2026Admin() {
   const [search, setSearch] = useState("");
   const [dayFilter, setDayFilter] = useState<string>("all");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [badgeOpen, setBadgeOpen] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["event-registrations", "r1next2026"],
@@ -176,6 +180,14 @@ export default function EventR1Next2026Admin() {
                     <SelectItem value="both">เข้าทั้ง 2 วัน</SelectItem>
                   </SelectContent>
                 </Select>
+                <Button
+                  onClick={() => setBadgeOpen(true)}
+                  variant="outline"
+                  disabled={!filtered.length}
+                >
+                  <IdCard className="h-4 w-4 mr-1" />
+                  พิมพ์ป้ายคล้องคอ {selected.size > 0 ? `(${selected.size})` : `(ทั้งหมด ${filtered.length})`}
+                </Button>
                 <Button onClick={exportExcel} variant="outline" disabled={!filtered.length}>
                   <Download className="h-4 w-4 mr-1" /> Export Excel
                 </Button>
@@ -197,6 +209,15 @@ export default function EventR1Next2026Admin() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-8">
+                        <Checkbox
+                          checked={filtered.length > 0 && filtered.every((r) => selected.has(r.id))}
+                          onCheckedChange={(v) => {
+                            if (v) setSelected(new Set(filtered.map((r) => r.id)));
+                            else setSelected(new Set());
+                          }}
+                        />
+                      </TableHead>
                       <TableHead className="w-12">#</TableHead>
                       <TableHead>เลขที่</TableHead>
                       <TableHead>ชื่อ-นามสกุล</TableHead>
@@ -211,7 +232,20 @@ export default function EventR1Next2026Admin() {
                   </TableHeader>
                   <TableBody>
                     {filtered.map((r, i) => (
-                      <TableRow key={r.id}>
+                      <TableRow key={r.id} data-state={selected.has(r.id) ? "selected" : undefined}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selected.has(r.id)}
+                            onCheckedChange={(v) => {
+                              setSelected((prev) => {
+                                const next = new Set(prev);
+                                if (v) next.add(r.id);
+                                else next.delete(r.id);
+                                return next;
+                              });
+                            }}
+                          />
+                        </TableCell>
                         <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                         <TableCell className="font-mono text-xs">{r.registration_no}</TableCell>
                         <TableCell>
@@ -261,6 +295,24 @@ export default function EventR1Next2026Admin() {
           </CardContent>
         </Card>
       </div>
+
+      <EventBadgePrint
+        open={badgeOpen}
+        onOpenChange={setBadgeOpen}
+        attendees={(selected.size > 0
+          ? filtered.filter((r) => selected.has(r.id))
+          : filtered
+        ).map((r) => ({
+          id: r.id,
+          registration_no: r.registration_no,
+          full_name: r.full_name,
+          position: r.position,
+          organization: r.organization,
+          province: r.province,
+          attend_day1: r.attend_day1,
+          attend_day2: r.attend_day2,
+        }))}
+      />
     </DashboardLayout>
   );
 }
