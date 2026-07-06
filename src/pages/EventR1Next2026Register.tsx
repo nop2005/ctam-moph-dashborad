@@ -100,7 +100,7 @@ export default function EventR1Next2026Register() {
   });
 
   const dietary = form.watch("dietary");
-  const fullNameValue = form.watch("full_name");
+  
 
   function selectPersonnel(p: PersonnelSuggestion) {
     form.setValue("full_name", p.full_name, { shouldValidate: true });
