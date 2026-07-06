@@ -294,6 +294,14 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route
+              path="/event/r1next2026/registrations"
+              element={
+                <ProtectedRoute allowedRoles={['central_admin', 'regional']}>
+                  <EventR1Next2026Admin />
+                </ProtectedRoute>
+              }
+            />
             <Route 
               path="/admin/system-dashboard"
               element={
