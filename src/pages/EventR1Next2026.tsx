@@ -38,7 +38,8 @@ import heroBg from "@/assets/event/hero-bg.jpg";
 import aiShield from "@/assets/event/ai-shield.png";
 import day1Banner from "@/assets/event/day1-banner.jpg";
 import day2Banner from "@/assets/event/day2-banner.jpg";
-import venueBanner from "@/assets/event/venue-banner.jpg";
+import venueBannerAsset from "@/assets/event/venue-lampang-real.png.asset.json";
+const venueBanner = venueBannerAsset.url;
 import { AmbientSoundToggle } from "@/components/event/AmbientSoundToggle";
 
 function useCountdown(target: string) {
