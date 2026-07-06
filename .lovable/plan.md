@@ -1,70 +1,103 @@
 
-# แผนเพิ่มภาพ/กราฟิกให้หน้า R1 Digital Health Forum 2026
+# แผนเปิดระบบลงทะเบียน R1 Digital Health Forum 2026
 
-เป้าหมาย: ทำให้หน้า `/public/event/r1next2026` ดู **ทันสมัย, ล้ำ, น่าตื่นเต้น** ด้วยธีม **AI + Cybersecurity in Healthcare** ชวนให้อยากลงทะเบียน
+## ภาพรวม
+เปลี่ยนปุ่ม "ลงทะเบียน (เร็วๆ นี้)" ให้ใช้งานได้จริง — เก็บข้อมูลผู้ลงทะเบียนในฐานข้อมูล, ส่งอีเมลยืนยันอัตโนมัติ, และมีหน้า admin สำหรับดู/ส่งออกรายชื่อ
 
 ---
 
-## 1. ภาพที่จะสร้างใหม่ (AI-generated)
+## 1. ฐานข้อมูล (Lovable Cloud)
 
-สร้างด้วย `imagegen` เก็บที่ `src/assets/event/`:
+สร้างตาราง `event_registrations`:
 
-| ไฟล์ | การใช้งาน | สไตล์ |
+| คอลัมน์ | ประเภท | หมายเหตุ |
 |---|---|---|
-| `hero-bg.jpg` (1920x1024) | พื้นหลัง Hero เต็มจอ | Futuristic hospital + neural network glow, cyan/violet gradient, digital shield motif, cinematic dark tone |
-| `ai-security-shield.png` (1024x1024, transparent) | Floating graphic ใน Hero | 3D holographic shield ล้อมด้วย DNA + circuit lines, glow effect |
-| `agenda-day1.jpg` (1280x720) | Header ของ Tab Day 1 | Doctor + AI hologram interface, warm cyan light |
-| `agenda-day2.jpg` (1280x720) | Header ของ Tab Day 2 | Cybersecurity operations center, dark blue with red alert accents |
-| `venue-lampang.jpg` (1600x900) | Section สถานที่ | ภาพ modern conference hall ตกแต่งด้วย overlay กราฟิก tech |
-| `pattern-grid.svg` | Background overlay | เส้นกริดโปร่งใส + จุด node แบบ network |
+| `id` | uuid PK | |
+| `registration_no` | text unique | รูปแบบ `R1F26-00001` (auto-increment) |
+| `full_name` | text | คำนำหน้า + ชื่อ + นามสกุล |
+| `position` | text | ตำแหน่ง |
+| `organization` | text | หน่วยงาน/โรงพยาบาล |
+| `province` | text | จังหวัด |
+| `email` | text | (validated, unique per event) |
+| `phone` | text | |
+| `attend_day1` / `attend_day2` | boolean | เลือกวันที่จะเข้าร่วม |
+| `dietary` | text | ปกติ / มังสวิรัติ / ฮาลาล / แพ้อาหาร (+ ระบุ) |
+| `notes` | text nullable | หมายเหตุเพิ่มเติม |
+| `email_sent_at` | timestamptz nullable | |
+| `created_at` | timestamptz default now() | |
 
-Speaker cards: ใช้ **avatar placeholder แบบ gradient + initials** (ไม่ generate หน้าคน เพื่อความสุภาพ) จนกว่าจะมีรูปจริง
+**RLS policies:**
+- `INSERT` — เปิดให้ `anon` และ `authenticated` (ใครก็ลงทะเบียนได้)
+- `SELECT / UPDATE / DELETE` — เฉพาะ `central_admin` และ `regional` (เขต 1)
+- GRANT ตามมาตรฐาน `anon INSERT`, `authenticated ALL`, `service_role ALL`
+
+## 2. หน้า Public Registration
+
+**Route ใหม่:** `/public/event/r1next2026/register`
+
+- ฟอร์ม React Hook Form + Zod validation
+  - จำกัดความยาว, ตรวจ email format, บังคับเลือกอย่างน้อย 1 วัน
+- Checkbox Day 1 / Day 2 / ทั้งสองวัน
+- Field เมนูอาหาร (dropdown + textarea แพ้อาหาร)
+- ปุ่ม Submit → เขียนลง DB → เรียก edge function ส่งอีเมล → แสดงหน้า Success พร้อมหมายเลขลงทะเบียน
+
+## 3. Edge Function ส่งอีเมลยืนยัน
+
+**Function ใหม่:** `send-registration-confirmation`
+
+- ใช้ `RESEND_API_KEY` ที่มีอยู่แล้ว
+- Template อีเมล (HTML) ประกอบด้วย:
+  - หัวจดหมาย + logo งาน
+  - หมายเลขลงทะเบียน (ตัวใหญ่ชัดเจน)
+  - สรุปวัน/สถานที่/เวลา
+  - รายละเอียดที่ผู้ใช้กรอก (เพื่อ verify)
+  - ข้อความติดต่อผู้จัดหากต้องการแก้ไข
+- อัปเดต `email_sent_at` หลังส่งสำเร็จ
+
+## 4. อัปเดตหน้า Event เดิม
+
+`src/pages/EventR1Next2026.tsx`:
+- ปุ่ม "ลงทะเบียน" ใน Hero + Sticky bar → เปลี่ยนจาก `disabled` เป็น `Link` ไปหน้าฟอร์ม
+- เพิ่ม badge "เปิดรับสมัครแล้ว" สีเขียว
+- (คงไว้) Countdown ยังทำงานตามเดิม
+
+## 5. หน้า Admin ดูรายชื่อ
+
+**Route ใหม่ (protected):** `/event/r1next2026/registrations`
+- เห็นได้เฉพาะ `central_admin` และ `regional` (health_region เขต 1)
+- ตารางแสดง: no., ชื่อ, หน่วยงาน, จังหวัด, วันที่เข้าร่วม, email, สถานะส่งอีเมล
+- Filter: วัน (Day 1/2/ทั้งคู่), จังหวัด, ค้นหาชื่อ
+- Search box + สรุปยอดรวมด้านบน (จำนวนทั้งหมด / Day 1 / Day 2)
+- ปุ่ม **Export Excel** (ใช้ xlsx ที่มีอยู่แล้ว)
+- ปุ่มลิงก์เข้าเมนู "ผู้ลงทะเบียนงาน R1" ใน sidebar (เฉพาะ role ที่มีสิทธิ์)
 
 ---
 
-## 2. ปรับ Hero Section
+## รายละเอียดเชิงเทคนิค
 
-- พื้นหลัง: `hero-bg.jpg` + gradient overlay (dark → transparent)
-- Animated elements:
-  - Floating shield PNG (`animate-float` แบบ CSS keyframes)
-  - Particle dots (CSS-only, ~20 จุด random position + `animate-pulse` delay ต่างกัน)
-  - Countdown ใส่ **glass-morphism card** (backdrop-blur + border glow)
-- Badge "AI x Cybersecurity in Healthcare" ด้านบน headline
-- CTA ปุ่ม 2 ปุ่ม: primary glow + ghost outline
+### ไฟล์ใหม่
+- `supabase/migrations/*_event_registrations.sql`
+- `supabase/functions/send-registration-confirmation/index.ts`
+- `src/pages/EventR1Next2026Register.tsx` (ฟอร์มสาธารณะ)
+- `src/pages/EventR1Next2026Admin.tsx` (แอดมิน)
+- `src/lib/eventRegistrationSchema.ts` (Zod)
 
-## 3. ปรับ Section อื่นๆ
+### ไฟล์ที่แก้
+- `src/App.tsx` — เพิ่ม 2 routes ใหม่
+- `src/pages/EventR1Next2026.tsx` — เปิดปุ่มลงทะเบียน
+- `src/components/layout/AppSidebar.tsx` — เมนู admin
 
-- **Agenda tabs**: banner image ด้านบนแต่ละ tab + badge สีต่างกันตาม type (session/workshop/panel/break) ทำให้ contrast ชัดขึ้น
-- **Speakers**: card เปลี่ยนเป็น gradient border + hover lift effect + avatar circle glow
-- **Venue**: hero image ของ section + info cards แยก (การเดินทาง / ที่พัก / อาหาร) พร้อม icon
-- **Sticky CTA bar** ล่างสุด (mobile): "เหลืออีก X วัน — ลงทะเบียน"
-
-## 4. Design Tokens ที่จะเพิ่มใน `index.css`
-
-เพิ่ม event-scoped tokens (ไม่กระทบธีมหลัก):
-```css
---event-cyan: 190 95% 55%;
---event-violet: 265 85% 65%;
---event-glow: 0 0 40px hsl(var(--event-cyan) / 0.5);
---gradient-event-hero: linear-gradient(135deg, hsl(220 60% 8%), hsl(260 70% 15%));
---gradient-event-accent: linear-gradient(90deg, hsl(var(--event-cyan)), hsl(var(--event-violet)));
-```
-+ keyframes: `float`, `glow-pulse`, `particle-drift`
-
-## 5. ไฟล์ที่จะแก้/เพิ่ม
-
-- ใหม่: `src/assets/event/*` (6 ไฟล์ผ่าน imagegen)
-- ใหม่: `src/components/event/HeroBackground.tsx` (particle + shield layer)
-- ใหม่: `src/components/event/SpeakerAvatar.tsx` (gradient initials fallback)
-- แก้: `src/pages/EventR1Next2026.tsx` (โครงสร้าง section ใหม่, ใช้ tokens)
-- แก้: `src/index.css` (เพิ่ม event tokens + keyframes)
+### สิ่งที่ **ไม่ทำ** ใน phase นี้
+- ไม่มีระบบ QR check-in หน้างาน (ทำได้ภายหลัง)
+- ไม่จำกัดจำนวนผู้ลงทะเบียน (เพิ่มได้ทีหลังถ้าต้องการ)
+- ไม่มีระบบยกเลิก/แก้ไขโดยผู้ใช้เอง — ให้ติดต่อผู้จัดผ่านอีเมล
+- ไม่ต้องล็อกอินเพื่อลงทะเบียน (public form)
 
 ---
 
-## ขอบเขต
+## ขั้นตอนใช้งานหลัง deploy
+1. ผู้เข้าร่วมเปิดหน้างาน → กด "ลงทะเบียน" → กรอกฟอร์ม → รับอีเมลยืนยันพร้อมเลขที่
+2. Admin เข้า `/event/r1next2026/registrations` → ดู/กรอง/export รายชื่อ
+3. วันงาน: พิมพ์รายชื่อจาก Excel ไปเช็คหน้างาน
 
-- **ไม่แตะ backend / routing / เมนู** — เฉพาะภาพและการนำเสนอ
-- **ไม่แก้เนื้อหา agenda / speakers / venue** — ใช้ข้อมูลเดิมจาก `eventContent.ts`
-- ปุ่มลงทะเบียนยัง disabled รอ Phase 2
-
-พร้อมเริ่มเลยไหมครับ? (การ generate ภาพ 6 ใบใช้เครดิตเล็กน้อย)
+พร้อมเริ่มไหมครับ?
