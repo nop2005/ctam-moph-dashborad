@@ -1361,6 +1361,21 @@ export type Database = {
           province: string
         }[]
       }
+      search_r1_organizations: {
+        Args: { p_limit?: number; p_query?: string }
+        Returns: {
+          org_id: string
+          org_type: string
+          organization: string
+          province: string
+        }[]
+      }
+      search_r1_positions: {
+        Args: { p_limit?: number; p_query?: string }
+        Returns: {
+          position_name: string
+        }[]
+      }
     }
     Enums: {
       assessment_status:
