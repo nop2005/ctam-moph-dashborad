@@ -175,6 +175,12 @@ const adminItems = [
     icon: HardDrive,
     roles: ["central_admin"],
   },
+  {
+    title: "ผู้ลงทะเบียนงาน R1 Forum",
+    url: "/event/r1next2026/registrations",
+    icon: Users,
+    roles: ["central_admin", "regional"],
+  },
 ];
 export function AppSidebar() {
   const { state } = useSidebar();
