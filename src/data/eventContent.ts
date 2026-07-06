@@ -112,7 +112,7 @@ export const AGENDA_DAY2: AgendaItem[] = [
     room: "main",
     type: "session",
   },
-  { time: "10.30 – 10.45", title: "พักรับประทานอาหารว่าง / เยี่ยมชมบูธ", type: "break" },
+  
   {
     time: "10.45 – 12.00",
     title: "Panel Discussion: Digital Platform - หมอพร้อมเพื่อยกระดับปฐมภูมิ",
