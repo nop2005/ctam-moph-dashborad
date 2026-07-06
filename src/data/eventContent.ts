@@ -137,7 +137,7 @@ export const AGENDA_DAY2: AgendaItem[] = [
     room: "sub",
     type: "panel",
   },
-  { time: "15.00 – 15.15", title: "พักรับประทานอาหารว่าง / เยี่ยมชมบูธ", type: "break" },
+  
   {
     time: "15.00 – 15.45",
     title: "สรุปบทเรียนและแนวทางการทำงาน",
