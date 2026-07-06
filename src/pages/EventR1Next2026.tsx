@@ -35,7 +35,7 @@ import {
   type AgendaItem,
 } from "@/data/eventContent";
 import heroBg from "@/assets/event/hero-bg.jpg";
-import aiShield from "@/assets/event/ai-shield.png";
+import aiShield from "@/assets/event/ai-shield.png.asset.json";
 import day1Banner from "@/assets/event/day1-banner.jpg";
 import day2Banner from "@/assets/event/day2-banner.jpg";
 import venueBanner from "@/assets/event/venue-banner.jpg";
