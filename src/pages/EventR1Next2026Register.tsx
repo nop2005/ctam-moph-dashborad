@@ -398,9 +398,6 @@ export default function EventR1Next2026Register() {
                       }
                     />
                   )}
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    เลือกจากรายการ หรือเลือก "อื่นๆ (ระบุเอง)" เพื่อพิมพ์เอง — จังหวัดจะถูกกรอกให้อัตโนมัติเมื่อเลือกหน่วยงานในระบบ
-                  </p>
                   {form.formState.errors.organization && (
                     <p className="text-xs text-destructive mt-1">
                       {form.formState.errors.organization.message}
