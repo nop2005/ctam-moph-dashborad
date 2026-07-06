@@ -232,7 +232,20 @@ export default function EventR1Next2026Admin() {
                   </TableHeader>
                   <TableBody>
                     {filtered.map((r, i) => (
-                      <TableRow key={r.id}>
+                      <TableRow key={r.id} data-state={selected.has(r.id) ? "selected" : undefined}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selected.has(r.id)}
+                            onCheckedChange={(v) => {
+                              setSelected((prev) => {
+                                const next = new Set(prev);
+                                if (v) next.add(r.id);
+                                else next.delete(r.id);
+                                return next;
+                              });
+                            }}
+                          />
+                        </TableCell>
                         <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                         <TableCell className="font-mono text-xs">{r.registration_no}</TableCell>
                         <TableCell>
