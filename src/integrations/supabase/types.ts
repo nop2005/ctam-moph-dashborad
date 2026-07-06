@@ -378,6 +378,66 @@ export type Database = {
         }
         Relationships: []
       }
+      event_registrations: {
+        Row: {
+          attend_day1: boolean
+          attend_day2: boolean
+          created_at: string
+          dietary: string
+          dietary_note: string | null
+          email: string
+          email_sent_at: string | null
+          event_code: string
+          full_name: string
+          id: string
+          notes: string | null
+          organization: string
+          phone: string
+          position: string
+          province: string
+          registration_no: string
+          updated_at: string
+        }
+        Insert: {
+          attend_day1?: boolean
+          attend_day2?: boolean
+          created_at?: string
+          dietary?: string
+          dietary_note?: string | null
+          email: string
+          email_sent_at?: string | null
+          event_code?: string
+          full_name: string
+          id?: string
+          notes?: string | null
+          organization: string
+          phone: string
+          position: string
+          province: string
+          registration_no?: string
+          updated_at?: string
+        }
+        Update: {
+          attend_day1?: boolean
+          attend_day2?: boolean
+          created_at?: string
+          dietary?: string
+          dietary_note?: string | null
+          email?: string
+          email_sent_at?: string | null
+          event_code?: string
+          full_name?: string
+          id?: string
+          notes?: string | null
+          organization?: string
+          phone?: string
+          position?: string
+          province?: string
+          registration_no?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       evidence_files: {
         Row: {
           assessment_item_id: string
