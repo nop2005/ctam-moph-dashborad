@@ -180,6 +180,14 @@ export default function EventR1Next2026Admin() {
                     <SelectItem value="both">เข้าทั้ง 2 วัน</SelectItem>
                   </SelectContent>
                 </Select>
+                <Button
+                  onClick={() => setBadgeOpen(true)}
+                  variant="outline"
+                  disabled={!filtered.length}
+                >
+                  <IdCard className="h-4 w-4 mr-1" />
+                  พิมพ์ป้ายคล้องคอ {selected.size > 0 ? `(${selected.size})` : `(ทั้งหมด ${filtered.length})`}
+                </Button>
                 <Button onClick={exportExcel} variant="outline" disabled={!filtered.length}>
                   <Download className="h-4 w-4 mr-1" /> Export Excel
                 </Button>
