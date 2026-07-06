@@ -333,7 +333,7 @@ export default function EventR1Next2026() {
                   <div className="absolute -top-6 left-1/2 -translate-x-1/2">
                     <SpeakerAvatar name={s.name} photo={s.photo} />
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 text-center">
                     <h3 className="font-semibold text-foreground leading-tight">{s.name}</h3>
                     <p className="text-xs text-muted-foreground mt-1">{s.title}</p>
                     <p className="text-xs text-muted-foreground">{s.organization}</p>
