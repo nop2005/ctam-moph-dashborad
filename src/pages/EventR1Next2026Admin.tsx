@@ -38,6 +38,8 @@ const DIETARY_LABEL: Record<string, string> = {
 export default function EventR1Next2026Admin() {
   const [search, setSearch] = useState("");
   const [dayFilter, setDayFilter] = useState<string>("all");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [badgeOpen, setBadgeOpen] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["event-registrations", "r1next2026"],
