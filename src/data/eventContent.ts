@@ -126,14 +126,14 @@ export const AGENDA_DAY2: AgendaItem[] = [
   {
     time: "13.00 – 15.00",
     title: "Showcase: นวัตกรรมดิจิทัลสุขภาพ (ห้องใหญ่)",
-    detail: "สสจ.เชียงราย / สสจ.แพร่ / สสจ.น่าน",
+    detail: "สสจ.เชียงราย / สสจ.แพร่",
     room: "main",
     type: "panel",
   },
   {
     time: "13.00 – 15.00",
     title: "Showcase: นวัตกรรมดิจิทัลสุขภาพ (ห้องย่อย)",
-    detail: "สสจ.พะเยา และจังหวัดอื่น ๆ",
+    detail: "สสจ.พะเยา / สสจ.น่าน",
     room: "sub",
     type: "panel",
   },
