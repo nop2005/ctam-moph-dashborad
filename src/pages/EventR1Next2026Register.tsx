@@ -86,7 +86,8 @@ export default function EventR1Next2026Register() {
       p_limit: 30,
     });
     if (error) throw error;
-    return (data as { position_name: string }[]) || [];
+    const list = (data as { position_name: string }[]) || [];
+    return [...list, { position_name: "อื่นๆ (ระบุเอง)" }];
   }, []);
 
   const fetchOrgs = useCallback(async (q: string): Promise<OrgSuggestion[]> => {
