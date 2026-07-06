@@ -157,6 +157,7 @@ export interface Speaker {
 
 import suratPhoto from "@/assets/event/speakers/surat-tanprawate.png.asset.json";
 import teerapolPhoto from "@/assets/event/speakers/teerapol-nongwa.png.asset.json";
+import amornpunPhoto from "@/assets/event/speakers/amornpun-nitithiranon.png.asset.json";
 
 export const SPEAKERS: Speaker[] = [
   {
