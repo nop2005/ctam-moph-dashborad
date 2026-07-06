@@ -21,9 +21,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Download, Search, Mail, MailCheck, Loader2 } from "lucide-react";
+import { Users, Download, Search, Mail, MailCheck, Loader2, IdCard } from "lucide-react";
 import * as XLSX from "xlsx";
 import { toast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
+import { EventBadgePrint } from "@/components/event/EventBadgePrint";
 
 const DIETARY_LABEL: Record<string, string> = {
   normal: "อาหารทั่วไป",
