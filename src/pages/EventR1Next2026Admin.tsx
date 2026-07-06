@@ -295,6 +295,24 @@ export default function EventR1Next2026Admin() {
           </CardContent>
         </Card>
       </div>
+
+      <EventBadgePrint
+        open={badgeOpen}
+        onOpenChange={setBadgeOpen}
+        attendees={(selected.size > 0
+          ? filtered.filter((r) => selected.has(r.id))
+          : filtered
+        ).map((r) => ({
+          id: r.id,
+          registration_no: r.registration_no,
+          full_name: r.full_name,
+          position: r.position,
+          organization: r.organization,
+          province: r.province,
+          attend_day1: r.attend_day1,
+          attend_day2: r.attend_day2,
+        }))}
+      />
     </DashboardLayout>
   );
 }
