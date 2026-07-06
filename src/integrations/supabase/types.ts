@@ -1351,6 +1351,16 @@ export type Database = {
         Returns: boolean
       }
       is_supervisor: { Args: never; Returns: boolean }
+      search_event_personnel_r1: {
+        Args: { p_limit?: number; p_query?: string }
+        Returns: {
+          full_name: string
+          organization: string
+          personnel_id: string
+          position_name: string
+          province: string
+        }[]
+      }
     }
     Enums: {
       assessment_status:
