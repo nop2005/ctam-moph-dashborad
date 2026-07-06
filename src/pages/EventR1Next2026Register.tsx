@@ -13,6 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InlineAutocomplete } from "@/components/event/InlineAutocomplete";
+import { StrictCombobox } from "@/components/event/StrictCombobox";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EVENT_INFO } from "@/data/eventContent";
