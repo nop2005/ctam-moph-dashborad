@@ -97,11 +97,19 @@ export const AGENDA_DAY1: AgendaItem[] = [
   { time: "15.30 – 15.45", title: "พักรับประทานอาหารว่าง / เยี่ยมชมบูธ", type: "break" },
   {
     time: "15.45 – 16.30",
-    title: "Workshop: ประเมินความเสี่ยงข้อมูล PDPA & Cybersecurity",
-    detail: "แบ่ง 2 ห้อง (ห้องใหญ่ / ห้องย่อย)",
-    room: "both",
+    title: "Workshop: ประเมินความเสี่ยงข้อมูล",
+    detail: "บุคลากรสาธารณสุข เขตสุขภาพที่ 1",
+    room: "main",
     type: "workshop",
   },
+  {
+    time: "15.45 – 16.30",
+    title: "Workshop: PDPA & Cybersecurity",
+    detail: "บุคลากรสาธารณสุข เขตสุขภาพที่ 1",
+    room: "sub",
+    type: "workshop",
+  },
+
 ];
 
 export const AGENDA_DAY2: AgendaItem[] = [
