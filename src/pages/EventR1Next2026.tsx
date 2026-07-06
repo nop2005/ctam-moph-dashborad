@@ -86,7 +86,7 @@ function parseTime(range: string): [number, number] {
   return [parseInt(m[1]) * 60 + parseInt(m[2]), parseInt(m[3]) * 60 + parseInt(m[4])];
 }
 
-function AgendaItemCard({ it, compact = false }: { it: AgendaItem; compact?: boolean }) {
+function AgendaItemCard({ it, compact = false, hideRoomBadge = false }: { it: AgendaItem; compact?: boolean; hideRoomBadge?: boolean }) {
   const isBreak = it.type === "break";
   return (
     <div
