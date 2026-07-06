@@ -176,11 +176,15 @@ function AgendaList({ items }: { items: AgendaItem[] }) {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
-              <div className="space-y-3">
-                {g.main.map((it, j) => <AgendaItemCard key={j} it={it} compact hideRoomBadge />)}
+              <div className="flex flex-col gap-3 h-full">
+                {g.main.map((it, j) => (
+                  <div key={j} className="flex-1 min-h-0"><AgendaItemCard it={it} compact hideRoomBadge /></div>
+                ))}
               </div>
-              <div className="space-y-3">
-                {g.sub.map((it, j) => <AgendaItemCard key={j} it={it} compact hideRoomBadge />)}
+              <div className="flex flex-col gap-3 h-full">
+                {g.sub.map((it, j) => (
+                  <div key={j} className="flex-1 min-h-0"><AgendaItemCard it={it} compact hideRoomBadge /></div>
+                ))}
               </div>
             </div>
           </div>
