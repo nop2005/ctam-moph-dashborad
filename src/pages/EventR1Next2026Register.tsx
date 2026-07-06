@@ -363,30 +363,46 @@ export default function EventR1Next2026Register() {
                   </Label>
                   <StrictCombobox<OrgSuggestion>
                     id="organization"
-                    value={organization}
+                    value={orgOther ? "อื่นๆ (ระบุเอง)" : organization}
                     onSelect={(o) => {
-                      form.setValue("organization", o.organization, { shouldValidate: true });
-                      if (o.province)
-                        form.setValue("province", o.province, { shouldValidate: true });
+                      if (o.organization === "อื่นๆ (ระบุเอง)") {
+                        setOrgOther(true);
+                        form.setValue("organization", "", { shouldValidate: true });
+                      } else {
+                        setOrgOther(false);
+                        form.setValue("organization", o.organization, { shouldValidate: true });
+                        if (o.province)
+                          form.setValue("province", o.province, { shouldValidate: true });
+                      }
                     }}
                     fetcher={fetchOrgs}
                     placeholder="เลือกหน่วยงาน / โรงพยาบาล"
                     searchPlaceholder="พิมพ์เพื่อค้นหาหน่วยงาน..."
-                    emptyText="ไม่พบหน่วยงานที่ตรงกับคำค้น"
+                    emptyText='ไม่พบหน่วยงาน — เลือก "อื่นๆ (ระบุเอง)" เพื่อกรอกเอง'
                     itemKey={(o) => `${o.org_type}-${o.org_id}`}
                     itemLabel={(o) => o.organization}
                     renderItem={(o) => (
                       <>
                         <div className="text-sm font-medium">{o.organization}</div>
                         <div className="text-xs text-muted-foreground">
-                          {o.org_type === "hospital" ? "โรงพยาบาล" : "สนง.สาธารณสุข"}
+                          {o.org_type === "hospital" ? "โรงพยาบาล" : o.org_type === "other" ? "" : "สนง.สาธารณสุข"}
                           {o.province ? ` · จ.${o.province}` : ""}
                         </div>
                       </>
                     )}
                   />
+                  {orgOther && (
+                    <Input
+                      className="mt-2"
+                      placeholder="ระบุหน่วยงาน / โรงพยาบาลของท่าน"
+                      value={organization}
+                      onChange={(e) =>
+                        form.setValue("organization", e.target.value, { shouldValidate: true })
+                      }
+                    />
+                  )}
                   <p className="text-[11px] text-muted-foreground mt-1">
-                    เลือกจากรายการเท่านั้น — จังหวัดจะถูกกรอกให้อัตโนมัติ
+                    เลือกจากรายการ หรือเลือก "อื่นๆ (ระบุเอง)" เพื่อพิมพ์เอง — จังหวัดจะถูกกรอกให้อัตโนมัติเมื่อเลือกหน่วยงานในระบบ
                   </p>
                   {form.formState.errors.organization && (
                     <p className="text-xs text-destructive mt-1">
