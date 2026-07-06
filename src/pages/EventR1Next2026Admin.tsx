@@ -209,6 +209,15 @@ export default function EventR1Next2026Admin() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-8">
+                        <Checkbox
+                          checked={filtered.length > 0 && filtered.every((r) => selected.has(r.id))}
+                          onCheckedChange={(v) => {
+                            if (v) setSelected(new Set(filtered.map((r) => r.id)));
+                            else setSelected(new Set());
+                          }}
+                        />
+                      </TableHead>
                       <TableHead className="w-12">#</TableHead>
                       <TableHead>เลขที่</TableHead>
                       <TableHead>ชื่อ-นามสกุล</TableHead>
