@@ -60,6 +60,20 @@ export default function EventR1Next2026Register() {
   const [personnelLoading, setPersonnelLoading] = useState(false);
   const [personnelResults, setPersonnelResults] = useState<PersonnelSuggestion[]>([]);
 
+  // Position search state
+  const [positionOpen, setPositionOpen] = useState(false);
+  const [positionQuery, setPositionQuery] = useState("");
+  const [positionLoading, setPositionLoading] = useState(false);
+  const [positionResults, setPositionResults] = useState<{ position_name: string }[]>([]);
+
+  // Organization search state
+  const [orgOpen, setOrgOpen] = useState(false);
+  const [orgQuery, setOrgQuery] = useState("");
+  const [orgLoading, setOrgLoading] = useState(false);
+  const [orgResults, setOrgResults] = useState<
+    { org_id: string; org_type: string; organization: string; province: string }[]
+  >([]);
+
   useEffect(() => {
     let active = true;
     const t = setTimeout(async () => {
@@ -82,6 +96,56 @@ export default function EventR1Next2026Register() {
       clearTimeout(t);
     };
   }, [personnelQuery]);
+
+  useEffect(() => {
+    if (!positionOpen) return;
+    let active = true;
+    const t = setTimeout(async () => {
+      setPositionLoading(true);
+      const { data, error } = await supabase.rpc("search_r1_positions", {
+        p_query: positionQuery || null,
+        p_limit: 50,
+      });
+      if (!active) return;
+      if (error) {
+        console.warn("position search failed", error);
+        setPositionResults([]);
+      } else {
+        setPositionResults((data as { position_name: string }[]) || []);
+      }
+      setPositionLoading(false);
+    }, 200);
+    return () => {
+      active = false;
+      clearTimeout(t);
+    };
+  }, [positionQuery, positionOpen]);
+
+  useEffect(() => {
+    if (!orgOpen) return;
+    let active = true;
+    const t = setTimeout(async () => {
+      setOrgLoading(true);
+      const { data, error } = await supabase.rpc("search_r1_organizations", {
+        p_query: orgQuery || null,
+        p_limit: 100,
+      });
+      if (!active) return;
+      if (error) {
+        console.warn("org search failed", error);
+        setOrgResults([]);
+      } else {
+        setOrgResults(
+          (data as { org_id: string; org_type: string; organization: string; province: string }[]) || []
+        );
+      }
+      setOrgLoading(false);
+    }, 200);
+    return () => {
+      active = false;
+      clearTimeout(t);
+    };
+  }, [orgQuery, orgOpen]);
 
   const form = useForm<EventRegistrationInput>({
     resolver: zodResolver(eventRegistrationSchema),
