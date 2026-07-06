@@ -171,6 +171,7 @@ export const SPEAKERS: Speaker[] = [
     title: "ผู้อำนวยการฝ่ายบริหารจัดการข้อมูลภัยคุกคามทางไซเบอร์",
     organization: "สำนักงานคณะกรรมการการรักษาความมั่นคงปลอดภัยไซเบอร์แห่งชาติ (สกมช.)",
     topic: "Cybersecurity and Data Governance",
+    photo: teerapolPhoto.url,
   },
   {
     name: "ร.ต.อ.อมรพันธุ์ นิติธีรานนท์",
